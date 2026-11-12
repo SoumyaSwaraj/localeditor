@@ -5,6 +5,7 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const build = require('../scripts/build.js');
+const { waitForAsync } = require('./lib/harness');
 
 const ROOT = build.ROOT;
 const IOS = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
@@ -36,7 +37,7 @@ function serveWorker() {
 }
 async function controlled(page) {
   await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 30000 });
-  await page.waitForFunction(() => caches.keys().then((k) => k.some((n) => n.indexOf('le-app-') === 0)), null, { timeout: 30000 });
+  await waitForAsync(page, () => caches.keys().then((k) => k.some((n) => n.indexOf('le-app-') === 0)), null, 30000);
 }
 function swVersion(page) {
   return page.evaluate(() => new Promise((res) => {
@@ -141,7 +142,7 @@ cases['an update waits, says so, and applies only when confirmed'] = async ({ br
     await Promise.all([page.waitForEvent('load', { timeout: 20000 }), page.click('.lp-notice-update .lp-primary')]);
     await page.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 10000 });
     h.assert.equal(await swVersion(page), 'test-2', 'confirmed update takes over after reload');
-    await page.waitForFunction(() => caches.keys().then((k) => !k.includes('le-app-test-1')), null, { timeout: 10000 });
+    await h.waitForAsync(page, () => caches.keys().then((k) => !k.includes('le-app-test-1')), null, 10000);
   } finally { server.close(); }
 };
 

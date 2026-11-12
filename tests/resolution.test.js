@@ -25,11 +25,11 @@ const asset = (page) => page.evaluate(async () => {
   return { meta: S.project.assets[id], mem: [S.mem[id].canvas.width, S.mem[id].canvas.height], bytes: rec.blob.size, type: rec.blob.type };
 });
 async function exportAt(page, h, scale) {
-  await h.openPanel(page, 'export');
+  await h.openPanel(page, 'export', { tab: 'image' });
   await page.getByRole('button', { name: 'PNG', exact: true }).click();
   await page.locator('.sx-chip', { hasText: new RegExp('^' + scale + '×') }).click();
   await page.waitForTimeout(150);
-  return h.capture(page, () => page.locator('#sx-panel-body .btn-gold.btn-lg').click());
+  return h.capture(page, () => page.locator('#sx-panel-body .sxe-actions [data-act="download"]').click());
 }
 const toasts = (page) => page.evaluate(() => (document.body.innerText.match(/This photo was[^.]*\./g) || []));
 
