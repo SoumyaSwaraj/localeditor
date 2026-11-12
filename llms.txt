@@ -1,6 +1,6 @@
 # LocalEditor
 
-> LocalEditor is a private image studio plus 31 browser tools for images, PDFs, text, and everyday tasks. Editing runs on the device. Files are not uploaded, no account is required, and the site can be installed for offline use.
+> LocalEditor is a private image studio plus 32 browser tools for images, PDFs, text, and everyday tasks. Editing runs on the device. Files are not uploaded, no account is required, and the site can be installed for offline use.
 
 Key facts:
 - Price: free, unlimited, no watermarks, no sign-up.
@@ -50,12 +50,13 @@ Key facts:
 - [Unit Converter](https://localeditor.net/unit-converter/): Length, weight, temperature, data and 6 more categories.
 - [Color Converter](https://localeditor.net/color-converter/): HEX, RGB, HSL, CMYK conversion with contrast checker.
 - [UUID Generator](https://localeditor.net/uuid-generator/): Bulk-generate UUID v4 and v7 and validate UUIDs.
+- [Device Check](https://localeditor.net/device-check/): See which features work on this device and browser, and which browser unlocks more.
 
 ## Find by need
 
 - [Photo and design](https://localeditor.net/photo/): Edit photos, make collages and posts.
 - [PDF and documents](https://localeditor.net/pdf/): Sign, fill, merge and convert PDFs.
-- [Privacy tools](https://localeditor.net/privacy-tools/): Hidden photo data, storage and offline use.
+- [Privacy tools](https://localeditor.net/privacy-tools/): Check photos and PDFs before you share them.
 - [Social and creators](https://localeditor.net/social/): Posts, stories and collages for every platform.
 - [Small business](https://localeditor.net/business/): Brand kit, product photos and signed PDFs.
 - [Teachers](https://localeditor.net/teachers/): Worksheets, forms and classroom displays.
@@ -75,6 +76,24 @@ Key facts:
 - [Convert to PDF](https://localeditor.net/word-to-pdf/): Office files, images and text into PDFs.
 - [Install and offline use](https://localeditor.net/install/): Home screen app that works offline.
 - [Storage manager](https://localeditor.net/storage-manager/): What the app keeps here, and a clear button.
+- [Background remover](https://localeditor.net/background-remover/): Cut out one clear subject on this device, with a brush for touch-ups. (Beta)
+- [Thumbnail maker](https://localeditor.net/thumbnail-maker/): A cut-out, a bold headline and eight layouts at 1280 × 720. (Beta)
+- [Export for every size](https://localeditor.net/export-every-size/): Tick the sizes you need, get one zip.
+- [Carousel maker](https://localeditor.net/carousel-maker/): One wide design, split into slides that line up.
+- [Process replay](https://localeditor.net/process-replay/): The making of a design, as a short video.
+- [Template links](https://localeditor.net/template-links/): Layout and text in a link; photos stay home.
+- [Open design file format](https://localeditor.net/open-design-format/): Readable design files for people and agents.
+- [Quick makers](https://localeditor.net/quick-makers/): A short form in, an editable design out.
+- [PDF redaction](https://localeditor.net/redact-pdf/): Removes what is under the boxes, then verifies.
+- [What does this PDF reveal?](https://localeditor.net/pdf-reveal/): Author, comments, attachments and hidden text.
+- [Is this PDF safe to open?](https://localeditor.net/pdf-safety-check/): Looks for scripts, automatic actions and attached programs.
+- [Safe to send](https://localeditor.net/safe-to-send/): Clean a PDF in one step before it leaves your hands.
+- [Find sensitive data](https://localeditor.net/find-sensitive-data/): Emails, phone and ID numbers, found for you.
+- [Password-protect a PDF](https://localeditor.net/password-protect-pdf/): Add or remove a password on this device.
+- [Mail-merge PDFs](https://localeditor.net/pdf-mail-merge/): A spreadsheet in, one PDF per person out.
+- [Split by text](https://localeditor.net/split-pdf-by-text/): One file per employee or student.
+- [Per-recipient watermarks](https://localeditor.net/bulk-pdf-watermarks/): One named copy per recipient.
+- [Compress to a target size](https://localeditor.net/compress-pdf/): “Under 2 MB” in one step.
 
 ## Optional
 

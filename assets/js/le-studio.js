@@ -2460,7 +2460,11 @@
     metadata: ['apps', { app: 'metadata' }], compare: ['apps', { app: 'compare' }], batch: ['apps', { app: 'batch' }], upscale: ['apps', { app: 'upscale' }],
     background: 'background', draw: 'draw', layers: 'layers', position: ['layers', { tab: 'arrange' }], recipes: 'recipes', export: 'export', download: 'export',
     resize: ['design', { tab: 'sizes' }], social: ['design', { tab: 'sizes' }], design: 'design', templates: ['design', { tab: 'templates' }], history: 'history',
-    uploads: 'uploads', projects: 'projects', apps: 'apps', settings: 'settings', edit: 'edit'
+    uploads: 'uploads', projects: 'projects', apps: 'apps', settings: 'settings', edit: 'edit',
+    brand: 'brand', cutout: 'cutout', 'remove-background': 'cutout', redact: 'redact', thumbnail: ['apps', { app: 'thumbnail' }],
+    make: ['apps', { app: 'make' }], makers: ['apps', { app: 'make' }], 'export-sizes': ['export', { tab: 'sizes' }],
+    carousel: ['export', { tab: 'slides' }], slides: ['export', { tab: 'slides' }], replay: ['export', { tab: 'replay' }],
+    share: ['export', { tab: 'image' }], 'design-file': 'projects'
   };
   function applyToolParam() {
     var t = new URLSearchParams(location.search).get('tool');
