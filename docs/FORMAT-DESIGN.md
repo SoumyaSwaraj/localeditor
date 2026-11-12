@@ -58,11 +58,36 @@ Any other top-level key is ignored with a warning.
 
 | Key | Type / range | Default | Notes |
 |---|---|---|---|
-| `id` | id | none | Kept (in `meta.studio.pageIds`). |
+| `id` | id | none | Unique in the file. Stored on the page itself, so it stays with that page when pages are moved, deleted or duplicated in the studio (a duplicate starts without an id). Older projects kept ids by position in `meta.studio.pageIds`; that list is still read when no page has its own id. |
 | `width`, `height` | 16–20000 px | 1080 | |
 | `background` | colour string or object | `#ffffff` | See Backgrounds. |
 | `collage` | object | none | See Collages. |
+| `carousel` | `{ slides, slideWidth }` | none | See Carousels. |
+| `maker` | `{ id, style, size, values, sig }` | none | See Quick makers. |
 | `layers` | array ≤ 600 | `[]` | Back to front. |
+
+### Carousels
+
+```json
+{ "id": "deck", "width": 3240, "height": 1350, "carousel": { "slides": 3 }, "layers": [ … ] }
+```
+
+One wide page split into seamless slides (Instagram carousel). `slides` 1–20 (required); `slideWidth` = page width ÷ slides, may be left out. A `slideWidth` that does not match is corrected with a `carousel-width` warning. The studio shows slide guides and exports one image per slide.
+
+### Quick makers
+
+```json
+{ "id": "card", "maker": { "id": "quote", "style": "", "size": "", "values": { "quote": "Small steps every day.", "author": "Ana" } } }
+```
+
+| Key | Type | Notes |
+|---|---|---|
+| `id` | maker id | `quote`, `review`, `receipt`, `milestone`, `palette`, `film` (see `assets/js/makers/`). Required. |
+| `style`, `size` | ids | The maker's first style and size when left out. |
+| `values` | object | The maker's form fields by key. |
+| `sig` | string | Written by the studio: a fingerprint of the generated layers, so it can tell hand edits from a fresh build. |
+
+**A page with only `maker` (no `layers`) is generated when the file is read** (`LE.makers.build`): the page takes the maker's size (a different `width`/`height` is replaced, with a `maker-size` warning) and its background unless you give one. An agent can write just the form values. With `layers`, the layers are used as written and `maker` is kept so the studio can remake the page. The studio writes both. An unknown maker or invalid values are an error at `/pages/N/maker`. Outside the studio (no makers loaded) a maker-only page opens empty with a `maker-unavailable` warning.
 
 ### Layers: common fields
 
@@ -121,6 +146,7 @@ An **id** is 1–48 characters of letters, digits, `-`, `_`, `.` or `:`, unique 
 | `recipe` | recipe id, `{ id, strength }`, or the long form | none | Shorthand: applies that recipe's look on top of `adjust`. The studio writes the long form `{ id, name, strength, add, prev, filter, prevFilter }` so the look can be re-tuned or removed. |
 | `removeBg` | `{ color, tolerance 0–255 }` | none | Colour-key removal. |
 | `fx` | `{ src, kind, … }` | none | Baked photo effect (`duotone`, `outline`, `blurbg`); `src` is the original photo. |
+| `cutout` | `{ src, enabled, model, feather, refine, outline }` | none | Background removal that stays editable. `src` is the mask image (white or alpha = keep) at the photo's resolution, given like any image source (data: URI, relative path, device id; `asset` is accepted as an alias). `enabled` (true), `model` (e.g. `u2netp`, informational), `feather` 0–50 px (0), `refine` `guided` or `none` (`guided`), `outline` `{ color, width 0–200 }` or none. Needs a `src` photo. Template links drop the cut-out with the photo. |
 | `source` | `{ provider, photographer, pageUrl, photographerUrl, license, attribution }` | none | Stock credit kept with the photo. |
 
 If `w` and `h` are both missing and the photo is known, the image is as wide as the page with the photo's proportions; with one of them missing, the other follows the photo.
@@ -136,6 +162,7 @@ A recipe on an empty slot is fine: the look applies to the photo the person adds
 | `radius` | px | 0 | |
 | `fill` | fill | none | **No fill unless you give one.** |
 | `stroke` | colour or `{ width, color, dash, cap, join }` | none | A colour string means a 4 px stroke. |
+| `redact` | `{ mode, amount, color }` | none | Makes the shape a redaction of everything beneath it, burned in on export: `mode` `solid` (default), `pixelate` or `blur`; `amount` 0–500 page px (0 = automatic, never too weak to hide text); `color` hex for `solid` (`#17131F`). |
 
 ### Icons and SVG
 
@@ -251,7 +278,8 @@ With only `layout` (or slot layers without positions), the reader lays the slots
 - Per-layer side data the studio keeps in `meta.studio` (`icons`, `qr`, `fx`, keyed by layer id) is written on the layer as `iconStyle`, `qr` and `fx`, and moved back on read.
 - An applied recipe (`adjust.recipe` inside the studio) is written as `recipe` next to `adjust`.
 - Background `fit` uses the friendly names.
-- Images: `embed` writes data URIs (one self-contained file, the default in the studio); `paths` writes `assets/<readable-name>.<ext>` and returns the list of files for a folder or zip.
+- Images: `embed` writes data URIs (one self-contained file, the default in the studio); `paths` writes `assets/<readable-name>.<ext>` and returns the list of files for a folder or zip. Cut-out masks are written the same way, as `cutout.src`.
+- Page ids are written from the page (`page.id`).
 - Reading a long-form file and writing it again gives the same bytes.
 
 ## What the reader refuses

@@ -1929,7 +1929,7 @@
   function syncProject() {
     var p = S.project;
     if (!p) return;
-    if (!S.preview) p.pages[p.activePage] = doc();
+    if (!S.preview) { var pid = p.pages[p.activePage] && p.pages[p.activePage].id; p.pages[p.activePage] = doc(); if (pid) p.pages[p.activePage].id = pid; }
     var st = studio();
     st.baseId = baseLayer() ? S.baseId : null;
     if (!st.baseId) S.baseId = null;
@@ -2110,6 +2110,7 @@
     var cur = p.pages[p.activePage];
     var d = dup ? remapIds(clone(cur)) : LE.project.blankPage(cur.width, cur.height, clone(cur.background && cur.background.type === 'color' ? cur.background : { type: 'color', color: '#ffffff' }));
     S.pageThumbs[p.activePage] = artboard(160);
+    if (d) delete d.id;   /* a page id names one page; the copy starts without one */
     p.pages.splice(p.activePage + 1, 0, d);
     loadPage(p.activePage + 1);
     markDirty();

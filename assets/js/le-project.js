@@ -159,7 +159,7 @@
     function scan(doc) {
       if (!doc) return;
       if (doc.background && doc.background.src) ids[doc.background.src] = 1;
-      (doc.layers || []).forEach(function (l) { if (l.type === 'image' && l.src) ids[l.src] = 1; });
+      (doc.layers || []).forEach(function (l) { if (l.type === 'image' && l.src) ids[l.src] = 1; if (l.cutout && l.cutout.asset) ids[l.cutout.asset] = 1; });
     }
     ((project && project.pages) || []).forEach(scan);
     return Object.keys(ids).filter(function (k) { return /^[a-f0-9]{64}$/.test(k); });
@@ -658,6 +658,8 @@
       background: { type: oneOf(bg.type, ['color', 'gradient', 'image'], 'color') },
       layers: []
     };
+    /* A page's own stable id (open design format): it travels with the page when pages are moved or deleted. */
+    if (idOk(doc.id, 48)) out.id = doc.id;
     if (safeColor(bg.color)) out.background.color = safeColor(bg.color);
     else if (out.background.type === 'color') out.background.color = '#ffffff';
     if (bg.kind) out.background.kind = oneOf(bg.kind, ['linear', 'radial'], 'linear');
@@ -811,6 +813,8 @@
     };
     pages.slice(0, LIMITS.pages).forEach(function (p) { var d = sanitizeDoc(p, errors); if (d) out.pages.push(d); });
     if (!out.pages.length) return { ok: false, errors: ['No page in this project could be read.'] };
+    var seenPage = {};
+    out.pages.forEach(function (p) { if (p.id) { if (seenPage[p.id]) delete p.id; else seenPage[p.id] = 1; } });
     out.activePage = clamp(Math.round(num(raw.activePage, 0)), 0, out.pages.length - 1);
     (Array.isArray(raw.sizeHistory) ? raw.sizeHistory.slice(-LIMITS.history) : []).forEach(function (e) { var s = sizeEntry(e, errors); if (s) out.sizeHistory.push(s); });
     out.pages.forEach(function (p) {
