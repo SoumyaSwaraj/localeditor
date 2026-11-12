@@ -6,8 +6,14 @@
   var d = document;
 
   var SIZES = { A4: [595, 842], Letter: [612, 792], Legal: [612, 1008], A3: [842, 1191], A5: [420, 595], Tabloid: [792, 1224] };
-  var RASTER = { docx: 1, odt: 1, html: 1, markdown: 1, epub: 1, pptx: 1 };
-  var DEFAULTS = { pageSize: 'A4', orientation: 'auto', margin: 'normal', scale: 100, fit: 'width', imageQuality: 85, sheets: '', lineNumbers: true, pageNumbers: false, header: '', footer: '' };
+  /* Word, OpenDocument, HTML, Markdown and EPUB are written as searchable text by default (QA-010); slides stay pictures */
+  var DOCS = { docx: 1, odt: 1, html: 1, markdown: 1, epub: 1 };
+  var DEFAULTS = { output: 'text', font: 'sans', pageSize: 'A4', orientation: 'auto', margin: 'normal', scale: 100, fit: 'width', imageQuality: 85, sheets: '', lineNumbers: true, pageNumbers: false, header: '', footer: '' };
+  var OUT_HINT = {
+    text: 'Text can be selected, searched and read aloud. The layout is a clean reflow, not an exact copy.',
+    picture: 'Each page is saved as a picture: it looks like the original, but text can’t be selected or searched and the file is larger.'
+  };
+  function isPicture(kind, o) { return kind === 'pptx' || (!!DOCS[kind] && (o || readOpts()).output === 'picture'); }
 
   var S = { files: [], sel: null, tok: 0, buildTok: 0, cache: [], built: null };
   var E = {};
@@ -71,8 +77,12 @@
       fit: o.pageSize === 'image' ? 'image' : o.fit,
       imageQuality: o.imageQuality / 100,
       lineNumbers: !!o.lineNumbers,
-      pageNumbers: !!o.pageNumbers
+      pageNumbers: !!o.pageNumbers,
+      output: o.output === 'picture' ? 'picture' : 'text',
+      font: o.font === 'serif' ? 'serif' : 'sans'
     };
+    /* text documents read best upright; "auto" only turns wide spreadsheets sideways */
+    if (DOCS[kind] && out.orientation === 'auto' && out.output === 'text') out.orientation = 'portrait';
     if (o.header.trim()) out.header = o.header.trim();
     if (o.footer.trim()) out.footer = o.footer.trim();
     var sh = String(o.sheets || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean).map(function (s) { return /^\d+$/.test(s) ? Math.max(0, +s - 1) : s; });
@@ -116,6 +126,19 @@
     });
     var size = $('#cv-size');
     if (size.value === 'image' && !(k.image || k.svg)) size.value = 'A4';
+    syncOutput();
+  }
+  /* "Text style" only matters for searchable text; hide it when every document is saved as pictures */
+  function syncOutput() {
+    var o = readOpts();
+    var k = kinds();
+    $$('[data-output]', E.side).forEach(function (n) {
+      if (n.hidden) return;
+      var docsOnly = n.getAttribute('data-kinds').split(' ').every(function (x) { return !k[x] || DOCS[x]; });
+      if (docsOnly && n.getAttribute('data-output') !== o.output) n.hidden = true;
+    });
+    var hint = $('#cv-out-hint');
+    if (hint) hint.textContent = OUT_HINT[o.output] || OUT_HINT.text;
   }
 
   /* ---------- files ---------- */
@@ -361,26 +384,49 @@
     });
     var size = eo.pageSize === 'image' ? 'Image size' : eo.pageSize;
     var n = canvases.length;
-    E.prevMeta.textContent = n + ' page' + (n === 1 ? '' : 's') + ' · ' + size + (eo.orientation !== 'auto' ? ' ' + eo.orientation : '');
+    var base = n + ' page' + (n === 1 ? '' : 's') + ' · ' + size + (eo.orientation !== 'auto' ? ' ' + eo.orientation : '');
+    E.prevMeta.textContent = base;
     var f = selected();
     if (f) showWarnings(f, null);
+    if (!f || !f.det) return;
+    var tok = S.tok;
+    if (f.det.kind === 'image' || f.det.kind === 'svg') return;
+    if (isPicture(f.det.kind, null)) { resultLabel(base, { mode: 'picture' }); return; }
+    /* the preview was drawn from the finished PDF, so this is a cache hit: show its size and what it contains */
+    lib().then(function (C) { return C.toPDF(f.file, eo); }).then(function (res) {
+      if (tok !== S.tok) return;
+      resultLabel(base + ' · ' + bytesLabel(res.bytes.length), res);
+      if (res.mode === 'picture') showWarnings(f, res.warnings, res);
+    }, function () {});
+  }
+  function resultLabel(prefix, res) {
+    E.prevMeta.textContent = prefix + ' · ';
+    var pic = res && res.mode === 'picture';
+    E.prevMeta.appendChild(el('span', 'cv-result' + (pic ? ' is-picture' : ''), pic ? 'Pages are pictures' : 'Text can be selected and searched'));
   }
 
-  function showWarnings(f, extra) {
+  function showWarnings(f, extra, res) {
     var box = E.warn;
     box.innerHTML = '';
     var kind = f.det ? f.det.kind : '';
     var lines = [];
     if (f.det && f.det.note && kind !== 'unsupported') lines.push(f.det.note);
-    (extra || []).forEach(function (w) { if (lines.indexOf(w) < 0) lines.push(w); });
-    var raster = !!RASTER[kind];
+    var fallback = null;
+    (extra || []).forEach(function (w) {
+      if (/^Saved as pictures/.test(w)) { fallback = w; return; }
+      if (/^Searchable text:/.test(w)) return;
+      if (lines.indexOf(w) < 0) lines.push(w);
+    });
+    var raster = isPicture(kind, null) || !!fallback;
     if (!lines.length && !raster) { box.hidden = true; return; }
     box.hidden = false;
     var head = el('div', 'cv-warn-head');
     head.innerHTML = IC.alert;
-    head.appendChild(el('strong', null, raster ? 'Pages are pictures of the document' : 'Good to know'));
+    head.appendChild(el('strong', null, fallback ? 'Saved as pictures' : raster ? (kind === 'pptx' ? 'Slides are saved as pictures' : 'Pages are pictures of the document') : 'Good to know'));
     box.appendChild(head);
-    if (raster) box.appendChild(el('p', null, 'They look exactly like the preview, but the text can’t be selected or searched. For selectable text, print to PDF from the browser instead.'));
+    if (fallback) box.appendChild(el('p', null, fallback.replace(/^Saved as pictures:\s*/, '').replace(/^./, function (c) { return c.toUpperCase(); }) + ' The pages look right, but their text can’t be selected or searched.'));
+    else if (raster && kind === 'pptx') box.appendChild(el('p', null, 'Each slide is a picture, so its text can’t be selected or searched. For selectable text, print to PDF from the browser instead.'));
+    else if (raster) box.appendChild(el('p', null, 'They look exactly like the preview, but the text can’t be selected or searched. Choose “Searchable text” for a smaller file with real text.'));
     if (lines.length) {
       var ul = el('ul');
       lines.slice(0, 6).forEach(function (w) { ul.appendChild(el('li', null, w)); });
@@ -442,9 +488,11 @@
     return job.then(function (res) {
       if (pr.cancelled()) { var e = new Error('Cancelled'); e.cancelled = true; throw e; }
       pr.end();
-      S.built = { key: key, bytes: res.bytes, pageCount: res.pageCount, warnings: res.warnings || [], name: outName() };
+      var pictures = res.parts ? res.parts.some(function (p) { return p.mode === 'picture'; }) : res.mode === 'picture';
+      list.forEach(function (x) { if (isPicture(x.det.kind, o)) pictures = true; });
+      S.built = { key: key, bytes: res.bytes, pageCount: res.pageCount, warnings: res.warnings || [], name: outName(), mode: pictures ? 'picture' : 'text', mixed: list.length > 1 };
       var f = selected();
-      if (f && S.built.warnings.length) showWarnings(f, S.built.warnings.map(function (w) { return w.replace(/^[^:]+\.[a-z0-9]+:\s*/i, ''); }));
+      if (f && S.built.warnings.length) showWarnings(f, S.built.warnings.map(function (w) { return w.replace(/^[^:]+\.[a-z0-9]+:\s*/i, ''); }), list.length === 1 ? res : null);
       updateMeta();
       return S.built;
     }, function (err) {
@@ -471,6 +519,11 @@
     if (list.length > 1) t += ' → one PDF';
     if (S.built && S.built.pageCount) t += ' · ' + S.built.pageCount + ' pages · ' + bytesLabel(S.built.bytes.length);
     E.barMeta.textContent = t;
+    if (S.built && S.built.pageCount) {
+      var pic = S.built.mode === 'picture';
+      E.barMeta.appendChild(d.createTextNode(' · '));
+      E.barMeta.appendChild(el('span', 'cv-result' + (pic ? ' is-picture' : ''), pic ? (S.built.mixed ? 'Some pages are pictures' : 'Pages are pictures') : 'Text can be selected and searched'));
+    }
     $$('[data-cv="download"], [data-cv="studio"]').forEach(function (b) { b.disabled = !list.length; });
   }
 
@@ -556,13 +609,14 @@
       else if (a === 'download') download();
       else if (a === 'studio') toStudio();
       else if (a === 'settings') openSettings(b);
-      else if (a === 'reset') { writeOpts(DEFAULTS); saveOpts(); schedule(0); }
+      else if (a === 'reset') { writeOpts(DEFAULTS); saveOpts(); syncKindFields(); schedule(0); }
     });
     E.side.addEventListener('click', function (e) {
       var b = e.target.closest('.cv-seg button');
       if (!b) return;
       $$('button', b.parentNode).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
       saveOpts();
+      if (b.parentNode.getAttribute('data-opt') === 'output') syncKindFields();
       schedule(150);
     });
     E.side.addEventListener('input', function (e) {
