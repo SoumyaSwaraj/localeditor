@@ -38,22 +38,22 @@
    * Labels name the purpose, never the network. Technical facts sit under `about`, shown only behind "About this option". */
   var MODELS = [
     { id: 'depth-small', kind: 'depth', label: 'Depth map', bestFor: 'Blur the background, add haze, light a subject from the side', quality: 2, speed: 'medium', downloadMB: 16,
-      supportId: 'maps.depth', tier: 'standard', runtime: 'wasm', memoryMB: 800,
+      supportId: 'maps.depth', tier: 'standard', runtime: 'wasm', memoryMB: 450,
       files: { depth: { path: 'assets/models/maps/depth_anything_v2_small_q4.onnx', bytes: 15737423 } },
       spec: { side: 518, warm: 14, grid: 14, mean: IMAGENET.mean, std: IMAGENET.std, sides: [266, 392, 518] },
       about: { model: 'Depth Anything V2 Small, 4-bit transformer weights and 8-bit head (made by LocalEditor), 14-pixel grid, up to 518 px', licence: 'Apache-2.0 (code and weights)', source: 'huggingface.co/depth-anything/Depth-Anything-V2-Small', notes: 'Relative depth only, not metric. Trained mostly on synthetic images with pseudo-labels on public photo sets.' } },
     { id: 'depth-small-int8', kind: 'depth', label: 'Depth map (finer)', bestFor: 'The same depth map with a little more fine detail', quality: 3, speed: 'medium', downloadMB: 26,
-      supportId: 'maps.depth', tier: 'pro', runtime: 'wasm', memoryMB: 900,
+      supportId: 'maps.depth', tier: 'pro', runtime: 'wasm', memoryMB: 500,
       files: { depth: { path: 'assets/models/maps/local/depth_anything_v2_small_int8.onnx', bytes: 25726146 } },
       spec: { side: 518, warm: 14, grid: 14, mean: IMAGENET.mean, std: IMAGENET.std, sides: [266, 392, 518] },
       about: { model: 'Depth Anything V2 Small, 8-bit weights (made by LocalEditor), 14-pixel grid, up to 518 px', licence: 'Apache-2.0 (code and weights)', source: 'huggingface.co/depth-anything/Depth-Anything-V2-Small', notes: 'Larger than the repository file limit: lives on S3, produced by labs/maps/tools/derive.py.' } },
     { id: 'depth-small-fp32', kind: 'depth', label: 'Depth map (reference)', bestFor: 'Evaluation only', quality: 2, speed: 'slow', downloadMB: 99,
-      supportId: 'maps.depth', tier: 'eval', runtime: 'wasm', memoryMB: 1500,
+      supportId: 'maps.depth', tier: 'eval', runtime: 'wasm', memoryMB: 900,
       files: { depth: { path: 'assets/models/maps/local/depth_anything_v2_small_fp32.onnx', bytes: 99060839 } },
       spec: { side: 518, warm: 14, grid: 14, mean: IMAGENET.mean, std: IMAGENET.std, sides: [266, 392, 518] },
       about: { model: 'Depth Anything V2 Small, float32', licence: 'Apache-2.0', source: 'huggingface.co/onnx-community/depth-anything-v2-small' } },
     { id: 'face-landmarks', kind: 'face', label: 'Face map', bestFor: 'Find eyes, lips and skin for retouching and face-aware reshaping', quality: 2, speed: 'fast', downloadMB: 4,
-      supportId: 'maps.face', tier: 'standard', runtime: 'wasm', memoryMB: 450,
+      supportId: 'maps.face', tier: 'standard', runtime: 'wasm', memoryMB: 400,
       files: {
         detector: { path: 'assets/models/maps/face_detector.onnx', bytes: 228409 },
         landmarks: { path: 'assets/models/maps/face_landmarks.onnx', bytes: 2557688 },
@@ -62,7 +62,7 @@
       spec: {},
       about: { model: 'MediaPipe BlazeFace short-range, Face Landmarker v2 (478 points) and Blendshape v2, float16 weights', licence: 'Apache-2.0 (code and weights)', source: 'storage.googleapis.com/mediapipe-models/face_landmarker', notes: 'Computed on this device. Not used to identify anyone.' } },
     { id: 'face-parts', kind: 'parts', label: 'Hair and skin detail', bestFor: 'Keeps hair and beard out of skin smoothing', quality: 2, speed: 'fast', downloadMB: 9,
-      supportId: 'maps.faceparts', tier: 'standard', runtime: 'wasm', memoryMB: 500,
+      supportId: 'maps.faceparts', tier: 'standard', runtime: 'wasm', memoryMB: 400,
       files: { parts: { path: 'assets/models/maps/selfie_multiclass.onnx', bytes: 8356582 } },
       spec: {},
       about: { model: 'MediaPipe multi-class selfie segmenter (hair, body skin, face skin, clothes), float16 weights', licence: 'Apache-2.0', source: 'storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256', notes: 'Trained on a Google-internal photo set; weaker on heavy make-up, head coverings and unusual lighting.' } }
@@ -81,9 +81,9 @@
 
   /* Sizes are filled from the files themselves the first time a HEAD says so; until then the numbers above are the plan. */
   var SUPPORT = [
-    { id: 'maps.depth', name: 'Depth map', group: 'On-device AI', needs: NEEDS, wants: ['cache-storage'], memoryMB: 900, downloadMB: 29, note: 'Needs a phone or computer with about 2 GB free. Takes 3 to 12 seconds per photo on a typical device.' },
-    { id: 'maps.face', name: 'Face map', group: 'On-device AI', needs: NEEDS, wants: ['cache-storage'], memoryMB: 450, downloadMB: 7, note: 'Runs in about half a second per face. Face points are computed on this device and never sent anywhere.' },
-    { id: 'maps.faceparts', name: 'Hair and skin detail', group: 'On-device AI', needs: NEEDS, wants: ['cache-storage'], memoryMB: 500, downloadMB: 12, note: 'Optional add-on to the face map.' }
+    { id: 'maps.depth', name: 'Depth map', group: 'On-device AI', needs: NEEDS, wants: ['cache-storage'], memoryMB: 450, downloadMB: 19, note: 'Needs about 450 MB while it runs. About 1 to 3 seconds per photo on a computer, 3 to 12 on a phone.' },
+    { id: 'maps.face', name: 'Face map', group: 'On-device AI', needs: NEEDS, wants: ['cache-storage'], memoryMB: 400, downloadMB: 7, note: 'About half a second per face on a computer. Face points are computed on this device and never sent anywhere.' },
+    { id: 'maps.faceparts', name: 'Hair and skin detail', group: 'On-device AI', needs: NEEDS, wants: ['cache-storage'], memoryMB: 400, downloadMB: 9, note: 'Optional add-on to the face map.' }
   ];
   (function declare() {
     var defs = global.LE_SUPPORT_DEFS = global.LE_SUPPORT_DEFS || [];
@@ -234,10 +234,14 @@
     } finally { if (signal) signal.removeEventListener('abort', onAbort); }
   }
 
+  /* An ImageBitmap of the source, scaled so its long side is at most maxSide (0 = as is). Scaling goes through a canvas, not
+     createImageBitmap's resize options, because Safari ignores those. */
   async function bitmapOf(src, maxSide) {
     var s = srcSize(src), k = maxSide && Math.max(s.w, s.h) > maxSide ? maxSide / Math.max(s.w, s.h) : 1;
     if (k === 1) return createImageBitmap(src);
-    return createImageBitmap(src, { resizeWidth: Math.max(1, Math.round(s.w * k)), resizeHeight: Math.max(1, Math.round(s.h * k)), resizeQuality: 'high' });
+    var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(s.w * k)); c.height = Math.max(1, Math.round(s.h * k));
+    var x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, c.width, c.height);
+    return createImageBitmap(c);
   }
 
   /* ================================================================ depth ================================================================ */
@@ -442,9 +446,10 @@
     x.fill(path, p.rule || 'nonzero');
     if (part === 'skin' && f.maps && f.maps.skin && o.segmentation !== false) {
       /* Intersect with the segmenter's face-skin class (removes hair at the hairline, glasses frames and most of a beard). */
-      x.globalCompositeOperation = 'destination-in'; x.imageSmoothingQuality = 'high';
-      x.drawImage(f.maps.skin, 0, 0, w, h);
-      x.globalCompositeOperation = 'source-over';
+      /* Guard: if the segmenter keeps under 35 % of the polygon it has failed on this face (seen on two of 56 test faces), so use the polygon alone. */
+      var before = alphaCount(c), keep = document.createElement('canvas'); keep.width = w; keep.height = h;
+      var kx = keep.getContext('2d'); kx.drawImage(c, 0, 0); kx.globalCompositeOperation = 'destination-in'; kx.imageSmoothingQuality = 'high'; kx.drawImage(f.maps.skin, 0, 0, w, h);
+      if (before && alphaCount(keep) / before >= 0.35) { c = keep; x = c.getContext('2d'); }
     }
     if (part === 'teeth' && o.image) {
       var t = teethAlpha(c, o.image, w, h); c = t;
@@ -455,6 +460,7 @@
     }
     return c;
   }
+  function alphaCount(c) { var d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, n = 0; for (var i = 3; i < d.length; i += 4) if (d[i] > 128) n++; return n; }
   /* Inside the inner-mouth polygon keep pixels that are light and low in colour: a pixel test, but only ever inside a landmark polygon. */
   function teethAlpha(poly, image, w, h) {
     var s = document.createElement('canvas'); s.width = w; s.height = h;
