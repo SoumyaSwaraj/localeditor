@@ -23,10 +23,10 @@
     section: function (c, body) {
       if (!c || !c.ui || !c.ui.section || !c.ui.seg) return;
       var s = c.ui.section('Canvas surround');
-      s.querySelector('.sx-sec-body').appendChild(c.ui.seg([['auto', 'Theme'], ['light', 'Light'], ['mid', 'Mid grey'], ['dark', 'Dark']], LEX.surround.get(), function (v) { LEX.surround.set(v); if (c.renderPanel) c.renderPanel(true); }));
+      s.querySelector('.sx-sec-body').appendChild(c.ui.seg([['auto', 'Auto'], ['light', 'Light'], ['mid', 'Mid grey'], ['dark', 'Dark']], LEX.surround.get(), function (v) { LEX.surround.set(v); if (c.renderPanel) c.renderPanel(true); }));
       var p = document.createElement('p');
       p.className = 'sx-note';
-      p.textContent = 'The grey around your page. Mid grey is the fairest for judging colour.';
+      p.textContent = 'The grey around your page. Auto follows the theme, and uses mid grey in Expert, the fairest for judging colour.';
       s.querySelector('.sx-sec-body').appendChild(p);
       body.appendChild(s);
     }

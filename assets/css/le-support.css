@@ -72,7 +72,7 @@
 .ls-copylink { justify-self: start; }
 .ls-force-note { margin: 0; color: var(--ls-muted); font-size: 13.5px; }
 .ls-remember { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; color: var(--ls-ink); cursor: pointer; }
-.ls-remember input { width: 20px; height: 20px; margin: 0; accent-color: var(--amethyst, var(--primary)); flex: none; }
+.ls-remember input { width: 20px; height: 20px; margin: 0; accent-color: var(--primary); flex: none; }
 .ls-remember input:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .ls-gate .lp-actions { margin-top: 12px; }
 

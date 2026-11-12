@@ -110,7 +110,7 @@
     else { who = 'Agent mode is on'; sub = a.ended && a.ended.reason === 'reload' ? 'The session with ' + a.ended.name + ' ended when the page reloaded. Its changes are saved.' : a.ended && a.ended.name ? 'Session with ' + a.ended.name + ' ended' + (a.ended.summary ? ': ' + a.ended.summary : '.') : 'Waiting for an assistant. Nothing is uploaded.'; }
     var speed = a.speed;
     var feedN = I.feed().length;
-    var color = s ? s.color : '#7457F0';
+    var color = s ? s.color : '#B3510B';
     EL.bar.className = 'sxa-bar ' + tone + (STATE.more ? ' is-more' : '');
     EL.bar.style.setProperty('--sxa-agent', color);
     EL.bar.innerHTML =
@@ -342,8 +342,8 @@
     var pageIdx = job.afterActive;
     var items = job.diff.items.filter(function (it) { return it.id && it.page === pageIdx; });
     var bgChanged = job.diff.background.indexOf(pageIdx) >= 0 || job.diff.resized.indexOf(pageIdx) >= 0;
-    EL.pointer.style.setProperty('--sxa-agent', s.color || '#2F6BFF');
-    EL.fx.style.setProperty('--sxa-agent', s.color || '#2F6BFF');
+    EL.pointer.style.setProperty('--sxa-agent', s.color || '#B3510B');
+    EL.fx.style.setProperty('--sxa-agent', s.color || '#B3510B');
     EL.pointer.querySelector('.sxa-pointer-name').textContent = s.name || job.entry.agent || 'Link';
     announce((s.name || 'The assistant') + ': ' + job.entry.summary);
     if (speed === 'instant' || reduced() && speed !== 'slow') {

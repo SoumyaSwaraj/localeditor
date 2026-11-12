@@ -42,7 +42,7 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
   width: 100%; height: 44px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--ink);
   padding: 0 16px 0 40px; font: 500 15px var(--font);
 }
-.rx-search input:focus { outline: none; border-color: var(--amethyst, var(--primary)); box-shadow: 0 0 0 3px var(--accent-soft, rgba(63, 103, 217, 0.12)); }
+.rx-search input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--accent-soft, rgba(63, 103, 217, 0.12)); }
 .rx-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 6px; margin: 0 -2px 8px; }
 .rx-chips::-webkit-scrollbar { display: none; }
 .rx-chip {
@@ -179,7 +179,7 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
 .rx-strength { display: grid; gap: 6px; padding: 12px 14px; border-radius: 16px; background: var(--surface-2); }
 .rx-strength-row { display: flex; justify-content: space-between; font-weight: 650; font-size: 14px; }
 .rx-strength output { font-variant-numeric: tabular-nums; color: var(--muted); }
-.rx-strength input[type="range"] { width: 100%; accent-color: var(--amethyst, var(--primary)); height: 28px; }
+.rx-strength input[type="range"] { width: 100%; accent-color: var(--primary); height: 28px; }
 .rx-d-main .btn { min-height: 46px; }
 .rx-sharebox { display: grid; gap: 10px; padding: 14px; border-radius: 16px; border: 1px solid var(--border); }
 .rx-sharebox[hidden] { display: none; }
@@ -202,7 +202,7 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
 .rx-json { border-radius: 14px; border: 1px solid var(--border); }
 
 /* Drop overlay */
-.rx-drop { position: fixed; inset: 12px; z-index: 90; display: grid; place-items: center; border-radius: 24px; border: 2px dashed var(--amethyst, var(--primary)); background: color-mix(in srgb, var(--surface) 88%, transparent); pointer-events: none; }
+.rx-drop { position: fixed; inset: 12px; z-index: 90; display: grid; place-items: center; border-radius: 24px; border: 2px dashed var(--primary); background: color-mix(in srgb, var(--surface) 88%, transparent); pointer-events: none; }
 .rx-drop[hidden] { display: none; }
 .rx-drop div { display: grid; gap: 4px; text-align: center; }
 .rx-drop b { font-size: 1.3rem; }

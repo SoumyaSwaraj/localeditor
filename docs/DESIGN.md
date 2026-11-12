@@ -37,8 +37,8 @@ Primitives are generated in OKLCH (`docs/research/interface-psychology.md` expla
 | `--surface-2` | `#F5F5F5` | `#262626` | Inset areas, chips, icon tiles, hover |
 | `--surface-3` | `#EBEBEB` | `#2E2E2E` | Tracks, deeper insets |
 | `--ink` / `--text` | `#141414` | `#EDEDED` | Headings, body, icons (18:1 / 15:1) |
-| `--muted` | `#525252` | `#ABABAB` | Secondary text (7.8:1 / 8.3:1) |
-| `--faint` | `#6C6C6C` | `#8F8F8F` | Meta, counts (≥ 4.6:1 on every surface) |
+| `--muted` | `#525252` | `#BDBDBD` | Secondary text (7.8:1 / 10:1; APCA Lc 81 / 64) |
+| `--faint` | `#6C6C6C` | `#A3A3A3` | Meta, counts (≥ 4.6:1 on every surface; dark APCA Lc ≥ 49) |
 | `--line` | black 8 % | white 9 % | Hairlines, card borders |
 | `--border` / `--border-hover` | `#E3E3E3` / `#C1C1C1` | `#333333` / `#4D4D4D` | Field and button borders |
 | `--border-strong` | `#8A8A8A` | `#808080` | Edges that must be seen (3:1) |

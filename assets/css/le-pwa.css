@@ -9,7 +9,7 @@
   --lp-soft: var(--surface-2, #F1F1F1);
   --lp-gold: var(--gold, var(--primary));
   --lp-foil: var(--foil, var(--primary));
-  --lp-on: var(--amethyst, var(--primary));
+  --lp-on: var(--primary);
   --lp-accent: var(--accent, var(--primary-active));
   --lp-focus: var(--focus-ring);
   --lp-gold-ink: var(--on-primary);
