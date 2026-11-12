@@ -12,21 +12,22 @@ Kept by the lead architect. Things reported by the team that are not yet assigne
 - **QA-010** Convert to PDF turns Word, Markdown, HTML and PowerPoint into page pictures with no text layer. Belongs with the next PDF wave.
 - **PDF wave, second half:** D11 saved form details, D14 compare versions, D15 bundle builder, D16 stamps and comment summary, D17 invoice maker, D18 tables to spreadsheet, D19 saved PDF workflows, D20 fingerprint receipt. D21 to D26 (teacher kit) are not requested yet.
 - **Makers, second and third sets** (M2, M3) start when the framework merges.
-- **Device support follow-ups:** when the browser table says the current browser supports something but the live test fails, say "update this browser" instead of suggesting sibling browsers on the same engine; register `/device-check/` in generated lists and the precache; each feature owner wraps its start in `LE.support.gate` and reports success or failure.
-- **Version history limit.** `LE.project` prunes versions to its own count; the storage manager's "versions kept" setting cannot raise it. Needs `LE.project.setKeepCount`.
+- **Device support follow-ups:** register `/device-check/` in generated lists and the precache (site-data pass). Done at integration: "update this browser" suggestions; gates and success/failure reports for large photos, multi-page PDF export, batch, big collages, eyedropper, stock offline, PDF studio open/convert, share and copy. Not wired: the eyedropper in `le-studio-color.js` and `le-pdf-studio-color.js` (owners' files), replay recording, makers.
+- ~~**Version history limit.**~~ Done: `LE.project.setKeepCount`, fed by the storage manager's "versions kept".
 - **Background studio:** detach is approximate for blurred, dimmed or tiled backgrounds; rotation is 90° steps only; old `bgPhotos` code in the colour module is unreachable and can be deleted; pattern backgrounds could be stored as tiles instead of full-page bitmaps.
 - **Collage:** catalogue templates are not tunable with the builder sliders; flipped slots pan mirrored; the index grew to 66 KB.
 - **Recipes:** resize, border and text steps only run on export or batch, not live in the studio.
 - **Local languages and scripts.** The font library is Latin only.
 
 ## Reported by wave 2 (12 November 2026)
-- **Format:** add `carousel`, `maker`, `redact` and `cutout` to `.ledesign.json` and the JSON Schema. Page ids are matched by position and go wrong after a page is deleted or reordered. The schema was hand-checked only.
+- ~~**Format:**~~ Done at integration: `carousel`, `maker`, `redact`, `cutout` in `.ledesign.json`, the schema and the docs; page ids live on the page. The schema is still not run through a JSON Schema validator (none is vendored); a test checks every key the studio writes for these fields is in it.
 - **PDF fonts (existing bug):** the vendored fontkit subsets the Inter WOFF wrongly (only some glyphs appear) and throws on IBM Plex Mono, so PDF studio exports using Inter are probably broken and Bates numbering falls back to a standard font.
 - **PDF studio deep links:** `pdf-studio/?panel=X` is parsed but nothing opens the panel, so feature pages cannot launch a PDF tool directly.
 - **PDF studio rail on phones:** eight tabs now; Export is partly off-screen at 360 px.
 - **PDF security:** scrub, redact and make-safe refuse encrypted files until they are unlocked first (unlock now exists in the bulk tools; wire the two together). The older Edit → Redact tool still rasterises without a verify pass; point it at Protect.
 - **PDF passwords:** not verified in Adobe Reader, macOS Preview or Chrome's viewer. 200 protected files take about 45 s on desktop.
-- **Studio:** `brand` has no `?tool=` deep link. The `toolbar-add` hook lets only one module append. Layer shadows ignore zoom and export scale (wrong size at anything but 1×). Collage should never place mask images (`background-*` names) into slots.
+- **Studio:** `brand` has no `?tool=` deep link. Done at integration: `toolbar-add` concatenates every module; layer shadows scale with zoom and export scale; `ctx.isUserPhoto` keeps masks out of collage pickers (the cut-out module's own `photoIds` still uses its name test).
+- **Site data:** `photo-privacy` is a live tool in `scripts/build.js` but `soon` in `assets/data/site.json`; `tests/pages.test.js` has a `KNOWN-BUG:` case that passes once it is flipped.
 - **Export:** wide carousels on phones are split in bands, so a photo or gradient background can show a seam. The replay timeline is session-only.
 - **Redact:** "Apply permanently" does not cover photo backgrounds; version history may still hold the original photo.
 - **Makers:** style chips have no previews; story sizes leave empty space in a few styles.
