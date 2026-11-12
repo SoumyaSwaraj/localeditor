@@ -40,7 +40,7 @@
     thumb: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M10 9.5v5l4.5-2.5z"/>'
   };
 
-  var ST = { model: lsGet(MODEL_KEY, null), rec: null, engineMissing: true, run: null, error: null, last: null, checks: {}, cached: {}, unloadT: 0 };
+  var ST = { model: lsGet(MODEL_KEY, null), rec: null, engineMissing: true, run: null, error: null, last: null, checks: {}, cached: {}, avail: {}, gpuEngine: false, confirm: null, proP: null, next: null, improve: null, prefetching: null, unloadT: 0 };
   var BR = null;
 
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
@@ -103,18 +103,19 @@
   function errorCopy(code) {
     return ({
       'no-subject': ['No clear subject found', 'This works best with one person, pet or object that stands out from the background. Nothing was changed. You can cut it out by hand with the brush.'],
-      memory: ['Not enough memory', 'This device ran out of memory, even after trying a smaller size. Close other tabs or apps and try again, or use the Fast model.'],
+      memory: ['Not enough memory', 'This device ran out of memory, even after trying a smaller size. Nothing was changed. Close other tabs or apps and try again, or use Quick.'],
+      quota: ['Not enough free space', 'This download needs more free space than this device has right now. Nothing was downloaded. Free up some space, or use Quick, which is small.'],
       offline: ['You are offline', 'The background remover has not been downloaded on this device yet. Connect once to download it; after that it works offline.'],
       download: ['Download did not finish', 'The model could not be downloaded. Check your connection and try again.'],
       unsupported: ['Not supported in this browser', 'This browser cannot run the background remover.'],
-      engine: ['The cut-out stopped', 'Something went wrong while removing the background. Nothing was changed.']
+      engine: ['The cut-out stopped', 'Something went wrong while removing the background. Nothing was changed. A smaller option, such as Quick, may still work here.']
     })[code] || ['The cut-out stopped', 'Something went wrong. Nothing was changed.'];
   }
   function stageText(p) {
     if (!p) return 'Getting ready…';
     if (p.stage === 'running') return 'Finding the subject…';
     if (p.stage === 'starting' || p.cached) return 'Getting ready…';
-    if (p.total) return 'Downloading · ' + Math.max(0, Math.round((p.loaded || 0) / 1e6)) + ' of ' + Math.max(1, Math.round(p.total / 1e6)) + ' MB';
+    if (p.total) return 'Getting ready · ' + Math.min(99, Math.max(0, Math.round(100 * (p.loaded || 0) / p.total))) + '%';
     return 'Getting ready…';
   }
   function run(c, layerId, opts) {
@@ -126,7 +127,44 @@
     if (!mem || !mem.canvas) { c.toast('This photo is still loading.'); return Promise.resolve(null); }
     if (ST.run) return Promise.resolve(null);
     if (BR) endRefine(c, true);
-    var model = opts.model || chosen();
+    var model = opts.model || ST.model || null;
+    /* Download policy (docs/DOWNLOADS.md): pick quality first, download quietly when the policy allows, ask once otherwise.
+       Without an explicit choice, the automatic pick is the best option this device runs well that is on the device or
+       within the automatic limit; a better one that is not here yet is fetched in the background for next time. */
+    if (!opts.confirmed) {
+      return remover().then(function (bg) {
+        return survey(function () {}).then(function () {   /* fresh device checks and what is on the device now */
+          var pk = model ? { now: model, next: null } : autoPick(bg);
+          model = pk.now;
+          var m = bg.model(model);
+          var go = function () { return run(c, l.id, Object.assign({}, opts, { model: model, confirmed: true, auto: !!opts.auto || (!opts.model && !ST.model), next: pk.next })); };
+          if (!m) return go();
+          return bg.isCached(model).then(function (have) {
+            if (have) return go();
+            return bg.space(model).then(function (room) {
+              if (!room.ok) {
+                var qe = new Error('There is not enough free space on this device for this download.'); qe.name = 'QuotaExceededError';
+                if (window.LEPwa && LEPwa.reportQuotaError) { try { LEPwa.reportQuotaError(qe); } catch (x) { /* ignore */ } }
+                ST.confirm = null;
+                ST.error = { layerId: l.id, model: model, code: 'quota', message: qe.message };
+                if (c.S.panel !== 'cutout') c.openPanel('cutout'); else refresh(c);
+                return null;
+              }
+              return allowDownload(m, 'Remove a photo background').then(function (d) {
+                if (d === 'go') return go();
+                if (d === 'ask') {
+                  ST.error = null;
+                  ST.confirm = { layerId: l.id, model: model, force: opts.force };
+                  if (c.S.panel !== 'cutout') c.openPanel('cutout'); else refresh(c);
+                } else if (!opts.quiet) c.toast('Not downloaded. Nothing changed.');
+                return null;
+              });
+            });
+          });
+        });
+      });
+    }
+    ST.confirm = null;
     clearTimeout(ST.unloadT);
     ST.error = null;
     var ac = new AbortController();
@@ -145,14 +183,27 @@
             model: model, signal: ac.signal,
             onProgress: function (p) {
               job.stage = stageText(p, info);
+              if (p.total && !p.cached && !p.stage) { job.tracker = job.tracker || track(info); if (job.tracker) job.tracker.progress(p.loaded || 0); }
               job.indeterminate = p.stage === 'running' || p.stage === 'starting' || p.cached;
               job.fraction = p.fraction || 0;
+              if (p.stage === 'running' && info && info.speed === 'slow') job.stage += ' This can take a minute.';
               paintProgress();
             }
+          }).catch(function (e) {
+            /* Not a fault of this device: hand it back without letting the support gate record a failure. */
+            if (e && (e.name === 'AbortError' || /^(cancelled|offline|download|quota|no-subject)$/.test(e.code || ''))) return { failed: e };
+            bg.unload();   /* engine or memory failure: end the worker now so its memory is released */
+            throw e;
           });
         }
       });
     }).then(function (res) {
+      if (job.tracker) { if (res && res.failed) job.tracker.fail(res.failed); else job.tracker.done(); job.tracker = null; }
+      if (res && res.failed) throw res.failed;
+      if (ran && res && res.mask && LE.support && LE.support.reportSuccess && LE.bgRemove) {
+        var sm = LE.bgRemove.model(model);
+        if (sm) LE.support.reportSuccess(sm.supportId);
+      }
       if (!ran || !res || !res.mask) { ST.run = null; refresh(c); return null; }
       var cur = c.L(job.layerId);
       if (!cur || cur.src !== job.src) { ST.run = null; refresh(c); return null; }
@@ -162,7 +213,8 @@
         if (!now) { refresh(c); return null; }
         c.patch(job.layerId, { cutout: cutoutSpec({ outline: (now.cutout && now.cutout.outline) || null, feather: (now.cutout && now.cutout.feather) || 0 }, { asset: assetId, enabled: true, model: model, refine: 'guided' }) });
         ST.last = { model: model, coverage: res.coverage, wallMs: Math.round(performance.now() - job.t0), inferMs: Math.round(res.timings.inferMs || 0), maxSide: res.maxSide, size: [res.width, res.height], retried: res.retried };
-        if (opts.model) { ST.model = model; lsSet(MODEL_KEY, model); }
+        if (opts.model && !opts.auto) { ST.model = model; lsSet(MODEL_KEY, model); }
+        if (opts.next && opts.next !== model) prefetch(c, opts.next, job.layerId);
         scheduleUnload(90000);
         refresh(c);
         if (!opts.quiet) c.toast('Background removed', { action: { label: 'Undo', fn: function () { c.scene.undo(); } } });
@@ -170,11 +222,14 @@
       });
     }).catch(function (err) {
       ST.run = null;
+      if (job.tracker) { job.tracker.fail(err); job.tracker = null; }
       scheduleUnload(30000);
       if (err && (err.name === 'AbortError' || err.code === 'cancelled')) {
         if (!opts.quiet) c.toast('Cancelled. Nothing changed.');
       } else {
         ST.error = { layerId: job.layerId, model: model, code: (err && err.code) || 'engine', message: (err && err.message) || '', coverage: err && err.coverage };
+        /* LE.support.gate records failures of the run itself; without LE.support on the page, nothing to record. */
+        if (!LE.support && LE.bgRemove) LE.bgRemove.unload();
       }
       refresh(c);
       return null;
@@ -223,119 +278,312 @@
   }
 
   /* ---------- panel ---------- */
-  /* ---------- the option chooser (plain words; built from the LE.bgRemove registry only) ---------- */
+
+  /* ---------- download policy (docs/DOWNLOADS.md), through LE.downloads when it is on the page ---------- */
+  var AUTO_LIMIT = 60e6, METERED_LIMIT = 5e6, ASKED_KEY = 'le-cutout-asked';
+  function dl() { return LE.downloads && typeof LE.downloads.request === 'function' ? LE.downloads : null; }
+  function metered() {
+    var cn = navigator.connection;
+    return !!(cn && (cn.saveData || cn.type === 'cellular' || /(^|-)2g$|^3g$/.test(cn.effectiveType || '')));
+  }
+  function remember(id) { var a = lsGet(ASKED_KEY, {}); a[id] = true; lsSet(ASKED_KEY, a); }
+  function bytesOf(m) { return m.bytes || (m.downloadMB || 0) * 1e6; }
+  /* 'go' (download now, quietly), 'ask' (show the one question), or 'no' (the shared manager said no). */
+  function allowDownload(m, reason) {
+    var d = dl();
+    if (d) {
+      return Promise.resolve(d.request({ id: m.id, name: plainName(m), bytes: bytesOf(m), kind: 'model', reason: reason }))
+        .then(function (r) { return r && r.ok ? 'go' : 'no'; }, function () { return 'no'; });
+    }
+    if (lsGet(ASKED_KEY, {})[m.id]) return Promise.resolve('go');
+    return Promise.resolve(bytesOf(m) <= (metered() ? METERED_LIMIT : AUTO_LIMIT) ? 'go' : 'ask');
+  }
+  /* Background fetches for next time happen only when no question would be needed. */
+  function silentOk(m) {
+    var d = dl();
+    if (d && typeof d.mode === 'function' && d.mode() !== 'auto') return false;
+    return bytesOf(m) <= (metered() ? METERED_LIMIT : AUTO_LIMIT);
+  }
+  function track(m) {
+    var d = dl();
+    if (!d || typeof d.track !== 'function' || !m) return null;
+    try { return d.track(m.id, { name: plainName(m), bytes: bytesOf(m) }); } catch (e) { return null; }
+  }
+  function plainName(m) { return 'Background remover: ' + (m.tier === 'pro' || m.id === 'u2netp' ? displayName(m) : m.label).toLowerCase(); }
+  function speedRank(m) { return m.speed === 'fast' ? 3 : m.speed === 'medium' ? 2 : 1; }
+  /* Quality first, then speed: { now, next }. Options this device runs well (LE.support "ok"), general subjects only;
+     above the automatic limit only when already on the device (never fetched silently). */
+  function autoPick(bg) {
+    var list = bg.models().filter(function (m) {
+      var r = ST.checks[m.id];
+      return m.listed && m.subject !== 'people' && r && r.status === 'ok' && ST.avail[m.id] !== false && (ST.cached[m.id] || silentOk(m));
+    });
+    var opts = list.map(function (m) { return { id: m.id, quality: levelRank(m) * 100 + (m.rank || 0), speed: speedRank(m), bytes: bytesOf(m), supportId: m.supportId, cached: !!ST.cached[m.id] }; });
+    var d = LE.downloads && typeof LE.downloads.pick === 'function' ? LE.downloads : null;
+    if (d) {
+      try {
+        var r = d.pick(opts);
+        var now = r && (typeof r === 'string' ? r : r.now || r.use || r.id), next = r && typeof r === 'object' ? (r.next || r.fetch || null) : null;
+        if (now && typeof now === 'object') now = now.id;
+        if (next && typeof next === 'object') next = next.id;
+        if (now && bg.model(now)) return { now: now, next: next && bg.model(next) ? next : null };
+      } catch (e) { /* fall back to the local rule */ }
+    }
+    opts.sort(function (a, b) { return b.quality - a.quality || b.speed - a.speed; });
+    if (!opts.length) return { now: 'u2netp', next: null };
+    var best = opts[0], have = opts.filter(function (o) { return o.cached; })[0];
+    if (best.cached || !have) return { now: best.id, next: null };
+    return { now: have.id, next: best.id };
+  }
+  /* Fetch a better option in the background for next time; when it is here, offer "Improve this cut-out" once. */
+  function prefetch(c, id, layerId) {
+    if (ST.prefetching) return;
+    remover().then(function (bg) {
+      var m = bg.model(id);
+      if (!m || !silentOk(m) || typeof bg.prefetch !== 'function') return null;
+      ST.prefetching = id;
+      var t = track(m);
+      return bg.prefetch(id, function (p) { if (t && p.total && !p.cached) t.progress(p.loaded || 0); }).then(function () {
+        if (t) t.done();
+        ST.cached[id] = true;
+        ST.improve = { layerId: layerId, model: id };
+        ST.prefetching = null;
+        refresh(c);
+      }, function (e) { if (t) t.fail(e); ST.prefetching = null; });
+    }).catch(function () { ST.prefetching = null; });
+  }
+
+  /* ---------- the option chooser (plain words; built from the LE.bgRemove registry only) ----------
+   * One decision at most. The panel pre-selects the option recommended for this device; "Other quality options" shows a
+   * three-step ladder (Quick, Better, Best) where each step is the best option this device can run for that quality,
+   * then "More choices" (the other options that run here), "Needs a more powerful device" and "Not on this copy of the app"
+   * folded away. Model names, sizes and licences stay behind "About this option". The large options (tier 'pro',
+   * assets/js/le-bgremove-pro.js) are loaded only once "Other quality options" is opened. */
+  var LEVELS = [['quick', 'Quick', 1], ['better', 'Better', 2], ['best', 'Best', 3]];
   function chosen() { return ST.model || ST.rec || 'u2netp'; }
+  function levelOf(m) { return m.level || (m.quality >= 3 && m.subject !== 'people' ? 'best' : m.quality >= 2 ? 'better' : 'quick'); }
+  function levelRank(m) { var l = levelOf(m); return l === 'best' ? 3 : l === 'better' ? 2 : 1; }
+  function loadPro() {
+    if (LE.bgRemovePro) return Promise.resolve(true);
+    if (!ST.proP) ST.proP = LE.lazy(ROOT + 'assets/js/le-bgremove-pro.js').then(function () { return !!LE.bgRemovePro; }, function () { ST.proP = null; return false; });
+    return ST.proP;
+  }
   function deviceWord(c) { return c.isPhone() ? 'phone' : (LE.device && LE.device.tier && LE.device.tier() === 'desktop') ? 'computer' : 'device'; }
   function verdict(c, r) {
     if (!r) return ['', ''];
     var d = deviceWord(c);
     if (r.status === 'ok') return ['ok', 'Works well on this ' + d];
     if (r.status === 'limited') return ['warn', 'May be slow on this ' + d];
-    if (r.status === 'unsupported') return ['err', /memory|RAM|GB|computer/i.test((r.reasons || []).join(' ')) ? 'Needs a computer' : 'Not supported in this browser'];
+    if (r.status === 'unknown') return ['warn', 'Might work on this ' + d];
+    if (r.status === 'unsupported') return ['err', 'Not supported in this browser'];
     return ['', ''];
   }
-  /* Whole MB the first use downloads: the option itself plus the shared engine (about 2.9 MB compressed) when missing. */
-  function mbOf(m, engineMissing) { return Math.max(1, Math.round(((m.bytes || (m.downloadMB || 0) * 1e6) + (engineMissing ? 2.9e6 : 0)) / 1e6)); }
-  function dlLine(m, engineMissing, ready) {
-    if (ready) return 'Ready on this device';
-    var n = mbOf(m, engineMissing);
-    return (n < 15 ? 'Small download' : 'Larger download') + ' · ' + n + ' MB, one time';
+  /* Whole MB the first use downloads: the option itself plus its engine when missing. */
+  function mbOf(m, engineMissing) {
+    var engine = engineMissing ? (m.runtime === 'webgpu' ? 7.2e6 : 2.9e6) : 0;
+    return Math.max(1, Math.round(((m.bytes || (m.downloadMB || 0) * 1e6) + engine) / 1e6));
   }
-  function meter(m) {
-    var max = m.qualityMax === 5 ? 5 : 3, q = Math.max(1, Math.min(max, m.quality || 1)), dots = '';
-    for (var i = 1; i <= max; i++) dots += '<i' + (i <= q ? ' class="on"' : '') + '></i>';
-    return '<span class="sxc-q" role="img" aria-label="Quality: ' + m.qualityLabel + '"><span class="sxc-dots" aria-hidden="true">' + dots + '</span>' + m.qualityLabel + '</span>';
+  function engineMissing(m) { return m.runtime === 'webgpu' ? !ST.gpuEngine : ST.engineMissing; }
+  function isLarge(m) { return (m.bytes || (m.downloadMB || 0) * 1e6) > 60e6; }
+  /* One friendly line: what will be downloaded, and why it is fine. */
+  function dlLine(m, ready) {
+    if (ready) return 'Ready · on this device, works offline';
+    var n = mbOf(m, engineMissing(m));
+    if (isLarge(m)) return 'Large one-time download (about ' + n + ' MB). Best on Wi-Fi. Stays on this device and works offline.';
+    return (n < 15 ? 'Small one-time' : 'One-time') + ' download (about ' + n + ' MB). Stays on this device and works offline.';
   }
-  /* Checks, cache state and the recommendation, then fn(models, bg). */
-  function survey(fn) {
+  function meter(m, dotsOnly) {
+    var q = levelRank(m), name = LEVELS[q - 1][1], dots = '';
+    for (var i = 1; i <= 3; i++) dots += '<i' + (i <= q ? ' class="on"' : '') + '></i>';
+    return '<span class="sxc-q" role="img" aria-label="Quality: ' + name + '"><span class="sxc-dots" aria-hidden="true">' + dots + '</span>' + (dotsOnly ? '' : name + ' quality') + '</span>';
+  }
+  function runsHere(m) {
+    var r = ST.checks[m.id];
+    if (ST.avail[m.id] === false) return false;
+    if (!r) return m.tier !== 'pro';
+    /* Large options: "may be slow" is fine on a computer; on a phone it is folded away (with "Try anyway"). */
+    if (m.tier === 'pro') return r.status === 'ok' || (r.status === 'limited' && !(studio && studio.isPhone()));
+    return r.status !== 'unsupported';
+  }
+  /* Ladder, more choices, folded groups. */
+  function arrange(list) {
+    var used = {}, ladder = [];
+    LEVELS.forEach(function (L) {
+      var c = list.filter(function (m) { return levelOf(m) === L[0] && m.subject !== 'people' && runsHere(m); })
+        .sort(function (a, b) {
+          /* The option in use (chosen or automatic) stands for its step; then the best one this device can run. */
+          var pa = a.id === chosen() ? 2 : a.id === ST.rec ? 1 : 0, pb = b.id === chosen() ? 2 : b.id === ST.rec ? 1 : 0;
+          return pb - pa || (b.rank || 0) - (a.rank || 0) || a.downloadMB - b.downloadMB;
+        });
+      if (c.length) { ladder.push({ level: L[0], name: L[1], m: c[0] }); used[c[0].id] = 1; }
+    });
+    return {
+      ladder: ladder,
+      more: list.filter(function (m) { return !used[m.id] && runsHere(m); }),
+      weak: list.filter(function (m) { return !runsHere(m) && ST.avail[m.id] !== false; }),
+      missing: list.filter(function (m) { return ST.avail[m.id] === false; })
+    };
+  }
+  /* Checks, cache state and the recommendation, then fn(models, bg). withPro: also load and check the large options. */
+  function survey(fn, withPro) {
     return remover().then(function (bg) {
-      var list = bg.models().filter(function (m) { return m.listed; });
-      return Promise.all(list.map(function (m) {
-        return Promise.all([bg.support(m.id), bg.isCached(m.id)]).then(function (r) { ST.checks[m.id] = r[0]; ST.cached[m.id] = r[1]; });
-      })).then(function () { return bg.downloadSize(list[0].id); }).then(function (size) {
-        var st = {};
-        list.forEach(function (m) { st[m.id] = ST.checks[m.id] && ST.checks[m.id].status; });
-        ST.rec = bg.recommend({ checks: st, cached: ST.cached, people: false });
-        ST.engineMissing = !!size.engine;
-        if (ST.model && !list.some(function (m) { return m.id === ST.model; })) ST.model = null;
-        fn(list, bg);
+      /* A large option chosen in an earlier visit: its definitions are needed again (no model bytes are fetched here). */
+      if (ST.model && !bg.model(ST.model)) withPro = true;
+      return (withPro ? Promise.resolve([]) : bg.cachedModels().catch(function () { return []; })).then(function (have) {
+        if (have.some(function (x) { return x.id && !bg.model(x.id); })) withPro = true;
+        return withPro ? loadPro() : false;
+      }).then(function () {
+        var list = bg.models().filter(function (m) { return m.listed && (withPro || m.tier !== 'pro'); });
+        return Promise.all(list.map(function (m) {
+          var chk = m.tier === 'pro' && LE.bgRemovePro ? LE.bgRemovePro.check(m.id) : bg.support(m.id);
+          return Promise.all([chk, bg.isCached(m.id)]).then(function (r) {
+            ST.checks[m.id] = r[0]; ST.cached[m.id] = r[1];
+            ST.avail[m.id] = r[0] && r[0].available === false ? false : true;
+          });
+        })).then(function () {
+          var gpuOne = list.filter(function (m) { return m.runtime === 'webgpu'; })[0];
+          return Promise.all([bg.downloadSize(list[0].id), gpuOne ? bg.downloadSize(gpuOne.id) : null]);
+        }).then(function (sizes) {
+          var st = {};
+          list.forEach(function (m) { st[m.id] = ST.checks[m.id] && ST.checks[m.id].status; });
+          var pk = autoPick(bg);
+          ST.rec = pk.now; ST.next = pk.next;
+          ST.engineMissing = !!sizes[0].engine;
+          ST.gpuEngine = sizes[1] ? !sizes[1].engine : ST.gpuEngine;
+          if (ST.model && !bg.model(ST.model)) ST.model = null;
+          fn(list, bg);
+        });
       });
     });
   }
+  function about(c, m) {
+    var a = m.about || {}, chk = ST.checks[m.id];
+    return el(c, '<details class="sxc-about"><summary>About this option</summary><dl>' +
+      (a.model ? '<dt>Model</dt><dd>' + c.esc(a.model) + '</dd>' : '') + (a.licence ? '<dt>Licence</dt><dd>' + c.esc(a.licence) + '</dd>' : '') +
+      '<dt>Download</dt><dd>' + (m.bytes ? (m.bytes / 1048576).toFixed(1) + ' MB (' + m.bytes.toLocaleString('en') + ' bytes)' : m.downloadMB + ' MB') + '</dd>' +
+      '<dt>Memory while running</dt><dd>about ' + (m.memoryMB >= 1000 ? (m.memoryMB / 1000).toFixed(1) + ' GB' : m.memoryMB + ' MB') + '</dd>' +
+      '<dt>Engine</dt><dd>' + (m.runtime === 'webgpu' ? 'ONNX Runtime Web 1.31, WebGPU (graphics card)' : 'ONNX Runtime Web, WebAssembly (processor)') + '</dd>' +
+      (a.source ? '<dt>Source</dt><dd>' + c.esc(a.source) + '</dd>' : '') + (a.notes ? '<dt>Notes</dt><dd>' + c.esc(a.notes) + '</dd>' : '') +
+      (chk && chk.reasons && chk.reasons.length ? '<dt>This device</dt><dd>' + c.esc(chk.reasons.join(' ')) + '</dd>' : '') + '</dl></details>');
+  }
+  /* One card. kind: 'ladder' (named by its quality step), 'more' (named by its own label), 'weak', 'missing'. */
+  function card(c, m, kind, name, ctx) {
+    var ready = !!ST.cached[m.id], chk = ST.checks[m.id], v = verdict(c, chk), pick = kind === 'ladder' || kind === 'more';
+    var line = kind === 'missing' ? 'Not available on this copy of the app.' :
+      kind === 'weak' ? weakLine(c, m, chk) : dlLine(m, ready);
+    var node = el(c, '<div class="sxc-opt is-' + kind + '" data-model="' + c.esc(m.id) + '" data-level="' + levelOf(m) + '">' +
+      (pick ? '<button type="button" class="sxc-pick" role="radio" aria-checked="' + (m.id === chosen()) + '">' : '<div class="sxc-pick is-static">') +
+      (m.example ? '<img class="sxc-ex" src="' + c.esc(new URL(m.example, ROOT).href) + '" alt="" width="144" height="70" loading="lazy" decoding="async">' : '<span class="sxc-ex" aria-hidden="true"></span>') +
+      '<span class="sxc-otext"><span class="sxc-ohead"><b>' + c.esc(name) + '</b>' + (kind === 'ladder' ? meter(m, true) : '') + (pick && m.id === ST.rec ? '<span class="sxc-rec">Recommended for this device</span>' : '') + '</span>' +
+      '<span class="sxc-obest">' + c.esc(m.bestFor) + '</span>' +
+      '<span class="sxc-ometa">' + (kind === 'ladder' ? '' : meter(m)) + (pick ? '<span class="sxc-speed">' + c.esc(m.speedLabel) + '</span>' : '') +
+      (pick && v[1] && v[0] !== 'err' ? '<span class="sxc-verdict is-' + v[0] + '">' + c.esc(v[1]) + '</span>' : '') + '</span>' +
+      '<span class="sxc-odl' + (ready && pick ? ' is-ready' : '') + '">' + c.esc(line) + '</span></span>' +
+      (pick ? '</button>' : '</div>') + '<div class="sxc-orow"></div></div>');
+    var row = node.querySelector('.sxc-orow');
+    if (pick) {
+      node.querySelector('.sxc-pick').onclick = function () {
+        ST.model = m.id; lsSet(MODEL_KEY, m.id);
+        ctx.host.querySelectorAll('.sxc-pick[role="radio"]').forEach(function (b) { b.setAttribute('aria-checked', String(b.parentNode === node)); });
+        if (ctx.onPick) ctx.onPick(m);
+      };
+    }
+    if (kind === 'weak' && chk && chk.canForce) {
+      row.appendChild(btn(c, 'Try anyway', null, 'sxc-link', function () { ST.model = m.id; lsSet(MODEL_KEY, m.id); run(c, (c.targetImage() || {}).id, { model: m.id, force: true }); }));
+    }
+    if (ready) {
+      row.appendChild(btn(c, 'Remove from this device', null, 'sxc-link', function () {
+        ctx.bg.remove(m.id).then(function () { ST.cached[m.id] = false; c.toast((kind === 'ladder' ? name + ' quality' : name) + ' removed from this device'); refresh(c); });
+      }));
+    }
+    row.appendChild(about(c, m));
+    return node;
+  }
+  function weakLine(c, m, chk) {
+    var sure = !chk || chk.status === 'unsupported';
+    if (m.runtime === 'webgpu') return sure ? 'Needs a computer with a recent graphics card.' : 'May be too much for this ' + deviceWord(c) + '. Best on a computer with a recent graphics card.';
+    return sure ? 'This browser cannot run it.' : 'May not run well on this ' + deviceWord(c) + '.';
+  }
+  function fold(c, cls, title, items) {
+    var d = el(c, '<details class="sxc-fold ' + cls + '"><summary>' + c.esc(title) + ' <span class="sxc-count">' + items.length + '</span></summary><div class="sxc-foldbody"></div></details>');
+    var b = d.querySelector('.sxc-foldbody');
+    items.forEach(function (n) { b.appendChild(n); });
+    return d;
+  }
   function optionCards(c, host, list, bg, onPick) {
     host.innerHTML = '';
-    list.forEach(function (m) {
-      var ready = !!ST.cached[m.id], v = verdict(c, ST.checks[m.id]), a = m.about || {};
-      var card = el(c, '<div class="sxc-opt" data-model="' + c.esc(m.id) + '"><button type="button" class="sxc-pick" role="radio" aria-checked="' + (m.id === chosen()) + '">' +
-        (m.example ? '<img class="sxc-ex" src="' + c.esc(new URL(m.example, ROOT).href) + '" alt="" width="144" height="70" loading="lazy" decoding="async">' : '') +
-        '<span class="sxc-otext"><span class="sxc-ohead"><b>' + c.esc(m.label) + '</b>' + (m.id === ST.rec ? '<span class="sxc-rec">Recommended for you</span>' : '') + '</span>' +
-        '<span class="sxc-obest">' + c.esc(m.bestFor) + '</span>' +
-        '<span class="sxc-ometa">' + meter(m) + '<span class="sxc-speed">' + c.esc(m.speedLabel) + '</span></span>' +
-        '<span class="sxc-odl' + (ready ? ' is-ready' : '') + '">' + c.esc(dlLine(m, ST.engineMissing, ready)) + '</span>' +
-        (v[1] ? '<span class="sxc-verdict is-' + v[0] + '">' + c.esc(v[1]) + '</span>' : '') + '</span></button>' +
-        '<div class="sxc-orow"></div></div>');
-      var row = card.querySelector('.sxc-orow');
-      card.querySelector('.sxc-pick').onclick = function () {
-        ST.model = m.id; lsSet(MODEL_KEY, m.id);
-        host.querySelectorAll('.sxc-pick').forEach(function (b) { b.setAttribute('aria-checked', String(b.parentNode === card)); });
-        if (onPick) onPick(m);
-      };
-      var chk = ST.checks[m.id];
-      if (chk && chk.status === 'unsupported' && chk.canForce) {
-        row.appendChild(btn(c, 'Try anyway', null, 'sxc-link', function () { ST.model = m.id; lsSet(MODEL_KEY, m.id); run(c, (c.targetImage() || {}).id, { model: m.id, force: true }); }));
-      }
-      if (ready) {
-        row.appendChild(btn(c, 'Remove from this device', null, 'sxc-link', function () {
-          bg.remove(m.id).then(function () { ST.cached[m.id] = false; c.toast(m.label + ' removed from this device'); refresh(c); });
-        }));
-      }
-      var about = el(c, '<details class="sxc-about"><summary>About this option</summary><dl>' +
-        (a.model ? '<dt>Model</dt><dd>' + c.esc(a.model) + '</dd>' : '') + (a.licence ? '<dt>Licence</dt><dd>' + c.esc(a.licence) + '</dd>' : '') +
-        '<dt>Download</dt><dd>' + (m.bytes ? (m.bytes / 1048576).toFixed(1) + ' MB (' + m.bytes.toLocaleString('en') + ' bytes)' : m.downloadMB + ' MB') + '</dd>' +
-        '<dt>Memory while running</dt><dd>about ' + (m.memoryMB >= 1000 ? (m.memoryMB / 1000).toFixed(1) + ' GB' : m.memoryMB + ' MB') + '</dd>' +
-        '<dt>Engine</dt><dd>' + (m.runtime === 'webgpu' ? 'ONNX Runtime Web, WebGPU' : 'ONNX Runtime Web, WebAssembly') + '</dd>' +
-        (a.source ? '<dt>Source</dt><dd>' + c.esc(a.source) + '</dd>' : '') + (a.notes ? '<dt>Notes</dt><dd>' + c.esc(a.notes) + '</dd>' : '') +
-        (chk && chk.reasons && chk.reasons.length ? '<dt>This device</dt><dd>' + c.esc(chk.reasons.join(' ')) + '</dd>' : '') + '</dl></details>');
-      row.appendChild(about);
-      host.appendChild(card);
-    });
+    var g = arrange(list), ctx = { host: host, bg: bg, onPick: onPick };
+    var ladder = el(c, '<div class="sxc-ladder" role="radiogroup" aria-label="Quality"></div>');
+    g.ladder.forEach(function (s) { ladder.appendChild(card(c, s.m, 'ladder', s.name, ctx)); });
+    host.appendChild(ladder);
+    if (g.more.length) {
+      var more = fold(c, 'sxc-morechoices', 'More choices', g.more.map(function (m) { return card(c, m, 'more', m.label, ctx); }));
+      more.querySelector('.sxc-foldbody').setAttribute('role', 'radiogroup');
+      more.querySelector('.sxc-foldbody').setAttribute('aria-label', 'More choices');
+      if (g.more.some(function (m) { return m.id === chosen(); })) more.open = true;
+      host.appendChild(more);
+    }
+    if (g.weak.length) host.appendChild(fold(c, 'sxc-weak', 'Needs a more powerful device', g.weak.map(function (m) { return card(c, m, 'weak', m.label, ctx); })));
+    if (g.missing.length) host.appendChild(fold(c, 'sxc-missing', 'Not available on this copy of the app', g.missing.map(function (m) { return card(c, m, 'missing', m.label, ctx); })));
   }
   function askCopy(c, m, ready) {
     if (ready) return 'Ready on this device. It works offline, and your photo stays on this device.';
-    var n = mbOf(m, ST.engineMissing);
-    return 'This downloads ' + (n < 15 ? 'a small helper' : 'a larger helper') + ' once (' + n + ' MB) and then works offline. Your photo stays on this device.';
+    var n = mbOf(m, engineMissing(m));
+    if (isLarge(m)) return 'Large one-time download (about ' + n + ' MB). Best on Wi-Fi. It stays on this device and then works offline. Your photo is never uploaded.';
+    return 'Downloads ' + (n < 15 ? 'a small helper' : 'a helper') + ' once (about ' + n + ' MB). It stays on this device and works offline. Your photo is never uploaded.';
   }
-  function firstUseNote(c, node, id) {
-    survey(function (list) {
-      if (!node.isConnected) return;
-      var m = list.filter(function (x) { return x.id === (id || chosen()); })[0] || list[0];
-      node.textContent = askCopy(c, m, !!ST.cached[m.id]);
-    }).catch(function () {});
+  function firstUseNote(c, node) {
+    node.textContent = 'Runs on this device; your photo is never uploaded.';
+  }
+  /* Before a large download: ask once, with the plain size line, and check free space first. */
+  function renderConfirm(c, body, img) {
+    var cf = ST.confirm, m = LE.bgRemove && LE.bgRemove.model(cf.model);
+    if (!m) { ST.confirm = null; return false; }
+    var name = displayName(m);
+    var box = el(c, '<div class="sxc-ask sxc-confirm" role="group" aria-label="Download"><h3>Download ' + c.esc(name) + '?</h3><p class="sxc-ask-p">' + c.esc(askCopy(c, m, false)) + '</p>' +
+      '<p class="sx-note">You can cancel at any time; nothing half-finished is kept. Remove it later from this panel or from Storage.</p></div>');
+    box.appendChild(btn(c, 'Download and remove', 'cutout', 'btn btn-gold sx-block sxc-go sxc-confirm-go', function () {
+      ST.confirm = null; remember(m.id); run(c, img.id, { model: m.id, confirmed: true, force: cf.force });
+    }));
+    box.appendChild(btn(c, 'Not now', null, 'btn btn-ghost btn-sm sxc-confirm-no', function () { ST.confirm = null; c.renderPanel(true); }));
+    body.appendChild(box);
+    return true;
+  }
+  function displayName(m) {
+    if (!m) return 'this option';
+    if (m.tier === 'pro' || m.id === 'u2netp') {
+      var g = arrange(LE.bgRemove.models().filter(function (x) { return x.listed && ST.checks[x.id]; }));
+      var s = g.ladder.filter(function (x) { return x.m.id === m.id; })[0];
+      if (s) return s.name + ' quality';
+    }
+    return m.label;
   }
   function renderStart(c, body, img) {
+    if (ST.confirm && ST.confirm.layerId === img.id && renderConfirm(c, body, img)) return;
     var err = ST.error && ST.error.layerId === img.id ? ST.error : null;
     if (err) {
       var copy = errorCopy(err.code);
-      var card = el(c, '<div class="sxc-alert" role="alert"><strong>' + c.esc(copy[0]) + '</strong><p>' + c.esc(err.code === 'unsupported' && err.message ? err.message : copy[1]) + '</p><div class="sxc-alert-act"></div></div>');
-      var act = card.querySelector('.sxc-alert-act');
+      var card0 = el(c, '<div class="sxc-alert" role="alert"><strong>' + c.esc(copy[0]) + '</strong><p>' + c.esc(err.code === 'unsupported' && err.message ? err.message : copy[1]) + '</p><div class="sxc-alert-act"></div></div>');
+      var act = card0.querySelector('.sxc-alert-act');
       if (err.code === 'no-subject') {
         act.appendChild(btn(c, 'Cut out by hand', 'brush', 'btn btn-sm', function () { beginRefine(c, img.id, { manual: true }); }));
         if (err.model !== 'u2net-int8' && ST.checks['u2net-int8'] && ST.checks['u2net-int8'].status === 'ok') act.appendChild(btn(c, 'Try More detail', 'sparkle', 'btn btn-ghost btn-sm', function () { run(c, img.id, { model: 'u2net-int8' }); }));
-      } else if (err.code === 'memory') {
-        act.appendChild(btn(c, 'Try again', 'reset', 'btn btn-sm', function () { run(c, img.id); }));
-        if (err.model !== 'u2netp') act.appendChild(btn(c, 'Use Quick', 'sparkle', 'btn btn-ghost btn-sm', function () { run(c, img.id, { model: 'u2netp' }); }));
+      } else if (err.code === 'memory' || err.code === 'engine') {
+        act.appendChild(btn(c, 'Try again', 'reset', 'btn btn-sm', function () { run(c, img.id, { model: err.model }); }));
+        if (err.model !== 'u2netp') act.appendChild(btn(c, 'Use Quick', 'sparkle', 'btn btn-ghost btn-sm', function () { ST.model = 'u2netp'; lsSet(MODEL_KEY, 'u2netp'); run(c, img.id, { model: 'u2netp' }); }));
+      } else if (err.code === 'quota') {
+        if (window.LEPwa && LEPwa.openStorage) act.appendChild(btn(c, 'See what is stored', null, 'btn btn-sm', function () { LEPwa.openStorage({ free: true }); }));
+        act.appendChild(btn(c, 'Use Quick', 'sparkle', 'btn btn-ghost btn-sm', function () { ST.model = 'u2netp'; lsSet(MODEL_KEY, 'u2netp'); ST.error = null; run(c, img.id, { model: 'u2netp' }); }));
       } else if (err.code !== 'unsupported') {
         act.appendChild(btn(c, 'Try again', 'reset', 'btn btn-sm', function () { run(c, img.id); }));
       }
-      body.appendChild(card);
+      body.appendChild(card0);
     }
-    var ask = el(c, '<div class="sxc-ask"><h3>Remove the background? <span class="sxc-beta">Beta</span></h3><p class="sxc-ask-p sxc-first">Works best with one clear subject.</p></div>');
+    var ask = el(c, '<div class="sxc-ask"><h3>Remove the background? <span class="sxc-beta">Beta</span></h3><p class="sxc-ask-p sxc-first">Works best with one clear subject. It runs on this device; your photo is never uploaded.</p></div>');
     var go = btn(c, 'Remove background', 'cutout', 'btn btn-gold sx-block sxc-go', function () { run(c, img.id); });
     ask.appendChild(go);
     body.appendChild(ask);
-    var other = el(c, '<details class="sxc-other"><summary>Other quality options</summary><div class="sxc-models" role="radiogroup" aria-label="Quality options"><p class="sx-note">Checking this device…</p></div></details>');
-    if (lsGet('le-cutout-other', false)) other.open = true;
-    other.addEventListener('toggle', function () { lsSet('le-cutout-other', other.open); });
+    var other = el(c, '<details class="sxc-other"><summary>Other quality options</summary><div class="sxc-models"><p class="sx-note">Checking this device…</p></div></details>');
     body.appendChild(other);
     var row = el(c, '<div class="sxc-more"></div>');
     row.appendChild(btn(c, 'Cut out by hand', 'brush', 'btn btn-ghost btn-sm', function () { beginRefine(c, img.id, { manual: true }); }));
@@ -343,19 +591,31 @@
     var host = other.querySelector('.sxc-models');
     var p = ask.querySelector('.sxc-ask-p');
     function paint(m) {
-      var ready = !!ST.cached[m.id];
-      p.textContent = askCopy(c, m, ready);
-      go.querySelector('span').textContent = ready ? 'Remove background' : 'Download and remove';
+      p.textContent = 'Works best with one clear subject. It runs on this device; your photo is never uploaded.';
       var v = ST.checks[m.id];
       go.disabled = !!(v && v.status === 'unsupported' && !v.canForce);
     }
-    survey(function (list, bg) {
-      if (!host.isConnected) return;
-      optionCards(c, host, list, bg, paint);
-      paint(list.filter(function (m) { return m.id === chosen(); })[0] || list[0]);
-    }).catch(function () {
-      if (host.isConnected) host.innerHTML = '<p class="sx-note is-warn">The background remover could not load. Check your connection and reopen this panel.</p>';
+    var filled = false, pending = false, again = false;
+    function fill() {
+      pending = true; again = false;
+      survey(function (list, bg) {
+        pending = false;
+        if (!host.isConnected) return;
+        if (again && other.open) { fill(); return; }   /* opened while the first check ran: check again with the large options */
+        filled = other.open;
+        if (other.open) optionCards(c, host, list, bg, paint);
+        paint(bg.model(chosen()) || list[0]);
+      }, other.open).catch(function () {
+        pending = false;
+        if (host.isConnected) host.innerHTML = '<p class="sx-note is-warn">The background remover could not load. Check your connection and reopen this panel.</p>';
+      });
+    }
+    other.addEventListener('toggle', function () {
+      lsSet('le-cutout-other', other.open);
+      if (other.open && !filled) { if (pending) again = true; else fill(); }
     });
+    if (lsGet('le-cutout-other', false)) other.open = true;
+    fill();
   }
   function renderRunning(c, body) {
     var job = ST.run;
@@ -386,15 +646,20 @@
     var tools = el(c, '<div class="sxc-tools"></div>');
     tools.appendChild(btn(c, 'Refine edges', 'brush', 'btn sxc-refine', function () { beginRefine(c, id); }));
     body.appendChild(tools);
+    /* A better option arrived in the background (download policy): offer it once, quietly. */
+    var imp = ST.improve;
+    if (imp && imp.layerId === id && imp.model !== cut.model && ST.cached[imp.model]) {
+      body.appendChild(btn(c, 'Improve this cut-out', 'sparkle', 'btn btn-ghost btn-sm sxc-improve', function () { ST.improve = null; run(c, id, { model: imp.model, auto: true }); }));
+    }
     var others = el(c, '<div class="sxc-retry"></div>');
     body.appendChild(others);
     remover().then(function (bg) {
-      bg.models().filter(function (m) { return m.listed && m.id !== cut.model; }).forEach(function (m) {
+      bg.models().filter(function (m) { return m.listed && m.id !== cut.model && (m.tier !== 'pro' || (ST.checks[m.id] && ST.avail[m.id] !== false)); }).forEach(function (m) {
         var chk = ST.checks[m.id];
         var p = chk ? Promise.resolve(chk) : bg.support(m.id).then(function (r) { ST.checks[m.id] = r; return r; });
         p.then(function (r) {
           if (!others.isConnected || r.status !== 'ok') return;
-          others.appendChild(btn(c, 'Try ' + m.label, null, 'btn btn-ghost btn-sm', function () { run(c, id, { model: m.id }); }));
+          others.appendChild(btn(c, 'Try ' + displayName(m), null, 'btn btn-ghost btn-sm', function () { run(c, id, { model: m.id }); }));
         });
       });
     });
@@ -460,7 +725,7 @@
   function modelName(id) {
     if (id === 'manual') return 'Cut out by hand';
     var m = LE.bgRemove && LE.bgRemove.model(id);
-    return m ? m.label + ' quality' : 'Cut-out';
+    return m ? (m.tier === 'pro' || m.id === 'u2netp' ? displayName(m) : m.label + ' quality') : 'Cut-out';
   }
   P.cutout = {
     title: 'Remove background', eyebrow: 'Beta · on this device', select: true,
@@ -512,10 +777,7 @@
     if (l.cutout || ST.run) { c.openPanel('cutout'); return Promise.resolve(null); }
     c.scene.select([layerId]);
     c.openPanel('cutout');
-    return remover().then(function (bg) { return survey(function () {}).then(function () { return bg.isCached(chosen()); }); }).then(function (have) {
-      if (have) return run(c, layerId);
-      return null;
-    }).catch(function () { return null; });
+    return run(c, layerId).catch(function () { return null; });
   }
 
   CMDS.cutout = function (c) { var l = c.one(); if (l && l.type === 'image') quick(c, l.id); else c.openPanel('cutout'); };
@@ -1080,8 +1342,13 @@
     var ac = new AbortController();
     TK.abort = ac;
     TK.stage = 'Preparing…';
-    return remover().then(function (bg) {
-      var mid = chosen(), info = bg.model(mid);
+    var mid = null;
+    return remover().then(function (bg) { return survey(function () {}).then(function () { return bg; }); }).then(function (bg) {
+      /* Same policy as the panel, but never a question here: the chosen option if it is on the device or small enough,
+         otherwise the automatic pick. */
+      var own = ST.model && bg.model(ST.model);
+      mid = own && (ST.cached[own.id] || silentOk(own)) ? own.id : autoPick(bg).now;
+      var info = bg.model(mid);
       return bg.gate(mid, { title: 'Cut out the subject', run: function () {
         return bg.cutout(mem.canvas, { model: mid, signal: ac.signal, onProgress: function (p) {
           TK.stage = stageText(p, info);
@@ -1091,7 +1358,7 @@
       } });
     }).then(function (res) {
       if (!res || !res.mask) return null;
-      return storeMask(c, res.mask).then(function (id) { TK.mask = id; TK.model = chosen(); return id; });
+      return storeMask(c, res.mask).then(function (id) { TK.mask = id; TK.model = mid; return id; });
     }).then(function (id) { TK.busy = false; TK.error = null; scheduleUnload(90000); return id; }, function (err) {
       TK.busy = false;
       TK.error = err && (err.name === 'AbortError' || err.code === 'cancelled') ? null : { code: (err && err.code) || 'engine', message: err && err.message };
