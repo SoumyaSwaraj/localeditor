@@ -2240,7 +2240,7 @@
       var b = e.target.closest('[data-panel]');
       if (!b) return;
       var name = b.getAttribute('data-panel');
-      if (!S.pages.length && name !== 'convert') {
+      if (!S.pages.length && name !== 'convert' && !(PS.panels[name] && PS.panels[name].noDoc)) { /* noDoc: panels that work without an open document (bulk tools) */
         if (name === 'sign') intent('sign');
         else if (name === 'forms') intent('fill');
         else intent('open');
