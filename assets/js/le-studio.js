@@ -1049,6 +1049,8 @@
       tb(l && l.locked ? 'unlock' : 'lock', l && l.locked ? 'lock' : 'unlock', l && l.locked ? 'Unlock' : 'Lock', { pressed: !!(l && l.locked), pri: ph ? 3 : 1 }) +
       tb('dup', 'copy', 'Duplicate (Ctrl+D)', { pri: S.editing ? 3 : 1 }) + tb('del', 'trash', 'Delete (Del)', { pri: S.editing ? 3 : 1, cls: 'is-danger' }) + moreBtn();
   }
+  /* Buttons from feature hooks get a default priority unless they set their own data-pri. */
+  function withPri(html, pri) { return String(html || '').replace(/<button(?![^>]*data-pri)/g, '<button data-pri="' + pri + '"'); }
   function moreBtn() { return tb('more', 'more', 'More options', { pri: 0, cls: 'sx-tb-more', popup: 'menu' }); }
   function renderToolbar() {
     if (E.tool.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;
@@ -1075,7 +1077,7 @@
       html = '<span class="sx-tb-label">' + ic('resize') + 'Previewing size</span>';
     } else if (kind === 'image') {
       var repl = (l && (l.slot || !l.src)) ? 'Replace photo' : 'Replace';
-      html = tb('adjust', 'adjust', 'Edit photo', { text: ph ? 'Edit' : true, pri: 1 }) + tb('filters', 'filters', 'Filters', { text: true, pri: 1 }) + tb('effects', 'sparkle', 'Effects', { text: true, pri: 3 }) + SEP +
+      html = tb('adjust', 'adjust', 'Edit photo', { text: ph ? 'Edit' : true, pri: 1 }) + tb('filters', 'filters', 'Filters', { text: true, pri: 1 }) + tb('effects', 'sparkle', 'Effects', { text: true, pri: 3 }) + withPri(fire('photo-tools', l) || '', ph ? 2 : 1) + SEP +
         tb('crop', 'crop', 'Crop', { text: true, pri: 1 }) + tb('flipMenu', 'flip', 'Flip', { text: true, pri: 3, popup: 'menu' }) + tb('replace', 'replace', repl, { text: ph ? 'Replace' : repl, cls: (l && l.slot) ? 'is-primary' : '', pri: (l && l.slot) ? 1 : 2 }) + common(l);
     } else if (kind === 'text') {
       var fam = l.font || 'Plus Jakarta Sans';
@@ -1109,6 +1111,7 @@
         tb('replaceAll', 'swap', 'Replace colours & fonts', { text: 'Replace all', pri: 3 }) + tb('pagesPanel', 'pages', 'Pages', { pri: 3 }) + '<span class="sx-grow"></span>' + tb('compareHold', 'compare', 'Hold to compare', { cls: 'sx-hold', pri: 3 }) +
         tb('tbMore', 'more', 'More', { pri: 0, hidden: true, popup: 'menu' }) : '<span class="sx-tb-label">' + ic('shield') + 'Private by design — nothing leaves this device</span>';
     }
+    html += fire('toolbar-add', kind, l) || '';
     var custom = fire('toolbar', kind, l);
     if (typeof custom === 'string') html = custom + (/data-cmd="(tbMore|more)"/.test(custom) ? '' : tb('tbMore', 'more', 'More', { pri: 0, hidden: true, popup: 'menu' }));
     /* Same toolbar as before (an autosave, a re-select): leave the DOM alone so keyboard focus and hover stay put. */
@@ -1141,15 +1144,22 @@
     if (!over()) return;
     if (!isPhone()) { t.classList.add('is-compact'); if (!over()) return; }
     if (more) more.hidden = false;
+    function pri(n) { return Number(n.getAttribute('data-pri') == null ? 2 : n.getAttribute('data-pri')); }
+    var gone = [];
     [3, 2].forEach(function (p) {
       for (var i = items.length - 1; i >= 0 && over(); i--) {
         var n = items[i];
-        var pri = Number(n.getAttribute('data-pri') == null ? 2 : n.getAttribute('data-pri'));
-        if (pri !== p || n === more || n.hidden) continue;
+        if (pri(n) !== p || n === more || n.hidden) continue;
         n.hidden = true;
-        if (n.tagName === 'BUTTON' && n.getAttribute('data-cmd')) S.tbOverflow.unshift(n);
+        gone.push(n);
       }
     });
+    /* second pass: bring back anything that fits again (a wide item may have gone after a narrow one) */
+    gone.slice().sort(function (a, b) { return pri(a) - pri(b) || items.indexOf(a) - items.indexOf(b); }).forEach(function (n) {
+      n.hidden = false;
+      if (over()) n.hidden = true;
+    });
+    items.forEach(function (n) { if (n.hidden && n !== more && n.tagName === 'BUTTON' && n.getAttribute('data-cmd')) S.tbOverflow.push(n); });
     /* tidy separators next to hidden items */
     var vis = [].slice.call(t.children).filter(function (n) { return !n.hidden && !n.classList.contains('sx-grow'); });
     vis.forEach(function (n, i) { if (n.classList.contains('sx-tb-sep') && (i === 0 || i === vis.length - 1 || vis[i - 1].classList.contains('sx-tb-sep'))) n.hidden = true; });
@@ -1272,62 +1282,86 @@
   function decode(blob, name) {
     return LE.load(new File([blob], name || 'image', { type: blob.type || 'image/png' }));
   }
-  function resizedFile(file, out) {
-    if (!out || out.blob === file) return file;
-    var type = out.type || 'image/jpeg';
-    var base = String(file.name || 'photo').replace(/\.[^.]+$/, '') || 'photo';
-    var next = new File([out.blob], base + (type === 'image/png' ? '.png' : '.jpg'), { type: type });
-    if (file.source) next.source = file.source;
-    next._leResized = true;
-    return next;
+  /* Resolution policy for local photos (QA-015): keep the original pixels up to a device-class ceiling; the editor
+     works on a downscaled preview (le-objects), export renders from the original. `saver` keeps the old aggressive rules. */
+  var INGEST_CEIL = { older: 4096, modern: 6000, desktop: 8000 };
+  var INGEST_UP = { older: 'modern', modern: 'desktop', desktop: 'huge' };
+  var REENCODE_BYTES = 25 * 1024 * 1024;
+  function ingestPolicy() {
+    var mode = (LE.perf && typeof LE.perf.mode === 'function') ? LE.perf.mode() : 'auto';
+    var pm = (LE.perf && typeof LE.perf.previewMax === 'function') ? LE.perf.previewMax() : 2400;
+    if (mode === 'saver') return { mode: mode, trigger: Math.round(pm * 1.4), target: pm, bytes: 8 * 1024 * 1024, quality: 0.82 };
+    var tier = (LE.device && LE.device.tier) ? LE.device.tier() : 'desktop';
+    var cls = mode === 'quality' ? INGEST_UP[tier] : tier;
+    var ceil = cls === 'huge' ? 12000 : (INGEST_CEIL[cls] || 8000);
+    return { mode: mode, trigger: ceil, target: ceil, bytes: REENCODE_BYTES, quality: 0.92 };
+  }
+  function hasAlphaCanvas(canvas) {
+    try {
+      var ctx = canvas.getContext('2d'), step = 256, w = canvas.width;
+      for (var y = 0; y < canvas.height; y += step) {
+        var d = ctx.getImageData(0, y, w, Math.min(step, canvas.height - y)).data;
+        for (var i = 3; i < d.length; i += 4) if (d[i] < 255) return true;
+      }
+    } catch (e) { return true; }
+    return false;
+  }
+  function reencode(src, canvas, edge, quality) {
+    var type = (/jpe?g/i.test(src.type || '') || !hasAlphaCanvas(canvas)) ? 'image/jpeg' : 'image/png';
+    var c = edge && Math.max(canvas.width, canvas.height) > edge ? LE.fit(canvas, edge) : canvas;
+    return LE.toBlob(c, type, type === 'image/jpeg' ? quality : undefined).then(function (blob) {
+      var base = String(src.name || 'photo').replace(/\.[^.]+$/, '') || 'photo';
+      var next = new File([blob], base + (type === 'image/png' ? '.png' : '.jpg'), { type: type });
+      if (src.source) next.source = src.source;
+      next._leResized = true;
+      return { file: next, canvas: c };
+    });
   }
   function ingest(file) {
     if (!file) return Promise.reject(new Error('No file'));
     if (file.type && !/^image\//.test(file.type)) return Promise.reject(new Error('Choose an image file.'));
     var cap = LE.project.LIMITS.assetBytes;
-    var maxEdge = (LE.perf && typeof LE.perf.previewMax === 'function') ? LE.perf.previewMax() : 2400;
-    var prepare = Promise.resolve(file);
-    if (file.size > 8 * 1024 * 1024 && LE.stock && typeof LE.stock.compress === 'function') {
-      prepare = LE.stock.compress(file, { maxEdge: maxEdge }).then(function (out) {
-        return resizedFile(file, out);
-      }).catch(function () {
-        if (file.size > cap) throw new Error('That photo is too large for this browser.');
-        return file;
-      });
-    } else if (file.size > cap) {
-      return Promise.reject(new Error('That photo is too large for this browser.'));
-    }
-    return prepare.then(function (src) {
-      if (src.size > cap) throw new Error('That photo is too large for this browser.');
-      var name = src.name || file.name || 'photo';
-      return decode(src, name).then(function (canvas) {
-        if (!canvas || !canvas.width) throw new Error('Could not read that image.');
-        var edge = Math.max(canvas.width, canvas.height);
-        if (src._leResized || edge <= maxEdge * 1.4 || !LE.stock || typeof LE.stock.compress !== 'function') {
-          return { file: src, canvas: canvas };
+    var pol = ingestPolicy();
+    var tooBig = function () { return new Error('That photo is too large for this browser.'); };
+    var name = file.name || 'photo';
+    return decode(file, name).then(function (canvas) {
+      if (!canvas || !canvas.width) throw new Error('Could not read that image.');
+      var edge = Math.max(canvas.width, canvas.height);
+      var shrink = edge > pol.trigger;
+      var heavy = file.size > pol.bytes || file.size > cap;
+      if (file._leResized || !LE.toBlob || (!shrink && !heavy)) {
+        if (file.size > cap) throw tooBig();
+        return { file: file, canvas: canvas };
+      }
+      var target = shrink ? pol.target : edge;
+      return reencode(file, canvas, shrink ? target : 0, pol.quality).then(function (out) {
+        if (out.canvas !== canvas) { try { canvas.width = 1; canvas.height = 1; } catch (e) {} }
+        if (out.file.size <= cap) return out;
+        return reencode(file, out.canvas, 0, 0.8).then(function (again) { if (again.file.size > cap) throw tooBig(); return again; });
+      }, function () {
+        if (file.size > cap) throw tooBig();
+        return { file: file, canvas: canvas };
+      }).then(function (out) {
+        if (out.file !== file) {
+          out.note = shrink
+            ? 'This photo was reduced to ' + Math.max(out.canvas.width, out.canvas.height) + ' px ' + (out.canvas.width >= out.canvas.height ? 'wide' : 'tall') + ' to fit this device.'
+            : 'This photo was compressed to keep the file under ' + Math.round(pol.bytes / 1048576) + ' MB; its pixel size is unchanged.';
         }
-        return LE.stock.compress(canvas, { maxEdge: maxEdge }).then(function (out) {
-          var next = resizedFile(src, out);
-          if (next === src) return { file: src, canvas: canvas };
-          return decode(next, next.name).then(function (smaller) {
-            if (!smaller || !smaller.width) return { file: src, canvas: canvas };
-            return { file: next, canvas: smaller };
-          });
-        });
-      }).then(function (pair) {
-        if (pair.file && pair.file._leResized) toast('Photo resized for editing');
-        var blob = pair.file;
-        var source = blob.source || file.source;
-        return makeThumb(pair.canvas, 240).then(function (thumb) {
-          var info = { blob: blob, name: blob.name || name, type: blob.type || 'image/png', width: pair.canvas.width, height: pair.canvas.height, thumb: thumb };
-          if (source) info.source = source;
-          return LE.project.putAsset(info);
-        }).then(function (meta) {
-          S.mem[meta.id] = { meta: meta, canvas: pair.canvas };
-          scene.addAsset(meta.id, pair.canvas);
-          if (S.project) S.project.assets[meta.id] = meta;
-          return meta;
-        });
+        return out;
+      });
+    }).then(function (pair) {
+      if (pair.note) toast(pair.note);
+      var blob = pair.file;
+      var source = blob.source || file.source;
+      return makeThumb(pair.canvas, 240).then(function (thumb) {
+        var info = { blob: blob, name: blob.name || name, type: blob.type || 'image/png', width: pair.canvas.width, height: pair.canvas.height, thumb: thumb };
+        if (source) info.source = source;
+        return LE.project.putAsset(info);
+      }).then(function (meta) {
+        S.mem[meta.id] = { meta: meta, canvas: pair.canvas };
+        scene.addAsset(meta.id, pair.canvas);
+        if (S.project) S.project.assets[meta.id] = meta;
+        return meta;
       });
     });
   }
@@ -1394,7 +1428,9 @@
   function addFiles(files, opts) {
     opts = opts || {};
     files = (files || []).filter(Boolean);
-    var proj = files.filter(function (f) { return /\.leproject$/i.test(f.name) || f.type === 'application/zip'; });
+    var design = LE.design && LE.design.isDesignFile ? files.filter(LE.design.isDesignFile)[0] : null;
+    if (design) { LE.design.studioImport(ctx, design); return Promise.resolve(); }
+    var proj =files.filter(function (f) { return /\.leproject$/i.test(f.name) || f.type === 'application/zip'; });
     if (proj.length) { importProject(proj[0]); return Promise.resolve(); }
     var imgs = files.filter(function (f) { return !f.type || /^image\//.test(f.type); });
     if (!imgs.length) { toast('Choose an image file.'); return Promise.resolve(); }
@@ -1823,6 +1859,7 @@
     });
   }
   function importProject(file) {
+    if (LE.design && LE.design.isDesignFile && LE.design.isDesignFile(file)) return LE.design.studioImport(ctx, file);
     toast('Importing ' + (file.name || 'project') + '…', { ms: 1600 });
     return LE.project.importFile(file).then(function (p) {
       var warn = p.warnings || [];
@@ -2154,7 +2191,7 @@
   function applyMask(maskId) {
     var l = one();
     if (l && l.type === 'image') { patch(l.id, { mask: maskId, radius: maskId === 'rounded-rectangle' ? Math.min(l.w, l.h) * 0.12 : l.radius }, gesture()); return; }
-    var ids = Object.keys(S.project ? S.project.assets : {});
+    var ids = Object.keys(S.project ? S.project.assets : {}).filter(function (id) { return !/^background-/.test((S.project.assets[id] || {}).name || ''); });
     if (!ids.length) { toast('Upload a photo first, then pick a frame.'); pickFiles('add'); return; }
     var id = ids[ids.length - 1];
     var c = center();
@@ -2265,7 +2302,8 @@
 
   /* ---------- Export ---------- */
   function maxEdge() { return MAX_EDGE[LE.device.tier()] || 8192; }
-  function maxScale() { var d = doc(); return Math.min(4, maxEdge() / Math.max(d.width, d.height)); }
+  var MAX_AREA = { older: 17000000, modern: 48000000, desktop: 120000000 };
+  function maxScale() { var d = doc(); return Math.min(4, maxEdge() / Math.max(d.width, d.height), Math.sqrt((MAX_AREA[LE.device.tier()] || 48000000) / (d.width * d.height))); }
   function exportCanvas(o, pageIndex) {
     var p = S.project;
     var scale = Math.min(o.scale || 1, maxScale());
@@ -2306,6 +2344,7 @@
       }
       if (!o.dryRun) {
         download(r.blob, base + '.' + ext);
+        if (r.canvas.width < Math.round(doc().width * (o.scale || 1)) - 1) toast('Downloaded at ' + r.canvas.width + ' × ' + r.canvas.height + ' px, the largest this device can export.');
         LE.project.log('exported', p.id, { format: o.format, bytes: r.blob.size, width: r.canvas.width, height: r.canvas.height });
       }
       S.lastExport = { blob: r.blob, width: r.canvas.width, height: r.canvas.height };
@@ -2449,6 +2488,7 @@
       case 'openPhoto': closePop(); pickFiles('add'); break;
       case 'importProject': closePop(); pickFiles('project'); break;
       case 'exportProject': closePop(); exportProject(); break;
+      case 'openDesignFile': case 'saveDesignFile': case 'shareTemplate': closePop(); if (LE.design) LE.design.studioCmd(ctx, name); break;
       case 'checkpoint': closePop(); checkpoint(); break;
       case 'projects': closePop(); openPanel('projects'); break;
       case 'addPage': closePop(); addPage(false); break;
@@ -2577,6 +2617,9 @@
       '<button type="button" data-cmd="brandKit">' + ic('brand') + 'Brand kit</button><hr>' +
       '<button type="button" data-cmd="importProject">' + ic('file') + 'Import .leproject…</button>' +
       '<button type="button" data-cmd="exportProject"' + (S.project ? '' : ' disabled') + '>' + ic('share') + 'Export .leproject</button>' +
+      (LE.design ? '<button type="button" data-cmd="openDesignFile">' + ic('file') + 'Open design file (.ledesign.json)…</button>' +
+        '<button type="button" data-cmd="saveDesignFile"' + (S.project ? '' : ' disabled') + '>' + ic('save') + 'Save as design file (.ledesign.json)</button>' +
+        '<button type="button" data-cmd="shareTemplate"' + (S.project ? '' : ' disabled') + '>' + ic('share') + 'Share as template link</button>' : '') +
       '<button type="button" data-cmd="export"' + (S.project ? '' : ' disabled') + '>' + ic('download') + 'Download image…<kbd>Ctrl E</kbd></button><hr>' +
       '<button type="button" data-cmd="settings">' + ic('gauge') + 'Performance</button>' +
       '<button type="button" data-theme-toggle>' + ic('moon') + (document.documentElement.getAttribute('data-theme') === 'dark' ? 'Light mode' : 'Dark mode') + '</button>' +
@@ -2948,12 +2991,15 @@
     }).then(function (r) {
       if (!S.project) showStart();
       if (r !== 'panel') applyToolParam();
+      fire('ready', r);
     }).catch(function (err) {
       console.error(err);
       showStart();
     });
   }
-  boot();
+  /* Template links (#d=…) open a preview sheet once the studio is ready; design files share the project picker. */
+  if (E.fileProject && LE.design) E.fileProject.accept = '.leproject,application/zip,.ledesign.json,.json,application/json';
+  boot().then(function () { if (LE.design && LE.design.studioBoot) LE.design.studioBoot(ctx); });
 
   /* Install hooks (le-pwa.js): files opened from the system or shared to the app, saving before an update,
      and the memory guard that lets big bitmaps go while the tab is in the background. */

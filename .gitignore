@@ -5,3 +5,6 @@ node_modules/
 # local model evaluation downloads (scripts/fetch-models.js)
 /assets/models/local/
 /assets/vendor/ort-webgpu/
+
+# OCR language packs fetched by scripts/fetch-ocr-data.js (the English pack is committed)
+/assets/models/ocr/more/

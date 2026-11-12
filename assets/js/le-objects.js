@@ -320,6 +320,20 @@
     return { id: id, label: label, photo: photo };
   }
 
+  /* Subject cut-out (layer.cutout): an alpha-mask asset applied to the photo before crop and adjust. Non-destructive. */
+  function cutoutOf(c) {
+    if (!c || typeof c !== 'object' || Array.isArray(c) || typeof c.asset !== 'string') return null;
+    var asset = c.asset.replace(/[^\w:.-]/g, '').slice(0, 80);
+    if (!asset) return null;
+    var o = c.outline && typeof c.outline === 'object' ? c.outline : null;
+    return {
+      asset: asset, enabled: c.enabled !== false,
+      model: typeof c.model === 'string' ? c.model.replace(/[^\w.-]/g, '').slice(0, 40) : '',
+      feather: clamp(num(c.feather, 0), 0, 50), refine: c.refine === 'none' ? 'none' : 'guided', version: 1,
+      outline: o && num(o.width, 0) > 0 ? { color: safePaint(o.color) || '#ffffff', width: clamp(num(o.width, 0), 0, 200) } : null
+    };
+  }
+
   /* Collage meta (doc.collage): plain data the collage builder re-opens from. */
   function collageOf(c) {
     if (!c || typeof c !== 'object' || Array.isArray(c)) return null;
@@ -343,6 +357,36 @@
       }).map(function (r) { return r.map(function (v) { return Math.round(clamp(v, 0, 1) * 1e4) / 1e4; }); });
     }
     if (Array.isArray(c.order)) out.order = c.order.slice(0, 60).map(function (id) { return word(String(id == null ? '' : id), 40); });
+    return out;
+  }
+  /* Carousel meta (doc.carousel): the page is N slides of slideWidth side by side. */
+  function carouselOf(c) {
+    if (!c || typeof c !== 'object' || Array.isArray(c)) return null;
+    var n = Math.round(Number(c.slides)), w = Number(c.slideWidth);
+    if (!(n >= 1) || !(w >= 1) || !isFinite(w)) return null;
+    return { v: 1, slides: Math.min(n, 20), slideWidth: Math.round(clamp(w, 1, 20000) * 100) / 100 };
+  }
+
+  /* Quick-maker meta (doc.maker): the form values a page was made from, so it can be reopened and remade. */
+  function makerOf(m) {
+    if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+    function word(v, n) { return typeof v === 'string' ? v.replace(/[^\w.:-]/g, '').slice(0, n) : ''; }
+    function val(v, d) {
+      if (typeof v === 'string') return v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').slice(0, 2000);
+      if (typeof v === 'number') return isFinite(v) ? v : null;
+      if (typeof v === 'boolean') return v;
+      if (Array.isArray(v) && d < 2) return v.slice(0, 40).map(function (x) { return val(x, d + 1); }).filter(function (x) { return x != null; });
+      return null;
+    }
+    var out = { v: 1, id: word(m.id, 40), style: word(m.style, 40), size: word(m.size, 24), values: {} };
+    if (!out.id) return null;
+    var src = m.values && typeof m.values === 'object' && !Array.isArray(m.values) ? m.values : {};
+    Object.keys(src).slice(0, 40).forEach(function (k) {
+      if (!/^[a-zA-Z]\w{0,31}$/.test(k) || k === 'constructor' || k === 'prototype') return;
+      var v = val(src[k], 0);
+      if (v != null) out.values[k] = v;
+    });
+    if (word(m.sig, 16)) out.sig = word(m.sig, 16);
     return out;
   }
   /* Keeps a crop's centre and zoom when the photo moves into a frame of another shape. */
@@ -418,6 +462,8 @@
       if (maskPath) layer.maskPath = maskPath;
       var slot = slotOf(src.slot);
       if (slot) layer.slot = slot;
+      var cutout = cutoutOf(src.cutout);
+      if (cutout) layer.cutout = cutout;
     } else if (type === 'text') {
       layer.text = src.text == null ? 'Text' : String(src.text);
       layer.font = src.font || 'Plus Jakarta Sans';
@@ -451,6 +497,8 @@
         cap: src.stroke.cap || 'butt',
         join: src.stroke.join || 'miter'
       } : null;
+      var redact = redactOf(src.redact);
+      if (redact) layer.redact = redact;
     } else if (type === 'svg') {
       layer.assetId = src.assetId || '';
       layer.svg = src.svg || '';
@@ -1012,7 +1060,9 @@
       height: this._doc.height,
       background: this._doc.background,
       layers: this._doc.layers,
-      collage: this._doc.collage || undefined
+      collage: this._doc.collage || undefined,
+      carousel: this._doc.carousel || undefined,
+      maker: this._doc.maker || undefined
     });
   };
   P._histInfo = function () {
@@ -1060,6 +1110,8 @@
     this._doc.background = data.background || { type: 'color', color: '#ffffff' };
     this._doc.layers = data.layers || [];
     if (data.collage) this._doc.collage = collageOf(data.collage); else delete this._doc.collage;
+    if (carouselOf(data.carousel)) this._doc.carousel = carouselOf(data.carousel); else delete this._doc.carousel;
+    if (makerOf(data.maker)) this._doc.maker = makerOf(data.maker); else delete this._doc.maker;
     this._clearBitmaps();
     this._jobs = {};
     var self = this;
@@ -1125,6 +1177,8 @@
       self._doc.layers.push(normalize(layer, self, true));
     });
     if (collageOf(doc.collage)) this._doc.collage = collageOf(doc.collage);
+    if (carouselOf(doc.carousel)) this._doc.carousel = carouselOf(doc.carousel);
+    if (makerOf(doc.maker)) this._doc.maker = makerOf(doc.maker);
     this._sel = [];
     this._hist = { undo: [], redo: [], key: null, base: null, pushed: false };
     this._clearBitmaps();
@@ -1283,13 +1337,19 @@
       if (slot) layer.slot = slot;
       else delete layer.slot;
     }
-    if (layer.type === 'image' && (patch.src != null || patch.crop || patch.adjust || patch.filter || patch.removeBg)) {
+    if (layer.type === 'image' && patch.cutout !== undefined) {
+      var cut = cutoutOf(layer.cutout);
+      if (cut) layer.cutout = cut;
+      else delete layer.cutout;
+    }
+    if (layer.type === 'image' && (patch.src != null || patch.crop || patch.adjust || patch.filter || patch.removeBg || patch.cutout !== undefined)) {
       this._scheduleImage(layer.id);
     }
     if (layer.type === 'svg' && (patch.assetId != null || patch.svg != null || patch.color != null || patch.strokeWidth != null || patch.w != null || patch.h != null)) {
       this._scheduleSvg(layer.id);
     }
     if (layer.type === 'text' && (patch.font || patch.weight != null || patch.italic != null)) this._ensureFont(layer);
+    if (layer.type === 'shape' && patch.redact !== undefined) { var redact = redactOf(layer.redact); if (redact) layer.redact = redact; else delete layer.redact; }
     if (layer.groupId) this._syncGroup(layer.groupId);
     return layer;
   };
@@ -1620,7 +1680,7 @@
     return Math.ceil(target / 128) * 128;
   };
   P._imageKey = function (layer) {
-    return JSON.stringify([layer.src, layer.crop, layer.adjust, layer.filter, layer.removeBg, this._level(), this._imageBucket(layer)]);
+    return JSON.stringify([layer.src, layer.crop, layer.adjust, layer.filter, layer.removeBg, layer.cutout || null, this._level(), this._imageBucket(layer)]);
   };
   P._dropCanvas = function (canvas) {
     if (!canvas || typeof canvas.getContext !== 'function') return;
@@ -1679,18 +1739,118 @@
     var rec = this._assets[layer.src];
     var self = this;
     if (!rec) return Promise.resolve(null);
-    return Promise.resolve(rec.ready).then(function () {
+    var cut = layer.cutout && layer.cutout.enabled !== false ? layer.cutout : null;
+    var mrec = cut ? this._assets[cut.asset] : null;
+    return Promise.all([rec.ready, mrec ? Promise.resolve(mrec.ready).catch(function () { return null; }) : null]).then(function () {
       var src = assetCanvas(rec);
       if (!src) return null;
       var base = src;
-      if (LE.fit && Math.max(src.width, src.height) > targetMax) base = LE.fit(src, targetMax);
+      if (LE.fit && Math.max(src.width, src.height) > targetMax) {
+        /* Preview only: shrink a big original once to preview size and reuse it, so a zoom or resize does not re-scale 48 MP each time. */
+        var pm = preview ? self._previewMax() : 0;
+        if (preview && LE.fit && Math.max(src.width, src.height) > pm * 1.5 && targetMax <= pm) {
+          if (!rec._prev || rec._prevFor !== src) { rec._prev = LE.fit(src, pm); rec._prevFor = src; }
+          base = Math.max(rec._prev.width, rec._prev.height) > targetMax ? LE.fit(rec._prev, targetMax) : cloneCanvas(rec._prev);
+        } else base = LE.fit(src, targetMax);
+      }
+      /* Cut-out first, so crop, adjust, filters and the outline all see the subject on transparency. */
+      if (cut && mrec) base = cutoutApply(base, mrec, cut.feather * base.width * ((layer.crop && layer.crop.w) || 1) / Math.max(1, layer.w));
+      function finish(c) { return cut && cut.outline && c ? cutoutOutline(c, cut.outline.width * c.width / Math.max(1, layer.w), cut.outline.color) : c; }
       var steps = imageSteps(layer, preview && self._level() === 'low');
-      if (!steps.length) return cloneCanvas(base);
-      if (!LE.applySteps) return cloneCanvas(base);
+      if (!steps.length || !LE.applySteps) return finish(base === src ? cloneCanvas(base) : base);
       var tier = (LE.device && LE.device.tier) ? LE.device.tier() : 'desktop';
-      return LE.applySteps(base, steps, { tier: tier }).then(function (res) { return res.canvas; });
+      return LE.applySteps(base, steps, { tier: tier }).then(function (res) { return finish(res.canvas); });
     }, function () { return null; });
   };
+  /* The mask asset as a canvas whose alpha is the mask. An opaque greyscale mask (white = keep) is read by luminance. */
+  function cutoutAlpha(mrec) {
+    var m = assetCanvas(mrec);
+    if (!m || !m.width) return null;
+    if (mrec._cutOf === m && mrec._cutAlpha) return mrec._cutAlpha;
+    var w = m.width, h = m.height, d = m.getContext('2d').getImageData(0, 0, w, h).data, opaque = true, i;
+    for (i = 3; i < d.length; i += 4) if (d[i] < 255) { opaque = false; break; }
+    var out = m;
+    if (opaque) {
+      out = document.createElement('canvas');
+      out.width = w; out.height = h;
+      var oc = out.getContext('2d'), img = oc.createImageData(w, h), o = img.data;
+      for (i = 0; i < d.length; i += 4) { o[i] = o[i + 1] = o[i + 2] = 255; o[i + 3] = Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]); }
+      oc.putImageData(img, 0, 0);
+    }
+    mrec._cutOf = m;
+    mrec._cutAlpha = out;
+    return out;
+  }
+  function cutoutApply(base, mrec, feather) {
+    var mask = cutoutAlpha(mrec);
+    if (!mask) return base;
+    var c = document.createElement('canvas');
+    c.width = base.width; c.height = base.height;
+    var ctx = c.getContext('2d');
+    ctx.drawImage(base, 0, 0);
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    if (feather >= 0.5 && filterBlur()) {
+      ctx.filter = 'blur(' + (feather / 2).toFixed(2) + 'px)';
+      ctx.drawImage(mask, 0, 0, c.width, c.height);
+      ctx.filter = 'none';
+    } else if (feather >= 0.5) {
+      var k = Math.max(1, Math.round(feather)), sm = document.createElement('canvas');
+      sm.width = Math.max(1, Math.round(c.width / k)); sm.height = Math.max(1, Math.round(c.height / k));
+      sm.getContext('2d').drawImage(mask, 0, 0, sm.width, sm.height);
+      ctx.drawImage(sm, 0, 0, c.width, c.height);
+    } else ctx.drawImage(mask, 0, 0, c.width, c.height);
+    return c;
+  }
+  /* Sticker outline: a solid band of `width` px around everything at least half opaque (chamfer distance transform). */
+  function cutoutOutline(canvas, width, color) {
+    if (!(width >= 0.5)) return canvas;
+    var w = canvas.width, h = canvas.height, n = w * h, x, y, i;
+    var d = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+    var dist = new Float32Array(n), BIG = 1e7, D = Math.SQRT2;
+    for (i = 0; i < n; i++) dist[i] = d[i * 4 + 3] >= 128 ? 0 : BIG;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = y * w + x;
+      var v = dist[i];
+      if (!v) continue;
+      if (x > 0 && dist[i - 1] + 1 < v) v = dist[i - 1] + 1;
+      if (y > 0) {
+        if (dist[i - w] + 1 < v) v = dist[i - w] + 1;
+        if (x > 0 && dist[i - w - 1] + D < v) v = dist[i - w - 1] + D;
+        if (x < w - 1 && dist[i - w + 1] + D < v) v = dist[i - w + 1] + D;
+      }
+      dist[i] = v;
+    }
+    for (y = h - 1; y >= 0; y--) for (x = w - 1; x >= 0; x--) {
+      i = y * w + x;
+      var u = dist[i];
+      if (!u) continue;
+      if (x < w - 1 && dist[i + 1] + 1 < u) u = dist[i + 1] + 1;
+      if (y < h - 1) {
+        if (dist[i + w] + 1 < u) u = dist[i + w] + 1;
+        if (x < w - 1 && dist[i + w + 1] + D < u) u = dist[i + w + 1] + D;
+        if (x > 0 && dist[i + w - 1] + D < u) u = dist[i + w - 1] + D;
+      }
+      dist[i] = u;
+    }
+    var out = document.createElement('canvas');
+    out.width = w; out.height = h;
+    var octx = out.getContext('2d');
+    octx.fillStyle = color || '#ffffff';
+    octx.fillRect(0, 0, 1, 1);
+    var rgb = octx.getImageData(0, 0, 1, 1).data;
+    var band = octx.createImageData(w, h), b = band.data;
+    for (i = 0; i < n; i++) {
+      var a = width + 0.5 - dist[i];
+      if (a <= 0) continue;
+      var j = i * 4;
+      b[j] = rgb[0]; b[j + 1] = rgb[1]; b[j + 2] = rgb[2]; b[j + 3] = a >= 1 ? rgb[3] : Math.round(a * rgb[3]);
+    }
+    octx.putImageData(band, 0, 0);
+    octx.drawImage(canvas, 0, 0);
+    return out;
+  }
 
   P._svgMarkup = function (layer) {
     var raw = '';
@@ -1783,7 +1943,8 @@
     var w = Math.max(1, Math.round(this._doc.width * scale));
     var h = Math.max(1, Math.round(this._doc.height * scale));
     var maxEdge = 16384;
-    var maxArea = 32000000;
+    var tierNow = (LE.device && LE.device.tier) ? LE.device.tier() : 'desktop';
+    var maxArea = tierNow === 'desktop' ? 120000000 : tierNow === 'modern' ? 48000000 : 17000000;
     if (w > maxEdge || h > maxEdge || w * h > maxArea) {
       var fit = Math.min(maxEdge / w, maxEdge / h, Math.sqrt(maxArea / (w * h)));
       w = Math.max(1, Math.round(w * fit));
@@ -1884,6 +2045,15 @@
     ctx.strokeStyle = 'rgba(23,19,31,.16)';
     ctx.lineWidth = 1 / this._zoom;
     ctx.strokeRect(0, 0, this._doc.width, this._doc.height);
+    var car = this._doc.carousel;
+    if (car && car.slides > 1) {
+      ctx.strokeStyle = 'rgba(116,87,240,.85)';
+      ctx.lineWidth = 1.5 / this._zoom;
+      ctx.setLineDash([6 / this._zoom, 5 / this._zoom]);
+      for (var si = 1; si < car.slides; si++) {
+        ctx.beginPath(); ctx.moveTo(car.slideWidth * si, 0); ctx.lineTo(car.slideWidth * si, this._doc.height); ctx.stroke();
+      }
+    }
     ctx.restore();
     if (this._bgEdit) this._drawBgFrame(ctx);
   };
@@ -2250,6 +2420,7 @@
     if (!layer || layer.type === 'group' || layer.visible === false) return;
     if (this._hidden(layer)) return;
     if (opts.preview && this._editing === layer.id) return;
+    if (layer.type === 'shape' && layer.redact) { this._paintRedact(ctx, layer, opts); return; }
     var alpha = this._opacity(layer);
     if (alpha <= 0) return;
     ctx.save();
@@ -2338,7 +2509,9 @@
       if ((!cached || cached.key !== key) && layer.src) this._scheduleImage(layer.id);
     }
     var node = null;
-    if (!bitmap) node = assetNode(this._assets[layer.src]);
+    var cutPending = !bitmap && layer.cutout && layer.cutout.enabled !== false;
+    if (!bitmap && !cutPending) node = assetNode(this._assets[layer.src]);
+    if (cutPending) return;
     var clip = this._imageClip(layer);
     var empty = !bitmap && !node;
     ctx.save();
@@ -2487,6 +2660,141 @@
       ctx.restore();
       angle += step / r * dir;
     }
+  };
+
+  /* ---------- Redaction (privacy) ----------
+     A shape layer with `redact: { mode, amount, color }` hides whatever is already painted beneath it, inside its
+     outline: 'solid' covers it, 'pixelate' averages it into blocks, 'blur' averages it down and then blurs it (so detail
+     is destroyed, not just softened). `amount` is the block size or blur radius in document units; 0 means automatic.
+     A floor tied to the box size keeps it strong enough to hide text. The effect reads the pixels already drawn on the
+     target canvas, so the preview and every export scale match; opacity, blend and shadow never weaken it. */
+  function redactOf(r) {
+    if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
+    var mode = r.mode === 'blur' || r.mode === 'pixelate' ? r.mode : 'solid';
+    var color = typeof r.color === 'string' && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(r.color) ? r.color : '#17131F';
+    return { mode: mode, amount: clamp(Math.round(num(r.amount, 0)), 0, 500), color: color };
+  }
+  function redactSize(layer) {
+    var r = redactOf(layer && layer.redact) || { mode: 'solid', amount: 0 };
+    var short = Math.max(1, Math.min(Math.abs(num(layer.w, 1)), Math.abs(num(layer.h, 1))));
+    if (r.mode === 'blur') return Math.max(r.amount || Math.max(12, short / 4), Math.max(6, short / 8));
+    return Math.max(r.amount || Math.max(12, short / 5), Math.max(4, short / 10));
+  }
+  function redactScratch(pool, i, w, h) {
+    var c = pool[i] || (pool[i] = document.createElement('canvas'));
+    w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h));
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; } else c.getContext('2d').clearRect(0, 0, w, h);
+    return c;
+  }
+  /* Box-averages a region of src down to tw × th by repeated halving, so every output pixel is a true mean. */
+  function redactShrink(pool, src, sx, sy, sw, sh, tw, th) {
+    var cur = src, cx = sx, cy = sy, cw = sw, ch = sh, slot = 0;
+    while (cw / 2 >= tw * 1.5 || ch / 2 >= th * 1.5) {
+      var nw = Math.max(tw, Math.ceil(cw / 2)), nh = Math.max(th, Math.ceil(ch / 2));
+      var step = redactScratch(pool, slot, nw, nh);
+      var x = step.getContext('2d');
+      x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+      x.drawImage(cur, cx, cy, cw, ch, 0, 0, nw, nh);
+      cur = step; cx = 0; cy = 0; cw = nw; ch = nh; slot = slot ? 0 : 1;
+    }
+    var out = redactScratch(pool, 2, tw, th);
+    var o = out.getContext('2d');
+    o.imageSmoothingEnabled = true; o.imageSmoothingQuality = 'high';
+    o.drawImage(cur, cx, cy, cw, ch, 0, 0, tw, th);
+    return out;
+  }
+  function redactPath(layer) {
+    var spec = findShape(layer.shape);
+    var params = clone(layer.params) || {};
+    if (params.radius == null && layer.radius) params.radius = layer.radius;
+    var d = 'M0 0H' + layer.w + 'V' + layer.h + 'H0Z';
+    try { if (spec && spec.path && !spec.strokeOnly) d = spec.path(layer.w, layer.h, params) || d; } catch (e) { /* plain box */ }
+    return typeof d === 'string' ? new Path2D(d) : d;
+  }
+  /* Paints a redaction with the context set to document units. Also used to bake a redaction into a photo. */
+  function paintRedact(ctx, layer, opts) {
+    opts = opts || {};
+    var r = redactOf(layer.redact);
+    if (!r) return;
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.shadowColor = 'transparent';
+    var base = ctx.getTransform();
+    var W = num(opts.pageW, 0), H = num(opts.pageH, 0);
+    ctx.translate(layer.x + layer.w / 2, layer.y + layer.h / 2);
+    ctx.rotate((layer.rotation || 0) * Math.PI / 180);
+    if (layer.flipX || layer.flipY) ctx.scale(layer.flipX ? -1 : 1, layer.flipY ? -1 : 1);
+    ctx.translate(-layer.w / 2, -layer.h / 2);
+    var path = redactPath(layer);
+    if (r.mode === 'solid' || opts.local) {
+      ctx.fillStyle = r.color;
+      ctx.fill(path);
+      ctx.restore();
+      return;
+    }
+    var m = ctx.getTransform();
+    var cv = ctx.canvas;
+    function box(t, w, h) {
+      var xs = [], ys = [];
+      [[0, 0], [w, 0], [w, h], [0, h]].forEach(function (p) { xs.push(t.a * p[0] + t.c * p[1] + t.e); ys.push(t.b * p[0] + t.d * p[1] + t.f); });
+      return { x0: Math.min.apply(null, xs), y0: Math.min.apply(null, ys), x1: Math.max.apply(null, xs), y1: Math.max.apply(null, ys) };
+    }
+    var lim = { x0: 0, y0: 0, x1: cv.width, y1: cv.height };
+    if (W > 0 && H > 0) {
+      var pg = box(base, W, H);
+      lim = { x0: Math.max(0, pg.x0), y0: Math.max(0, pg.y0), x1: Math.min(cv.width, pg.x1), y1: Math.min(cv.height, pg.y1) };
+    }
+    var b = box(m, layer.w, layer.h);
+    var x0 = Math.floor(Math.max(b.x0, lim.x0)), y0 = Math.floor(Math.max(b.y0, lim.y0));
+    var x1 = Math.ceil(Math.min(b.x1, lim.x1)), y1 = Math.ceil(Math.min(b.y1, lim.y1));
+    if (x1 - x0 < 1 || y1 - y0 < 1) { ctx.restore(); return; }
+    var k = Math.max(1, redactSize(layer) * (Math.hypot(base.a, base.b) || 1));
+    var pool = opts.pool || [];
+    ctx.clip(path);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    var bw = x1 - x0, bh = y1 - y0;
+    if (r.mode === 'pixelate') {
+      var cols = Math.max(1, Math.ceil(bw / k)), rows = Math.max(1, Math.ceil(bh / k));
+      var gw = cols * k, gh = rows * k;
+      var sw = Math.min(gw, lim.x1 - x0), sh = Math.min(gh, lim.y1 - y0);
+      var tw = Math.max(1, Math.round(cols * sw / gw)), th = Math.max(1, Math.round(rows * sh / gh));
+      var small = redactShrink(pool, cv, x0, y0, sw, sh, tw, th);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(small, 0, 0, tw, th, x0, y0, tw * k, th * k);
+    } else {
+      var pad = Math.ceil(k * 1.5);
+      var rx0 = Math.max(lim.x0, x0 - pad), ry0 = Math.max(lim.y0, y0 - pad);
+      var rx1 = Math.min(lim.x1, x1 + pad), ry1 = Math.min(lim.y1, y1 + pad);
+      var rw = rx1 - rx0, rh = ry1 - ry0;
+      var soft = opts.fast || !filterBlur();
+      var f = Math.max(1, soft ? k / 1.5 : k / 4);
+      var dw = Math.max(1, Math.round(rw / f)), dh = Math.max(1, Math.round(rh / f));
+      var low = redactShrink(pool, cv, rx0, ry0, rw, rh, dw, dh);
+      var out = low;
+      if (!soft) {
+        out = redactScratch(pool, 3, dw, dh);
+        var ox = out.getContext('2d');
+        ox.drawImage(low, 0, 0);
+        ox.filter = 'blur(' + (k / f).toFixed(2) + 'px)';
+        ox.drawImage(low, 0, 0);
+        ox.filter = 'none';
+      }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(out, 0, 0, dw, dh, rx0, ry0, rw, rh);
+    }
+    ctx.restore();
+    if (!opts.pool) pool.forEach(function (c) { try { c.width = 1; c.height = 1; } catch (e) {} });
+  }
+  P._paintRedact = function (ctx, layer, opts) {
+    var preview = !!opts.preview;
+    try {
+      paintRedact(ctx, layer, {
+        local: !!opts.local, pageW: this._doc.width, pageH: this._doc.height,
+        pool: preview ? (this._rdx || (this._rdx = [])) : null, fast: preview && this._level() === 'low'
+      });
+    } catch (e) { /* a broken redaction should not stop the frame */ }
   };
 
   P._paintShape = function (ctx, layer) {
@@ -3975,6 +4283,11 @@
   LE.Scene.EXTENDED_ADJUST = true;
   LE.Scene.blank = blank;
   LE.Scene.collageOf = collageOf;
+  LE.Scene.carouselOf = carouselOf;
+  LE.Scene.redactOf = redactOf;
+  LE.Scene.redactSize = redactSize;
+  LE.Scene.paintRedact = paintRedact;
+  LE.Scene.makerOf = makerOf;
   LE.Scene.refitCrop = refitCrop;
   LE.Scene.backgroundSpec = bgSpec;
   LE.Scene.backgroundPlacement = function (bg, W, H, sw, sh) { return bgPlace(bgSpec(bg), W, H, sw, sh); };

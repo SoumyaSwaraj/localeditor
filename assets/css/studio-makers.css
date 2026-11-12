@@ -1,1 +1,115 @@
-/* LocalEditor: quick makers styles. */
+/* LocalEditor: quick makers styles. Phone first (360px), then widened. Touch targets 44px. */
+
+/* ---------- Gallery (Apps → Make) ---------- */
+.mk-gallery { display: grid; gap: 10px; min-width: 0; }
+.mk-lede { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
+.mk-banner {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px;
+  border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); font-size: 13px; color: var(--ink);
+}
+.mk-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.mk-card {
+  display: grid; gap: 4px; align-content: start; padding: 0 0 10px; min-width: 0; text-align: left; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--ink); overflow: hidden;
+  transition: border-color var(--dur-1, 120ms), transform var(--dur-1, 120ms);
+}
+.mk-card:hover { border-color: var(--border-hover); }
+.mk-card:active { transform: scale(0.98); }
+.mk-card:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.mk-card b { padding: 0 10px; font: 700 13.5px/1.25 "Plus Jakarta Sans", var(--font); }
+.mk-card small { padding: 0 10px; font-size: 12px; line-height: 1.35; color: var(--muted); }
+.mk-thumb { display: block; aspect-ratio: 4 / 5; background: var(--surface-2); margin-bottom: 6px; position: relative; overflow: hidden; }
+.mk-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity var(--dur-2, 200ms); }
+.mk-thumb.is-ready img { opacity: 1; }
+.mk-cats { margin-bottom: 2px; }
+
+/* Start screen row */
+.mk-start .mk-row-cards { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(132px, 1fr); gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; scroll-snap-type: x proximity; }
+.mk-start .mk-row-cards::-webkit-scrollbar { display: none; }
+.mk-card.is-compact { scroll-snap-align: start; min-height: 44px; }
+@media (min-width: 1100px) { .mk-start .mk-row-cards { grid-auto-flow: row; grid-template-columns: repeat(6, minmax(0, 1fr)); overflow: visible; } }
+
+/* ---------- Form sheet ---------- */
+.mk-sheet {
+  position: fixed; inset: 0; z-index: 1200; display: flex; align-items: stretch; justify-content: center;
+  background: rgba(15, 14, 19, 0.5); opacity: 0; transition: opacity var(--dur-2, 200ms);
+}
+.mk-sheet.is-on { opacity: 1; }
+.mk-card-sheet {
+  position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: 100%; height: 100%;
+  background: var(--surface); color: var(--ink); overflow: hidden;
+  transform: translateY(16px); transition: transform var(--dur-3, 320ms) var(--ease-out, ease-out);
+}
+.mk-sheet.is-on .mk-card-sheet { transform: none; }
+.mk-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.mk-head h2 { margin: 0; font: 700 18px/1.2 "Plus Jakarta Sans", var(--font); letter-spacing: -0.015em; }
+.mk-eyebrow { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+.mk-close { min-width: 44px; min-height: 44px; }
+.mk-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.mk-preview {
+  position: sticky; top: 0; z-index: 2; display: grid; place-items: center; padding: 12px 16px; height: 36vh; min-height: 200px;
+  background: var(--surface-2); border-bottom: 1px solid var(--line);
+}
+.mk-canvas { position: relative; width: 100%; height: 100%; min-width: 0; min-height: 0; }
+.mk-render { position: absolute; inset: 0; margin: auto; display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; border-radius: 6px; box-shadow: 0 6px 24px rgba(15, 14, 19, 0.18); }
+.mk-busy { position: absolute; right: 12px; bottom: 8px; font-size: 11px; font-weight: 650; color: var(--faint); }
+.mk-form { display: grid; gap: 14px; padding: 14px 16px 20px; min-width: 0; }
+.mk-field { display: grid; gap: 6px; min-width: 0; }
+.mk-field > label, .mk-label { font-size: 13px; font-weight: 640; color: var(--ink); }
+.mk-field > label small { font-weight: 500; color: var(--faint); }
+.mk-field .sx-input { width: 100%; min-height: 44px; font-size: 16px; box-sizing: border-box; }
+.mk-area { min-height: 92px; resize: vertical; line-height: 1.45; padding-top: 10px; }
+.mk-hint { font-size: 12px; color: var(--faint); line-height: 1.4; }
+.mk-err { font-size: 12.5px; font-weight: 650; color: var(--err); }
+.mk-field [aria-invalid="true"] { border-color: var(--err); }
+.mk-styles .sx-chip { min-height: 40px; }
+.mk-toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; color: var(--ink); cursor: pointer; }
+.mk-toggle input { width: 22px; height: 22px; accent-color: var(--amethyst); }
+.mk-color { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mk-color input[type="color"] { width: 44px; height: 44px; padding: 0; border: 1px solid var(--border); border-radius: 10px; background: none; cursor: pointer; }
+.mk-color span { font-size: 13px; font-weight: 600; color: var(--muted); min-width: 6ch; }
+.mk-list { display: grid; gap: 6px; }
+.mk-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.55fr) 44px; gap: 6px; align-items: center; }
+.mk-row .sx-iconbtn { min-width: 44px; min-height: 44px; }
+.mk-add { justify-self: start; }
+.mk-photos { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.mk-ph { position: relative; width: 72px; height: 72px; border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+.mk-ph-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mk-ph-x {
+  position: absolute; top: 2px; right: 2px; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: rgba(15, 14, 19, 0.7); color: #fff; cursor: pointer;
+}
+.mk-ph-x::before { content: ""; position: absolute; inset: -8px; }
+.mk-ph-x .sx-ic { width: 14px; height: 14px; }
+.mk-use { min-height: 44px; }
+.mk-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--surface); }
+.mk-foot .btn { min-height: 44px; }
+.mk-foot .mk-make { flex: 1 1 auto; max-width: 260px; }
+.mk-warn { flex: 1 1 100%; margin: 0; padding: 8px 10px; border-radius: 10px; font-size: 12.5px; line-height: 1.4; color: var(--ink); background: rgba(226, 177, 90, 0.16); border: 1px solid rgba(226, 177, 90, 0.5); }
+
+/* Photo picker inside the sheet */
+.mk-picker {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; display: grid; gap: 10px; max-height: 70%; overflow: auto; padding: 12px 16px 16px;
+  background: var(--surface); border-top: 1px solid var(--border); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-lg, 0 -8px 40px rgba(0, 0, 0, 0.2));
+}
+.mk-picker-head { display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+.mk-picker-head .sx-iconbtn { min-width: 44px; min-height: 44px; }
+.mk-picker-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.mk-pick { aspect-ratio: 1; padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: var(--surface-2); cursor: pointer; min-height: 44px; }
+.mk-pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mk-pick:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.mk-device { justify-self: start; min-height: 44px; cursor: pointer; }
+
+@media (min-width: 900px) {
+  .mk-sheet { align-items: center; padding: 24px; }
+  .mk-card-sheet { width: min(1080px, 100%); height: min(820px, 100%); border-radius: var(--r-lg, 20px); box-shadow: var(--shadow-lg); }
+  .mk-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(340px, 1fr); overflow: hidden; }
+  .mk-preview { position: relative; height: auto; min-height: 0; padding: 24px; border-bottom: 0; border-right: 1px solid var(--line); }
+  .mk-form { overflow-y: auto; align-content: start; padding: 18px 22px 24px; }
+  .mk-head { padding: 14px 22px; }
+  .mk-foot { padding: 12px 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mk-sheet, .mk-card-sheet, .mk-thumb img, .mk-card { transition: none; }
+}
+.mk-sheet .sx-seg button, .mk-sheet .btn-sm, .mk-banner .btn-sm { min-height: 44px; }

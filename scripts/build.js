@@ -5,6 +5,7 @@
    require('./scripts/build.js') only exposes the generators (manifestJSON, precacheList, swSource) and writes nothing. */
 const fs = require('fs');
 const path = require('path');
+const PAGES = require('./build-pages'); // category hubs and feature pages (assets/data/site.json)
 const ROOT = path.resolve(__dirname, '..');
 const SITE = 'https://localeditor.net/';
 const VERSION = process.env.LE_BUILD_VERSION || new Date().toISOString().replace(/\D/g, '').slice(0, 12);
@@ -39,6 +40,7 @@ const I = { // 24x24 stroke icons
   diff: '<path d="M12 3v14M5 10h14M5 21h14"/>',
   para: '<path d="M13 4v16M17 4v16M19 4H9.5a4.5 4.5 0 0 0 0 9H13"/>',
   id: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h2M15 12h2M7 16h10"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
   numbers: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M10 18h4M12 12v6"/>',
 };
 
@@ -60,6 +62,7 @@ const TOOLS = [
   ['image', 'color-picker', 'Image Color Picker', 'Pick exact colors and extract palettes from any image.', 'pipette'],
   ['image', 'favicon-generator', 'Favicon Generator', 'Create favicon.ico and app icons from an image or emoji.', 'star'],
   ['image', 'image-filters', 'Photo Filters & Editor', 'Adjust brightness, contrast, saturation and apply filters.', 'sliders'],
+  ['image', 'photo-privacy', 'Photo Privacy Check', 'See and remove hidden location, time and camera details in a photo.', 'shield'],
   ['pdf', 'merge-pdf', 'Merge PDF', 'Combine multiple PDFs into one in the order you choose.', 'merge'],
   ['pdf', 'split-pdf', 'Split PDF', 'Extract page ranges or split every page into its own file.', 'split'],
   ['pdf', 'jpg-to-pdf', 'JPG to PDF', 'Convert JPG, PNG and WebP images into a single PDF.', 'img2pdf'],
@@ -399,12 +402,12 @@ function walk(dir, out = []) {
   return out;
 }
 /* Downloaded on request and owned by a runtime cache (listed in the storage manager), never precached. */
-const ON_DEMAND = /^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
+const ON_DEMAND = /^assets\/vendor\/tesseract\/|^assets\/vendor\/pdf-lib-crypt|^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
 /* If one of these fails to download, the new version is not installed (the old one keeps working). */
 const CRITICAL = ['./', './offline.html', './studio/', './assets/js/app.js', './assets/css/app.css', './assets/js/le-pwa.js', './assets/css/le-pwa.css', './manifest.webmanifest'];
 
 function precacheList() {
-  return walk(ROOT).filter((f) => !ON_DEMAND.test(f)).map((f) => f.endsWith('index.html') ? f.replace(/index\.html$/, '') : f).map((f) => './' + f).sort();
+  return walk(ROOT).filter((f) => !ON_DEMAND.test(f) && !PAGES.notPrecached(f)).map((f) => f.endsWith('index.html') ? f.replace(/index\.html$/, '') : f).map((f) => './' + f).sort();
 }
 
 /* The worker itself. Written as a real function so it is syntax-checked here, then serialized into sw.js.
@@ -655,10 +658,11 @@ function buildSW() {
   return files.length;
 }
 
-module.exports = { ROOT, VERSION, ON_DEMAND, CRITICAL, manifestJSON, precacheList, swSource };
+module.exports = { ROOT, VERSION, ON_DEMAND, CRITICAL, manifestJSON, precacheList, swSource, TOOLS, CATS, I };
 
 if (require.main === module) {
-  buildIndex(); buildAbout(); buildOffline(); buildMeta();
+  buildIndex(); buildAbout(); buildOffline();
+  PAGES.build(); buildMeta(); PAGES.build({ quiet: true }); // pages first (sitemap lists them), then their llms.txt section
   const n = buildSW();
   const missing = TOOLS.filter((t) => !fs.existsSync(path.join(ROOT, t.slug, 'index.html'))).map((t) => t.slug);
   const lost = CRITICAL.filter((u) => !precacheList().includes(u));

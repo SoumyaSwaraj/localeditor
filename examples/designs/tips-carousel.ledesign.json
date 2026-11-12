@@ -1,0 +1,57 @@
+{
+  "$schema": "https://localeditor.net/schema/design-1.json",
+  "format": "localeditor-design",
+  "version": 1,
+  "name": "Photo tips carousel",
+  "pages": [
+    {
+      "id": "cover",
+      "width": 1080,
+      "height": 1350,
+      "background": "#1F3A2E",
+      "layers": [
+        { "id": "cover-icon", "type": "icon", "icon": "lucide:camera", "color": "#E9F5EC", "strokeWidth": 1.5, "x": 100, "y": 150, "w": 120 },
+        { "id": "cover-title", "type": "text", "text": "3 tips for better phone photos", "font": "Fraunces", "weight": 700, "size": 112, "lineHeight": 1.04, "color": "#E9F5EC", "x": 100, "y": 330, "w": 860 },
+        { "id": "cover-sub", "type": "text", "text": "No new gear. Just habits.", "font": "DM Sans", "weight": 400, "size": 42, "color": "#A8D5B5", "x": 100, "y": 800, "w": 860 },
+        { "id": "cover-swipe", "type": "text", "text": "Swipe", "font": "DM Sans", "weight": 700, "size": 34, "color": "#E9F5EC", "align": "right", "x": 640, "y": 1190, "w": 250 },
+        { "id": "cover-arrow", "type": "icon", "icon": "lucide:arrow-right", "color": "#E9F5EC", "strokeWidth": 2, "x": 905, "y": 1186, "w": 48 }
+      ]
+    },
+    {
+      "id": "tip-1",
+      "width": 1080,
+      "height": 1350,
+      "background": "#E9F5EC",
+      "layers": [
+        { "id": "tip-1-num", "type": "text", "text": "01", "font": "Fraunces", "weight": 700, "size": 220, "lineHeight": 1, "color": "#4F8A66", "x": 100, "y": 130, "w": 500 },
+        { "id": "tip-1-title", "type": "text", "text": "Wipe the lens", "font": "Fraunces", "weight": 700, "size": 96, "color": "#1F3A2E", "x": 100, "y": 400, "w": 860 },
+        { "id": "tip-1-body", "type": "text", "text": "Pockets leave a film on the glass. One wipe with a soft cloth turns hazy photos crisp.", "font": "DM Sans", "weight": 400, "size": 46, "lineHeight": 1.4, "color": "#2E5442", "x": 100, "y": 560, "w": 860 },
+        { "id": "tip-1-icon", "type": "icon", "icon": "lucide:sparkles", "color": "#1F3A2E", "strokeWidth": 1.5, "x": 100, "y": 1080, "w": 110 }
+      ]
+    },
+    {
+      "id": "tip-2",
+      "width": 1080,
+      "height": 1350,
+      "background": "#E9F5EC",
+      "layers": [
+        { "id": "tip-2-num", "type": "text", "text": "02", "font": "Fraunces", "weight": 700, "size": 220, "lineHeight": 1, "color": "#4F8A66", "x": 100, "y": 130, "w": 500 },
+        { "id": "tip-2-title", "type": "text", "text": "Face the light", "font": "Fraunces", "weight": 700, "size": 96, "color": "#1F3A2E", "x": 100, "y": 400, "w": 860 },
+        { "id": "tip-2-body", "type": "text", "text": "Turn your subject toward a window. Soft side light flatters faces more than any filter.", "font": "DM Sans", "weight": 400, "size": 46, "lineHeight": 1.4, "color": "#2E5442", "x": 100, "y": 560, "w": 860 },
+        { "id": "tip-2-icon", "type": "icon", "icon": "lucide:sun", "color": "#1F3A2E", "strokeWidth": 1.5, "x": 100, "y": 1080, "w": 110 }
+      ]
+    },
+    {
+      "id": "tip-3",
+      "width": 1080,
+      "height": 1350,
+      "background": "#E9F5EC",
+      "layers": [
+        { "id": "tip-3-num", "type": "text", "text": "03", "font": "Fraunces", "weight": 700, "size": 220, "lineHeight": 1, "color": "#4F8A66", "x": 100, "y": 130, "w": 500 },
+        { "id": "tip-3-title", "type": "text", "text": "Tap to focus", "font": "Fraunces", "weight": 700, "size": 96, "color": "#1F3A2E", "x": 100, "y": 400, "w": 860 },
+        { "id": "tip-3-body", "type": "text", "text": "Tap the subject before you shoot. Hold your finger down to lock focus and exposure.", "font": "DM Sans", "weight": 400, "size": 46, "lineHeight": 1.4, "color": "#2E5442", "x": 100, "y": 560, "w": 860 },
+        { "id": "tip-3-icon", "type": "icon", "icon": "lucide:aperture", "color": "#1F3A2E", "strokeWidth": 1.5, "x": 100, "y": 1080, "w": 110 }
+      ]
+    }
+  ]
+}

@@ -204,7 +204,9 @@ function drawHQ(ctx, src, sx, sy, sw, sh, dx, dy, dw, dh) {
     if (ow > 1600) { W.value = 1600; H.value = Math.round(1600 * oh / ow); }
     sync(); render();
   });
-  var later = debounce(render, 200);
+  var later0 = debounce(render, 200);
+  /* While a change waits to be rendered the old file must not be downloadable. */
+  function later() { blob = null; $('#dl').disabled = true; later0(); }
   function clampInt(v) { v = Math.round(+v || 0); return Math.min(MAX, Math.max(1, v)); }
   function target() {
     if (mode === 'pct') { var p = +pct.value / 100; return { w: clampInt(ow * p), h: clampInt(oh * p) }; }

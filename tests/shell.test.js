@@ -250,7 +250,7 @@ PHONES.forEach(([vp, tag]) => {
     h.assert(await page.locator('#sx-head .sx-download span').isVisible(), 'the label "Download" shows on a phone');
     await page.locator('#sx-head .sx-download').tap();
     await page.waitForTimeout(600);
-    const btn = await box(page, '#sx-panel-body .btn-gold.btn-lg');
+    const btn = await box(page, '#sx-panel-body [data-act="download"], #sx-panel-body .btn-gold.btn-lg');
     const pan = await box(page, '#sx-panel');
     h.assert(btn && btn.bottom <= pan.bottom + 1 && btn.top >= pan.top, 'Download button inside the visible sheet ' + JSON.stringify(btn) + ' ' + JSON.stringify(pan));
   };

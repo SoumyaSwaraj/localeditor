@@ -73,7 +73,7 @@ cases['1366x768 and 1280x720 show every rail tool, including Apps (Collage) and 
 cases['1280x720 the Download button of the Export panel is visible without scrolling the panel (QA-014)'] = async ({ browser, base, h }) => {
   const page = await studioAt(browser, base, h, 1280, 720);
   await h.openPanel(page, 'export');
-  const ok = await page.evaluate(() => { const b = document.querySelector('#sx-panel-body .btn-gold.btn-lg').getBoundingClientRect(); return b.bottom <= innerHeight; });
+  const ok = await page.evaluate(() => { const b = document.querySelector('#sx-panel-body [data-act="download"], #sx-panel-body .btn-gold.btn-lg').getBoundingClientRect(); return b.bottom <= innerHeight; });
   h.assert(ok, 'Download button is below the fold');
 };
 module.exports = cases;

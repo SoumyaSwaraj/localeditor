@@ -1,0 +1,23 @@
+{
+  "$schema": "https://localeditor.net/schema/design-1.json",
+  "format": "localeditor-design",
+  "version": 1,
+  "name": "YouTube thumbnail",
+  "pages": [
+    {
+      "width": 1280,
+      "height": 720,
+      "background": "#101014",
+      "layers": [
+        { "id": "photo", "name": "Your face or product", "type": "image", "slot": { "id": "photo", "label": "Your photo" }, "x": 600, "y": 0, "w": 680, "h": 720 },
+        { "id": "shade", "type": "shape", "shape": "rectangle", "fill": { "type": "linear", "colors": ["#101014", "rgba(16,16,20,0)"], "angle": 0 }, "x": 560, "y": 0, "w": 260, "h": 720 },
+        { "id": "highlight", "type": "shape", "shape": "rectangle", "fill": "#FFD43B", "rotation": -3, "x": 52, "y": 316, "w": 520, "h": 150 },
+        { "id": "line-1", "type": "text", "text": "I TRIED IT", "font": "Anton", "size": 150, "lineHeight": 1, "color": "#FFFFFF", "stroke": { "width": 10, "color": "#101014" }, "x": 60, "y": 150, "w": 640, "h": 160, "fit": "shrink" },
+        { "id": "line-2", "type": "text", "text": "30 DAYS", "font": "Anton", "size": 150, "lineHeight": 1, "color": "#101014", "rotation": -3, "x": 76, "y": 318, "w": 500, "h": 150, "fit": "shrink" },
+        { "id": "badge", "type": "shape", "shape": "burst", "fill": "#E5484D", "rotation": 12, "x": 470, "y": 470, "w": 190, "h": 190 },
+        { "id": "badge-text", "type": "text", "text": "NOT\nCLICKBAIT", "font": "Inter", "weight": 700, "size": 22, "lineHeight": 1.05, "color": "#FFFFFF", "align": "center", "rotation": 12, "x": 490, "y": 540, "w": 150 },
+        { "id": "arrow", "type": "shape", "shape": "arrow-right", "fill": "#FFD43B", "x": 60, "y": 520, "w": 220, "h": 110 }
+      ]
+    }
+  ]
+}

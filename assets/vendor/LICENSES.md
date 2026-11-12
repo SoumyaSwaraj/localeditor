@@ -11,12 +11,16 @@ Everything under `assets/vendor/`, `assets/fonts/`, and `assets/data/` is vendor
 | QR Code Generator for JavaScript (Kazuhiko Arase) | 2009 script | MIT | `assets/vendor/qrcode.js` | http://www.d-project.com/ · https://github.com/kazuhikoarase/qrcode-generator |
 | @pdf-lib/fontkit | 1.1.1 | MIT | `assets/vendor/fontkit.umd.min.js` | https://github.com/Hopding/fontkit |
 | mammoth | 1.13.0 | BSD-2-Clause | `assets/vendor/mammoth.browser.min.js` | https://github.com/mwilliamson/mammoth.js |
+| @cantoo/pdf-lib (pdf-lib fork with PDF encryption and decryption; bundles fflate MIT, culori MIT, node-html-better-parser MIT, @pdf-lib/standard-fonts MIT, @pdf-lib/upng MIT, tslib 0BSD) | 2.11.1 | MIT | `assets/vendor/pdf-lib-crypt.min.js` (the package's `dist/pdf-lib.min.js`, source-map comment removed; SHA-256 of the npm file before that edit is recorded in the commit message); licence text `assets/vendor/licenses/cantoo-pdf-lib-LICENSE.txt`. Loaded on first use by `le-pdf-bulk.js` only (password protect/unlock), under its own name so the studio's `PDFLib` global is not replaced. | https://www.npmjs.com/package/@cantoo/pdf-lib · https://github.com/cantoo-scribe/pdf-lib |
 | SheetJS Community Edition | 0.20.3 | Apache-2.0 | `assets/vendor/xlsx.full.min.js` | https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz |
 | JSZip (includes pako) | 3.10.2 | MIT (dual MIT / GPL-3.0-or-later; used under MIT) | `assets/vendor/jszip.min.js` | https://github.com/Stuk/jszip |
 | DOMPurify | 3.4.17 | Apache-2.0 OR MPL-2.0 | `assets/vendor/purify.min.js` | https://github.com/cure53/DOMPurify |
 | marked | 18.1.3 | MIT | `assets/vendor/marked.umd.js` | https://github.com/markedjs/marked |
 | html2canvas | 1.4.1 | MIT | `assets/vendor/html2canvas.min.js` | https://github.com/niklasvh/html2canvas |
 | onnxruntime-web | 1.22.0 | MIT | `assets/vendor/ort/ort.wasm.min.js`, `assets/vendor/ort/ort-wasm-simd-threaded.module.js` (renamed from `.mjs` so every static host serves a JavaScript MIME type), `assets/vendor/ort/ort-wasm-simd-threaded.wasm`; licence text `assets/vendor/licenses/onnxruntime-LICENSE.txt` | https://www.npmjs.com/package/onnxruntime-web · https://github.com/microsoft/onnxruntime |
+| tesseract.js worker script (text recognition) | 7.0.0 | Apache-2.0 (the minified worker also bundles `buffer` MIT, `ieee754` BSD-3-Clause, `regenerator-runtime` MIT, `zlibjs` MIT, `bmp-js` MIT, `is-url` MIT, `wasm-feature-detect` Apache-2.0) | `assets/vendor/tesseract/worker.min.js`; licence text `assets/vendor/licenses/tesseract.js-LICENSE.txt` | https://www.npmjs.com/package/tesseract.js · https://github.com/naptha/tesseract.js |
+| tesseract.js-core (Tesseract 5 LSTM engine, Leptonica, compiled to WebAssembly) | 7.0.0 | Apache-2.0 | `assets/vendor/tesseract/tesseract-core-simd-lstm.wasm.js`, `assets/vendor/tesseract/tesseract-core-lstm.wasm.js` (no-SIMD fallback); licence text `assets/vendor/licenses/tesseract.js-core-LICENSE.txt` | https://www.npmjs.com/package/tesseract.js-core · https://github.com/naptha/tesseract.js-core |
+| GlyphLessFont (572-byte blank-glyph TrueType font, embedded as base64 in the invisible text layer of searchable PDFs) | from Tesseract `pdf_ttf.h` | Apache-2.0 | inside `labs/pdf-ocr/ocr.js` | https://github.com/tesseract-ocr/tesseract |
 
 The word “QR Code” is a registered trademark of Denso Wave Incorporated.
 
@@ -96,10 +100,23 @@ Icon JSON is the Iconify collection format. Lucide’s license is ISC. Phosphor 
 
 ## Models
 
-Downloaded only when the user asks (background remover, labs/bg-remove; see `docs/research/background-remover.md`). Cached in Cache Storage `le-models-v1`.
+Downloaded only when the user asks (studio background remover, `assets/js/le-bgremove.js`; see `docs/research/background-remover.md`). Never precached. Cached in Cache Storage `le-models-v1`; the person can remove each one from the studio chooser or the storage manager.
 
 | Name | License | Files | Source |
 |---|---|---|---|
 | U²-Net `u2netp` (4.7 MB ONNX export) | Apache-2.0 (code and weights, Xuebin Qin) | `assets/models/u2netp.onnx`; licence text `assets/vendor/licenses/u2net-LICENSE.txt` | https://github.com/xuebinqin/U-2-Net · ONNX from https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx (rembg, MIT) |
+| U²-Net `u2net`, 8-bit ("More detail", 44,212,603 bytes, sha256 `4259d8dc46943e2881462fe8ac9657a18dad67cb7dfe0890d4f66e3d2b5fdfee`) | Apache-2.0 (derived from the Apache-2.0 weights; carries the same notice) | `assets/models/u2net-int8.onnx`; licence text `assets/vendor/licenses/u2net-LICENSE.txt` | Source fp32 `u2net.onnx` (175,997,641 bytes, sha256 `8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491`) from https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx (ONNX export of https://github.com/xuebinqin/U-2-Net weights), quantised by LocalEditor with onnxruntime `quantize_dynamic(weight_type=QUInt8)` |
+| U²-Net `u2net_human_seg`, 8-bit ("People and portraits", 44,212,602 bytes, sha256 `1a971f94f2a294387837ae5dd7d013e8043f528ec196cb83f84e32fe55e27a58`) | Apache-2.0 (derived, same notice) | `assets/models/u2net_human_seg-int8.onnx`; licence text `assets/vendor/licenses/u2net-LICENSE.txt` | Source fp32 `u2net_human_seg.onnx` (175,997,641 bytes, sha256 `01eb6a29a5c4d8edb30b56adad9bb3a2a0535338e480724a213e0acfd2d1c73c`) from https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net_human_seg.onnx, quantised the same way |
+| Chooser example images | LocalEditor (made from pool photos, see `assets/data/collages/photos.json` for their CC licences and credits: arch-01, books-02, people-07) | `assets/img/cutout/*.jpg` | rendered by the background remover |
 
+Training-data note: u2netp and u2net are trained on DUTS-TR; u2net_human_seg on the Supervisely Person dataset. u2netp is trained on DUTS-TR, a research saliency dataset with no stated licence. The Apache-2.0 grant covers the weights; the dataset provenance is an unresolved residual risk that the owner should accept knowingly.
 Training-data note: u2netp is trained on DUTS-TR, a research saliency dataset with no stated licence. The Apache-2.0 grant covers the weights; the dataset provenance is an unresolved residual risk that the owner should accept knowingly.
+
+### Text recognition language data
+
+Downloaded only when the user asks (scanned PDF text, labs/pdf-ocr; see `docs/research/pdf-ocr-scan.md`). Cached in Cache Storage `le-models-v1`. `tessdata_fast` is the integer LSTM data published by the Tesseract project; the licence file is `assets/vendor/licenses/tessdata_fast-LICENSE.txt`. The `@tesseract.js-data/*` npm packages repackage the same data and label themselves MIT; we use the upstream Apache-2.0 files instead.
+
+| Name | License | Files | Source |
+|---|---|---|---|
+| tessdata_fast `eng` (4.1 MB) | Apache-2.0 | `assets/models/ocr/eng.traineddata` (committed) | https://github.com/tesseract-ocr/tessdata_fast |
+| tessdata_fast `spa` `por` `fra` `deu` `hin` `ara` (1.1 to 2.3 MB each) | Apache-2.0 | `assets/models/ocr/more/<id>.traineddata` (not committed; `node scripts/fetch-ocr-data.js`) | https://github.com/tesseract-ocr/tessdata_fast |

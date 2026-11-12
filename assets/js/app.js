@@ -175,6 +175,12 @@
     ['Privacy and install', 'about/', 'How LocalEditor keeps files on this device']
   ];
 
+  /* Category hubs and feature pages: [title, href, tagline, icon or keywords]. Only live and beta entries. */
+  /* BEGIN site index */
+  var HUBS = [["Photo and design","photo/","Edit photos, make collages and posts","image"],["PDF and documents","pdf/","Sign, fill, merge and convert PDFs","pdf"],["Privacy tools","privacy-tools/","Hidden photo data, storage and offline use","shield"],["Social and creators","social/","Posts, stories and collages for every platform","sizes"],["Small business","business/","Brand kit, product photos and signed PDFs","shop"],["Teachers","teachers/","Worksheets, forms and classroom displays","school"],["Office work","office/","Confidential PDFs: sign, merge, watermark","briefcase"],["Every tool","tools/","Every single-step tool on one page","grid"]];
+  var PAGES = [["Collage maker","collage-maker/","Layouts and styles with a slot for every photo","collage photo grid moodboard scrapbook polaroid photo collage"],["Photo backgrounds","photo-backgrounds/","Crop, blur and dim a photo behind your design","background blur background dim wallpaper backdrop"],["Recipes and batch editing","batch-edit/","One look, applied to many photos","batch bulk edit preset filter recipe lightroom preset alternative"],["Sizes for every platform","social-media-sizes/","Instagram, story, YouTube and more, ready to go","instagram size story size youtube thumbnail size resize aspect ratio social media sizes"],["Photo editor","photo-editor/","Crop, light, colour and filters","photo editor crop brightness contrast filters edit photo online"],["Text and fonts","add-text-to-photo/","Titles and captions in dozens of typefaces","add text to photo fonts caption title typography text on image"],["Brand kit","brand-kit/","Your colours, fonts and logos in every design","brand kit brand colors logo style guide brand fonts"],["PDF studio","pdf-editor/","Sign, fill, annotate and reorder pages","sign pdf fill pdf pdf editor annotate pdf edit pdf pdf form"],["Convert to PDF","word-to-pdf/","Office files, images and text into PDFs","word to pdf docx to pdf excel to pdf powerpoint to pdf convert to pdf"],["Install and offline use","install/","Home screen app that works offline","install pwa offline home screen app"],["Storage manager","storage-manager/","What the app keeps here, and a clear button","storage cache clear data space offline files"]];
+  /* END site index */
+
   function base() {
     return root.getAttribute('data-root') || '';
   }
@@ -215,7 +221,11 @@
     pdfstudio: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="m9.5 17 4.8-4.8a1.3 1.3 0 0 1 1.8 1.8L11.3 18.8 9 19.3z"/>',
     convert: '<path d="M4 7h11l-3-3M20 17H9l3 3"/><path d="M17 4h3v6M7 20H4v-6"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
-    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>'
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>',
+    sizes: '<rect x="3" y="7" width="8" height="10" rx="1.5"/><rect x="13" y="3" width="8" height="18" rx="1.5"/>',
+    shop: '<path d="M4 9h16l-1.2 10.2a2 2 0 0 1-2 1.8H7.2a2 2 0 0 1-2-1.8z"/><path d="M8.5 9V7a3.5 3.5 0 0 1 7 0v2"/>',
+    school: '<path d="M2 9.5 12 5l10 4.5-10 4.5z"/><path d="M6 11.5V16c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.5M22 9.5V15"/>',
+    briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/>'
   };
 
   function mark() {
@@ -247,12 +257,7 @@
         item('pdf-studio/', 'PDF studio', 'pdfstudio') +
         item('convert-to-pdf/', 'Convert to PDF', 'convert') +
         item('recipes/', 'Recipes', 'recipes') +
-        '<div class="le-label">Popular tools</div>' +
-        item('image-compressor/', 'Compress image', 'compress') +
-        item('image-resizer/', 'Resize image', 'resize') +
-        item('merge-pdf/', 'Merge PDF', 'merge') +
-        item('studio/?tool=collage', 'Collage', 'collage') +
-        item('#tools', 'Every tool', 'grid', '35') +
+        (HUBS.length ? '<div class="le-label">Browse by need</div>' + HUBS.map(function (h) { return item(h[1], h[0], h[3]); }).join('') : item('#tools', 'Every tool', 'grid')) +
         '<div class="le-promise">' + icon(ICONS.shield) + '<span><strong>Nothing is uploaded</strong>Your photos and PDFs are edited by this browser and stay on this device.</span></div>' +
       '</nav>' +
       '<div class="le-side-foot">' +
@@ -276,7 +281,7 @@
         link('pdf-studio/', 'PDF studio') +
         link('convert-to-pdf/', 'Convert') +
         link('recipes/', 'Recipes') +
-        '<a href="' + b + '#tools">All tools</a>' +
+        link(HUBS.some(function (h) { return h[1] === 'tools/'; }) ? 'tools/' : '#tools', 'All tools') +
       '</nav>' +
       '<span class="spacer"></span>' +
       '<button class="le-search" type="button" data-search aria-label="Search tools">' + icon(ICONS.search) + '<span>Search tools</span><kbd>/</kbd></button>' +
@@ -462,7 +467,7 @@
       dialog = document.createElement('dialog');
       dialog.className = 'le-dialog';
       dialog.setAttribute('aria-label', 'Search tools');
-      dialog.innerHTML = '<form method="dialog"><input type="search" placeholder="Search tools and studios" aria-label="Search tools" autocomplete="off" enterkeyhint="go"><ul></ul><p class="empty-search hidden">No tools match.</p></form>';
+      dialog.innerHTML = '<form method="dialog"><input type="search" placeholder="Search tools, topics and studios" aria-label="Search tools" autocomplete="off" enterkeyhint="go"><ul></ul><p class="empty-search hidden">No tools match.</p></form>';
       document.body.appendChild(dialog);
       dialog.addEventListener('click', function (e) { if (e.target === dialog) dialog.close(); });
       var input = dialog.querySelector('input');
@@ -497,8 +502,12 @@
     var b = base();
     var html = '';
     var n = 0;
-    TOOLS.forEach(function (t) {
-      var hay = (t[0] + ' ' + t[2] + ' ' + t[1]).toLowerCase();
+    /* Hubs first, then tools, then feature guides. A feature page's keywords are searched but not shown. */
+    var all = HUBS.map(function (h) { return [h[0], h[1], 'Category · ' + h[2], '']; })
+      .concat(TOOLS.map(function (t) { return [t[0], t[1], t[2], '']; }))
+      .concat(PAGES.map(function (p) { return [p[0], p[1], p[2], p[3]]; }));
+    all.forEach(function (t) {
+      var hay = (t[0] + ' ' + t[2] + ' ' + t[1] + ' ' + t[3]).toLowerCase();
       if (words.length && !words.every(function (w) { return hay.indexOf(w) >= 0; })) return;
       n++;
       html += '<li><a href="' + b + t[1] + '">' + escapeHtml(t[0]) + '<span>' + escapeHtml(t[2]) + '</span></a></li>';

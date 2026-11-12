@@ -159,10 +159,12 @@ function makeItem(file) {
 
 (function () {
   var drop = $('#drop'), app = $('#app'), list = $('#list'), q = $('#q'), qv = $('#qv'), mw = $('#mw');
-  var items = [], fmt = WEBP_OK ? 'image/webp' : 'image/jpeg', ver = 0, running = false;
+  var items = [], fmt = WEBP_OK ? 'image/webp' : 'image/jpeg', ver = 0, running = false, pending = false;
   if (!WEBP_OK) { var wb = $('#fmt [data-v="image/webp"]'); wb.disabled = true; wb.title = 'WebP encoding is not supported in this browser'; wb.setAttribute('aria-pressed', 'false'); $('#fmt [data-v="image/jpeg"]').setAttribute('aria-pressed', 'true'); }
   var input = IT.dropzone(drop, { accept: 'image/*', multiple: true, paste: true, onFiles: add });
-  var schedule = debounce(function () { runAll(true); }, 250);
+  var timer = 0;
+  /* An option changed: the list still holds the old encode until the re-run finishes, so block downloads meanwhile. */
+  function schedule() { pending = true; items.forEach(function (it) { it.dl.disabled = true; }); stats(); clearTimeout(timer); timer = setTimeout(function () { timer = 0; runAll(true); }, 250); }
   seg($('#fmt'), function (v) { fmt = v; schedule(); });
   q.addEventListener('input', function () { qv.textContent = q.value + '%'; schedule(); });
   mw.addEventListener('input', schedule);
@@ -171,7 +173,7 @@ function makeItem(file) {
     if (!files.length) { IT.toast('Please choose image files'); return; }
     files.forEach(function (f) {
       var it = makeItem(f); items.push(it); list.appendChild(it.li);
-      it.dl.addEventListener('click', function () { if (it.blob) IT.download(it.blob, outName(it)); });
+      it.dl.addEventListener('click', function () { if (it.blob && !pending) IT.download(it.blob, outName(it)); });
       it.rm.addEventListener('click', function () { remove(it); });
     });
     drop.classList.add('hidden'); app.classList.remove('hidden');
@@ -197,7 +199,7 @@ function makeItem(file) {
         for (var i = 0; i < todo.length; i++) { if (ver !== my) break; await compress(todo[i], my); }
         if (ver === my) break;
       }
-    } finally { running = false; }
+    } finally { running = false; if (!timer) pending = false; stats(); }
   }
   async function compress(it, my) {
     it.sub.textContent = IT.formatBytes(it.file.size) + ' · compressing…';
@@ -234,10 +236,11 @@ function makeItem(file) {
     $('#s-after').textContent = done ? IT.formatBytes(after) : '–';
     var doneBefore = items.reduce(function (s, it) { return s + (it.blob ? it.file.size : 0); }, 0);
     $('#s-saved').textContent = done && doneBefore ? Math.round((1 - after / doneBefore) * 100) + '%' : '–';
-    $('#dl-all').disabled = !done;
+    $('#dl-all').disabled = pending || (running && items.some(function (it) { return it.ver !== ver; })) || !done;
   }
   $('#dl-all').addEventListener('click', function () {
-    var ready = items.filter(function (it) { return it.blob; });
+    if (pending) return;
+    var ready = items.filter(function (it) { return it.blob && it.ver === ver; });
     ready.forEach(function (it, i) { setTimeout(function () { IT.download(it.blob, outName(it)); }, i * 350); });
     IT.toast('Downloading ' + ready.length + ' image' + (ready.length > 1 ? 's' : ''));
   });

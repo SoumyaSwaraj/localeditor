@@ -14,7 +14,7 @@
   "CustomHeadersConfig": {
     "Quantity": 1,
     "Items": [
-      { "Header": "Permissions-Policy", "Override": true, "Value": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), bluetooth=(), midi=(), display-capture=(), browsing-topics=(), clipboard-read=(self), clipboard-write=(self), fullscreen=(self), web-share=(self)" }
+      { "Header": "Permissions-Policy", "Override": true, "Value": "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), bluetooth=(), midi=(), display-capture=(), browsing-topics=(), clipboard-read=(self), clipboard-write=(self), fullscreen=(self), web-share=(self)" }
     ]
   }
 }

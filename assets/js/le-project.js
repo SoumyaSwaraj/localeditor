@@ -554,6 +554,11 @@
       if (recipeMark) l.adjust.recipe = recipeMark;
       l.filter = src.filter && typeof src.filter.name === 'string' && /^[a-z-]{1,30}$/.test(src.filter.name) ? { name: src.filter.name, intensity: clamp(num(src.filter.intensity, 100), 0, 100) } : null;
       l.removeBg = src.removeBg && typeof src.removeBg === 'object' ? { color: safeColor(src.removeBg.color) || '#ffffff', tolerance: clamp(num(src.removeBg.tolerance, 28), 0, 255) } : null;
+      var cut = src.cutout && typeof src.cutout === 'object' && !Array.isArray(src.cutout) ? src.cutout : null;
+      if (cut && idOk(cut.asset, 80)) {
+        var ol = cut.outline && typeof cut.outline === 'object' && num(cut.outline.width, 0) > 0 ? { color: safeColor(cut.outline.color) || '#ffffff', width: clamp(num(cut.outline.width, 0), 0, 200) } : null;
+        l.cutout = { asset: cut.asset, enabled: cut.enabled !== false, model: typeof cut.model === 'string' && /^[\w.-]{1,40}$/.test(cut.model) ? cut.model : '', feather: clamp(num(cut.feather, 0), 0, 50), refine: cut.refine === 'none' ? 'none' : 'guided', version: 1, outline: ol };
+      }
     } else if (l.type === 'text') {
       l.text = str(src.text, LIMITS.text, 'Text');
       l.font = typeof src.font === 'string' && /^[\w \-]{1,80}$/.test(src.font) ? src.font : 'Plus Jakarta Sans';
@@ -585,6 +590,8 @@
         dash: Array.isArray(src.stroke.dash) ? src.stroke.dash.slice(0, 8).map(function (d) { return clamp(num(d, 0), 0, 5000); }) : null,
         cap: oneOf(src.stroke.cap, ['butt', 'round', 'square'], 'butt'), join: oneOf(src.stroke.join, ['miter', 'round', 'bevel'], 'miter')
       } : null;
+      var redact = LE.Scene && LE.Scene.redactOf ? LE.Scene.redactOf(src.redact) : null;
+      if (redact) l.redact = redact;
     } else if (l.type === 'svg') {
       l.assetId = typeof src.assetId === 'string' && /^[\w-]{1,24}:(?:[\w-]{1,40}\/)?[\w-]{1,80}$/.test(src.assetId) ? src.assetId : '';
       l.svg = src.svg ? sanitizeSvg(src.svg) : '';
@@ -643,6 +650,10 @@
     layers.slice(0, LIMITS.layers).forEach(function (l) { var s = sanitizeLayer(l, errors); if (s) out.layers.push(s); });
     var collage = LE.Scene && LE.Scene.collageOf ? LE.Scene.collageOf(doc.collage) : null;
     if (collage) out.collage = collage;
+    var carousel = LE.Scene && LE.Scene.carouselOf ? LE.Scene.carouselOf(doc.carousel) : null;
+    if (carousel) out.carousel = carousel;
+    var maker = LE.Scene && LE.Scene.makerOf ? LE.Scene.makerOf(doc.maker) : null;
+    if (maker) out.maker = maker;
     return out;
   }
   function sizeEntry(e, errors) {
@@ -687,6 +698,20 @@
       return o;
     });
     if (fx) out.fx = fx;
+    /* Open design format (le-design.js): template variables, remix credit and page ids, all plain text. */
+    if (Array.isArray(m.variables)) {
+      out.variables = m.variables.slice(0, 50).map(function (v) {
+        if (!v || typeof v !== 'object' || typeof v.key !== 'string' || !/^[A-Za-z_][\w.-]{0,39}$/.test(v.key)) return null;
+        var o = { key: v.key, label: str(v.label, 80).replace(/[<>]/g, ''), type: oneOf(v.type, ['text', 'image'], 'text') };
+        if (typeof v.default === 'string') o.default = v.default.slice(0, 2000);
+        return o;
+      }).filter(Boolean);
+    }
+    if (m.remix && typeof m.remix === 'object') {
+      var rn = str(m.remix.name, 160).replace(/[<>]/g, '').trim(), rb = str(m.remix.by, 80).replace(/[<>]/g, '').trim();
+      if (rn || rb) out.remix = { name: rn, by: rb };
+    }
+    if (Array.isArray(m.pageIds)) out.pageIds = m.pageIds.slice(0, LIMITS.pages).map(function (p) { return idOk(p, 48) ? p : ''; });
     if (m.guides && typeof m.guides === 'object') {
       var gd = {};
       ['x', 'y'].forEach(function (a) { gd[a] = (Array.isArray(m.guides[a]) ? m.guides[a] : []).slice(0, 40).map(function (n) { return clamp(num(n, 0), -20000, 40000); }); });
@@ -766,7 +791,7 @@
     out.activePage = clamp(Math.round(num(raw.activePage, 0)), 0, out.pages.length - 1);
     (Array.isArray(raw.sizeHistory) ? raw.sizeHistory.slice(-LIMITS.history) : []).forEach(function (e) { var s = sizeEntry(e, errors); if (s) out.sizeHistory.push(s); });
     out.pages.forEach(function (p) {
-      p.layers.forEach(function (l) { if (l.type === 'image' && l.src && !assetsOut[l.src]) errors.push('A photo in this project is missing.'); });
+      p.layers.forEach(function (l) { if (l.type === 'image' && l.src && !assetsOut[l.src]) errors.push('A photo in this project is missing.'); if (l.cutout && !assetsOut[l.cutout.asset]) { delete l.cutout; errors.push('A background-removal mask was missing, so that photo shows its full background.'); } });
     });
     return { ok: true, errors: errors, project: out };
   }
