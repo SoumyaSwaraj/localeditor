@@ -263,6 +263,7 @@
     } else scene.fit();
     S.fitting = false;
     S.autoFit = true;
+    if (E.chips) paintChips();
   }
   function startCrop(id) {
     var layer = scene._find ? scene._find(id) : null;
@@ -282,7 +283,6 @@
   /* Toasts sit in the free area: above the phone tab bar, toolbar and sheet, above the desktop footer, centred on the canvas. */
   function placeToast() {
     var t = E.toast;
-    if (t.hidden) return;
     var vh = innerHeight;
     var lowest = vh;
     var phone = isPhone();
@@ -291,9 +291,14 @@
       var r = n.getBoundingClientRect();
       if (r.height > 0 && r.width > 0 && r.bottom > vh * 0.45 && r.top < lowest) lowest = r.top;
     });
-    t.style.bottom = Math.max(12, Math.round(vh - lowest + 12)) + 'px';
+    var free = Math.max(12, Math.round(vh - lowest + 12));
+    document.body.style.setProperty('--sx-free-b', free + 'px');
+    document.body.classList.toggle('sx-toasting', !t.hidden);
+    if (t.hidden) return;
+    t.style.bottom = free + 'px';
     var sr = E.stage.getBoundingClientRect();
-    t.style.left = !phone && sr.width > 0 ? Math.round(sr.left + sr.width / 2) + 'px' : '';
+    t.style.left = !phone && sr.width > 0 ? Math.round(sr.left + 12) + 'px' : '';
+    t.style.right = !phone && sr.width > 0 ? Math.round(innerWidth - sr.right + 12) + 'px' : '';
   }
   function toast(msg, opts) {
     opts = opts || {};
@@ -307,7 +312,7 @@
     clearTimeout(t._t);
     t._t = setTimeout(hideToast, opts.ms || (opts.action ? 6500 : 2600));
   }
-  function hideToast() { E.toast.classList.remove('is-on'); setTimeout(function () { if (!E.toast.classList.contains('is-on')) E.toast.hidden = true; }, 240); }
+  function hideToast() { E.toast.classList.remove('is-on'); setTimeout(function () { if (!E.toast.classList.contains('is-on')) { E.toast.hidden = true; document.body.classList.remove('sx-toasting'); } }, 240); }
 
   /* Popovers: menus are keyboard menus (focus moves in, arrows move, Esc or Tab returns to the button that opened them). */
   var popAnchor = null;
@@ -905,7 +910,18 @@
     }
     E.panelBody.scrollTop = top;
     markRail();
+    markScrollers();
+    setTimeout(markScrollers, 400);
   }
+  /* Rows that scroll sideways inside a panel (tab strips, chip rows) fade at the edge that has more, so people know. */
+  var SCROLLERS = '.sx-tabs-row, .sx-chips.is-scroll, .sx-cg-chips, .sx-stock-provs, .sx-rep-tabs, .sx-wi-rail';
+  function markScroller(n) {
+    var more = n.scrollWidth > n.clientWidth + 2;
+    n.classList.toggle('sx-fade-r', more && n.scrollLeft + n.clientWidth < n.scrollWidth - 2);
+    n.classList.toggle('sx-fade-l', more && n.scrollLeft > 2);
+  }
+  function markScrollers() { if (S.panel) E.panelBody.querySelectorAll(SCROLLERS).forEach(markScroller); }
+  E.panelBody.addEventListener('scroll', function (e) { var n = e.target; if (n && n.matches && n.matches(SCROLLERS)) markScroller(n); }, true);
   var refreshPanelSoon = debounce(function () {
     var spec = PANELS[S.panel];
     if (!spec || !spec.doc || S.pointer || S.preview) return;
@@ -1030,7 +1046,7 @@
   function common(l) {
     var ph = isPhone();
     return SEP + tb('opacity', 'opacity', 'Transparency', { pri: 3, popup: 'dialog' }) + tb('position', 'position', 'Position', { text: true, pri: 3 }) + tb('copyStyle', 'brush', S.painterArmed ? 'Click another item to paste this style (Esc to stop)' : 'Copy style (Ctrl+Alt+C)', { pressed: !!S.painterArmed, pri: 3 }) + SEP +
-      tb(l && l.locked ? 'unlock' : 'lock', l && l.locked ? 'lock' : 'unlock', l && l.locked ? 'Unlock' : 'Lock', { pressed: !!(l && l.locked), pri: ph ? 3 : 2 }) +
+      tb(l && l.locked ? 'unlock' : 'lock', l && l.locked ? 'lock' : 'unlock', l && l.locked ? 'Unlock' : 'Lock', { pressed: !!(l && l.locked), pri: ph ? 3 : 1 }) +
       tb('dup', 'copy', 'Duplicate (Ctrl+D)', { pri: S.editing ? 3 : 1 }) + tb('del', 'trash', 'Delete (Del)', { pri: S.editing ? 3 : 1, cls: 'is-danger' }) + moreBtn();
   }
   function moreBtn() { return tb('more', 'more', 'More options', { pri: 0, cls: 'sx-tb-more', popup: 'menu' }); }
@@ -1213,7 +1229,20 @@
     });
     paintZoom();
   }
+  /* Phone: the footer is hidden, so the canvas carries a page pill (more than one page) and a Fit chip (after zooming). */
+  E.chips = h('<div class="sx-stage-chips" aria-label="Canvas"></div>');
+  E.stage.appendChild(E.chips);
+  function paintChips() {
+    var p = S.project;
+    var many = p && p.pages.length > 1;
+    var key = (p ? p.activePage + '/' + p.pages.length : '') + (S.autoFit ? '' : 'z');
+    if (E.chips._key === key) return;
+    E.chips._key = key;
+    E.chips.innerHTML = (many ? '<button type="button" class="sx-chipbtn" data-cmd="pages" aria-label="Pages" aria-haspopup="dialog">' + ic('pages') + '<span>' + (p.activePage + 1) + ' / ' + p.pages.length + '</span></button>' : '') +
+      (p && !S.autoFit ? '<button type="button" class="sx-chipbtn" data-cmd="fit" aria-label="Fit to screen">' + ic('fit') + '<span>Fit</span></button>' : '');
+  }
   function paintZoom() {
+    paintChips();
     var z = byId('sx-zoom'), v = byId('sx-zoomv');
     var zz = scene.zoom();
     if (z && document.activeElement !== z) {
@@ -1950,7 +1979,8 @@
   /* ctx.coach(i) shows mark i if it is the next one due; ctx.coach('off') turns guidance off for good. */
   function coachMark(i) {
     if (i === 'off') { lsSet(COACH_KEY, 'done'); hideCoach(); return; }
-    if (S.coachEl || coachStep() !== i || !COACH[i] || !S.project) return;
+    if (S.coachEl || coachStep() !== i || !COACH[i] || !S.project || S.editing) return;
+    if (!E.toast.hidden) { clearTimeout(S.coachWait); S.coachWait = setTimeout(function () { coachMark(i); }, 2800); return; }
     var t = COACH[i].target();
     if (!t || !t.offsetParent) return;
     var r = t.getBoundingClientRect();
@@ -1975,6 +2005,10 @@
       n.style.setProperty('--ax', Math.round(clamp(cx - x, 16, nw - 16)) + 'px');
       n.classList.add(below ? 'is-below' : 'is-above');
     }
+    /* never sit on the thing the person just selected: try again at the next selection */
+    var nb = n.getBoundingClientRect();
+    var hit = sel().some(function (id) { var q = scene.screenRect(id); return q && q.left < nb.right && q.right > nb.left && q.top < nb.bottom && q.bottom > nb.top; });
+    if (hit && i === 1) { n.remove(); return; }
     S.coachEl = n;
     S.coachShown = i;
     requestAnimationFrame(function () { n.classList.add('is-on'); });

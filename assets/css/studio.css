@@ -20,7 +20,6 @@
   --sheet-h: 0px;
   --surface-2: color-mix(in srgb, var(--ink) 4.5%, var(--surface));
   --surface-3: color-mix(in srgb, var(--ink) 8%, var(--surface));
-  --ring: 0 0 0 2px var(--surface), 0 0 0 4px rgba(116, 87, 240, 0.55);
   --sx-r: 14px;
   position: fixed;
   inset: 0;
@@ -32,6 +31,7 @@
   font-size: 14px;
 }
 .sx button { font: inherit; color: inherit; }
+.sx, .sx-pop, .sx-modal { --ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--focus-ring, #6A4FE8); }
 .sx :focus-visible, .sx-pop :focus-visible, .sx-modal :focus-visible { outline: none; box-shadow: var(--ring); }
 .sx-ic { width: 20px; height: 20px; flex: none; }
 
@@ -966,8 +966,8 @@ select.sx-input { padding-right: 28px; }
   .sx-download span { display: none; }
   .sx-head .sx-iconbtn { width: 40px; height: 40px; }
   .sx-rail { display: none; }
-  .sx-main { grid-template-rows: minmax(0, 1fr) auto; padding-bottom: 0; transition: padding-bottom 0.28s var(--ease-out); }
-  .sheet-open .sx-main { padding-bottom: var(--sheet-h); }
+  .sx-main { grid-template-rows: minmax(0, 1fr) auto; padding-bottom: 0; }
+  .sheet-open .sx-main { padding-bottom: var(--sheet-h); transition: padding-bottom 0.28s var(--ease-out); }
   .sheet-drag .sx-main { transition: none; }
   .sx-stage { order: 1; }
   .sx-tool { order: 2; border-bottom: 0; border-top: 1px solid var(--border); height: 56px; padding: 0 8px; gap: 2px; }
@@ -1477,6 +1477,7 @@ select.sx-input { padding-right: 28px; }
 
 /* Toolbar: measured overflow into "More". */
 .sx-tool [hidden] { display: none !important; }
+:root[data-theme="dark"] .sx-tb-swatch i { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), 0 1px 2px rgba(0, 0, 0, 0.3); }
 .sx-tool.is-compact .sx-tb.has-text:not(.is-primary):not(.sx-tb-chip) span { display: none; }
 .sx-tool.is-compact .sx-tb.has-text { padding: 0 9px; }
 .sx-tb.is-danger:hover:not(:disabled) { color: var(--err); }
@@ -1496,10 +1497,23 @@ select.sx-input { padding-right: 28px; }
 }
 .sx-sheet-actions > .btn { flex: 1 1 auto; justify-content: center; }
 .sx-sheet-actions > .btn-gold { flex: 2 1 auto; }
-.sx-panel-body > .btn-gold.sx-block { box-shadow: 0 0 0 8px var(--surface), 0 28px 0 8px var(--surface); }
+.sx-panel-body > .btn-gold.sx-block::after {
+  content: ""; position: absolute; left: -24px; right: -24px; top: calc(100% + 1px); height: 48px; background: var(--surface); pointer-events: none;
+}
+.sx-panel-body > .btn-gold.sx-block::before {
+  content: ""; position: absolute; left: -24px; right: -24px; bottom: calc(100% + 1px); height: 10px; background: var(--surface); pointer-events: none; z-index: -1;
+}
 
-/* Toasts: placed by placeToast() in the free area; tap to dismiss. */
-.sx-toast { cursor: default; }
+/* Sideways rows in panels: an edge fade where there is more to scroll. */
+.sx-fade-r { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); }
+.sx-fade-l { -webkit-mask-image: linear-gradient(90deg, transparent, #000 44px); mask-image: linear-gradient(90deg, transparent, #000 44px); }
+.sx-fade-l.sx-fade-r { -webkit-mask-image: linear-gradient(90deg, transparent, #000 44px, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(90deg, transparent, #000 44px, #000 calc(100% - 44px), transparent); }
+
+/* Toasts: placed by placeToast() in the free area (left/right/bottom); tap to dismiss. The site toast (app.js) follows. */
+.sx-toast { cursor: default; left: 12px; right: 12px; margin: 0 auto; width: max-content; transform: translateY(12px); }
+.sx-toast.is-on { transform: none; }
+.sx-body .toast { bottom: var(--sx-free-b, 84px); }
+.sx-body.sx-toasting .toast { bottom: calc(var(--sx-free-b, 84px) + 56px); }
 .sx-toast > span { min-width: 0; }
 
 /* First-run coach marks: never block a tap. */
@@ -1544,6 +1558,18 @@ select.sx-input { padding-right: 28px; }
 .sx-more-item[aria-pressed="true"] { border-color: var(--amethyst); background: var(--accent-soft); }
 .sx-more-item:hover { background: var(--surface-2); }
 
+/* Canvas chips (phone): page pill and Fit after zooming. */
+.sx-stage-chips { display: none; }
+@media (max-width: 767px) {
+  .sx-stage-chips { position: absolute; right: 8px; bottom: 8px; z-index: 6; display: flex; gap: 6px; }
+  .sx-chipbtn {
+    display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.12));
+    font: 650 13px "Plus Jakarta Sans", var(--font); cursor: pointer;
+  }
+  .sx-chipbtn .sx-ic { width: 18px; height: 18px; }
+}
+
 /* Size preview and version bars: docked at the top of the stage on phones (the canvas fits below them). */
 .sx-bar .btn { min-height: 40px; }
 
@@ -1582,19 +1608,20 @@ select.sx-input { padding-right: 28px; }
   .is-scrubbing .sx-panel-body > * { animation: none; }
 
   /* Toolbar: icon + short label, 44px targets, Delete always in view (overflow goes to More). */
-  .sx-tool { overflow-x: auto; justify-content: flex-start; }
+  .sx-tool { overflow-x: auto; justify-content: flex-start; padding: 0 4px; gap: 0; }
   .sx-tb { min-width: 44px; }
   .sx-tb.has-text { min-width: 52px; }
-  .sx-tb-font { min-width: 44px; max-width: 64px; width: auto; padding: 0 6px; justify-content: center; gap: 0; }
+  .sx-tb-font { min-width: 44px; max-width: 64px; width: auto; height: 44px; padding: 0 6px; justify-content: center; gap: 0; }
   .sx-tb-font span { font-size: 17px; }
   .sx-tb-font .sx-ic { display: none; }
   .sx-tb-size { height: 44px; }
-  .sx-tb-size .sx-tb { height: 42px; min-width: 40px; width: 40px; }
-  .sx-tb-size input { height: 42px; width: 38px; font-size: 16px; }
+  .sx-tb-size .sx-tb { height: 42px; min-width: 44px; width: 44px; }
+  .sx-tb-size input { height: 42px; width: 34px; padding: 0; font-size: 16px; }
+  .sx-pop.is-sheet .sx-menu button, .sx-pop.is-sheet .sx-menu a { min-height: 44px; }
   .sx-tb-more { margin-left: auto; }
 
   .sx-bar, .sx-bar.is-top { top: 8px; bottom: auto; }
-  .sx-toast { left: 50%; max-width: calc(100vw - 24px); }
+  .sx-toast { max-width: calc(100vw - 24px); }
   .sx-hero .sx-eyebrow { display: none; }
   .sx-hero h1 { font-size: 30px; }
   .sx-hero { gap: 12px; }
