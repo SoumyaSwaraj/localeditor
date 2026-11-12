@@ -1225,7 +1225,7 @@
       }
       if (!stockState.hits.length) {
         var tips = ['flowers', 'beach', 'city', 'coffee'].map(function (w) { return { label: w, fn: function () { stockState.q = w; paintHead(); run(true); } }; });
-        grid.appendChild(state(stockState.q ? 'No photos for “' + stockState.q + '”' : 'Search free photos', stockState.q ? 'Try a simpler word, or another source.' : 'Type what you need, or try one of these.', tips, c.ic('search')));
+        grid.appendChild(state('No photos for “' + (stockState.q || 'nature') + '”', 'Try a simpler word, one of these, or another source.', tips, c.ic('search')));
         return;
       }
       stockState.hits.forEach(function (hit) { grid.appendChild(hitButton(c, hit, opts)); });
