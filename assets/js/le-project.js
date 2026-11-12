@@ -652,6 +652,8 @@
     if (collage) out.collage = collage;
     var carousel = LE.Scene && LE.Scene.carouselOf ? LE.Scene.carouselOf(doc.carousel) : null;
     if (carousel) out.carousel = carousel;
+    var maker = LE.Scene && LE.Scene.makerOf ? LE.Scene.makerOf(doc.maker) : null;
+    if (maker) out.maker = maker;
     return out;
   }
   function sizeEntry(e, errors) {

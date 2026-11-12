@@ -2476,6 +2476,7 @@
     }).then(function (r) {
       if (!S.project) showStart();
       if (r !== 'panel') applyToolParam();
+      fire('ready', r);
     }).catch(function (err) {
       console.error(err);
       showStart();

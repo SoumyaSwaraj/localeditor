@@ -366,6 +366,29 @@
     if (!(n >= 1) || !(w >= 1) || !isFinite(w)) return null;
     return { v: 1, slides: Math.min(n, 20), slideWidth: Math.round(clamp(w, 1, 20000) * 100) / 100 };
   }
+
+  /* Quick-maker meta (doc.maker): the form values a page was made from, so it can be reopened and remade. */
+  function makerOf(m) {
+    if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+    function word(v, n) { return typeof v === 'string' ? v.replace(/[^\w.:-]/g, '').slice(0, n) : ''; }
+    function val(v, d) {
+      if (typeof v === 'string') return v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').slice(0, 2000);
+      if (typeof v === 'number') return isFinite(v) ? v : null;
+      if (typeof v === 'boolean') return v;
+      if (Array.isArray(v) && d < 2) return v.slice(0, 40).map(function (x) { return val(x, d + 1); }).filter(function (x) { return x != null; });
+      return null;
+    }
+    var out = { v: 1, id: word(m.id, 40), style: word(m.style, 40), size: word(m.size, 24), values: {} };
+    if (!out.id) return null;
+    var src = m.values && typeof m.values === 'object' && !Array.isArray(m.values) ? m.values : {};
+    Object.keys(src).slice(0, 40).forEach(function (k) {
+      if (!/^[a-zA-Z]\w{0,31}$/.test(k) || k === 'constructor' || k === 'prototype') return;
+      var v = val(src[k], 0);
+      if (v != null) out.values[k] = v;
+    });
+    if (word(m.sig, 16)) out.sig = word(m.sig, 16);
+    return out;
+  }
   /* Keeps a crop's centre and zoom when the photo moves into a frame of another shape. */
   function refitCrop(crop, iw, ih, W, H) {
     crop = crop || { x: 0, y: 0, w: 1, h: 1 };
@@ -1038,7 +1061,8 @@
       background: this._doc.background,
       layers: this._doc.layers,
       collage: this._doc.collage || undefined,
-      carousel: this._doc.carousel || undefined
+      carousel: this._doc.carousel || undefined,
+      maker: this._doc.maker || undefined
     });
   };
   P._histInfo = function () {
@@ -1087,6 +1111,7 @@
     this._doc.layers = data.layers || [];
     if (data.collage) this._doc.collage = collageOf(data.collage); else delete this._doc.collage;
     if (carouselOf(data.carousel)) this._doc.carousel = carouselOf(data.carousel); else delete this._doc.carousel;
+    if (makerOf(data.maker)) this._doc.maker = makerOf(data.maker); else delete this._doc.maker;
     this._clearBitmaps();
     this._jobs = {};
     var self = this;
@@ -1153,6 +1178,7 @@
     });
     if (collageOf(doc.collage)) this._doc.collage = collageOf(doc.collage);
     if (carouselOf(doc.carousel)) this._doc.carousel = carouselOf(doc.carousel);
+    if (makerOf(doc.maker)) this._doc.maker = makerOf(doc.maker);
     this._sel = [];
     this._hist = { undo: [], redo: [], key: null, base: null, pushed: false };
     this._clearBitmaps();
@@ -4237,6 +4263,7 @@
   LE.Scene.redactOf = redactOf;
   LE.Scene.redactSize = redactSize;
   LE.Scene.paintRedact = paintRedact;
+  LE.Scene.makerOf = makerOf;
   LE.Scene.refitCrop = refitCrop;
   LE.Scene.backgroundSpec = bgSpec;
   LE.Scene.backgroundPlacement = function (bg, W, H, sw, sh) { return bgPlace(bgSpec(bg), W, H, sw, sh); };
