@@ -409,7 +409,127 @@ const ON_DEMAND = /^assets\/vendor\/tesseract\/|^assets\/vendor\/pdf-lib-crypt|^
 const CRITICAL = ['./', './offline.html', './studio/', './assets/js/app.js', './assets/css/app.css', './assets/js/le-pwa.js', './assets/css/le-pwa.css', './manifest.webmanifest'];
 
 function precacheList() {
-  return walk(ROOT).filter((f) => !ON_DEMAND.test(f) && !PAGES.notPrecached(f)).map((f) => f.endsWith('index.html') ? f.replace(/index\.html$/, '') : f).map((f) => './' + f).sort();
+  const d = packDecision();
+  return walk(ROOT).filter((f) => !ON_DEMAND.test(f) && !PAGES.notPrecached(f))
+    .filter((f) => d.expertWithBasic || !EXPERT.test(f))
+    .filter((f) => d.basicFirstVisit || CRITICAL.includes(asUrl(f)))
+    .map(asUrl).sort();
+}
+function asUrl(f) { return './' + (f.endsWith('index.html') ? f.replace(/index\.html$/, '') : f); }
+
+/* ---------- Packs and the 25 MB rule (docs/DOWNLOADS.md) ----------
+   Basic editor  = what the worker precaches (pages, studios, tools, built-in data), minus the Expert files.
+   Models        = on-device models and their runtimes that ship on this copy of the app.
+   Expert editor = assets/js/fx/**, assets/js/expert/**, assets/css/expert.css (by path rule, so new files are picked up).
+   Fonts library and icon packs are not "the editor": they follow usage and the Everything button.
+   Transfer size: gzip for text files (CloudFront compresses those; it may serve Brotli, which is smaller), raw bytes for
+   binaries (models, .wasm, images, fonts), because CloudFront only compresses the content types on its list. */
+const EXPERT = /^assets\/js\/(fx|expert)\/|^assets\/css\/expert\.css$/;
+const MODELS = /^assets\/models\/|^assets\/vendor\/ort\/|^assets\/vendor\/tesseract\//;
+const FONT_LIBRARY = /^assets\/fonts\/library\//;
+const ICON_PACKS = /^assets\/data\/withicons\//;
+const PACK_MB = 1024 * 1024;
+const WHOLE_EDITOR_LIMIT = 25 * PACK_MB;
+const TEXT_EXT = /\.(html?|m?js|css|json|svg|webmanifest|txt|xml|md)$/i;
+/* What each model file is, for the storage manager (x-le-model on the stored copy; matches the features' own ids). */
+function modelIdOf(f) {
+  if (/^assets\/vendor\/ort\//.test(f)) return 'ai-engine';
+  if (/^assets\/vendor\/tesseract\//.test(f)) return 'ocr-engine';
+  const m = /^assets\/models\/ocr\/(?:more\/)?(\w+)\.traineddata$/.exec(f);
+  if (m) return 'ocr-' + m[1];
+  return path.basename(f).replace(/\.(onnx|ort|bin|json|tflite)$/i, '');
+}
+/* Feature id (LE.downloads.used) -> the files it needs. Background fetching uses these. */
+const FEATURE_FILES = {
+  cutout: /^assets\/vendor\/ort\/|^assets\/models\/u2netp\.onnx$/,
+  ocr: /^assets\/vendor\/tesseract\/|^assets\/models\/ocr\/eng\.traineddata$/,
+  expert: EXPERT
+};
+
+/* gzip sizes are cached by path, size and mtime (node_modules/.cache is ignored by git). */
+const GZ_CACHE_FILE = path.join(ROOT, 'node_modules', '.cache', 'localeditor', 'gzip-sizes.json');
+let gzCache = null;
+function gzipSize(f) {
+  if (!gzCache) { try { gzCache = JSON.parse(fs.readFileSync(GZ_CACHE_FILE, 'utf8')); } catch (e) { gzCache = {}; } gzCache.__dirty = false; }
+  const st = fs.statSync(path.join(ROOT, f));
+  const key = f + '|' + st.size + '|' + Math.round(st.mtimeMs);
+  if (gzCache[key] == null) { gzCache[key] = require('zlib').gzipSync(fs.readFileSync(path.join(ROOT, f)), { level: 9 }).length; gzCache.__dirty = true; }
+  return gzCache[key];
+}
+function saveGzCache() {
+  if (!gzCache || !gzCache.__dirty) return;
+  try { fs.mkdirSync(path.dirname(GZ_CACHE_FILE), { recursive: true }); delete gzCache.__dirty; fs.writeFileSync(GZ_CACHE_FILE, JSON.stringify(gzCache)); } catch (e) { /* read-only checkout: fine */ }
+}
+function fileInfo(f) {
+  const raw = fs.statSync(path.join(ROOT, f)).size;
+  const gzip = gzipSize(f);
+  return { u: asUrl(f), raw, gzip, transfer: TEXT_EXT.test(f) ? gzip : raw };
+}
+function totals(list) {
+  return list.reduce((a, x) => ({ count: a.count + 1, raw: a.raw + x.raw, gzip: a.gzip + x.gzip, transfer: a.transfer + x.transfer }), { count: 0, raw: 0, gzip: 0, transfer: 0 });
+}
+const PACKS_JSON = 'assets/data/packs.json';
+let packCache = null;
+/* Sizes of every pack from the files on disk, and the two decisions of the 25 MB rule. */
+function packSizes() {
+  if (packCache) return packCache;
+  const all = walk(ROOT);
+  const editor = all.filter((f) => !ON_DEMAND.test(f) && !PAGES.notPrecached(f) && f !== PACKS_JSON);
+  const basic = editor.filter((f) => !EXPERT.test(f)).map(fileInfo);
+  const expert = all.filter((f) => EXPERT.test(f)).map(fileInfo);
+  const models = all.filter((f) => MODELS.test(f)).map((f) => Object.assign(fileInfo(f), { model: modelIdOf(f) }));
+  const fonts = totals(all.filter((f) => FONT_LIBRARY.test(f)).map(fileInfo));
+  const icons = totals(all.filter((f) => ICON_PACKS.test(f) && /\.json$/.test(f)).map(fileInfo));
+  saveGzCache();
+  const b = totals(basic), e = totals(expert), m = totals(models);
+  const basicFirstVisit = b.transfer < WHOLE_EDITOR_LIMIT;
+  const expertWithBasic = basicFirstVisit && b.transfer + e.transfer < WHOLE_EDITOR_LIMIT;
+  packCache = { basic, expert, models, fonts, icons, b, e, m, basicFirstVisit, expertWithBasic };
+  return packCache;
+}
+function packDecision() {
+  /* The decision only depends on sizes; tests may pin it with LE_PACK_DECISION=split|whole. */
+  if (process.env.LE_PACK_DECISION === 'split') return { basicFirstVisit: true, expertWithBasic: false };
+  if (process.env.LE_PACK_DECISION === 'whole') return { basicFirstVisit: true, expertWithBasic: true };
+  const s = packSizes();
+  return { basicFirstVisit: s.basicFirstVisit, expertWithBasic: s.expertWithBasic };
+}
+function packsJSON(version) {
+  const s = packSizes();
+  const d = packDecision();
+  const sum = (...xs) => xs.reduce((a, x) => ({ count: a.count + x.count, raw: a.raw + x.raw, gzip: a.gzip + x.gzip, transfer: a.transfer + x.transfer }), { count: 0, raw: 0, gzip: 0, transfer: 0 });
+  const featureFiles = {};
+  Object.keys(FEATURE_FILES).forEach((k) => { featureFiles[k] = s.basic.concat(s.expert, s.models).filter((x) => FEATURE_FILES[k].test(x.u.slice(2))).map((x) => x.u); });
+  return {
+    version: version || VERSION,
+    note: 'Generated by scripts/build.js. transfer = gzip for text files (CloudFront may serve Brotli, which is smaller), raw bytes for binaries. Sizes in bytes.',
+    limit: WHOLE_EDITOR_LIMIT,
+    decision: {
+      basicFirstVisit: d.basicFirstVisit,
+      expertWithBasic: d.expertWithBasic,
+      basicTransfer: s.b.transfer,
+      basicPlusExpertTransfer: s.b.transfer + s.e.transfer,
+      text: (d.basicFirstVisit ? 'Basic editor is under 25 MB: it downloads whole on the first visit.' : 'Basic editor is 25 MB or more: it downloads feature by feature.') + ' ' +
+        (d.expertWithBasic ? 'Basic + Expert is under 25 MB: Expert joins the first download.' : 'Basic + Expert is 25 MB or more: Expert downloads the first time it is used, then stays offline.')
+    },
+    packs: [
+      Object.assign({ id: 'basic', name: 'Basic editor', about: 'Photo studio, PDF studio and every tool' }, s.b, { files: s.basic }),
+      Object.assign({ id: 'basic+models', name: 'Basic editor + models', about: 'Adds background removal and text recognition', includes: ['basic', 'models'] }, sum(s.b, s.m)),
+      Object.assign({ id: 'expert', name: 'Expert editor', about: 'The expert workspace and effects' }, s.e, { files: s.expert }),
+      Object.assign({ id: 'all', name: 'Everything', about: 'Both editors, all models, every font and icon style', includes: ['basic', 'models', 'expert', 'fonts', 'icons'] }, sum(s.b, s.m, s.e, s.fonts, s.icons)),
+      Object.assign({ id: 'models', name: 'Models', about: 'On-device AI: background remover and text recognition', hidden: true }, s.m, { files: s.models })
+    ],
+    extras: { fonts: s.fonts, icons: s.icons },
+    features: featureFiles
+  };
+}
+function buildPacks() {
+  const j = packsJSON();
+  fs.writeFileSync(path.join(ROOT, PACKS_JSON), JSON.stringify(j) + '\n');
+  const mb = (n) => (n / PACK_MB).toFixed(1) + ' MB';
+  j.packs.forEach((p) => console.log(`  ${p.name.padEnd(22)} ${String(p.count).padStart(4)} files  raw ${mb(p.raw).padStart(9)}  gzip ${mb(p.gzip).padStart(9)}  transfer ${mb(p.transfer).padStart(9)}`));
+  console.log('  ' + j.decision.text);
+  return j;
 }
 
 /* The worker itself. Written as a real function so it is syntax-checked here, then serialized into sw.js.
@@ -423,11 +543,13 @@ function precacheList() {
                        x-le-model header) and only served from here; the AI engine (assets/vendor/ort*)
                        is stored here on first use. Never precached, never trimmed automatically.
      le-share-v1       files shared to the app from the system share sheet until the studio picks them up. */
-function swMain(VERSION, ASSETS, CRITICAL) {
+function swMain(VERSION, ASSETS, CRITICAL, EXPERT_FILES) {
   'use strict';
   var CACHE = 'le-app-' + VERSION;
   var RT = { fonts: 'le-fonts-v1', assets: 'le-assets-v1', photos: 'le-photos-v1', models: 'le-models-v1', share: 'le-share-v1' };
-  var KEEP = [RT.fonts, RT.assets, RT.photos, RT.models, RT.share];
+  /* le-packs-v1 holds one marker per pack the person downloaded (docs/DOWNLOADS.md), so a new version keeps them offline. */
+  RT.packs = 'le-packs-v1';
+  var KEEP = [RT.fonts, RT.assets, RT.photos, RT.models, RT.share, RT.packs];
   var MB = 1024 * 1024;
   var caps = {};
   caps[RT.fonts] = 120 * MB;
@@ -446,9 +568,15 @@ function swMain(VERSION, ASSETS, CRITICAL) {
     return res.blob().then(function (b) { return new Response(b, { status: res.status, statusText: res.statusText, headers: res.headers }); });
   }
   /* One missing file must not break the install: six lanes, failures collected, only CRITICAL files are fatal. */
+  /* The Expert files join a version's own download when they are not part of the first visit but the person downloaded them once. */
+  function appFiles() {
+    if (!EXPERT_FILES.length) return Promise.resolve(ASSETS);
+    return caches.open(RT.packs).then(function (c) { return c.match('./__packs/expert'); }).then(function (hit) { return hit ? ASSETS.concat(EXPERT_FILES) : ASSETS; }, function () { return ASSETS; });
+  }
   function precache(name) {
-    return caches.open(name).then(function (c) {
-      var queue = ASSETS.slice();
+    return Promise.all([caches.open(name), appFiles()]).then(function (r) {
+      var c = r[0], LIST = r[1];
+      var queue = LIST.slice();
       var failed = [];
       function lane() {
         var u = queue.shift();
@@ -460,7 +588,7 @@ function swMain(VERSION, ASSETS, CRITICAL) {
       }
       var lanes = [];
       for (var i = 0; i < 6; i++) lanes.push(lane());
-      return Promise.all(lanes).then(function () { return { count: ASSETS.length - failed.length, failed: failed }; });
+      return Promise.all(lanes).then(function () { return { count: LIST.length - failed.length, failed: failed }; });
     });
   }
 
@@ -604,12 +732,91 @@ function swMain(VERSION, ASSETS, CRITICAL) {
     var p = url.pathname;
     if (/\/sw\.js$/.test(p) || p.indexOf('/__share/') >= 0) return;
     if (p.indexOf('/assets/models/') >= 0) { e.respondWith(caches.open(RT.models).then(function (c) { return c.match(req, { ignoreSearch: true }); }).then(function (hit) { return hit || fetch(req); })); return; }
-    if (p.indexOf('/assets/vendor/ort') >= 0) { e.respondWith(runtime(e, RT.models, false, false)); return; }
+    if (p.indexOf('/assets/vendor/ort') >= 0 || p.indexOf('/assets/vendor/tesseract/') >= 0) { e.respondWith(runtime(e, RT.models, false, false)); return; }
     if (p.indexOf('/assets/fonts/library/') >= 0) { e.respondWith(runtime(e, RT.fonts, false, true)); return; }
     if (/\/assets\/data\/[\w\/-]+\.json$/.test(p)) { e.respondWith(runtime(e, RT.assets, true, true)); return; }
     if (p.indexOf('/assets/photos/') >= 0) { e.respondWith(runtime(e, RT.photos, false, true)); return; }
     e.respondWith(app(e, url));
   });
+
+  /* ---- Pack downloads (LE.downloads): resumable (stored files are skipped), cancelable, verified (every file stored, sizes
+     match), and done here so they continue while the worker lives after the page closes. Progress goes to every open page. */
+  var jobs = {};
+  function homeOf(u) {
+    var p = new URL(u, self.location).pathname;
+    if (/\/assets\/(models\/|vendor\/ort|vendor\/tesseract\/)/.test(p)) return RT.models;
+    if (p.indexOf('/assets/fonts/library/') >= 0) return RT.fonts;
+    if (/\/assets\/data\/[\w\/-]+\.json$/.test(p)) return RT.assets;
+    if (p.indexOf('/assets/photos/') >= 0) return RT.photos;
+    return CACHE;
+  }
+  function packState(j) { return { id: j.id, state: j.state, loaded: j.loaded, total: j.total, failed: j.failed.slice(0, 20), name: j.name }; }
+  function packPost(j, force) {
+    var now = Date.now();
+    if (!force && now - (j.posted || 0) < 250) return;
+    j.posted = now;
+    post(Object.assign({ type: 'le-pack-progress' }, packState(j)));
+  }
+  function stored(f) {
+    return caches.open(homeOf(f.u)).then(function (c) { return c.match(f.u); }).then(function (hit) {
+      if (!hit) return false;
+      return entrySize(hit).then(function (n) { return !f.raw || n === f.raw; });
+    });
+  }
+  function fetchFile(j, f) {
+    var name = homeOf(f.u);
+    return fetch(new Request(f.u, { cache: 'reload', credentials: 'same-origin', signal: j.ctrl.signal })).then(function (res) {
+      if (!res.ok) throw new Error(String(res.status));
+      var got = 0, chunks = [];
+      var rd = res.body && res.body.getReader ? res.body.getReader() : null;
+      function pump() {
+        if (!rd) return res.blob().then(function (b) { return b; });
+        return rd.read().then(function (r) {
+          if (r.done) return new Blob(chunks, { type: res.headers.get('content-type') || '' });
+          chunks.push(r.value); got += r.value.length; j.loaded += r.value.length; packPost(j);
+          return pump();
+        });
+      }
+      return pump().then(function (blob) {
+        if (!rd) j.loaded += blob.size;
+        if (f.raw && blob.size !== f.raw) { j.loaded -= blob.size; throw new Error('size'); }
+        var h = new Headers(res.headers);
+        h.set('x-le-bytes', String(blob.size));
+        h.set('x-le-at', String(Date.now()));
+        if (f.model) h.set('x-le-model', f.model);
+        return caches.open(name).then(function (c) { return c.put(f.u, new Response(blob, { status: 200, headers: h })); });
+      });
+    });
+  }
+  function packJob(d) {
+    var old = jobs[d.id];
+    if (old && old.state === 'running') return old.promise;
+    var j = jobs[d.id] = { id: d.id, name: d.name || d.id, state: 'running', loaded: 0, total: 0, failed: [], ctrl: new AbortController() };
+    var files = d.files.filter(function (f) { return f && f.u; });
+    files.forEach(function (f) { j.total += f.raw || 0; });
+    var queue = [];
+    j.promise = Promise.all(files.map(function (f) {
+      return stored(f).then(function (ok) { if (ok) j.loaded += f.raw || 0; else queue.push(f); }, function () { queue.push(f); });
+    })).then(function () {
+      packPost(j, true);
+      function lane() {
+        var f = queue.shift();
+        if (!f || j.state !== 'running') return Promise.resolve();
+        return fetchFile(j, f).catch(function () { if (j.state === 'running') j.failed.push(f.u); }).then(lane);
+      }
+      return Promise.all([lane(), lane(), lane()]);
+    }).then(function () {
+      if (j.state !== 'running') return j;
+      /* Verify: every file stored with the expected size. */
+      return Promise.all(files.map(stored)).then(function (oks) {
+        oks.forEach(function (ok, i) { if (!ok && j.failed.indexOf(files[i].u) < 0) j.failed.push(files[i].u); });
+        j.state = j.failed.length ? 'failed' : 'done';
+        if (j.state === 'done' && d.marker) return caches.open(RT.packs).then(function (c) { return c.put('./__packs/' + d.id, new Response(String(Date.now()), { headers: { 'x-le-at': String(Date.now()) } })); }).then(function () { return j; });
+        return j;
+      });
+    }).then(function () { packPost(j, true); return j; }, function () { j.state = 'failed'; packPost(j, true); return j; });
+    return j.promise;
+  }
 
   /* Pages talk to the worker through le-pwa.js. */
   function askBusy(client) {
@@ -641,17 +848,31 @@ function swMain(VERSION, ASSETS, CRITICAL) {
       reply({ ok: true });
     } else if (d.type === 'le-trim') {
       e.waitUntil(trim(d.name, d.cap || caps[d.name]).then(reply, function () { reply({ removed: 0 }); }));
+    } else if (d.type === 'le-pack' && d.id && d.files) {
+      e.waitUntil(packJob(d).then(function (j) { reply(packState(j)); }, function () { reply(null); }));
+    } else if (d.type === 'le-pack-cancel') {
+      if (jobs[d.id] && jobs[d.id].state === 'running') { jobs[d.id].state = 'cancelled'; jobs[d.id].ctrl.abort(); }
+      reply({ ok: true });
+    } else if (d.type === 'le-pack-status') {
+      reply(Object.keys(jobs).map(function (k) { return packState(jobs[k]); }));
+    } else if (d.type === 'le-pack-forget' && d.id) {
+      e.waitUntil(caches.open(RT.packs).then(function (c) { return c.delete('./__packs/' + d.id); }).then(function () { reply({ ok: true }); }));
     } else if (d.type === 'le-precache') {
       e.waitUntil(precache(CACHE).then(function (r) { reply({ count: r.count, failed: r.failed }); }, function () { reply({ count: 0, failed: ASSETS }); }));
     }
   });
 }
 
+/* Expert files that are not part of the first visit: the worker adds them to a version's download once the person has them. */
+function expertOnDemand() {
+  if (packDecision().expertWithBasic) return [];
+  return walk(ROOT).filter((f) => EXPERT.test(f)).map(asUrl).sort();
+}
 function swSource(opts = {}) {
   const version = opts.version || VERSION;
   const files = opts.files || precacheList();
   return `/* LocalEditor service worker, version ${version}. Generated by scripts/build.js; edit the generator, not this file. */\n` +
-    `(${swMain.toString()})(${JSON.stringify(version)}, ${JSON.stringify(files)}, ${JSON.stringify(CRITICAL)});\n`;
+    `(${swMain.toString()})(${JSON.stringify(version)}, ${JSON.stringify(files)}, ${JSON.stringify(CRITICAL)}, ${JSON.stringify(opts.expert || expertOnDemand())});\n`;
 }
 
 function buildSW() {
@@ -660,11 +881,13 @@ function buildSW() {
   return files.length;
 }
 
-module.exports = { ROOT, VERSION, ON_DEMAND, CRITICAL, manifestJSON, precacheList, swSource, TOOLS, CATS, I };
+module.exports = { ROOT, VERSION, ON_DEMAND, CRITICAL, EXPERT, MODELS, WHOLE_EDITOR_LIMIT, manifestJSON, precacheList, swSource, packSizes, packsJSON, packDecision, TOOLS, CATS, I };
 
 if (require.main === module) {
   buildIndex(); buildAbout(); buildOffline();
   PAGES.build(); buildMeta(); PAGES.build({ quiet: true }); // pages first (sitemap lists them), then their llms.txt section
+  console.log('Packs (docs/DOWNLOADS.md):');
+  buildPacks();
   const n = buildSW();
   const missing = TOOLS.filter((t) => !fs.existsSync(path.join(ROOT, t.slug, 'index.html'))).map((t) => t.slug);
   const lost = CRITICAL.filter((u) => !precacheList().includes(u));
