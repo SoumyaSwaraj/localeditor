@@ -108,7 +108,8 @@ button.xp-swatch i { width: 22px; height: 22px; border-radius: 6px; box-shadow: 
 
 /* Curve */
 .xp-curve { display: grid; gap: 8px; }
-.xp-curve-head { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.xp-curve-head { display: flex; align-items: center; gap: 4px; min-width: 0; flex-wrap: wrap; }
+.xp-curve-ch > button { padding: 0 7px; }
 .xp-curve-pre { width: 96px; }
 .xp-curve-box { position: relative; aspect-ratio: 1; width: 100%; border-radius: 10px; background: var(--surface-2); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
 .xp-curve-hist, .xp-curve-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -281,6 +282,8 @@ button.xp-sec-tog span { overflow: hidden; text-overflow: ellipsis; white-space:
 
 /* ---------- Layers panel ---------- */
 .xp-layers { display: flex; flex-direction: column; min-height: 0; gap: 6px; }
+.xp-layers > * { flex-shrink: 0; }
+.xp-lay-foot { margin-top: auto; }
 .xp-lay-props { display: grid; gap: 2px; }
 .xp-lay-props.is-off { opacity: .5; pointer-events: none; }
 .xp-lay-blend .xp-select { width: 100%; }
@@ -302,9 +305,9 @@ button.xp-lay-mask.is-off { opacity: .35; background-image: none !important; bac
 button.xp-lay-mask.is-inv { filter: invert(1); }
 .xp-lay-clip { color: var(--accent); display: grid; }
 .xp-lay-clip .xp-ic { width: 15px; height: 15px; }
-.xp-lay-fxbtn { width: auto; padding: 0 3px 0 5px; gap: 1px; display: inline-flex; align-items: center; color: var(--accent); }
-.xp-lay-fxbtn b { font-size: 11px; font-weight: 750; }
-.xp-lay-fxbtn .xp-ic { width: 14px; height: 14px; }
+button.xp-lay-fxbtn { width: auto; padding: 0 3px 0 5px; gap: 1px; display: inline-flex; align-items: center; color: var(--accent); }
+button.xp-lay-fxbtn b { font-size: 11px; font-weight: 750; }
+button.xp-lay-fxbtn .xp-ic { width: 14px; height: 14px; }
 .xp-lay-lock:not(.is-on) { opacity: 0; }
 .xp-lay-row:hover .xp-lay-lock, .xp-lay-lock:focus-visible { opacity: 1; }
 .xp-lay.is-dragging { position: relative; z-index: 3; opacity: .92; box-shadow: var(--shadow); background: var(--surface); }
