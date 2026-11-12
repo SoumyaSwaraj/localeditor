@@ -140,3 +140,6 @@ Engine entry points: `scene.setBackground(bg, opts)`, `scene.background()`, `LE.
 
 ### Stock photo source on an asset — merged
 `asset.source = { provider, photographer, pageUrl, license, attribution }`. Unsplash hits also carry `photographerUrl`; the project sanitiser must keep it (assigned to the collage owner).
+
+### Subject cut-out on an image layer — proposed, not built
+From the background-remover prototype (`docs/research/background-remover.md`): `layer.cutout = { asset, model, feather, refine, version }`, where `asset` is an 8-bit alpha mask PNG at the source photo's resolution. The original photo is untouched, so the cut-out stays editable (restore and erase brush write into the mask asset). Engine work needed: sanitise `cutout`, apply the mask in `_processImage` before crop and adjust, add it to `_imageKey`.
