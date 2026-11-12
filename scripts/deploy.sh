@@ -89,7 +89,7 @@ COMMON=(--only-show-errors --no-progress)
 [ "$DRY" = 1 ] && COMMON=(--dryrun)
 
 # Never uploaded: tooling, tests, docs, repo files.
-NEVER=(--exclude ".git/*" --exclude ".claude/*" --exclude "node_modules/*" --exclude "scripts/*" --exclude "tests/*" --exclude "tools/*"
+NEVER=(--exclude ".git/*" --exclude ".claude/*" --exclude "node_modules/*" --exclude "scripts/*" --exclude "tests/*" --exclude "tools/*" --exclude "assets/js/expert/mock-fx.js"
        --exclude "docs/*" --exclude "infra/*" --exclude "*.md" --exclude ".gitignore" --exclude ".nojekyll" --exclude "*.DS_Store"
        --exclude "assets/models/local/*")   # evaluation downloads and model sources (scripts/fetch-models.js), never shipped
 
