@@ -385,11 +385,11 @@ select.sx-input { padding-right: 28px; }
 }
 .sx-chip small { font-size: 11px; color: var(--faint); font-weight: 600; }
 .sx-chip:hover:not(:disabled) { border-color: var(--border-hover); }
-.sx-chip[aria-pressed="true"] { background: var(--obsidian); border-color: var(--obsidian); color: #fff; }
-.sx-chip[aria-pressed="true"] small { color: #E6EEFF; }
+.sx-chip[aria-pressed="true"] { background: var(--chip-on-bg, var(--obsidian)); border-color: var(--chip-on-edge, var(--obsidian)); color: var(--chip-on-ink, #fff); }
+.sx-chip[aria-pressed="true"] small { color: var(--chip-on-sub, #E6EEFF); }
 .sx-chip:disabled { opacity: 0.4; cursor: default; }
-:root[data-theme="dark"] .sx-chip[aria-pressed="true"] { background: var(--champagne); border-color: var(--champagne); color: var(--gold-ink); }
-:root[data-theme="dark"] .sx-chip[aria-pressed="true"] small { color: #E6EEFF; }
+:root[data-theme="dark"] .sx-chip[aria-pressed="true"] { background: var(--chip-on-bg, var(--champagne)); border-color: var(--chip-on-edge, var(--champagne)); color: var(--chip-on-ink, var(--gold-ink)); }
+:root[data-theme="dark"] .sx-chip[aria-pressed="true"] small { color: var(--chip-on-sub, #E6EEFF); }
 
 .sx-tabs-row { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin: 0 -18px; padding: 0 14px; overflow-x: auto; scrollbar-width: none; }
 .sx-tabs-row::-webkit-scrollbar { display: none; }

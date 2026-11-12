@@ -292,7 +292,7 @@
   --dur-1: 150ms;
   --dur-2: 250ms;
   --dur-3: 350ms;
-  --dur-4: 480ms;
+  --dur-4: 350ms;
   --thumb: 26px;
   --thumb-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 3px 8px rgba(0, 0, 0, 0.2);
   --pop-radius: 14px;
@@ -403,6 +403,10 @@
   --tb-primary-bg: var(--selected-bg);
   --tb-primary-ink: var(--accent);
   --tb-primary-shadow: none;
+  --chip-on-bg: var(--selected-bg);
+  --chip-on-edge: var(--selected-edge);
+  --chip-on-ink: var(--accent);
+  --chip-on-sub: var(--muted);
   color-scheme: light;
 }
 :root[data-theme="dark"], :root[data-theme="dark"] [data-skin-preview="clear"] {
@@ -509,6 +513,10 @@
   --tb-primary-bg: var(--selected-bg);
   --tb-primary-ink: var(--accent);
   --tb-primary-shadow: none;
+  --chip-on-bg: var(--selected-bg);
+  --chip-on-edge: var(--selected-edge);
+  --chip-on-ink: var(--accent);
+  --chip-on-sub: var(--muted);
   color-scheme: dark;
 }
 /* Lapis */
@@ -854,7 +862,7 @@
   --dur-1: 90ms;
   --dur-2: 150ms;
   --dur-3: 220ms;
-  --dur-4: 320ms;
+  --dur-4: 300ms;
   --thumb: 16px;
   --thumb-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
   --pop-radius: 8px;
@@ -965,6 +973,10 @@
   --tb-primary-bg: var(--selected-bg);
   --tb-primary-ink: var(--accent);
   --tb-primary-shadow: none;
+  --chip-on-bg: var(--selected-bg);
+  --chip-on-edge: var(--selected-edge);
+  --chip-on-ink: var(--accent);
+  --chip-on-sub: var(--muted);
 }
 :root[data-skin="graphite"][data-theme="dark"], :root[data-theme="dark"] [data-skin-preview="graphite"] {
   --bg: #121212;
@@ -1070,6 +1082,10 @@
   --tb-primary-bg: var(--selected-bg);
   --tb-primary-ink: var(--accent);
   --tb-primary-shadow: none;
+  --chip-on-bg: var(--selected-bg);
+  --chip-on-edge: var(--selected-edge);
+  --chip-on-ink: var(--accent);
+  --chip-on-sub: var(--muted);
 }
 /* Paper */
 :root[data-skin="paper"], [data-skin-preview="paper"] {
@@ -1135,9 +1151,9 @@
   --ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
   --ease-spring: cubic-bezier(0.2, 0.9, 0.25, 1.06);
   --dur-1: 160ms;
-  --dur-2: 280ms;
-  --dur-3: 380ms;
-  --dur-4: 480ms;
+  --dur-2: 260ms;
+  --dur-3: 340ms;
+  --dur-4: 350ms;
   --thumb: 26px;
   --thumb-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 3px 8px rgba(0, 0, 0, 0.2);
   --pop-radius: 14px;
@@ -1248,6 +1264,10 @@
   --tb-primary-bg: var(--selected-bg);
   --tb-primary-ink: var(--accent);
   --tb-primary-shadow: none;
+  --chip-on-bg: var(--selected-bg);
+  --chip-on-edge: var(--selected-edge);
+  --chip-on-ink: var(--accent);
+  --chip-on-sub: var(--muted);
 }
 :root[data-skin="paper"][data-theme="dark"], :root[data-theme="dark"] [data-skin-preview="paper"] {
   --bg: #1A1714;
@@ -1353,6 +1373,10 @@
   --tb-primary-bg: var(--selected-bg);
   --tb-primary-ink: var(--accent);
   --tb-primary-shadow: none;
+  --chip-on-bg: var(--selected-bg);
+  --chip-on-edge: var(--selected-edge);
+  --chip-on-ink: var(--accent);
+  --chip-on-sub: var(--muted);
 }
 /* Contrast */
 :root[data-skin="contrast"], [data-skin-preview="contrast"] {
@@ -1420,7 +1444,7 @@
   --dur-1: 150ms;
   --dur-2: 250ms;
   --dur-3: 350ms;
-  --dur-4: 480ms;
+  --dur-4: 350ms;
   --thumb: 26px;
   --thumb-shadow: 0 0 0 2px #000000;
   --pop-radius: 12px;
@@ -1531,6 +1555,10 @@
   --tb-primary-bg: var(--selected-bg);
   --tb-primary-ink: var(--accent);
   --tb-primary-shadow: none;
+  --chip-on-bg: var(--selected-bg);
+  --chip-on-edge: var(--selected-edge);
+  --chip-on-ink: var(--accent);
+  --chip-on-sub: var(--muted);
 }
 :root[data-skin="contrast"][data-theme="dark"], :root[data-theme="dark"] [data-skin-preview="contrast"] {
   --bg: #000000;
@@ -1636,6 +1664,10 @@
   --tb-primary-bg: var(--selected-bg);
   --tb-primary-ink: var(--accent);
   --tb-primary-shadow: none;
+  --chip-on-bg: var(--selected-bg);
+  --chip-on-edge: var(--selected-edge);
+  --chip-on-ink: var(--accent);
+  --chip-on-sub: var(--muted);
 }
 :root[data-theme="dark"]:not([data-surround]) { --stage: var(--surround-dark); --stage-ink: #A3A3A3; }
 /* THEMES:END */
@@ -2732,7 +2764,7 @@ button.chip:hover { border-color: var(--btn-hover-border); background: var(--btn
   color: #016D3C;
   font: 650 11px/1.2 var(--font);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 6px 16px -8px rgba(0, 0, 0, 0.3);
-  animation: le-rise 500ms 700ms var(--ease-out) both;
+  animation: le-rise 300ms 350ms var(--ease-out) both;
 }
 .hp-priv svg { width: 14px; height: 14px; padding: 2px; border-radius: 50%; background: var(--ok-fill); color: #fff; }
 :root[data-theme="dark"] .hp-priv { background: #1E1E1E; color: #65BF88; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 6px 16px -8px rgba(0, 0, 0, 0.6); }
@@ -3034,12 +3066,12 @@ button.chip:hover { border-color: var(--btn-hover-border); background: var(--btn
    7. Motion
    ========================================================================== */
 @keyframes le-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-.hp-hero-copy > *, .hp-shot { animation: le-rise 600ms var(--ease-out) both; }
+.hp-hero-copy > *, .hp-shot { animation: le-rise 350ms var(--ease-out) both; }
 .hp-hero-copy > :nth-child(2) { animation-delay: 40ms; }
 .hp-hero-copy > :nth-child(3) { animation-delay: 80ms; }
 .hp-hero-copy > :nth-child(4) { animation-delay: 120ms; }
 .hp-hero-copy > :nth-child(5) { animation-delay: 160ms; }
-.hp-shot { animation-delay: 140ms; animation-duration: 800ms; }
+.hp-shot { animation-delay: 120ms; animation-duration: 350ms; }
 
 /* One primary per view: while the export / save panel is open, its own button is the primary action,
    so the header's Download (photo studio) or Save PDF (PDF studio) steps back to a secondary button. */
@@ -3065,6 +3097,9 @@ body.xp-body .sx-pop, .sx-stage.is-dragging ~ .sx-pop, body.is-dragging .sx-pop 
 /* The selected phone tab gets a filled glyph (our own icons, a soft fill under the stroke). */
 :root:not([data-skin="lapis"]) .sx-tabs .sx-rail-btn[aria-pressed="true"] svg :is(rect, path, circle) { fill: currentColor; fill-opacity: 0.16; }
 
+/* Theme switch: a short cross-fade (View Transitions where supported; skipped under reduced motion in app.js). */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 250ms; animation-timing-function: var(--ease); }
+
 /* Completion moments (peak-end): a job finished on this device. Used by IT.celebrate(), the studio's
    "Downloaded" / "Saved" toasts and the photo privacy check's clean copy. One small check that draws
    itself and one soft Apricot ring. Nothing loops, nothing bounces, all of it off under reduced motion. */
@@ -3079,11 +3114,11 @@ body.xp-body .sx-pop, .sx-stage.is-dragging ~ .sx-pop, body.is-dragging .sx-pop 
   height: 20px;
   border-radius: 50%;
   background: var(--ok-fill) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5.5 10.5 3 3 6-6.5'/%3E%3C/svg%3E") center / 20px no-repeat;
-  animation: le-done-pop 360ms var(--ease-out) both, le-done-ring 720ms 140ms ease-out both;
+  animation: le-done-pop 300ms var(--ease-out) both, le-done-ring 350ms 120ms ease-out both;
 }
 .sx-toast.is-done { padding-left: 12px; }
-.pp-done-line svg { animation: le-done-draw 420ms 80ms var(--ease-out) both; }
-.pp-done { animation: le-rise 320ms var(--ease-out) both; }
+.pp-done-line svg { animation: le-done-draw 320ms 80ms var(--ease-out) both; }
+.pp-done { animation: le-rise 300ms var(--ease-out) both; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

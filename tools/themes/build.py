@@ -82,7 +82,7 @@ CLEAR = derive(LAPIS,
   '--btn-weight': '590', '--btn-size': '15px', '--field-radius': '10px', '--seg-radius': '9px', '--seg-inner-radius': '7px', '--chip-radius': '999px', '--card-radius': '18px', '--sheet-radius': '26px',
   '--bar-filter': 'saturate(1.8) blur(20px)', '--sheet-filter': 'saturate(1.8) blur(24px)',
   '--ease': 'cubic-bezier(0.25, 0.1, 0.25, 1)', '--ease-out': 'cubic-bezier(0.32, 0.72, 0, 1)', '--ease-in-out': 'cubic-bezier(0.42, 0, 0.58, 1)', '--ease-spring': 'cubic-bezier(0.2, 0.9, 0.25, 1.06)',
-  '--dur-1': '150ms', '--dur-2': '250ms', '--dur-3': '350ms', '--dur-4': '480ms',
+  '--dur-1': '150ms', '--dur-2': '250ms', '--dur-3': '350ms', '--dur-4': '350ms',
  },
  light={
   '--bg': '#F5F5F7', '--bg-2': '#EDEDF0', '--surface': '#FFFFFF', '--surface-2': '#F5F5F7', '--surface-3': '#E8E8ED', '--surface-glass': 'rgba(255, 255, 255, 0.72)',
@@ -129,7 +129,7 @@ GRAPHITE = derive(CLEAR,
   '--btn-radius': '6px', '--btn-weight': '560', '--btn-size': '14px', '--field-radius': '4px', '--seg-radius': '6px', '--seg-inner-radius': '4px', '--chip-radius': '4px', '--card-radius': '8px', '--sheet-radius': '10px',
   '--bar-filter': 'none', '--sheet-filter': 'none',
   '--ease': 'cubic-bezier(0.2, 0, 0, 1)', '--ease-out': 'cubic-bezier(0.2, 0, 0, 1)', '--ease-spring': 'cubic-bezier(0.2, 0, 0, 1)',
-  '--dur-1': '90ms', '--dur-2': '150ms', '--dur-3': '220ms', '--dur-4': '320ms',
+  '--dur-1': '90ms', '--dur-2': '150ms', '--dur-3': '220ms', '--dur-4': '300ms',
  },
  light={
   '--bg': '#EFEFEF', '--bg-2': '#E6E6E6', '--surface': '#FFFFFF', '--surface-2': '#F4F4F4', '--surface-3': '#E4E4E4', '--surface-glass': '#FFFFFF',
@@ -173,7 +173,7 @@ PAPER = derive(CLEAR,
   '--accent-font': 'inherit', '--accent-style': 'italic', '--accent-weight': '400', '--accent-color': 'inherit', '--accent-tracking': 'inherit',
   '--r-sm': '8px', '--r-md': '12px', '--r-lg': '16px', '--r-xl': '22px', '--btn-radius': '999px', '--field-radius': '8px', '--seg-radius': '10px', '--seg-inner-radius': '8px', '--card-radius': '16px', '--sheet-radius': '22px',
   '--bar-filter': 'saturate(1.2) blur(16px)', '--sheet-filter': 'none',
-  '--dur-1': '160ms', '--dur-2': '280ms', '--dur-3': '380ms',
+  '--dur-1': '160ms', '--dur-2': '260ms', '--dur-3': '340ms',
  },
  light={
   '--bg': '#F6F1E7', '--bg-2': '#EEE7D9', '--surface': '#FFFCF6', '--surface-2': '#F3ECDF', '--surface-3': '#E8DFCE', '--surface-glass': 'rgba(255, 252, 246, 0.82)',
@@ -298,6 +298,9 @@ for _t, l, d in ((LAPIS, '#5884F8', '#5884F8'), (CLEAR, 'var(--primary)', '#3A85
 for _t in (CLEAR, PAPER, GRAPHITE, CONTRAST):
     for _m in ('light', 'dark'):
         _t[_m].update({'--tb-primary-bg': 'var(--selected-bg)', '--tb-primary-ink': 'var(--accent)', '--tb-primary-shadow': 'none'})
+for _t in (CLEAR, PAPER, GRAPHITE, CONTRAST):
+    for _m in ('light', 'dark'):
+        _t[_m].update({'--chip-on-bg': 'var(--selected-bg)', '--chip-on-edge': 'var(--selected-edge)', '--chip-on-ink': 'var(--accent)', '--chip-on-sub': 'var(--muted)'})
 THEMES = [('clear', 'Clear', CLEAR), ('lapis', 'Lapis', LAPIS), ('graphite', 'Graphite', GRAPHITE), ('paper', 'Paper', PAPER), ('contrast', 'Contrast', CONTRAST)]
 
 def block(sel, d, extra=''):
