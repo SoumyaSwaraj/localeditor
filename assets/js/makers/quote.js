@@ -58,7 +58,7 @@
         page = env.page(paper);
         var textArea = area;
         if (v.photo) {
-          var ph = Math.round((H - top - bottom) * (env.tall ? 0.42 : 0.4));
+          var ph = Math.round((H - top - bottom) * (env.tall ? 0.42 : env.square ? 0.34 : 0.4) * (long ? 0.8 : 1));
           L.push(env.photo({ id: 'photo', name: 'Photo', src: v.photo, x: M, y: top, w: W - 2 * M, h: ph, label: 'Add a photo' }));
           textArea = { x: M, y: top + ph + 56, w: W - 2 * M, h: H - bottom - (top + ph + 56) };
         }
@@ -83,7 +83,7 @@
           tArea = { x: M, y: top, w: W - 2 * M, h: H - bh - top - 72 };
         }
         var bar = env.rect({ id: 'bar', name: 'Bar', x: M, y: tArea.y, w: 120, h: 18, fill: ink2 });
-        var big = env.text({ id: 'quote', name: 'Quote', text: q, x: tArea.x, y: 0, w: tArea.w, h: tArea.h - 200, font: 'Archivo Black', weight: 400, size: long ? 88 : 128, min: 32, lineHeight: 1.06, tracking: -0.01, color: ink2 });
+        var big = env.text({ id: 'quote', name: 'Quote', text: q, x: tArea.x, y: 0, w: tArea.w, h: tArea.h - 200, font: 'Archivo Black', weight: 400, size: long ? 88 : 128, min: 26, lineHeight: 1.06, tracking: -0.01, color: ink2 });
         var cr2 = credits(tArea.x, tArea.w, 'left', ink2, ink2, { font: 'Space Grotesk', size: 34, sourceFont: 'Space Grotesk', sourceItalic: false, sourceSize: 30 });
         big.y = bar.y + bar.h + 48;
         stackBelow(big, cr2, 44);
@@ -98,7 +98,7 @@
         L = L.concat(lines);
         var hArea = area;
         if (v.photo) {
-          var pw = Math.round(W * (env.tall ? 0.62 : env.square ? 0.42 : 0.5));
+          var pw = Math.round(W * (env.tall ? 0.62 : env.square ? 0.42 : 0.5) * (long ? 0.72 : 1));
           var phh = Math.round(pw * 1.05);
           var fx = (W - pw) / 2, fy = top;
           L.push(env.rect({ id: 'print', name: 'Print', x: fx - 22, y: fy - 22, w: pw + 44, h: phh + 90, fill: '#FFFFFF', rotation: -3, shadow: { color: 'rgba(40,30,20,.18)', blur: 30, x: 0, y: 12 } }));
@@ -108,7 +108,7 @@
         } else {
           L.push(env.rect({ id: 'tape', name: 'Tape', x: W / 2 - 100, y: top - 30, w: 200, h: 50, fill: 'rgba(232,180,160,0.78)', rotation: -4 }));
         }
-        var hand = env.text({ id: 'quote', name: 'Quote', text: q, x: hArea.x, y: 0, w: hArea.w, h: hArea.h - 110, font: 'Caveat', weight: 700, size: v.photo ? (long ? 76 : 104) : (long ? 84 : 132), min: 40, lineHeight: 1.1, align: 'center', balance: true, color: pen });
+        var hand = env.text({ id: 'quote', name: 'Quote', text: q, x: hArea.x, y: 0, w: hArea.w, h: hArea.h - 110, font: 'Caveat', weight: 700, size: v.photo ? (long ? 76 : 104) : (long ? 84 : 132), min: 30, lineHeight: 1.1, align: 'center', balance: true, color: pen });
         var cr3 = credits(hArea.x, hArea.w, 'center', pen, '#4A557F', { font: 'Caveat', weight: 400, size: 46, upper: false, tracking: 0, sourceFont: 'Caveat', sourceItalic: false, sourceSize: 38 });
         stackBelow(hand, cr3, 26);
         var hb = [hand].concat(cr3);
