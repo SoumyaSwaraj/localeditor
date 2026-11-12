@@ -875,6 +875,7 @@
     fire('panel-close', S.panel);
     if (S.panelSpec && S.panelSpec.close) S.panelSpec.close(ctx);
     var restore = E.panel.contains(document.activeElement);
+    var closedId = S.panel;
     S.panel = null;
     S.panelSpec = null;
     root.setAttribute('data-panel', '');
@@ -890,7 +891,11 @@
     } catch (e) {}
     refitSoon();
     fitToolbarSoon();
-    if (restore) { var b = (isPhone() ? E.tabs : E.rail).querySelector('[data-panel-btn]'); if (b) try { b.focus({ preventScroll: true }); } catch (e) {} }
+    if (restore) {
+      var host = isPhone() ? E.tabs : E.rail;
+      var b = host.querySelector('[data-panel-btn="' + closedId + '"]:not([hidden])') || (isPhone() && E.tabs.querySelector('[data-panel-btn="more"]')) || host.querySelector('[data-panel-btn]');
+      if (b) try { b.focus({ preventScroll: true }); } catch (e) {}
+    }
   }
   function renderPanel(keepScroll) {
     var spec = PANELS[S.panel];
@@ -1077,7 +1082,7 @@
       html = '<span class="sx-tb-label">' + ic('resize') + 'Previewing size</span>';
     } else if (kind === 'image') {
       var repl = (l && (l.slot || !l.src)) ? 'Replace photo' : 'Replace';
-      html = tb('adjust', 'adjust', 'Edit photo', { text: ph ? 'Edit' : true, pri: 1 }) + tb('filters', 'filters', 'Filters', { text: true, pri: 1 }) + tb('effects', 'sparkle', 'Effects', { text: true, pri: 3 }) + withPri(fire('photo-tools', l) || '', ph ? 2 : 1) + SEP +
+      html = tb('adjust', 'adjust', 'Edit photo', { text: ph ? 'Edit' : true, pri: 1 }) + tb('filters', 'filters', 'Filters', { text: true, pri: ph ? 2 : 1 }) + tb('effects', 'sparkle', 'Effects', { text: true, pri: 3 }) + withPri(fire('photo-tools', l) || '', 1) + SEP +
         tb('crop', 'crop', 'Crop', { text: true, pri: 1 }) + tb('flipMenu', 'flip', 'Flip', { text: true, pri: 3, popup: 'menu' }) + tb('replace', 'replace', repl, { text: ph ? 'Replace' : repl, cls: (l && l.slot) ? 'is-primary' : '', pri: (l && l.slot) ? 1 : 2 }) + common(l);
     } else if (kind === 'text') {
       var fam = l.font || 'Plus Jakarta Sans';
