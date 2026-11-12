@@ -86,11 +86,13 @@ cases['redact layer lands in the doc, survives undo / redo and a .leproject roun
   h.assert.noErrors(page);
 };
 
-cases['export pixels change inside the box and not outside, at preview and export scales'] = async ({ browser, base, h }) => {
+/* One case per mode, so none nears the 90 s limit on a loaded machine (the single case took 40 s alone). */
+['solid', 'pixelate', 'blur'].forEach((mode) => {
+cases['export pixels change inside the box and not outside, at preview and export scales (' + mode + ')'] = async ({ browser, base, h }) => {
   const page = await setup(h, browser, base);
   const before = await grab(page, 1, TEXT);
   const outBefore = await grab(page, 1, OUTSIDE);
-  for (const mode of ['solid', 'pixelate', 'blur']) {
+  {
     const id = await page.evaluate((m) => window.LEStudioPrivacy.add({ x: 70, y: 510, w: 920, h: 140 }, m), mode);
     for (const s of [0.5, 1, 2]) {
       const a = await grab(page, 1 * s, TEXT);
@@ -113,6 +115,7 @@ cases['export pixels change inside the box and not outside, at preview and expor
   }
   h.assert.noErrors(page);
 };
+});
 
 cases['strength is safe by default and scales with export size'] = async ({ browser, base, h }) => {
   const page = await setup(h, browser, base);

@@ -324,32 +324,54 @@ cases['reopening the panel restores controls from the doc; project round trip ke
   h.assert.noErrors(page);
 };
 
-cases['every style pack loads and every template applies'] = async ({ browser, base, h }) => {
+/* Every style pack and every template, in groups of 5 styles so no case nears the 90 s limit on a loaded machine
+   (the single case took 40 s alone and over 90 s under load). Styles are read from the index when this file loads. */
+(function () {
+  const IDX = require('../assets/data/collages/index.json');
+  const ids = IDX.styles.map((st) => st.id);
+  const SIZE = 5;
+  for (let i = 0; i < ids.length; i += SIZE) {
+    const group = ids.slice(i, i + SIZE);
+    cases['every style pack loads and every template applies (' + (i / SIZE + 1) + ' of ' + Math.ceil(ids.length / SIZE) + ': ' + group[0] + ' … ' + group[group.length - 1] + ')'] = async ({ browser, base, h }) => {
+      const page = await h.studioWithSample(browser, base, 'desktop');
+      const res = await page.evaluate(async (group) => {
+        const c = window.LEStudio;
+        const idx = await LE.collage.index();
+        const bad = [];
+        let n = 0, expected = 0;
+        for (const s of idx.styles.filter((x) => group.includes(x.id))) {
+          const pack = await LE.collage.loadStyle(s.id);
+          if (!pack || pack.templates.length !== s.count) bad.push(s.id + ' count');
+          expected += idx.templates.filter((t) => t.style === s.id).length;
+          for (const t of pack.templates) {
+            c.scene.load(LE.Scene.blank(1080, 1080));
+            await LEStudioCollage.applyTemplate(c, t, { fill: 'empty' });
+            const d = c.scene.toJSON();
+            const got = d.layers.filter((l) => l.slot).length;
+            if (got !== t.slots.length || d.width !== t.w || d.height !== t.h || !d.collage || d.collage.template !== t.id) bad.push(t.id);
+            n++;
+          }
+        }
+        return { n, bad, expected };
+      }, group);
+      h.assert.equal(res.bad.length, 0, 'failed: ' + res.bad.slice(0, 5).join(','));
+      h.assert.equal(res.n, res.expected, 'applied every template of these styles');
+      h.assert.noErrors(page);
+    };
+  }
+})();
+
+cases['style packs: 21 reference styles with 8–12 variations, every template listed, and a real fill from the pool'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
   const res = await page.evaluate(async () => {
-    const c = window.LEStudio;
     const idx = await LE.collage.index();
-    const bad = [];
-    let n = 0, attached = {};
-    for (const s of idx.styles) {
-      const pack = await LE.collage.loadStyle(s.id);
-      if (!pack || pack.templates.length !== s.count) bad.push(s.id + ' count');
-      if (s.group === 'style') attached[s.id] = pack.templates.length;
-      for (const t of pack.templates) {
-        c.scene.load(LE.Scene.blank(1080, 1080));
-        await LEStudioCollage.applyTemplate(c, t, { fill: 'empty' });
-        const d = c.scene.toJSON();
-        const got = d.layers.filter((l) => l.slot).length;
-        if (got !== t.slots.length || d.width !== t.w || d.height !== t.h || !d.collage || d.collage.template !== t.id) bad.push(t.id);
-        n++;
-      }
-    }
-    return { n, bad, attached, templates: idx.templates.length };
+    const attached = {};
+    let total = 0;
+    idx.styles.forEach((s) => { total += s.count; if (s.group === 'style') attached[s.id] = s.count; });
+    return { attached, total, templates: idx.templates.length };
   });
-  h.assert.equal(res.bad.length, 0, 'failed: ' + res.bad.slice(0, 5).join(','));
-  h.assert.equal(res.n, res.templates, 'applied every template');
+  h.assert.equal(res.total, res.templates, 'the style counts add up to every template in the index');
   h.assert(Object.keys(res.attached).length === 21 && Object.values(res.attached).every((k) => k >= 8 && k <= 12), 'reference styles have 8–12 variations');
-  /* A real fill from the pool. */
   const filled = await page.evaluate(async () => {
     const c = window.LEStudio;
     c.scene.load(LE.Scene.blank(1080, 1080));

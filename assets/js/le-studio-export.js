@@ -77,7 +77,13 @@
         return Promise.resolve(run()).catch(function (err) { c.toast((err && err.message) || 'That did not work here. Nothing was changed.'); });
       } catch (err) { c.toast((err && err.message) || 'That did not work here. Nothing was changed.'); return Promise.resolve(); }
     }
-    if (LE.support && typeof LE.support.gate === 'function') return LE.support.gate(id, { title: title, run: safe, fallback: fallback });
+    /* LE.support owns the verdict and the sheet (with our fallback as an action); its gate records a run that
+       throws, so the error reaches it first and is explained here afterwards. */
+    if (LE.support && typeof LE.support.gate === 'function') {
+      return LE.support.gate(id, { title: title, run: run, fallback: fallback }).then(null, function (err) {
+        c.toast((err && err.message) || 'That did not work here. Nothing was changed.');
+      });
+    }
     var r = check(id);
     if (r.status === 'ok' || r.status === 'limited') return safe();
     var box = c.h('<div class="sxe-gate"></div>');
@@ -104,8 +110,11 @@
   }
   function supportNote(id) {
     var r = check(id);
-    if (r.status === 'unsupported') return 'Not available in this browser' + (r.suggest && r.suggest[0] ? ' — works in ' + r.suggest[0].browser : '') + '.';
-    return '';
+    if (r.status !== 'unsupported') return '';
+    var sug = r.suggest || [];
+    var upd = sug.filter(function (s) { return s.update; })[0];
+    var other = sug.filter(function (s) { return s.browser; })[0];
+    return 'Not available in this browser' + (upd ? ' — update ' + upd.name + ' to use it' : other ? ' — works in ' + other.browser : '') + '.';
   }
 
   /* ---------- Small helpers ---------- */
@@ -148,7 +157,7 @@
   /* Shares when the browser can, otherwise downloads (one file, or a zip for several). */
   function shareOrDownload(c, items, zipName) {
     return share(c, items, { title: c.S.project && c.S.project.name }).then(function (r) {
-      if (r === 'shared') { c.toast('Shared'); return r; }
+      if (r === 'shared') { c.toast('Shared'); if (LE.support && LE.support.reportSuccess) LE.support.reportSuccess('export.share'); return r; }
       if (r === 'cancelled') return r;
       var msg = r === 'unsupported' ? 'Sharing files is not available here, so it was downloaded instead.' : 'Sharing did not work, so it was downloaded instead.';
       var done = items.length === 1 ? Promise.resolve(c.download(items[0].blob, items[0].name)) : zipOf(items).then(function (z) { c.download(z, zipName || base(c) + '.zip'); });
@@ -174,6 +183,7 @@
     catch (e) { write = png.then(function (b) { return navigator.clipboard.write([new window.ClipboardItem({ 'image/png': b })]); }); }
     return write.then(function () {
       c.toast('Copied as PNG — paste it into any app');
+      if (LE.support && LE.support.reportSuccess) LE.support.reportSuccess('export.copy');
       return true;
     }, function (err) {
       var why = err && err.name === 'NotAllowedError' ? 'the browser blocked clipboard access' : 'this browser refused the image';
@@ -867,7 +877,16 @@
     }
     actions(c, body, {
       download: function () {
-        return c.exportImage({ name: fname() }).then(function (blob) { if (blob) c.toast('Downloaded ' + c.fmtBytes(blob.size)); });
+        /* A PDF of every page holds them all in memory at once: LE.support explains first when that is not ok here. */
+        var pdfAll = o.format === 'pdf' && multi && o.pages === 'all';
+        function go() {
+          return c.exportImage({ name: fname() }).then(function (blob) {
+            if (!blob) return;
+            c.toast('Downloaded ' + c.fmtBytes(blob.size));
+            if (pdfAll && LE.support && LE.support.reportSuccess) LE.support.reportSuccess('studio.pdf-export');
+          });
+        }
+        return pdfAll && LE.support && LE.support.gate ? LE.support.gate('studio.pdf-export', { title: 'PDF of all ' + c.S.project.pages.length + ' pages', run: go }) : go();
       },
       share: function () { return items().then(function (list) { if (list.length) return shareOrDownload(c, list, c.safeName(fname()) + '.zip'); }); }
     });

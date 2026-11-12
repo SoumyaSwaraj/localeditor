@@ -50,5 +50,8 @@ When the bug is fixed the case passes and the runner prints "known bug now passe
 `h.addLayers(page, [layer...])`, `h.layers`, `h.selection`, `h.select`, `h.rect/centerOf/handleBox` (screen geometry), `h.drag` (mouse) and `h.touchDrag` (CDP touch),
 `h.capture(page, action)` (wait for a download, returns `{ name, buf, size }`), `h.imageInfo(buf)` (png/jpeg/webp type and size), `h.pdfRead(browser, base, buf)` (pages, page sizes, text via the site's pdf.js),
 `h.openTheme(...)`, `h.inkContrast(page, selector)` (computed text/background contrast), `h.key(page, key, {ctrl, shift})`, `h.savedProjects(page)`, `h.sameDoc(a, b)`, `h.PHOTO(n)` / `h.FIXTURE(name)` fixture paths.
+`h.waitForAsync(page, fn, arg, timeout)` polls an async condition. **`page.waitForFunction` does not await a Promise**: a predicate that returns one passes at once, so never write `waitForFunction(() => x.then(...))`.
+
+Integration files: `wiring.test.js` (device-support gates, toolbar hooks, photo pickers), `format-wave2.test.js` (carousel, maker, redact, cutout, page ids), `shadow.test.js` (shadows at every scale).
 
 `tests/qa/*.js` are measurement scripts for `docs/QA-REPORT.md` (phone walk-through screenshots, load and long-task timings). They are not run by `run.js`.

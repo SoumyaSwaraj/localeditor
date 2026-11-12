@@ -35,13 +35,21 @@ LE.support && LE.support.reportSuccess('cutout.detailed');
 LE.support && LE.support.reportFailure('cutout.detailed', err);
 ```
 
+A feature with its own way round passes it as `fallback`; the sheet shows it as an action (the primary one when the feature cannot run here) and `gate()` resolves with its result:
+
+```js
+LE.support.gate('export.share', { title: 'Share', run: share, fallback: { label: 'Download instead', run: download } });
+```
+
+`gate()` records a thrown or rejected run as a failure on this device, except errors that say nothing about the device: `AbortError` (or `err.cancelled`), and `err.code` of `cancelled`, `offline`, `download`, `network`, `unsupported`, `quota` (no free space), `consent` or `declined`. An error can also say `err.deviceFailure = true | false`. Run the feature inside `gate()` (do not swallow its errors first) so failures are recorded; call `reportSuccess` when it really produced its result.
+
 Or mark a control and let the module handle it: `<button data-le-feature="export.copy" data-le-badge>`. `annotate()` runs on load and when such elements are added: it sets `data-le-support="ok|limited|unknown|unsupported"`, adds an `aria-describedby` explanation, appends a badge when `data-le-badge` is present, and turns a tap on an unavailable control into the explanation sheet (opt out with `data-le-gate="off"`). Controls are never hidden.
 
 ## API
 
 | Call | Returns |
 |---|---|
-| `has(cap)` | `true`, `false` or `null` (cannot tell). Cached. Never throws. |
+| `has(cap)` | `true`, `false` or `null` (cannot tell). Cached, except `live` capabilities (cheap tests of globals that can change after load: share, clipboard, recording, camera, file pickers, eyedropper, install prompt, display mode, connection), which are re-tested each time so a polyfill, a test stub or going offline is seen. Never throws. |
 | `probe(cap)` / `probeAll(caps?)` | Promise; runs the costly async probes (graphics adapter, H.264 encoder, storage round trips). |
 | `why(cap)` | Detail code, e.g. `'not-isolated'` for `wasm-threads`. |
 | `capInfo(cap)`, `caps()` | Capability metadata / all ids. |
@@ -51,7 +59,7 @@ Or mark a control and let the module handle it: `<button data-le-feature="export
 | `define(def)`, `features()`, `get(id)` | Registry. |
 | `check(id)` | `{ id, name, group, status, reasons, missing, unknown, suggest, canForce, forced, label }`. Sync, uses what is known now. |
 | `checkAsync(id)`, `checkAll()` | Probes first / every feature. |
-| `gate(id, { title, run, onCancel })` | Promise of `run()`'s result, or `undefined` when cancelled. |
+| `gate(id, { title, run, onCancel, fallback })` | Promise of `run()`'s result, `fallback.run()`'s result when the person picks the fallback, or `undefined` when cancelled. |
 | `reportFailure(id, err)`, `reportSuccess(id)`, `history(id)`, `forget(id?)` | Local history (localStorage `le-support`; session choices in sessionStorage `le-support-session`). |
 | `badge(id)`, `annotate(root)` | Inline states. |
 | `open()`, `renderReport(el, { compact })`, `reportText()` | The report as a sheet, into an element, or as plain text. |
@@ -77,8 +85,8 @@ Site: `secure-context`, `wasm-threads` (false unless the page is cross-origin is
 3. Any `wants` probe is `false` → at least `limited`.
 4. Memory (`memoryMB`): if the device reports memory under 8 GB and the feature needs more than a quarter of it → `limited` ("This phone may not have enough memory for the detailed cut-out (needs about 1 GB)"). If the device does not report memory (Safari, Firefox), a phone with a feature of 600 MB or more → `unknown`; a computer → no change. Memory never makes a feature `unsupported`.
 5. Fewer than 4 cores and `memoryMB` ≥ 300 → `limited` ("may be slow").
-6. A recorded success → `ok`, whatever the estimates. A recorded failure (newest wins) → at least `limited`, first reason "This did not work last time on this device."
-7. `suggest` comes from missing `needs` (or, if none, missing `wants`) that a browser can change: every other browser on this OS where the matrix says yes for all of them. On iOS never another browser (one engine): "works on a computer" instead. In an app's built-in browser: open in Safari or Chrome.
+6. A recorded success → `ok`, whatever the estimates and unknowns, but not when a required API is definitely missing now (rule 1 wins). A recorded failure (newest wins) → at least `limited`, first reason "This did not work last time on this device."
+7. `suggest` comes from missing `needs` (or, if none, missing `wants`) that a browser can change: every other browser on this OS where the matrix says yes for all of them. When the matrix says the current browser itself supports them but the live test fails, this copy is out of date (or the feature is switched off): the first suggestion is `{ update: true, name }` ("Update Chrome to the latest version", or the OS on iOS) and browsers on the same engine are not suggested. On iOS never another browser (one engine): "works on a computer" instead. In an app's built-in browser: open in Safari or Chrome.
 
 Gate: `ok`, or a remembered "Try anyway" (this session, or "Don't ask again on this device") → runs at once. Otherwise a sheet: the reasons, suggestions with "Copy link to open it there", and the safest primary action (Continue for `limited`, Try anyway for `unknown`, Not now for `unsupported`; OK only when it cannot be forced).
 

@@ -337,6 +337,8 @@ cases['text-layout template adds editable layers (group) over the page'] = async
 cases['collage template tab lists catalogue cards and the first card applies without errors (shallow)'] = async ({ browser, base, h }) => {
   const page = await h.newDesign(browser, base, 'desktop', 'Instagram post');
   await h.openPanel(page, 'design', { tab: 'templates' });
+  /* The catalogue index loads on demand; under load it can take longer than the panel's first paint. */
+  await page.waitForFunction(() => document.querySelectorAll('#sx-panel-body .sx-cg-card').length >= 10, null, { timeout: 15000 }).catch(() => {});
   h.assert(await page.locator('#sx-panel-body .sx-cg-card').count() >= 10, 'cards listed');
   await page.locator('#sx-panel-body .sx-cg-card').first().click();
   await page.waitForTimeout(1500);
@@ -387,10 +389,19 @@ cases['resize with Cancel leaves the page as it was'] = async ({ browser, base, 
 };
 cases['custom width and height in Resize create that size'] = async ({ browser, base, h }) => {
   const page = await photoPage(browser, base, h);
+  /* Keep the cursor off the size presets so no hover preview races the typing; the re-render itself is forced below. */
+  await page.mouse.move(2, 2);
   await h.openPanel(page, 'design', { tab: 'resize' });
   const ins = page.locator('#sx-panel-body input.sx-input[type=number]');
   await page.locator('.sx-ratio-lock').click(); // unlock ratio
   await ins.nth(0).fill('900'); await ins.nth(1).fill('500');
+  await page.waitForFunction(() => { const i = document.querySelectorAll('#sx-panel-body input.sx-input[type=number]'); return i[0] && i[0].value === '900' && i[1].value === '500'; }, null, { timeout: 5000 }).catch(() => {});
+  /* The panel re-renders while the person types (a hover preview of a preset, an autosave): the typed size and
+     the unlocked ratio must survive it. This was the bug (the form came back locked at the current size). */
+  await page.evaluate(() => window.LEStudio.renderPanel(true));
+  await page.waitForTimeout(150);
+  h.assert.equal(await page.getAttribute('.sx-ratio-lock', 'aria-pressed'), 'false', 'ratio stays unlocked');
+  h.assert.equal(await ins.nth(0).inputValue() + 'x' + await ins.nth(1).inputValue(), '900x500', 'typed size kept');
   await page.getByRole('button', { name: 'Preview size' }).click();
   await page.waitForSelector('#sx-bar [data-cmd=sizeUse]');
   await page.click('#sx-bar [data-cmd=sizeUse]');

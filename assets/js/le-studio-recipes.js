@@ -988,7 +988,13 @@
     wrap.appendChild(prog);
     var result = c.h('<div class="sxr-result" hidden></div>');
     wrap.appendChild(result);
+    /* Device support: LE.support explains first when the verdict for batch is not ok (invisible when it is). */
     function start(files) {
+      if (ST.batch && ST.batch.running) return;
+      if (!(window.LE && LE.support && LE.support.gate)) { startNow(files); return; }
+      LE.support.gate('studio.recipes', { title: 'Batch edit', run: function () { return startNow(files); } }).catch(function (err) { c.toast((err && err.message) || 'The batch could not start.'); });
+    }
+    function startNow(files) {
       if (ST.batch && ST.batch.running) return;
       var wf = source.indexOf('r:') === 0 ? findRecipe(c, source.slice(2)) : null;
       var steps;
@@ -1012,6 +1018,7 @@
         result.hidden = false;
         result.innerHTML = '';
         if (!r.count) { result.appendChild(c.h('<p class="sxr-error">' + esc(r.cancelled ? 'Stopped before any photo was finished.' : 'None of those files could be read as photos.') + '</p>')); return; }
+        if (window.LE && LE.support && LE.support.reportSuccess) LE.support.reportSuccess('studio.recipes');
         result.appendChild(c.h('<p class="sxr-done"><b>' + r.count + ' photo' + (r.count === 1 ? '' : 's') + ' ready</b> · ' + c.fmtBytes(r.zip.size) + (r.failed.length ? ' · ' + r.failed.length + ' skipped' : '') + (r.cancelled ? ' · stopped early' : '') + '</p>'));
         var dl = btn(c, 'Download zip', 'download', 'btn btn-gold sxr-wide', function () { c.download(r.zip, r.name); });
         result.appendChild(dl);

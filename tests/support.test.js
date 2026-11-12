@@ -84,8 +84,10 @@ cases['verdict rules: missing need, unknown need, wants, memory, success and fai
     S.override('webgpu', null);
     const out = {};
     ['t.need', 't.want', 't.null', 't.degraded', 't.mem', 't.ok'].forEach((id) => { out[id] = S.check(id); });
+    S.reportSuccess('t.null');
+    out.afterSuccess = S.check('t.null');
     S.reportSuccess('t.need');
-    out.afterSuccess = S.check('t.need');
+    out.successButMissing = S.check('t.need');
     S.reportFailure('t.ok', new Error('out of memory'));
     out.afterFail = S.check('t.ok');
     out.unknownFeature = S.check('t.nope');
@@ -105,6 +107,7 @@ cases['verdict rules: missing need, unknown need, wants, memory, success and fai
   h.assert.equal(r['t.ok'].status, 'ok');
   h.assert.equal(r['t.mem'].status, 'ok', 'a desktop with plenty of memory');
   h.assert.equal(r.afterSuccess.status, 'ok', 'a recorded success is ok');
+  h.assert.equal(r.successButMissing.status, 'unsupported', 'a recorded success does not beat an API that is definitely missing now');
   h.assert.equal(r.afterFail.status, 'limited');
   h.assert(/did not work last time/.test(r.afterFail.reasons[0]), 'a recorded failure warns');
   h.assert.equal(r.unknownFeature.status, 'unknown');
@@ -227,11 +230,113 @@ cases['suggestions only name browsers available on this operating system'] = asy
       if (os === 'ios' && ua !== 'instagram') h.assert(!s.browser, 'never suggest another browser on iOS: ' + s.browser);
     }));
     h.assert.equal(r.fine.suggest.length, 0, 'nothing to suggest when it already works');
-    if (os === 'windows') h.assert(r.eye.suggest.some((s) => s.browser === 'Edge'), 'Windows Chrome without eyedropper suggests Edge');
+    /* The table says Chrome on Windows has the eyedropper, so a failing live test means this copy is out of date:
+       say "update", and do not suggest Edge (same engine, same result). */
+    if (os === 'windows') {
+      h.assert(r.eye.suggest.some((s) => s.update && s.name === 'Chrome'), 'Windows Chrome without eyedropper: update Chrome ' + JSON.stringify(r.eye.suggest));
+      h.assert(!r.eye.suggest.some((s) => s.browser === 'Edge'), 'no same-engine sibling suggested');
+    }
     if (os === 'ios') h.assert(r.eye.suggest.every((s) => !s.browser || ua === 'instagram'), 'iOS: works on a computer instead');
     if (os === 'linux') h.assert(!r.eye.suggest.some((s) => s.browser === 'Firefox' || s.browser === 'Safari'), 'no Firefox or Safari for the eyedropper');
     await ctx.close();
   }
+};
+
+cases['update this browser when the table says it should work; other engines are still offered'] = async ({ browser, base, h }) => {
+  const ctx = await browser.newContext({ serviceWorkers: 'block', userAgent: UA.windows });
+  const page = await ctx.newPage();
+  await page.goto(base + '/about/', { waitUntil: 'networkidle' });
+  await ready(page);
+  const r = await page.evaluate(() => {
+    const S = LE.support;
+    S.define({ id: 't.share', name: 'Sharing', needs: ['web-share-files'] });
+    S.define({ id: 't.gpu', name: 'GPU thing', needs: ['webgpu'] });
+    S.override('web-share-files', false);
+    S.override('webgpu', false);
+    const share = S.check('t.share'), gpu = S.check('t.gpu');
+    S.override('web-share-files'); S.override('webgpu');
+    return { share: share.suggest, gpu: gpu.suggest };
+  });
+  h.assert(r.share.length === 1 && r.share[0].update && /Update Chrome/.test('Update ' + r.share[0].name), 'share: update Chrome only ' + JSON.stringify(r.share));
+  h.assert(/latest version/.test(r.share[0].reason), 'reason says update: ' + r.share[0].reason);
+  h.assert(r.gpu.length === 1 && r.gpu[0].update, 'webgpu is promised for Chrome on Windows too: ' + JSON.stringify(r.gpu));
+  await ctx.close();
+  /* Safari on a Mac: the table is unsure about WebGPU there, so no "update"; Chrome and Edge (another engine) are offered. */
+  const ctx2 = await browser.newContext({ serviceWorkers: 'block', userAgent: UA.mac });
+  const p2 = await ctx2.newPage();
+  await p2.goto(base + '/about/', { waitUntil: 'networkidle' });
+  await ready(p2);
+  const mac = await p2.evaluate(() => {
+    const S = LE.support;
+    S.define({ id: 't.gpu', name: 'GPU thing', needs: ['webgpu'] });
+    S.override('webgpu', false);
+    const g = S.check('t.gpu').suggest;
+    S.override('webgpu');
+    return g;
+  });
+  h.assert(!mac.some((s) => s.update), 'no update when the table does not promise it: ' + JSON.stringify(mac));
+  h.assert(mac.some((s) => s.browser === 'Chrome') && mac.some((s) => s.browser === 'Edge'), 'other-engine browsers offered: ' + JSON.stringify(mac));
+  await ctx2.close();
+};
+
+cases['probes of stubbable globals are live; a success never hides an API missing now'] = async ({ browser, base, h }) => {
+  const page = await openAt(browser, base, h, '/about/', 'phone');
+  const r = await page.evaluate(() => {
+    const S = LE.support;
+    S.forget();
+    const real = navigator.canShare;
+    const a = S.has('web-share-files');
+    navigator.share = navigator.share || (() => Promise.resolve());
+    navigator.canShare = () => true;
+    const b = S.has('web-share-files');
+    S.reportSuccess('export.share');
+    const okNow = S.check('export.share').status;
+    navigator.canShare = undefined;
+    const c = S.has('web-share-files');
+    const gone = S.check('export.share').status;
+    navigator.canShare = real;
+    return { a, b, c, okNow, gone };
+  });
+  h.assert.equal(r.b, true, 'a stubbed canShare is seen');
+  h.assert.equal(r.c, false, 'removing it is seen');
+  h.assert.equal(r.okNow, 'ok');
+  h.assert.equal(r.gone, 'unsupported', 'a past success does not beat a missing API');
+};
+
+cases['gate offers the feature\'s own fallback, and cancels or lost downloads are not device failures'] = async ({ browser, base, h }) => {
+  const page = await openAt(browser, base, h, '/about/', 'phone');
+  await page.evaluate(() => {
+    LE.support.forget();
+    LE.support.define({ id: 't.no', name: 'Never', needs: ['eyedropper'] });
+    LE.support.define({ id: 't.ok', name: 'Fine', needs: ['canvas-2d'] });
+    LE.support.override('eyedropper', false);
+    window.ran = [];
+    window.p = LE.support.gate('t.no', { title: 'Share', run: () => ran.push('run'), fallback: { label: 'Download instead', run: () => { ran.push('fallback'); return 'downloaded'; } } });
+  });
+  await page.waitForSelector('dialog.ls-gate[open] [data-ls-fallback]');
+  const btn = await page.$eval('dialog.ls-gate [data-ls-fallback]', (b) => ({ text: b.textContent, primary: b.classList.contains('lp-primary') }));
+  h.assert(btn.text === 'Download instead' && btn.primary, 'fallback is the primary action: ' + JSON.stringify(btn));
+  await page.click('dialog.ls-gate [data-ls-fallback]');
+  h.assert.equal(await page.evaluate(() => p), 'downloaded', 'gate resolves with the fallback result');
+  h.assert.equal(await page.evaluate(() => ran.join()), 'fallback');
+  /* ok: the fallback is never shown, the feature just runs. */
+  h.assert.equal(await page.evaluate(() => LE.support.gate('t.ok', { run: () => 1, fallback: { label: 'X', run: () => 2 } })), 1);
+  /* A cancel, an offline or failed download: not recorded; a real failure is. */
+  const hist = await page.evaluate(async () => {
+    const S = LE.support, out = {};
+    const fail = (e) => S.gate('t.ok', { run: () => { throw e; } }).catch(() => 0);
+    const abort = new Error('x'); abort.name = 'AbortError';
+    await fail(abort); out.abort = S.history('t.ok');
+    await fail(Object.assign(new Error('dl'), { code: 'download' })); out.download = S.history('t.ok');
+    await fail(Object.assign(new Error('off'), { code: 'offline' })); out.offline = S.history('t.ok');
+    await fail(Object.assign(new Error('full'), { code: 'quota' })); out.quota = S.history('t.ok');
+    await fail(Object.assign(new Error('oom'), { code: 'memory' })); out.memory = S.history('t.ok');
+    return out;
+  });
+  h.assert(!hist.abort && !hist.download && !hist.offline && !hist.quota, 'not device failures: ' + JSON.stringify(hist));
+  h.assert(hist.memory && hist.memory.fail, 'out of memory is recorded');
+  await page.evaluate(() => { LE.support.override('eyedropper'); LE.support.forget(); });
+  h.assert.noErrors(page);
 };
 
 cases['badges and annotate decorate data-le-feature elements without hiding them'] = async ({ browser, base, h }) => {

@@ -259,6 +259,17 @@ async function savedProjects(page) {
   await page.evaluate(() => window.LEStudio.saveNow());
   return page.evaluate(() => window.LE.project.list());
 }
+/* page.waitForFunction does NOT await a Promise: a predicate returning one passes at once (a pending Promise is
+   truthy). Use this for async conditions: polls fn in the page, awaiting it, until it resolves truthy. */
+async function waitForAsync(page, fn, arg, timeout) {
+  const end = Date.now() + (timeout || 10000);
+  for (;;) {
+    const v = await page.evaluate(fn, arg);
+    if (v) return v;
+    if (Date.now() > end) throw new Error('waitForAsync: timed out after ' + (timeout || 10000) + 'ms');
+    await sleep(100);
+  }
+}
 /* WCAG contrast of each visible element's computed text colour against its own (or nearest painted ancestor's)
    background. Returns [{ text, color, bg, ratio }]. Used for the rule "the primary action's text meets AA (4.5:1)". */
 async function inkContrast(page, selector) {
@@ -280,5 +291,5 @@ const sameDoc = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 module.exports = {
   ROOT, serve, chromium, VIEWPORTS, open, studioWithSample, openPanel, doc, noOverflow, assert,
   FIXTURE, PHOTO, sleep, makeJpeg, openTheme, newDesign, openPhotoDesign, addPhoto, layers, selection, select, click, addLayers, rect, centerOf, handleBox,
-  drag, touchDrag, capture, imageInfo, pdfInfo, pdfRead, key, savedProjects, sameDoc, inkContrast
+  drag, touchDrag, capture, imageInfo, pdfInfo, pdfRead, key, savedProjects, sameDoc, inkContrast, waitForAsync
 };

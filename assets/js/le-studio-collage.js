@@ -69,10 +69,23 @@
     if (t.group === 'style') return false;
     return !!CLASSIC[t.style];
   }
+  /* Photos the person added: never a cut-out mask or another working image (c.isUserPhoto, shared by every picker;
+     the name test is the fallback when the studio is older than the helper). */
+  var MANY_PHOTOS = 10;
+  function isMaskName(a) { return /^background-/.test((a && a.name) || ''); }
+  /* An entry from the device-wide photo list: never a mask by name, nor one this design uses as a mask. */
+  function pickable(c, a) {
+    if (!a || isMaskName(a)) return false;
+    var mine = c.S.project && c.S.project.assets && c.S.project.assets[a.id];
+    return !(mine && typeof c.isUserPhoto === 'function' && !c.isUserPhoto(a.id));
+  }
   function uploadIds(c) {
     var assets = c.S.project && c.S.project.assets;
     if (!assets) return [];
-    return Object.keys(assets).filter(function (id) { return /^[a-f0-9]{64}$/.test(id); });
+    return Object.keys(assets).filter(function (id) {
+      if (!/^[a-f0-9]{64}$/.test(id)) return false;
+      return typeof c.isUserPhoto === 'function' ? c.isUserPhoto(id) : !isMaskName(assets[id]);
+    });
   }
   function shuffled(list, avoidSame) {
     var out = list.slice();
@@ -557,7 +570,7 @@
     });
     if (LE.project && LE.project.assets) {
       LE.project.assets().then(function (list) {
-        (list || []).slice(0, 60).forEach(function (a) {
+        (list || []).filter(function (a) { return pickable(c, a); }).slice(0, 60).forEach(function (a) {
           if (shown[a.id] || !grid.isConnected) return;
           shown[a.id] = 1;
           grid.appendChild(tile(a.id, a.name));
@@ -583,9 +596,10 @@
       else go.textContent = build.pick.length ? 'Make collage · ' + build.pick.length + ' photo' + (build.pick.length === 1 ? '' : 's') : 'Make ' + build.empty + ' empty cells';
       go.disabled = !!build.picking && !build.pick.length;
     }
-    go.onclick = function () {
+    function make() {
       go.disabled = true;
-      ensureUploads(c, build.pick.slice()).then(function (ready) {
+      var many = build.pick.length >= MANY_PHOTOS;
+      return ensureUploads(c, build.pick.slice()).then(function (ready) {
         if (build.picking) {
           build.picking = false;
           addToCells(c, ready);
@@ -597,7 +611,13 @@
         build.pick = [];
         build.picked = true;
         c.renderPanel();
+        if (many && window.LE && LE.support) LE.support.reportSuccess('studio.collage');
       });
+    }
+    /* Many photos at once is where a phone runs short of memory: LE.support explains first when the verdict is not ok. */
+    go.onclick = function () {
+      if (build.pick.length < MANY_PHOTOS || !(window.LE && LE.support && LE.support.gate)) { make(); return; }
+      LE.support.gate('studio.collage', { title: 'Collage with ' + build.pick.length + ' photos', run: make }).catch(function (err) { go.disabled = false; c.toast((err && err.message) || 'The collage could not be made.'); });
     };
     paintCount();
   }
@@ -1254,8 +1274,14 @@
       stockState.loading = true;
       paintGrid();
       var q = stockState.q || 'nature';
-      api.search(q, { provider: p.id, page: stockState.page, perPage: 20, orientation: stockState.orient || undefined }).then(function (res) {
+      /* Device support: offline is known before any request; the panel's own "You are offline" state explains it
+         (a sheet on every keystroke would not help). Searches that work are reported. */
+      var sup = window.LE && LE.support;
+      var offline = sup && sup.has && sup.has('online') === false;
+      (offline ? Promise.reject(Object.assign(new TypeError('You are offline.'), { code: 'offline' })) :
+        api.search(q, { provider: p.id, page: stockState.page, perPage: 20, orientation: stockState.orient || undefined })).then(function (res) {
         if (gen !== stockState.gen) return;
+        if (sup && sup.reportSuccess) sup.reportSuccess('studio.stock');
         var hits = (res && res.hits) || [];
         var seen = {};
         stockState.hits.forEach(function (h0) { seen[h0.provider + h0.id] = 1; });
@@ -1357,7 +1383,7 @@
       body.appendChild(sub);
       body.appendChild(all);
       LE.project.assets().then(function (list) {
-        list = (list || []).filter(function (a) { return mine.indexOf(a.id) < 0; });
+        list = (list || []).filter(function (a) { return mine.indexOf(a.id) < 0 && pickable(c, a); });
         if (!list.length) {
           sub.remove();
           if (!mine.length) body.appendChild(c.ui.empty('No uploads yet', 'Choose a photo from this device, or search stock.', [{ label: 'This device', gold: true, fn: function () { repTab = 'device'; paintTabs(); paint(); } }]));
