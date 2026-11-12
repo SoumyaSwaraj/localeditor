@@ -574,6 +574,22 @@ function swMain(VERSION, ASSETS, CRITICAL, EXPERT_FILES) {
     if (!EXPERT_FILES.length) return Promise.resolve(ASSETS);
     return caches.open(RT.packs).then(function (c) { return c.match('./__packs/expert'); }).then(function (hit) { return hit ? ASSETS.concat(EXPERT_FILES) : ASSETS; }, function () { return ASSETS; });
   }
+  /* First use of an Expert file that was not part of the first visit: keep the whole Expert editor offline from now on. */
+  var EXPERT_ABS = EXPERT_FILES.map(function (u) { return new URL(u, self.location).href; });
+  function isExpert(url) { return EXPERT_ABS.length && EXPERT_ABS.indexOf(url.origin + url.pathname) >= 0; }
+  var expertBusy = null;
+  function expertFirstUse() {
+    if (expertBusy) return expertBusy;
+    expertBusy = caches.open(RT.packs).then(function (pk) {
+      return pk.match('./__packs/expert').then(function (hit) {
+        if (hit) return null;
+        return pk.put('./__packs/expert', new Response(String(Date.now()))).then(function () {
+          return packJob({ id: 'pack:expert', name: 'Expert editor', files: EXPERT_FILES.map(function (u) { return { u: u }; }) });
+        });
+      });
+    }).catch(function () {}).then(function () { expertBusy = null; });
+    return expertBusy;
+  }
   function precache(name) {
     return Promise.all([caches.open(name), appFiles()]).then(function (r) {
       var c = r[0], LIST = r[1];
@@ -699,6 +715,7 @@ function swMain(VERSION, ASSETS, CRITICAL, EXPERT_FILES) {
           if (!nav && res.status === 200 && res.type === 'basic' && url.pathname.indexOf('/assets/') >= 0) {
             var copy = res.clone();
             e.waitUntil(c.put(req, copy).catch(function () {}));
+            if (isExpert(url)) e.waitUntil(expertFirstUse());
           }
           return res;
         }).catch(function (err) {
