@@ -67,11 +67,15 @@ A coding agent (Claude Code, Cursor, Codex, OpenCode, Antigravity and others) ca
 
 - [Photo and design](https://localeditor.net/photo/): Edit photos, make collages and posts.
 - [PDF and documents](https://localeditor.net/pdf/): Sign, fill, merge and convert PDFs.
-- [Privacy tools](https://localeditor.net/privacy-tools/): Check photos and PDFs before you share them.
+- [Expert mode](https://localeditor.net/expert/): Colour grading, RAW, retouching, effects and relighting.
+- [Photographers](https://localeditor.net/photographers/): RAW, HDR, grading, retouching and relighting.
 - [Social and creators](https://localeditor.net/social/): Posts, stories and collages for every platform.
+- [Online sellers](https://localeditor.net/sellers/): Product photos, catalogues, labels and pay posters.
 - [Small business](https://localeditor.net/business/): Brand kit, product photos and signed PDFs.
-- [Teachers](https://localeditor.net/teachers/): Worksheets, forms and classroom displays.
 - [Office work](https://localeditor.net/office/): Confidential PDFs: sign, merge, watermark.
+- [Teachers](https://localeditor.net/teachers/): Worksheets, forms and classroom displays.
+- [Privacy tools](https://localeditor.net/privacy-tools/): Check photos and PDFs before you share them.
+- [For AI agents](https://localeditor.net/ai-agents/): Agent mode, command line, formats and guides.
 - [Every tool](https://localeditor.net/tools/): Every single-step tool on one page.
 
 ## Features
@@ -100,13 +104,40 @@ A coding agent (Claude Code, Cursor, Codex, OpenCode, Antigravity and others) ca
 - [Is this PDF safe to open?](https://localeditor.net/pdf-safety-check/): Looks for scripts, automatic actions and attached programs.
 - [Safe to send](https://localeditor.net/safe-to-send/): Clean a PDF in one step before it leaves your hands.
 - [Find sensitive data](https://localeditor.net/find-sensitive-data/): Emails, phone and ID numbers, found for you.
-- [Password-protect a PDF](https://localeditor.net/password-protect-pdf/): Add or remove a password on this device.
+- [Password-protect a PDF](https://localeditor.net/password-protect-pdf/): Add a password to PDFs, or take one off.
 - [Mail-merge PDFs](https://localeditor.net/pdf-mail-merge/): A spreadsheet in, one PDF per person out.
 - [Split by text](https://localeditor.net/split-pdf-by-text/): One file per employee or student.
 - [Per-recipient watermarks](https://localeditor.net/bulk-pdf-watermarks/): One named copy per recipient.
 - [Compress to a target size](https://localeditor.net/compress-pdf/): “Under 2 MB” in one step.
 - [Searchable scans](https://localeditor.net/searchable-pdf/): On-device text recognition for scans.
 - [Camera scan](https://localeditor.net/scan-to-pdf/): Straightened, cleaned and saved as PDF.
+- [Colour grading](https://localeditor.net/colour-grading/): Curves, hue bands, colour wheels and LUTs.
+- [Film and creative effects](https://localeditor.net/creative-effects/): Film grain, bloom, lens blur and light leaks.
+- [Product shadows and reflections](https://localeditor.net/product-shadows/): Contact and cast shadows, reflections, clean edges.
+- [Compositing and blend modes](https://localeditor.net/compositing/): Blend modes, masks, match colour and light wrap.
+- [Portrait retouching](https://localeditor.net/portrait-retouching/): Frequency separation, blemishes, skin, dodge and burn.
+- [Liquify and reshape](https://localeditor.net/liquify/): Brush reshaping and face-aware liquify.
+- [Camera RAW develop](https://localeditor.net/raw-develop/): Open camera RAW files and develop them.
+- [HDR merge](https://localeditor.net/hdr-merge/): Merge two to nine exposures into one.
+- [Relight and depth effects](https://localeditor.net/relight/): Add lights, rim light, light rays and depth fog.
+- [Agent mode](https://localeditor.net/agent-mode/): Watch an agent edit live, and step in at any time.
+- [Command line and MCP](https://localeditor.net/agent-cli/): Command line, MCP server and local API.
+- [Font library](https://localeditor.net/font-library/): 257 families and 20 originals, loaded only when used.
+- [Themes and appearance](https://localeditor.net/themes/): Five themes, light, dark or automatic.
+- [Screenshot beautifier](https://localeditor.net/screenshot-beautifier/): A framed screenshot or code image on a soft backdrop.
+- [Photobooth strip](https://localeditor.net/photobooth-strip/): A strip, grid or wide strip, from your camera or photos.
+- [Recap collage](https://localeditor.net/recap-collage/): Up to 30 photos, a title, dates and a line of stats.
+- [Catalogue and price list maker](https://localeditor.net/catalogue-maker/): Product pages, price lists and menus from a spreadsheet.
+- [QR signs and posters](https://localeditor.net/qr-posters/): Wi-Fi sign, pay poster and invitation with a code.
+- [Printables](https://localeditor.net/printables/): Calendars, charts, labels, stickers, photo books and zines.
+- [Compare two PDFs](https://localeditor.net/compare-pdfs/): Every changed word, amount and date, plus a picture view.
+- [Build a PDF pack](https://localeditor.net/pdf-bundle/): A cover, contents, bookmarks and page numbers.
+- [Stamps and comment summary](https://localeditor.net/pdf-stamps/): Office stamps with name and date, and a comment list.
+- [Saved PDF workflows](https://localeditor.net/pdf-workflows/): Number, watermark, compress and protect in one go.
+- [Fingerprint receipt](https://localeditor.net/fingerprint-receipt/): A code anyone can use to check a copy is unchanged.
+- [Fill forms from saved details](https://localeditor.net/fill-forms-from-saved-details/): Save your details once, fill any form from them.
+- [Invoices, quotes and receipts](https://localeditor.net/invoice-maker/): Invoices, quotes, receipts and credit notes as PDFs.
+- [PDF tables to a spreadsheet](https://localeditor.net/pdf-tables-to-excel/): Find tables in a PDF and save them as Excel or CSV.
 
 ## Optional
 

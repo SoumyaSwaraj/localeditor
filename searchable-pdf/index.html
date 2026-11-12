@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
 <script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Searchable scans — LocalEditor","url":"https://localeditor.net/searchable-pdf/","description":"Recognise the text in scanned PDFs with an on-device model so you can search, copy and redact it. Nothing is uploaded.","applicationCategory":"BusinessApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Reads the text in scans on this device","Adds an invisible text layer you can search and copy","Copy or save the text"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"PDF and documents","item":"https://localeditor.net/pdf/"},{"@type":"ListItem","position":3,"name":"Searchable scans","item":"https://localeditor.net/searchable-pdf/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How accurate is it?","acceptedAnswer":{"@type":"Answer","text":"It depends on scan quality; check important text."}},{"@type":"Question","name":"Which languages?","acceptedAnswer":{"@type":"Answer","text":"English is included; the panel lists any other languages on this copy of the app."}}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Searchable scans — LocalEditor","url":"https://localeditor.net/searchable-pdf/","description":"Recognise the text in scanned PDFs with an on-device model so you can search, copy and redact it. Nothing is uploaded.","applicationCategory":"BusinessApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Reads the text in scanned pages on this device, in English and in any other language this copy of the app offers","Adds an invisible text layer, so you can search and copy while the page looks the same","Quality choices: Faster, Standard and Sharper (computers only), and by default only pages with no text","Reports pages read, words found, uncertain words and pages that were hard to read","Copy the text or save it as a .txt file"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"PDF and documents","item":"https://localeditor.net/pdf/"},{"@type":"ListItem","position":3,"name":"Searchable scans","item":"https://localeditor.net/searchable-pdf/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How accurate is it?","acceptedAnswer":{"@type":"Answer","text":"It depends on the scan. Clear, straight, printed text reads best. Handwriting, small print, skewed or blurry pages and unusual fonts read worse. Uncertain words are counted, and hard pages are flagged with a suggestion to try a sharper quality. Check important text yourself."}},{"@type":"Question","name":"Which languages?","acceptedAnswer":{"@type":"Answer","text":"English is included. The panel lists any other languages this copy of the app has. One language is read per run."}},{"@type":"Question","name":"Does it change my pages?","acceptedAnswer":{"@type":"Answer","text":"The page picture stays as it is. The open document is replaced by its searchable copy as one undo step, so you can undo it."}},{"@type":"Question","name":"Can it help find sensitive data in scans?","acceptedAnswer":{"@type":"Answer","text":"Yes. Find sensitive data can read the scanned pages first and marks those matches for you to check."}}]}]}</script>
 </head>
 <body class="le-built pg-body">
 <a class="skip" href="#main">Skip to content</a>
@@ -39,7 +39,7 @@
           <div class="pg-hero-copy">
             <p class="eyebrow">Searchable scans</p>
             <h1 id="pg-title">Make a scanned PDF <em>searchable, on this device.</em></h1>
-            <p class="pg-lead">Recognises the text in scanned pages with a model that runs on this device, so you can search, copy and redact it.</p>
+            <p class="pg-lead">Reads the text in scanned pages with a text reader that runs on this device, so you can search, copy and redact it. The page keeps its picture, and an invisible text layer is added.</p>
             <div class="hp-cta">
               <a class="btn btn-gold btn-lg" href="../pdf-studio/?panel=scan">Make searchable<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
               
@@ -52,17 +52,19 @@
           <div>
             <h2 class="pg-label">What it does</h2>
             <ul class="pg-checks">
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Reads the text in scans on this device</span></li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Adds an invisible text layer you can search and copy</span></li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Copy or save the text</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Reads the text in scanned pages on this device, in English and in any other language this copy of the app offers</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Adds an invisible text layer, so you can search and copy while the page looks the same</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Quality choices: Faster, Standard and Sharper (computers only), and by default only pages with no text</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Reports pages read, words found, uncertain words and pages that were hard to read</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Copy the text or save it as a .txt file</span></li>
             </ul>
           </div>
           <div>
             <h2 class="pg-label">How it works</h2>
             <ol class="pg-steps">
-              <li><span>Open the scanned PDF.</span></li>
-              <li><span>Choose Make searchable.</span></li>
-              <li><span>Search, copy or save.</span></li>
+              <li><span>Open the scanned PDF in the PDF studio. If pages have no text, a bar offers Make searchable.</span></li>
+              <li><span>Choose Make searchable, pick the language and quality, and wait. The first time, the text reader is fetched from this site, with a progress card.</span></li>
+              <li><span>Search, copy or save the text, or save the PDF. Cancel stops it at once and leaves the document untouched.</span></li>
             </ol>
           </div>
         </section>
@@ -70,7 +72,7 @@
           <span class="pg-privacy-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
           <div>
             <h2 id="pg-privacy-title">Your files stay on this device</h2>
-            <p>The scan and the model stay on this device.</p>
+            <p>The scan is read by an engine that runs in your browser on this device, and is never uploaded. The text reader and its English data download from this site once.</p>
           </div>
         </section>
         <section class="hp-section hp-faq pg-faq" aria-labelledby="pg-faq-title">
@@ -80,8 +82,10 @@
             <p>More on the <a href="../about/">privacy and install page</a>.</p>
           </div>
           <div class="faq">
-            <details><summary>How accurate is it?</summary><p>It depends on scan quality; check important text.</p></details>
-            <details><summary>Which languages?</summary><p>English is included; the panel lists any other languages on this copy of the app.</p></details>
+            <details><summary>How accurate is it?</summary><p>It depends on the scan. Clear, straight, printed text reads best. Handwriting, small print, skewed or blurry pages and unusual fonts read worse. Uncertain words are counted, and hard pages are flagged with a suggestion to try a sharper quality. Check important text yourself.</p></details>
+            <details><summary>Which languages?</summary><p>English is included. The panel lists any other languages this copy of the app has. One language is read per run.</p></details>
+            <details><summary>Does it change my pages?</summary><p>The page picture stays as it is. The open document is replaced by its searchable copy as one undo step, so you can undo it.</p></details>
+            <details><summary>Can it help find sensitive data in scans?</summary><p>Yes. Find sensitive data can read the scanned pages first and marks those matches for you to check.</p></details>
           </div>
         </section>
         <section class="pg-group" aria-labelledby="pg-rel-title">
@@ -94,6 +98,14 @@
           <li class="pg-row">
             <a class="pg-row-main" href="../find-sensitive-data/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg></span><span><b>Find sensitive data</b><small>Emails, phone and ID numbers, found for you</small></span></a>
             <a class="pg-row-go" href="../pdf-studio/?panel=security&job=find" aria-label="Open Find sensitive data">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../pdf-tables-to-excel/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h11l-3-3M20 17H9l3 3"/><path d="M17 4h3v6M7 20H4v-6"/></svg></span><span><b>PDF tables to a spreadsheet</b><small>Find tables in a PDF and save them as Excel or CSV</small></span></a>
+            <a class="pg-row-go" href="../pdf-studio/?panel=docs" aria-label="Open PDF tables to a spreadsheet">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../compare-pdfs/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg></span><span><b>Compare two PDFs</b><small>Every changed word, amount and date, plus a picture view</small></span></a>
+            <a class="pg-row-go" href="../pdf-studio/?panel=office&job=compare" aria-label="Open Compare two PDFs">Open</a>
           </li>
           </ul>
         </section>
@@ -119,11 +131,15 @@
           <nav class="pg-foot-hubs" aria-label="Browse by need">
               <a href="../photo/">Photo and design</a>
               <a href="../pdf/">PDF and documents</a>
-              <a href="../privacy-tools/">Privacy tools</a>
+              <a href="../expert/">Expert mode</a>
+              <a href="../photographers/">Photographers</a>
               <a href="../social/">Social and creators</a>
+              <a href="../sellers/">Online sellers</a>
               <a href="../business/">Small business</a>
-              <a href="../teachers/">Teachers</a>
               <a href="../office/">Office work</a>
+              <a href="../teachers/">Teachers</a>
+              <a href="../privacy-tools/">Privacy tools</a>
+              <a href="../ai-agents/">For AI agents</a>
               <a href="../tools/">Every tool</a>
           </nav>
           <p>&copy; 2026 LocalEditor. Files stay on your device.</p>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Storage manager: see and clear what LocalEditor keeps on your device | LocalEditor</title>
+<title>Storage manager: see and clear what is kept on your device | LocalEditor</title>
 <meta name="description" content="See everything LocalEditor stores in this browser, how much space each part uses, and clear any of it. Saved designs, fonts, offline files and downloads.">
 <link rel="canonical" href="https://localeditor.net/storage-manager/">
 <meta name="robots" content="index,follow,max-image-preview:large">
@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-title" content="LocalEditor">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="LocalEditor">
-<meta property="og:title" content="Storage manager: see and clear what LocalEditor keeps on your device">
+<meta property="og:title" content="Storage manager: see and clear what is kept on your device">
 <meta property="og:description" content="See everything LocalEditor stores in this browser, how much space each part uses, and clear any of it. Saved designs, fonts, offline files and downloads.">
 <meta property="og:url" content="https://localeditor.net/storage-manager/">
 <meta property="og:image" content="https://localeditor.net/assets/icons/og.png">
@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
 <script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Storage manager — LocalEditor","url":"https://localeditor.net/storage-manager/","description":"See everything LocalEditor stores in this browser, how much space each part uses, and clear any of it. Saved designs, fonts, offline files and downloads.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Lists saved designs, the offline app, fonts, graphics and downloads","Shows how much space each part takes","Clear one category or everything","Ask the browser to keep your saved work when space runs low"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Privacy tools","item":"https://localeditor.net/privacy-tools/"},{"@type":"ListItem","position":3,"name":"Storage manager","item":"https://localeditor.net/storage-manager/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Will clearing storage delete my designs?","acceptedAnswer":{"@type":"Answer","text":"Clearing saved work does. Clearing fonts or graphics only removes downloads, which come back when you use them again."}},{"@type":"Question","name":"Why would the browser delete my work?","acceptedAnswer":{"@type":"Answer","text":"Browsers can clear site data when the device is low on space. Asking for persistent storage makes that less likely, and saving a project file keeps a copy you control."}}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Storage manager — LocalEditor","url":"https://localeditor.net/storage-manager/","description":"See everything LocalEditor stores in this browser, how much space each part uses, and clear any of it. Saved designs, fonts, offline files and downloads.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Lists saved designs, the offline app, fonts, graphics, models and RAW working copies","Shows how much space each part takes","Clear one category or everything","Choose whether features download automatically as you use them or ask first, or download the basic editor, models, Expert editor or everything now for offline use","Ask the browser to keep your saved work when space runs low"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Privacy tools","item":"https://localeditor.net/privacy-tools/"},{"@type":"ListItem","position":3,"name":"Storage manager","item":"https://localeditor.net/storage-manager/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Will clearing storage delete my designs?","acceptedAnswer":{"@type":"Answer","text":"Clearing saved work does. Clearing fonts or graphics only removes downloads, which come back when you use them again."}},{"@type":"Question","name":"Why would the browser delete my work?","acceptedAnswer":{"@type":"Answer","text":"Browsers can clear site data when the device is low on space. Asking for persistent storage makes that less likely, and saving a project file keeps a copy you control."}}]}]}</script>
 </head>
 <body class="le-built pg-body">
 <a class="skip" href="#main">Skip to content</a>
@@ -39,7 +39,7 @@
           <div class="pg-hero-copy">
             <p class="eyebrow">Storage manager</p>
             <h1 id="pg-title">See what is stored here, <em>and clear it in one tap.</em></h1>
-            <p class="pg-lead">Every cache has an owner, a size and a clear button. The storage manager lists saved work, the offline app, downloaded fonts and graphics, and anything else the app keeps on this device.</p>
+            <p class="pg-lead">Every cache has an owner, a size and a clear button. The storage manager lists saved work, the offline app, downloaded fonts, graphics and models, RAW working copies, and anything else the app keeps on this device, and holds the setting for how features download.</p>
             <div class="hp-cta">
               <a class="btn btn-gold btn-lg" href="../storage-manager/?storage=1" data-le-storage>Open the storage manager<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
               
@@ -52,9 +52,10 @@
           <div>
             <h2 class="pg-label">What it does</h2>
             <ul class="pg-checks">
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Lists saved designs, the offline app, fonts, graphics and downloads</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Lists saved designs, the offline app, fonts, graphics, models and RAW working copies</span></li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Shows how much space each part takes</span></li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Clear one category or everything</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Choose whether features download automatically as you use them or ask first, or download the basic editor, models, Expert editor or everything now for offline use</span></li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Ask the browser to keep your saved work when space runs low</span></li>
             </ul>
           </div>
@@ -93,14 +94,15 @@
             <a class="pg-row-go" href="../about/#install" data-le-install aria-label="Open Install and offline use">Open</a>
           </li>
           <li class="pg-row">
+            <a class="pg-row-main" href="../themes/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2a10 10 0 0 0 0 20c.9 0 1.7-.8 1.7-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.8-1.7 1.7-1.7h2A5.6 5.6 0 0 0 22 11c0-5-4.5-9-10-9z"/></svg></span><span><b>Themes and appearance</b><small>Five themes, light, dark or automatic</small></span></a>
+            <button type="button" class="pg-row-go" data-appearance aria-label="Open Themes and appearance">Open</button>
+          </li>
+          <li class="pg-row">
             <a class="pg-row-main" href="../device-check/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><span><b>Device check</b><small>What works on this device and browser, and what would unlock more</small></span><span class="pg-row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
           </li>
           <li class="pg-row">
-            <a class="pg-row-main" href="../studio/?tool=metadata"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg></span><span><b>Photo metadata</b><small>Read or drop camera data and location</small></span><span class="pg-row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
-          </li>
-          <li class="pg-row">
-            <a class="pg-row-main" href="../brand-kit/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.3 4.7 5.2.8-3.8 3.6.9 5.2L12 15.4l-4.6 2.4.9-5.2-3.8-3.6 5.2-.8z"/><path d="M5 21h14"/></svg></span><span><b>Brand kit</b><small>Your colours, fonts and logos in every design</small></span></a>
-            <a class="pg-row-go" href="../studio/?tool=brand" aria-label="Open Brand kit">Open</a>
+            <a class="pg-row-main" href="../font-library/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg></span><span><b>Font library</b><small>257 families and 20 originals, loaded only when used</small></span></a>
+            <a class="pg-row-go" href="../studio/?tool=fonts" aria-label="Open Font library">Open</a>
           </li>
           </ul>
         </section>
@@ -126,11 +128,15 @@
           <nav class="pg-foot-hubs" aria-label="Browse by need">
               <a href="../photo/">Photo and design</a>
               <a href="../pdf/">PDF and documents</a>
-              <a href="../privacy-tools/">Privacy tools</a>
+              <a href="../expert/">Expert mode</a>
+              <a href="../photographers/">Photographers</a>
               <a href="../social/">Social and creators</a>
+              <a href="../sellers/">Online sellers</a>
               <a href="../business/">Small business</a>
-              <a href="../teachers/">Teachers</a>
               <a href="../office/">Office work</a>
+              <a href="../teachers/">Teachers</a>
+              <a href="../privacy-tools/">Privacy tools</a>
+              <a href="../ai-agents/">For AI agents</a>
               <a href="../tools/">Every tool</a>
           </nav>
           <p>&copy; 2026 LocalEditor. Files stay on your device.</p>

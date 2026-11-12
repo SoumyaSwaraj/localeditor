@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LocalEditor for AI agents: agent mode, CLI and formats | LocalEditor</title>
+<meta name="description" content="Agent mode, a command line and MCP server, readable design files, a published agent guide and llms.txt, all running on your own device.">
+<link rel="canonical" href="https://localeditor.net/ai-agents/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="generator" content="scripts/build-pages.js">
+<meta name="theme-color" content="#FAFAFA">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LocalEditor">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LocalEditor">
+<meta property="og:title" content="LocalEditor for AI agents: agent mode, CLI and formats">
+<meta property="og:description" content="Agent mode, a command line and MCP server, readable design files, a published agent guide and llms.txt, all running on your own device.">
+<meta property="og:url" content="https://localeditor.net/ai-agents/">
+<meta property="og:image" content="https://localeditor.net/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<link rel="stylesheet" href="../assets/css/pages.css">
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"CollectionPage","name":"For AI agents","url":"https://localeditor.net/ai-agents/","description":"Agent mode, a command line and MCP server, readable design files, a published agent guide and llms.txt, all running on your own device.","isPartOf":{"@type":"WebSite","name":"LocalEditor","url":"https://localeditor.net/"},"mainEntity":{"@type":"ItemList","itemListElement":[{"@type":"ListItem","position":1,"name":"Agent mode","url":"https://localeditor.net/agent-mode/"},{"@type":"ListItem","position":2,"name":"Command line and MCP","url":"https://localeditor.net/agent-cli/"},{"@type":"ListItem","position":3,"name":"Open design file format","url":"https://localeditor.net/open-design-format/"},{"@type":"ListItem","position":4,"name":"Agent guide","url":"https://localeditor.net/docs/AGENT-GUIDE.md"},{"@type":"ListItem","position":5,"name":"llms.txt","url":"https://localeditor.net/llms.txt"},{"@type":"ListItem","position":6,"name":"Agent kit","url":"https://localeditor.net/agent-kit/README.md"},{"@type":"ListItem","position":7,"name":"Design file schema","url":"https://localeditor.net/schema/design-1.json"},{"@type":"ListItem","position":8,"name":"Design file format","url":"https://localeditor.net/docs/FORMAT-DESIGN.md"},{"@type":"ListItem","position":9,"name":"Recipe and PDF workflow formats","url":"https://localeditor.net/docs/FORMAT-WORKFLOW.md"},{"@type":"ListItem","position":10,"name":"Quick makers","url":"https://localeditor.net/quick-makers/"},{"@type":"ListItem","position":11,"name":"Collage maker","url":"https://localeditor.net/collage-maker/"},{"@type":"ListItem","position":12,"name":"Recipes and batch editing","url":"https://localeditor.net/batch-edit/"},{"@type":"ListItem","position":13,"name":"Brand kit","url":"https://localeditor.net/brand-kit/"},{"@type":"ListItem","position":14,"name":"Export for every size","url":"https://localeditor.net/export-every-size/"},{"@type":"ListItem","position":15,"name":"Template links","url":"https://localeditor.net/template-links/"}]}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"For AI agents","item":"https://localeditor.net/ai-agents/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Where should an agent start?","acceptedAnswer":{"@type":"Answer","text":"With the agent guide. It is one document and explains the live channel, the operations, the errors and how to work with a person who is watching. The agent kit has short instruction files that point to it."}},{"@type":"Question","name":"Is there a plain summary for language models?","acceptedAnswer":{"@type":"Answer","text":"Yes, llms.txt at the root of the site lists every page and tool in plain text."}},{"@type":"Question","name":"Can an agent use the Expert mode effects?","acceptedAnswer":{"@type":"Answer","text":"Expert effects are stored as readable data in design files, so a design file an agent writes can carry them. The live agent operations cover pages, layers, makers, recipes and collages, and do not include Expert effects."}}]}]}</script>
+</head>
+<body class="le-built pg-body">
+<a class="skip" href="#main">Skip to content</a>
+<div class="le-app">
+  <aside class="le-side" data-fill aria-label="Menu"></aside>
+  <div class="le-main">
+    <header class="le-top" data-fill></header>
+    <main id="main" class="le-content">
+      <div class="pg">
+        <nav class="pg-crumbs" aria-label="Breadcrumb"><ol><li><a href="../">Home</a></li><li aria-current="page">For AI agents</li></ol></nav>
+        <section class="pg-hero" aria-labelledby="pg-title">
+          <div class="pg-hero-copy">
+            <p class="eyebrow">For AI agents</p>
+            <h1 id="pg-title">Built so an AI agent <em>can use it too.</em></h1>
+            <p class="pg-lead">LocalEditor can be driven by software as well as by people: a live agent mode, a command line and MCP server, readable design files and a published guide. Whatever an agent makes opens in the studio as an ordinary, editable design.</p>
+            <div class="hp-cta"><a class="btn btn-gold btn-lg" href="../studio/?agent=1">Open the studio in agent mode<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+            <p class="pg-for">For developers, and for anyone who works with a coding agent and wants it to make or fix designs without sending files to a service.</p>
+          </div>
+          <figure class="pg-art pg-art-code" aria-hidden="true"><div class="pg-code"><pre><code>{ "page": { "w": 1080, "h": 1350 },
+  "layers": [ { "type": "text",
+    "name": "Title", "text": "Hello" } ] }</code></pre></div></figure>
+        </section>
+        <section class="pg-group" aria-labelledby="pg-g0">
+          <h2 class="pg-label" id="pg-g0">Ways to work with an agent <span>3</span></h2>
+          <ul class="pg-list">
+          <li class="pg-row">
+            <a class="pg-row-main" href="../agent-mode/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg></span><span><b>Agent mode</b><small>Watch an agent edit live, and step in at any time</small></span></a>
+            <a class="pg-row-go" href="../studio/?agent=1" aria-label="Open Agent mode">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../agent-cli/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></span><span><b>Command line and MCP</b><small>Command line, MCP server and local API</small></span></a>
+            <a class="pg-row-go" href="../agent-kit/mcp/README.md" aria-label="Open Command line and MCP">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../open-design-format/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></span><span><b>Open design file format</b><small>Readable design files for people and agents</small></span></a>
+            <a class="pg-row-go" href="../studio/?tool=design-file" aria-label="Open Open design file format">Open</a>
+          </li>
+          </ul>
+        </section>
+        <section class="pg-group" aria-labelledby="pg-g1">
+          <h2 class="pg-label" id="pg-g1">Guides and files for agents <span>6</span></h2>
+          <ul class="pg-list">
+          <li class="pg-row">
+            <a class="pg-row-main" href="../docs/AGENT-GUIDE.md"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v16H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M4 20.5A1.5 1.5 0 0 0 5.5 22H20"/></svg></span><span><b>Agent guide</b><small>Read once before driving the studio</small></span><span class="pg-row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../llms.txt"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg></span><span><b>llms.txt</b><small>A plain-text summary of the site for language models</small></span><span class="pg-row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../agent-kit/README.md"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="13" height="16" rx="2"/><path d="M8 2h11a2 2 0 0 1 2 2v15"/></svg></span><span><b>Agent kit</b><small>Drop-in instruction files for coding agents</small></span><span class="pg-row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../schema/design-1.json"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></span><span><b>Design file schema</b><small>The JSON Schema for .ledesign.json</small></span><span class="pg-row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../docs/FORMAT-DESIGN.md"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v16H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M4 20.5A1.5 1.5 0 0 0 5.5 22H20"/></svg></span><span><b>Design file format</b><small>Every field of a design file, in plain words</small></span><span class="pg-row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../docs/FORMAT-WORKFLOW.md"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 12h6M9 16h4"/></svg></span><span><b>Recipe and PDF workflow formats</b><small>Share a photo look or a PDF job as a small file</small></span><span class="pg-row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          </li>
+          </ul>
+        </section>
+        <section class="pg-group" aria-labelledby="pg-g2">
+          <h2 class="pg-label" id="pg-g2">What an agent can use <span>6</span></h2>
+          <ul class="pg-list">
+          <li class="pg-row">
+            <a class="pg-row-main" href="../quick-makers/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg></span><span><b>Quick makers</b><small>A short form in, an editable design out</small></span></a>
+            <a class="pg-row-go" href="../studio/?tool=make" aria-label="Open Quick makers">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../collage-maker/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/></svg></span><span><b>Collage maker</b><small>Layouts and styles with a slot for every photo</small></span></a>
+            <a class="pg-row-go" href="../studio/?tool=collage" aria-label="Open Collage maker">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../batch-edit/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 12h6M9 16h4"/></svg></span><span><b>Recipes and batch editing</b><small>One look, applied to many photos</small></span></a>
+            <a class="pg-row-go" href="../recipes/" aria-label="Open Recipes and batch editing">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../brand-kit/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.3 4.7 5.2.8-3.8 3.6.9 5.2L12 15.4l-4.6 2.4.9-5.2-3.8-3.6 5.2-.8z"/><path d="M5 21h14"/></svg></span><span><b>Brand kit</b><small>Your colours, fonts and logos in every design</small></span></a>
+            <a class="pg-row-go" href="../studio/?tool=brand" aria-label="Open Brand kit">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../export-every-size/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="8" height="10" rx="1.5"/><rect x="13" y="3" width="8" height="18" rx="1.5"/></svg></span><span><b>Export for every size</b><small>Tick the sizes you need, get one zip</small></span></a>
+            <a class="pg-row-go" href="../studio/?tool=export-sizes" aria-label="Open Export for every size">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../template-links/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span><span><b>Template links</b><small>Layout and text in a link; photos stay home</small></span></a>
+            <a class="pg-row-go" href="../studio/?tool=share" aria-label="Open Template links">Open</a>
+          </li>
+          </ul>
+        </section>
+        <section class="pg-privacy" aria-labelledby="pg-privacy-title">
+          <span class="pg-privacy-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <div>
+            <h2 id="pg-privacy-title">Nothing is sent from the page</h2>
+            <p>Agent mode works inside your browser tab and LocalEditor sends nothing anywhere. The command line runs a headless browser on your own machine. Your agent is a separate program: what it sends to its own provider is between you and that provider.</p>
+          </div>
+        </section>
+        <section class="hp-section hp-faq pg-faq" aria-labelledby="pg-faq-title">
+          <div class="hp-head">
+            <p class="eyebrow">Questions</p>
+            <h2 id="pg-faq-title">Short, honest answers.</h2>
+            <p>More on the <a href="../about/">privacy and install page</a>.</p>
+          </div>
+          <div class="faq">
+            <details><summary>Where should an agent start?</summary><p>With the agent guide. It is one document and explains the live channel, the operations, the errors and how to work with a person who is watching. The agent kit has short instruction files that point to it.</p></details>
+            <details><summary>Is there a plain summary for language models?</summary><p>Yes, llms.txt at the root of the site lists every page and tool in plain text.</p></details>
+            <details><summary>Can an agent use the Expert mode effects?</summary><p>Expert effects are stored as readable data in design files, so a design file an agent writes can carry them. The live agent operations cover pages, layers, makers, recipes and collages, and do not include Expert effects.</p></details>
+          </div>
+        </section>
+        <section class="pg-more" aria-labelledby="pg-more-title">
+          <h2 class="pg-label" id="pg-more-title">More ways in</h2>
+          <ul class="pg-hubs pg-hubs-sm">
+            <li><a class="pg-hub" href="../photo/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.4"/><path d="m21 15-4.2-4.2a1.5 1.5 0 0 0-2.1 0L7 18"/></svg></span><span><b>Photo and design</b><small>Edit photos, make collages and posts</small></span><span class="pg-row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a></li>
+            <li><a class="pg-hub" href="../expert/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></span><span><b>Expert mode</b><small>Colour grading, RAW, retouching, effects and relighting</small></span><span class="pg-row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a></li>
+            <li><a class="pg-hub" href="../tools/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></span><span><b>Every tool</b><small>Every single-step tool on one page</small></span><span class="pg-row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a></li>
+          </ul>
+        </section>
+        <footer class="hp-foot pg-foot">
+          <div class="hp-foot-top">
+            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><path d="M256 0C51 0 0 51 0 256s51 256 256 256 256-51 256-256S461 0 256 0z" fill="#0369DA"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
+            <nav aria-label="Footer">
+              <a href="../studio/">Photo studio</a>
+              <a href="../pdf-studio/">PDF studio</a>
+              <a href="../recipes/">Recipes</a>
+              <a href="../about/">Privacy</a>
+              <button type="button" data-le-install>Install</button>
+              <button type="button" data-le-storage>Storage</button>
+              <a href="../llms.txt">llms.txt</a>
+            </nav>
+          </div>
+          <nav class="pg-foot-hubs" aria-label="Browse by need">
+              <a href="../photo/">Photo and design</a>
+              <a href="../pdf/">PDF and documents</a>
+              <a href="../expert/">Expert mode</a>
+              <a href="../photographers/">Photographers</a>
+              <a href="../social/">Social and creators</a>
+              <a href="../sellers/">Online sellers</a>
+              <a href="../business/">Small business</a>
+              <a href="../office/">Office work</a>
+              <a href="../teachers/">Teachers</a>
+              <a href="../privacy-tools/">Privacy tools</a>
+              <a href="../ai-agents/">For AI agents</a>
+              <a href="../tools/">Every tool</a>
+          </nav>
+          <p>&copy; 2026 LocalEditor. Files stay on your device.</p>
+        </footer>
+      </div>
+    </main>
+  </div>
+</div>
+<button class="le-scrim" type="button" data-scrim hidden tabindex="-1" aria-label="Close menu"></button>
+<script src="../assets/js/app.js"></script>
+</body>
+</html>
