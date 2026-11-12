@@ -43,7 +43,7 @@
 <script>
 (function () {
   var status = document.getElementById('status');
-  var report = { ok: false, errors: [], rewrite: {}, compress: null, placeholder: null, sanitize: null, openverse: null, imported: null, cors: [] };
+  var report = { ok: false, errors: [], rewrite: {}, compress: null, placeholder: null, sanitize: null, openverse: null, imported: null, unsplash: null, cors: [] };
   window.__LE_STOCK_TEST__ = report;
 
   function fail(msg) { report.errors.push(msg); }
@@ -62,7 +62,7 @@
     }
     var ids = LE.stock.providers().map(function (p) { return p.id; });
     report.rewrite.providers = ids.join(',');
-    if (ids.join(',') !== 'pixabay,pexels,openverse') fail('providers ' + ids.join(','));
+    if (ids.join(',') !== 'pixabay,pexels,openverse,unsplash') fail('providers ' + ids.join(','));
 
     var big = LE.stock.sizedImportUrl({
       provider: 'openverse',
@@ -112,6 +112,59 @@
     }, 1600);
     if (heavyThumb !== expectBig) fail('heavy thumb ' + heavyThumb);
     report.rewrite.ok = report.errors.length === 0;
+  }
+
+  /* Unsplash: sizing is pure; search and download ping run against a stubbed fetch, so no key or network is needed. */
+  function unsplashTests() {
+    var raw = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixid=abc&ixlib=rb-4.0.3';
+    var sized = LE.stock.sizedImportUrl({ provider: 'unsplash', importUrl: raw + '&w=9000&crop=entropy' }, 1600);
+    var u = new URL(sized);
+    report.unsplash = { sized: sized };
+    if (u.searchParams.get('w') !== '1600' || u.searchParams.get('fit') !== 'max' || u.searchParams.get('q') !== '80' || u.searchParams.get('fm') !== 'jpg') fail('unsplash sized ' + sized);
+    if (u.searchParams.get('crop') !== null) fail('unsplash crop param kept');
+    var meta = LE.stock.providers().filter(function (p) { return p.id === 'unsplash'; })[0];
+    if (!meta || meta.keyLabel !== 'Access Key' || !meta.needsKey || !meta.creditUrl || !meta.termsUrl) fail('unsplash metadata');
+    var realFetch = window.fetch;
+    var seen = [];
+    var oldKeys = LE.stock.keys();
+    LE.stock.setKeys({ unsplash: 'TESTKEY' });
+    window.fetch = function (url, init) {
+      seen.push({ url: String(url), headers: init && init.headers || {} });
+      if (String(url).indexOf('/search/photos') > 0) {
+        return Promise.resolve(new Response(JSON.stringify({
+          total: 1,
+          results: [{
+            id: 'abc123', width: 4000, height: 3000,
+            urls: { raw: raw, small: raw + '&w=400' },
+            links: { html: 'https://unsplash.com/photos/abc123', download_location: 'https://api.unsplash.com/photos/abc123/download?ixid=abc' },
+            user: { name: 'Ada', links: { html: 'https://unsplash.com/@ada' } }
+          }]
+        }), { status: 200, headers: { 'Content-Type': 'application/json', 'X-Ratelimit-Limit': '50', 'X-Ratelimit-Remaining': '48' } }));
+      }
+      return Promise.reject(new Error('stub'));
+    };
+    return LE.stock.search('lake', { provider: 'unsplash' }).then(function (res) {
+      var hit = res.hits[0];
+      var h0 = seen[0] && seen[0].headers;
+      report.unsplash.hit = hit;
+      if (!h0 || h0.Authorization !== 'Client-ID TESTKEY' || h0['Accept-Version'] !== 'v1') fail('unsplash headers');
+      if (!hit || hit.provider !== 'unsplash' || hit.license !== 'Unsplash License') fail('unsplash hit');
+      else {
+        if (hit.attribution !== 'Photo by Ada on Unsplash') fail('unsplash attribution ' + hit.attribution);
+        if (hit.pageUrl.indexOf('utm_source=localeditor&utm_medium=referral') < 0) fail('unsplash pageUrl utm');
+        if (hit.photographerUrl.indexOf('utm_source=localeditor') < 0) fail('unsplash photographerUrl utm');
+        if (hit.downloadLocation.indexOf('/photos/abc123/download') < 0) fail('unsplash downloadLocation');
+        if (hit.thumb.indexOf('w=400') < 0) fail('unsplash thumb');
+      }
+      var q = LE.stock.quota('unsplash');
+      report.unsplash.quota = q;
+      if (!q || q.limit !== 50 || q.remaining !== 48) fail('unsplash quota');
+    }).catch(function (err) {
+      fail('unsplash ' + (err && err.message));
+    }).then(function () {
+      window.fetch = realFetch;
+      LE.stock.setKeys({ unsplash: oldKeys.unsplash || '' });
+    });
   }
 
   function placeholderTests() {
@@ -290,7 +343,7 @@
   try { rewriteTests(); } catch (e) { fail('rewrite ' + e.message); }
   try { placeholderTests(); } catch (e2) { fail('placeholder ' + (e2 && e2.message)); }
   try { sanitizeTests(); } catch (e3) { fail('sanitize ' + (e3 && e3.message)); }
-  compressTests().then(openverseTests).then(finish, function (err) {
+  Promise.resolve().then(unsplashTests).then(compressTests).then(openverseTests).then(finish, function (err) {
     fail(err && err.message ? err.message : String(err));
     finish();
   });
