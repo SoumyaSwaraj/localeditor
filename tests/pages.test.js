@@ -13,6 +13,11 @@ const site = pages.load();
 const read = (url) => fs.readFileSync(path.join(ROOT, url, 'index.html'), 'utf8');
 const textOf = (html) => html.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ');
 const soon = site.entries.filter((e) => !site.visible(e));
+/* Tools that really exist (scripts/build.js TOOLS writes their pages and lists them on tools/ and in search).
+   A data entry still marked soon for one of them is a data mismatch, not an unreleased feature leaking out. */
+const builtTools = new Set(build.TOOLS.map((t) => t.slug + '/'));
+const isBuiltTool = (e) => builtTools.has(e.launch) || builtTools.has(e.url);
+const unreleased = soon.filter((e) => !isBuiltTool(e));
 const cases = {};
 
 cases['the generator is idempotent and only live or beta entries get a page'] = async ({ h }) => {
@@ -39,12 +44,19 @@ cases['no soon feature is mentioned on a generated page, the homepage or in sear
   for (const [url, html] of docs) {
     const head = (html.match(/<title>([^<]*)/) || [])[1] + ' ' + (html.match(/name="description" content="([^"]*)/) || [])[1];
     const text = (textOf(html) + ' ' + head).toLowerCase();
-    soon.forEach((e) => {
+    unreleased.forEach((e) => {
       h.assert(!text.includes(e.title.toLowerCase()), url + ' mentions the soon entry "' + e.title + '"');
       if (e.url) h.assert(!html.includes('href="' + e.url + '"') && !html.includes('href="../' + e.url + '"'), url + ' links to soon ' + e.url);
     });
   }
-  soon.forEach((e) => h.assert(!index.includes('"' + e.title + '"'), 'Search index lists soon entry ' + e.title));
+  unreleased.forEach((e) => h.assert(!index.includes('"' + e.title + '"'), 'Search index lists soon entry ' + e.title));
+};
+
+/* Waits on the site-data pass (owner of assets/data/site.json): photo-privacy became a real tool in
+   scripts/build.js TOOLS but is still "soon" in the data, so hubs and feature pages leave it out. */
+cases['KNOWN-BUG: a tool that is live in scripts/build.js is not marked soon in site.json'] = async ({ h }) => {
+  const stale = soon.filter(isBuiltTool).map((e) => e.id);
+  h.assert.equal(stale.length, 0, 'live tools still marked soon: ' + stale.join(', '));
 };
 
 cases['each page has one h1, a unique title and description, and valid JSON-LD'] = async ({ h }) => {
