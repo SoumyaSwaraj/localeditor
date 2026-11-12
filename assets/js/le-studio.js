@@ -2547,6 +2547,7 @@
       case 'tbMore': openPop(el, '<div class="sx-menu">' + overflowHtml() + '</div>', { cls: 'sx-pop-menu' }); break;
       case 'textDone': if (scene._commitEdit) scene._commitEdit(true); else keyEvent('Escape'); break;
       default:
+        if (name === 'rawOpen' || name === 'hdrMerge' || name === 'rawLicence') closePop();
         if (PANELS._cmds && PANELS._cmds[name]) PANELS._cmds[name](ctx, arg, el, e);
         else if (PANELS._cmd) PANELS._cmd(ctx, name, arg, el, e);
     }
@@ -2648,10 +2649,14 @@
     html += '<button type="button" data-cmd="alignMenu">' + ic('alC') + 'Align…</button><button type="button" data-cmd="flipMenu">' + ic('flip') + 'Flip…</button><button type="button" data-cmd="dup">' + ic('copy') + 'Duplicate<kbd>Ctrl D</kbd></button><button type="button" data-cmd="del" class="is-danger">' + ic('trash') + 'Delete<kbd>Del</kbd></button></div>';
     openPop(el, html, { cls: 'sx-pop-menu' });
   }
+  /* Commands the camera RAW hook registers (assets/js/raw/le-raw-studio.js); absent when that file is not loaded. */
+  function rawCmd(name) { return !!(PANELS && PANELS._cmds && PANELS._cmds[name]); }
   function fileMenu(el) {
     openPop(el, '<div class="sx-menu">' +
       '<button type="button" data-cmd="newDesign">' + ic('plus') + 'New design</button>' +
       '<button type="button" data-cmd="openPhoto">' + ic('image') + 'Add photos…<kbd>Ctrl O</kbd></button>' +
+      (rawCmd('rawOpen') ? '<button type="button" data-cmd="rawOpen">' + ic('image') + 'Open RAW photo…</button>' : '') +
+      (rawCmd('hdrMerge') ? '<button type="button" data-cmd="hdrMerge">' + ic('layers') + 'Merge to HDR…</button>' : '') +
       '<button type="button" data-cmd="projects">' + ic('projects') + 'Your designs</button><hr>' +
       '<button type="button" data-cmd="checkpoint"' + (S.project ? '' : ' disabled') + '>' + ic('save') + 'Save a version<kbd>Ctrl S</kbd></button>' +
       '<button type="button" data-cmd="history">' + ic('history') + 'Version history</button>' +
@@ -2669,6 +2674,7 @@
       '<button type="button" data-cmd="settings">' + ic('gauge') + 'Performance</button>' +
       '<button type="button" data-theme-toggle>' + ic('moon') + (document.documentElement.getAttribute('data-theme') === 'dark' ? 'Light mode' : 'Dark mode') + '</button>' +
       '<button type="button" data-cmd="shortcuts">' + ic('keyboard') + 'Shortcuts<kbd>?</kbd></button>' +
+      (rawCmd('rawLicence') ? '<button type="button" data-cmd="rawLicence">' + ic('file') + 'Camera RAW support · licence</button>' : '') +
       '<a href="../recipes/">' + ic('recipes') + 'Recipe library</a><a href="../">' + ic('apps') + 'All tools</a></div>', { cls: 'sx-pop-menu' });
   }
   function zoomMenu(el) {

@@ -425,6 +425,8 @@ cases['studio: nothing under assets/js/fx/ loads until a document needs it, and 
   h.assert(await page.evaluate(() => !window.LE.fx && !!window.LE.fxBoot && window.LE.fxBoot.needs(window.LEStudio.scene.toJSON()) === false), 'only the boot stub is present');
   await page.evaluate(() => { const s = window.LEStudio.scene; s.update(s.layers()[0].id, { fx: [{ type: 'exposure', p: { ev: 0.5 } }] }); });
   await page.waitForFunction(() => window.LE.fx && window.LE.fx.draw);
+  /* Packs load beside the renderer; with several packs the last file can finish after draw() exists. */
+  await page.waitForFunction(() => performance.getEntriesByType('resource').some((e) => /\/assets\/js\/fx\/le-fx-basic\.js/.test(e.name)), null, { timeout: 20000 }).catch(() => {});
   const got = await fetched();
   ['le-fx.js', 'le-fx-gl.js', 'le-fx-basic.js'].forEach((f) => h.assert(got.indexOf(f) >= 0, f + ' loads on demand: ' + got));
   /* docs/FX-AUTHORING.md: the statistics code loads with the renderer when a registered effect declares needs: ['stats'] (dehaze does). */

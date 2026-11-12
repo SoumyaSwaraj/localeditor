@@ -404,7 +404,7 @@
     }
     if (o.baselineExposure != null) colorE.push({ tag: 50730, type: 10, vals: [rational(o.baselineExposure)] });
     if (o.analogBalance) colorE.push({ tag: 50727, type: 5, vals: o.analogBalance.map(function (v) { return [Math.round(v * 1e6), 1e6]; }) });
-    var exifE = [{ tag: 33434, type: 5, vals: [[1, 125]] }, { tag: 33437, type: 5, vals: [[28, 10]] }, { tag: 34855, type: 3, vals: [o.iso || 100] }];
+    var exifE = [{ tag: 33434, type: 5, vals: [o.shutter || [1, 125]] }, { tag: 33437, type: 5, vals: [[28, 10]] }, { tag: 34855, type: 3, vals: [o.iso || 100] }];
     // ---- preview / thumbnail
     var previewOff = null; var previewE = null;
     if (o.preview) {
