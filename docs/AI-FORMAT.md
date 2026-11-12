@@ -113,3 +113,30 @@ Two transports, same behaviour:
 - Every feature's state is plain data on the page or the layer. Reported so far or expected: `background` (photo crop, fit, blur, dim, adjust), collage meta and photo `slot`s, recipe steps, cut-out masks from the background remover, redaction regions, per-layer effects.
 - State kept in `project.meta.studio` side maps keyed by layer id (`icons`, `qr`, `fx`) moves onto the layer itself in the open format, so a layer is self-contained.
 - No feature may depend on a bitmap that cannot be regenerated from the document plus its source images.
+
+## Document fields reported by phase 1 (source for the spec)
+
+### Page background, photo (`background.type: "image"`) — merged
+Paint order: base colour → photo (crop → adjust → filter, then placed or tiled) at `opacity`, blurred if `blur` > 0 → dim overlay. Missing fields take defaults, so older documents render unchanged.
+
+| Field | Type / range | Default | Notes |
+|---|---|---|---|
+| `src` | asset id | required | |
+| `color` | CSS colour | `#ffffff` | Base fill under the photo |
+| `fit` | `cover` \| `contain` \| `fill` \| `tile` | `cover` | Stored names are legacy: `cover` is shown as "Fill", `contain` as "Fit", `fill` as "Stretch". The open format should accept the friendly names and map them. |
+| `crop` | `{x,y,w,h}` fractions 0–1 | full | Same meaning as on image layers |
+| `x`, `y` | −10…10 | 0 | Offset of the photo centre from the page centre, as a fraction of page width / height |
+| `scale` | 0.05–50 | 1 | Zoom on top of the fit size; ignored for `tile` |
+| `rotation` | degrees | 0 | Studio steps by 90 |
+| `flipX`, `flipY` | bool | false | |
+| `opacity` | 0–1 | 1 | |
+| `blur` | 0–250 document px | 0 | |
+| `dim` | `{color, amount 0–1}` | none | Overlay across the page |
+| `adjust` | same keys as image layers | `{}` | brightness, contrast, saturation, warmth, tint, exposure, highlights, shadows, vibrance, sharpness, blur, vignette, grain, hue |
+| `filter` | `{name, intensity 0–100}` | none | `name` is a key of `LE.presets.filters` |
+| `tile` | `{size 0.02–4, gap 0–1}` fractions of page width | `{0.25, 0}` | |
+
+Engine entry points: `scene.setBackground(bg, opts)`, `scene.background()`, `LE.Scene.backgroundSpec(bg)`.
+
+### Stock photo source on an asset — merged
+`asset.source = { provider, photographer, pageUrl, license, attribution }`. Unsplash hits also carry `photographerUrl`; the project sanitiser must keep it (assigned to the collage owner).
