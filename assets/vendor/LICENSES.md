@@ -120,3 +120,19 @@ Downloaded only when the user asks (scanned PDF text, labs/pdf-ocr; see `docs/re
 |---|---|---|---|
 | tessdata_fast `eng` (4.1 MB) | Apache-2.0 | `assets/models/ocr/eng.traineddata` (committed) | https://github.com/tesseract-ocr/tessdata_fast |
 | tessdata_fast `spa` `por` `fra` `deu` `hin` `ara` (1.1 to 2.3 MB each) | Apache-2.0 | `assets/models/ocr/more/<id>.traineddata` (not committed; `node scripts/fetch-ocr-data.js`) | https://github.com/tesseract-ocr/tessdata_fast |
+
+## Optional module: Camera RAW support (owner-approved exception to the licence rule)
+
+**Exception.** On 12 November 2026 the owner decided that camera RAW formats may use the decoder that covers the most cameras, as an optional download with its licence shown to the person, limited to this module. LibRaw is LGPL-2.1 (dual-licensed LGPL-2.1 / CDDL-1.0), which is outside the MIT / ISC / BSD / Apache / OFL rule, so it lives in its own section and its own directory and nothing else may follow it. Conditions, and where each is met: separate file in `assets/vendor/raw-decoder/`, loaded only when a camera RAW file is opened, in a Worker, never bundled or linked into editor code (`assets/js/raw/raw.js` talks to it only by `postMessage`); replaceable (interface and steps in `assets/vendor/raw-decoder/README.md`); downloaded through `LE.downloads` and cached in `le-models-v1` (`x-le-model: raw-camera`, listed in the storage manager as "Camera RAW support"); licence shown once at first use, in the storage manager, and at `/licenses/#libraw`; licence text, copyright notices, exact source version and hashes, build script (no patches) kept in this repository. Never precached.
+
+| Name | Version | License | Files | Source |
+|---|---|---|---|---|
+| LibRaw (camera RAW decoder, compiled to WebAssembly with LocalEditor's glue) | 0.22.2 | **LGPL-2.1** (LibRaw is dual-licensed LGPL-2.1 / CDDL-1.0; LocalEditor elects LGPL-2.1). Contains DCB and FBDD code under a BSD-style 3-clause licence (Jacek Gozdz), X3F code under a BSD-style licence (Roland Karlsson), pieces of the Adobe DNG SDK 1.4 under the MIT licence, and non-restricted parts of dcraw.c (Dave Coffin); see the COPYRIGHT file | `assets/vendor/raw-decoder/raw-decoder.wasm`; licence texts `assets/vendor/licenses/libraw-LICENSE.LGPL.txt`, `libraw-LICENSE.CDDL.txt`, `libraw-COPYRIGHT.txt` | https://github.com/LibRaw/LibRaw (tag 0.22.2) · https://www.libraw.org/ · exact files and SHA-256: `tools/raw-decoder/sources.json` · build: `tools/raw-decoder/` |
+| Emscripten runtime inside the module (JavaScript loader, musl libc, libc++, libc++abi, compiler-rt) | 7.0.0 | MIT or UIUC/NCSA (Emscripten); MIT (musl); Apache-2.0 with LLVM exception (libc++, libc++abi, compiler-rt) | `assets/vendor/raw-decoder/raw-decoder.js` and compiled into `raw-decoder.wasm`; texts in `assets/vendor/licenses/emscripten-runtime-LICENSES.txt` | https://github.com/emscripten-core/emscripten |
+| Camera RAW bridge worker and C glue | LocalEditor's own code | same terms as the rest of LocalEditor's code | `assets/vendor/raw-decoder/raw-decoder-worker.js`, `tools/raw-decoder/glue.cpp` | this repository |
+
+Not included, by design: LibRaw-demosaic-pack-GPL2 and LibRaw-demosaic-pack-GPL3 (GPL), and any other GPL code. Demosaic methods that remain: linear, VNG, PPG, AHD, DCB, DHT, AAHD, Markesteijn (X-Trans).
+
+## RAW and HDR research code (our own, no third-party code)
+
+`assets/js/raw/` (DNG reader, demosaic, colour, develop reference) and `labs/hdr/` are written from public specifications and papers only (TIFF 6.0, Adobe DNG 1.6, ITU T.81 lossless mode, Malvar-He-Cutler 2004, Hamilton-Adams 1997, Mertens-Kautz-Van Reeth 2007, Debevec-Malik 1997, Ward 2003, Kim et al. 2002 for the Planckian locus). No code was copied from LibRaw, dcraw, darktable, RawTherapee or any other project. `tools/dng-synth/` writes test files.

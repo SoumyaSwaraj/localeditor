@@ -8,3 +8,8 @@ node_modules/
 
 # OCR language packs fetched by scripts/fetch-ocr-data.js (the English pack is committed)
 /assets/models/ocr/more/
+
+# camera RAW module build cache: toolchain, sources, objects (tools/raw-decoder/build.sh)
+/tools/raw-decoder/.cache/
+# sample RAW files fetched by scripts/fetch-raw-samples.js
+/labs/raw/samples/

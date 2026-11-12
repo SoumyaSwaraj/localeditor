@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>HDR lab</title>
+<style>
+  :root { --bg:#faf8f4; --ink:#17131f; --mute:#6b6577; --card:#fff; --line:#e3ded5; --gold:#e8b84a; --goldink:#2a1f0a; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#17131f; --ink:#f3efe8; --mute:#a59fb2; --card:#221c2d; --line:#362e45; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 16px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } p.lead { color: var(--mute); margin: 0 0 14px; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  button { min-height:44px; padding:0 14px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); font:inherit; font-weight:600; cursor:pointer; }
+  button.gold { background:var(--gold); border-color:var(--gold); color:var(--goldink); } button:disabled { opacity:.5; }
+  label { display:flex; flex-direction:column; gap:2px; font-size:13px; color:var(--mute); min-width:140px; }
+  select { min-height:40px; font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:0 8px; }
+  canvas { max-width:100%; height:auto; border:1px solid var(--line); border-radius:8px; background:#000; }
+  .thumbs { display:flex; gap:8px; flex-wrap:wrap; } .thumbs canvas { width:120px; }
+  pre { white-space:pre-wrap; font-size:12px; margin:0; max-height:200px; overflow:auto; } #status { color:var(--mute); min-height:22px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>HDR lab</h1>
+  <p class="lead">Aligns and merges 2 to 7 bracketed photos in this browser. Nothing is uploaded. Research prototype for the Expert mode HDR step; not linked from the site.</p>
+  <div class="panel">
+    <div class="row">
+      <input type="file" id="files" multiple accept="image/jpeg,image/png,image/webp" aria-label="Choose bracketed photos">
+      <button id="synth" class="gold">Make test brackets</button>
+      <label>Method <select id="mode"><option value="fusion">Exposure fusion (no exposure data needed)</option><option value="radiance">Radiance merge + local tone map</option></select></label>
+      <label>Align <select id="align"><option value="1">On</option><option value="0">Off</option></select></label>
+      <label>Moving subjects <select id="deghost"><option value="1">Remove ghosts</option><option value="0">Off</option></select></label>
+      <button id="run" disabled>Merge</button>
+    </div>
+    <p id="status" role="status">Choose photos or make test brackets.</p>
+    <div class="thumbs" id="thumbs"></div>
+  </div>
+  <div class="panel"><canvas id="out" width="320" height="240" aria-label="Merged picture"></canvas></div>
+  <div class="panel"><pre id="log"></pre></div>
+</main>
+<script src="../../tools/dng-synth/dng-synth.js"></script>
+<script src="hdr.js"></script>
+<script src="lab.js"></script>
+</body>
+</html>
