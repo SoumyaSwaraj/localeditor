@@ -30,9 +30,10 @@ You can put the names in your shell instead: `export LE_BUCKET=localeditor-site 
 What the script does, in order:
 
 1. Runs `node scripts/build.js`. This writes a fresh `sw.js` with a new version name. **This is what makes installed copies of the app notice the update**, so never skip it on a real deploy.
-2. Checks that `sw.js`, `manifest.webmanifest`, `index.html` and `offline.html` exist and look right.
-3. Uploads in passes, each with its own cache lifetime (table below). Long-lived files go first and pages and `sw.js` go last, so a visitor never gets a new page that points at a file that is not uploaded yet.
-4. Asks CloudFront to forget its copies (`/*`, which counts as one invalidation path).
+2. If `assets/fonts/cjk/` is missing, runs `node scripts/fetch-fonts.js --cjk` once (Chinese, Japanese and Korean fonts, about 17 MB, kept out of git; versions pinned in `scripts/fonts/lock.json`, see `docs/FONTS.md`). Without them those four families show as not available.
+3. Checks that `sw.js`, `manifest.webmanifest`, `index.html` and `offline.html` exist and look right.
+4. Uploads in passes, each with its own cache lifetime (table below). Long-lived files go first and pages and `sw.js` go last, so a visitor never gets a new page that points at a file that is not uploaded yet.
+5. Asks CloudFront to forget its copies (`/*`, which counts as one invalidation path).
 
 Options:
 
