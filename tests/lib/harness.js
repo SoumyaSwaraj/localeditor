@@ -62,7 +62,10 @@ async function studioWithSample(browser, base, viewport, opts) {
   return page;
 }
 function openPanel(page, id, opts) {
-  return page.evaluate(([i, o]) => window.LEStudio.openPanel(i, o || {}), [id, opts || null]).then(() => page.waitForTimeout(250));
+  /* A panel whose module loads on first use (docs/LOADING.md) shows a skeleton first: wait for the real panel. */
+  return page.evaluate(([i, o]) => window.LEStudio.openPanel(i, o || {}), [id, opts || null])
+    .then(() => page.waitForFunction(() => !document.querySelector('#sx-panel-body .le-load-wait'), null, { timeout: 20000 }).catch(() => {}))
+    .then(() => page.waitForTimeout(250));
 }
 function doc(page) { return page.evaluate(() => window.LEStudio.scene.toJSON()); }
 /* No sideways scroll. A page whose layout viewport is wider than the device (mobile browsers widen the layout

@@ -100,7 +100,7 @@
   view('tools', '_stylesTab');
   view('icons', '_withIcons');
   view('icons', '_withIconsSearch');
-  P._colorPop = stub(function (c, anchor, o) { M.need('color').then(function () { if (P._colorPop && !P._colorPop.__leStub) P._colorPop(c, anchor && anchor.isConnected ? anchor : anchor, o); }, function () { if (c && c.colorPopBasic) c.colorPopBasic(anchor, o); }); });
+  P._colorPop = stub(function (c, anchor, o) { M.need('color').then(function () { if (P._colorPop && !P._colorPop.__leStub) P._colorPop(c, anchor, o); }, function () { if (c && c.colorPopBasic) c.colorPopBasic(anchor, o); }); });
 
   /* LE.design: the studio asks isDesignFile() synchronously (drops, the project picker) and shows the File menu entries. */
   if (!LE.design) {
