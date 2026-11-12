@@ -368,6 +368,16 @@ Key facts:
 
 ${CATS.map((c) => `## ${c.name}\n\n${TOOLS.filter((t) => t.cat === c.id).map((t) => `- [${t.name}](${SITE}${t.slug}/): ${t.desc}`).join('\n')}`).join('\n\n')}
 
+## Agent mode
+
+A coding agent (Claude Code, Cursor, Codex, OpenCode, Antigravity and others) can make and edit designs live in the person's own browser tab: batches of operations through \`window.LEAgent\`, each one undo step, while the person watches and can pause, take over or leave notes. Nothing is uploaded.
+
+- [Agent guide](${SITE}docs/AGENT-GUIDE.md): read once before driving the studio.
+- [Studio in agent mode](${SITE}studio/): open \`${SITE}studio/?agent=1\`; the person taps "Turn on agent mode".
+- [Agent kit](${SITE}agent-kit/README.md): drop-in instruction files for Claude Code, Codex/OpenCode, Cursor and Gemini.
+- [Design file format](${SITE}docs/FORMAT-DESIGN.md) and its [JSON Schema](${SITE}schema/design-1.json): \`.ledesign.json\`, the plain file an agent can write.
+- [Recipe workflows](${SITE}docs/FORMAT-WORKFLOW.md) and [PDF workflows](${SITE}docs/FORMAT-PDF-WORKFLOW.md).
+
 ## Optional
 
 - [About & privacy](${SITE}about/): how the tools work and how to install them.

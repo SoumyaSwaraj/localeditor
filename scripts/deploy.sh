@@ -123,6 +123,14 @@ pass "$CC_CODE" "application/vnd.localeditor.project+zip" "*.leproject"
 # 6. Pages and site files: always revalidate. The manifest needs its own type.
 pass "$CC_PAGE" "application/manifest+json" "manifest.webmanifest"
 pass "$CC_PAGE" "" "*.html" "robots.txt" "sitemap.xml" "llms.txt" "*.ico"
+# 6b. Published guides for people and agents, at their repository paths (llms.txt links them): the agent guide, the
+#     format specs and the agent kit as plain Markdown, and the JSON Schema at its $id URL. The includes come after
+#     NEVER on purpose, so only these Markdown files are let through; every other docs/ and *.md file stays private.
+echo "-- $CC_PAGE (text/markdown): agent guide, format specs, agent kit"
+run "${AWS[@]}" "${VERB[@]}" . "$DEST" --exclude "*" "${NEVER[@]}" --include "docs/AGENT-GUIDE.md" --include "docs/FORMAT-DESIGN.md" \
+  --include "docs/FORMAT-WORKFLOW.md" --include "docs/FORMAT-PDF-WORKFLOW.md" --include "agent-kit/*" \
+  --cache-control "$CC_PAGE" --content-type "text/markdown; charset=utf-8" "${COMMON[@]}"
+pass "$CC_PAGE" "application/schema+json" "schema/*.json"
 # 7. The service worker last: browsers check it for updates and it must point at files that exist.
 pass "$CC_PAGE" "text/javascript; charset=utf-8" "sw.js"
 
