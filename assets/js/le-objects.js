@@ -2714,6 +2714,7 @@
         else if (only) this._placeRect(this._selEl, { x: only.x, y: only.y, w: only.w, h: only.h });
       } else this._placeRect(this._selEl, this._union(this._sel));
       this._cursors();
+      this._fitHandles();
     }
     var hover = this._hover && this._find(this._hover);
     var showHover = hover && this._sel.indexOf(this._hover) < 0 && this._sel.indexOf(this._topGroup(this._hover)) < 0;
@@ -2729,6 +2730,21 @@
     }
     if (this._editing) this._placeEditor();
     this._paintGuides();
+  };
+  /* Handles fit the object: edge handles only where there is room (so the middle of a small heading stays draggable), corner
+     hit areas move outward on tiny objects, and the rotate knob flips below (or inside) when the top of the view would clip it. */
+  P._fitHandles = function () {
+    var el = this._selEl;
+    var w = parseFloat(el.style.width) || el.offsetWidth, hh = parseFloat(el.style.height) || el.offsetHeight;
+    var touch = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    var room = touch ? 104 : 44;
+    el.classList.toggle('no-ns', hh < room || w < room * 0.75);
+    el.classList.toggle('no-ew', w < room || hh < room * 0.4);
+    el.classList.toggle('is-tiny', w < (touch ? 64 : 24) || hh < (touch ? 64 : 24));
+    var top = parseFloat(el.style.top) || 0, vh = this.el.clientHeight;
+    var need = touch ? 62 : 44;
+    el.classList.toggle('rot-below', top < need && top + hh + need <= vh);
+    el.classList.toggle('rot-inside', top < need && top + hh + need > vh);
   };
   P._cursors = function () {
     var rot = 0;

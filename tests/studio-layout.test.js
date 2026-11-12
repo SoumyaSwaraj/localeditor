@@ -53,15 +53,16 @@ SIZES.forEach(([w, hh]) => {
   };
 });
 
-cases['KNOWN-BUG: 1440x900 with text selected and a panel open, every toolbar button (lock, duplicate, delete) is visible without scrolling (QA-012)'] = async ({ browser, base, h }) => {
+cases['1440x900 with text selected and a panel open, every toolbar button (lock, duplicate, delete) is visible without scrolling (QA-012)'] = async ({ browser, base, h }) => {
   const page = await studioAt(browser, base, h, 1440, 900);
   const [t] = await h.addLayers(page, [{ type: 'text', text: 'Hello', x: 60, y: 60, w: 300, h: 90, size: 60 }]);
   await h.select(page, [t]);
   await h.openPanel(page, 'text');
   const c = await clipped(page, '#sx-tool');
   h.assert(c.length === 0, 'toolbar buttons beyond the toolbar edge: ' + c);
+  for (const cmd of ['lock', 'dup', 'del', 'more']) h.assert(await page.locator('#sx-tool [data-cmd=' + cmd + ']').isVisible(), cmd + ' is visible in the toolbar');
 };
-cases['KNOWN-BUG: 1366x768 and 1280x720 show every rail tool, including Apps (Collage) and Projects, without scrolling the rail (QA-013)'] = async ({ browser, base, h }) => {
+cases['1366x768 and 1280x720 show every rail tool, including Apps (Collage) and Projects, without scrolling the rail (QA-013)'] = async ({ browser, base, h }) => {
   for (const [w, hh] of [[1366, 768], [1280, 720]]) {
     const page = await studioAt(browser, base, h, w, hh);
     const c = await page.evaluate(() => [...document.querySelectorAll('#sx-rail button')].filter((b) => b.getBoundingClientRect().bottom > innerHeight).map((b) => b.dataset.panelBtn));
@@ -69,7 +70,7 @@ cases['KNOWN-BUG: 1366x768 and 1280x720 show every rail tool, including Apps (Co
     await page.context().close();
   }
 };
-cases['KNOWN-BUG: 1280x720 the Download button of the Export panel is visible without scrolling the panel (QA-014)'] = async ({ browser, base, h }) => {
+cases['1280x720 the Download button of the Export panel is visible without scrolling the panel (QA-014)'] = async ({ browser, base, h }) => {
   const page = await studioAt(browser, base, h, 1280, 720);
   await h.openPanel(page, 'export');
   const ok = await page.evaluate(() => { const b = document.querySelector('#sx-panel-body .btn-gold.btn-lg').getBoundingClientRect(); return b.bottom <= innerHeight; });
