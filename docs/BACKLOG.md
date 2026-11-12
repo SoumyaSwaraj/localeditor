@@ -72,3 +72,17 @@ Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen
 - `le-pdf-flow.js` has a dead fallback to the old `.woff` file names.
 - In automatic mode each studio / PDF studio / Convert page fetches the font index plus four PDF text faces (~575 KB) about 8 s after load, once per device. Tests that count requests after a long wait can see them.
 - Select-box chevron icon still has a hard-coded neutral grey (`%238E8898`).
+
+## Makers set 3 — follow-ups
+
+- Site data: add Screenshot beautifier (`/studio/?make=beautify`), Photobooth strip (`?make=photobooth`), Recap collage (`?make=recap`) as live entries.
+- Beautifier has no "original" aspect (a page takes its size's fixed pixels); resize after making is the workaround.
+- Shared photo × button in maker forms is 28 px (`studio-makers.css`), under the 44 px rule.
+- Preview shadows look heavier than export: the engine does not scale shadow blur with render scale (also on the integration list).
+
+## PDF scan and searchable scans — follow-ups
+
+- Never tried on a real phone, real camera or iOS (tests use a canvas stream); accuracy measured on synthetic pages only.
+- One language per run; no blur or glare warning at capture; HEIC only where the browser decodes it.
+- The "make searchable" offer bar and the Protect panel can both show at once on desktop.
+- `/licenses/` scrolls sideways at 390 and 360 px (generated page; also makes the `tools` phone sweep fail once it gets past its timeout).

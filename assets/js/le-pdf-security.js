@@ -3218,7 +3218,7 @@
         var out = await run('Looking for sensitive data', async function () {
           var src = await currentSource();
           SEC.srcUids = src.uids;
-          return API.findSensitive(src.bytes, { terms: terms });
+          return (SEC.findWith || API.findSensitive)(src.bytes, { terms: terms }); /* SEC.findWith: le-pdf-ocr.js can read scanned pages first */
         });
         if (!out) return;
         SEC.hits = out.ok === false ? { error: out.error } : out;
@@ -3233,6 +3233,7 @@
       (h.pages || []).filter(function (p) { return p.status === 'picture'; }).forEach(function (p) {
         s.appendChild(el('p', 'ps-note ps-warn', ic('info') + '<span>Page ' + (p.page + 1) + ': this page is a picture; text cannot be searched yet.</span>'));
       });
+      if (SEC.scanHint) { var hint = SEC.scanHint(h); if (hint) s.appendChild(hint); }   /* le-pdf-ocr.js: offer to read scanned pages */
       if (!h.matches.length) { s.appendChild(el('p', 'sec-summary is-clean', 'Nothing sensitive was found in the text.')); return s; }
       var on = h.matches.filter(function (m) { return m.on; }).length;
       s.appendChild(el('p', 'sec-summary', plural(h.matches.length, 'possible item') + ' found. Check the ones to hide; nothing is hidden until you add them.'));

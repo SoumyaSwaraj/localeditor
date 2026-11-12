@@ -10,7 +10,9 @@
     /* Print set: calendars, charts, labels, stickers, photo books, zines, catalogues. */
     'calendar', 'chart', 'labels', 'stickers', 'photobook', 'zine', 'catalogue',
     /* Second social set: posters, event kit, QR signs and invitations, store screenshots, link cards. */
-    'payposter', 'wifisign', 'qrinvite', 'eventkit', 'movieposter', 'albumcover', 'frontpage', 'appshots', 'linkcard'];
+    'payposter', 'wifisign', 'qrinvite', 'eventkit', 'movieposter', 'albumcover', 'frontpage', 'appshots', 'linkcard',
+    /* Weekly-use set: screenshot and code beautifier, photobooth strips, recap collages. */
+    'beautify', 'photobooth', 'recap'];
 
   var SIZES = {
     square: { id: 'square', name: 'Square', w: 1080, h: 1080 },
@@ -67,6 +69,8 @@
       styles: (def.styles || [{ id: 'default', name: 'Default' }]).map(function (s) { return { id: word(s.id, 40), name: String(s.name || s.id), hint: s.hint || '' }; }),
       sample: def.sample || { values: {} },
       maxPages: clamp(Math.round(num(def.maxPages, 8)), 1, 50),
+      /* Optional studio-side form extras (camera, paste, sorting): ui(form, api) → cleanup. Never called by build. */
+      ui: typeof def.ui === 'function' ? def.ui : null,
       build: def.build
     };
     if (!registry[m.id]) order.push(m.id);

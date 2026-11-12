@@ -187,6 +187,7 @@
       F.form = F.node.querySelector('.mk-form');
       F.canvas = F.node.querySelector('.mk-canvas');
       renderForm(F);
+      if (m.ui) try { F.cleanup = m.ui(F, { refresh: function () { renderForm(F); schedule(F, 0); }, schedule: function () { schedule(F, 0); }, make: function () { return make(F); } }); } catch (e) { if (window.console) console.warn(e); }
       F.node.querySelector('.mk-close').onclick = close;
       F.node.querySelector('.mk-cancel').onclick = close;
       F.node.querySelector('.mk-make').onclick = function () { make(F); };
@@ -213,6 +214,7 @@
     F.token++;
     clearTimeout(F.timer);
     ST.form = null;
+    if (typeof F.cleanup === 'function') try { F.cleanup(); } catch (e) {}
     F.node.remove();
     if (F.prevFocus && F.prevFocus.focus) try { F.prevFocus.focus({ preventScroll: true }); } catch (e) {}
   }

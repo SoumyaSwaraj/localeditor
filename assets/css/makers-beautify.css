@@ -1,0 +1,5 @@
+/* Screenshot beautifier: the paste tip and "Hide something" above the form. Tokens only (docs/DESIGN.md). */
+.mkb-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px 0; min-width: 0; }
+.mkb-tip { margin: 0; flex: 1 1 180px; min-width: 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+.mkb-hide { min-height: 44px; }
+.mk-sheet.mkb-drop .mk-card-sheet { outline: 3px dashed var(--focus-ring); outline-offset: -8px; }

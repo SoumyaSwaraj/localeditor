@@ -65,7 +65,7 @@ function get(url, redirects) {
     const url = BASE + (best ? 'tessdata_best' : 'tessdata_fast') + '/main/' + p.id + '.traineddata';
     process.stdout.write('Fetching ' + p.id + ' ... ');
     const buf = await get(url);
-    if (!best && buf.length !== p.bytes) console.log('(size differs from the table: ' + buf.length + ' vs ' + p.bytes + '; update LANGS in labs/pdf-ocr/ocr.js)');
+    if (!best && buf.length !== p.bytes) console.log('(size differs from the table: ' + buf.length + ' vs ' + p.bytes + '; update LANGS in assets/js/le-pdf-ocr.js)');
     if (buf.slice(0, 4).toString('hex') === '00000000' || buf.length < 100000) throw new Error('Unexpected file for ' + p.id);
     fs.writeFileSync(path.join(DEST, p.id + '.traineddata'), buf);
     console.log(buf.length + ' bytes, sha256 ' + crypto.createHash('sha256').update(buf).digest('hex').slice(0, 16));
