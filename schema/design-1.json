@@ -440,7 +440,7 @@
       "type": "object",
       "required": ["kind"],
       "properties": {
-        "kind": { "enum": ["asset", "linear", "radial", "luma", "color", "subject", "depth", "face"] },
+        "kind": { "enum": ["asset", "linear", "radial", "luma", "color", "subject", "depth", "face", "segment"] },
         "mode": { "enum": ["add", "subtract", "intersect"], "default": "add" },
         "invert": { "type": "boolean", "default": false },
         "feather": { "description": "0–1. radial: the soft part of the radius. linear: 0 is a straight ramp, 1 an eased one. Other kinds ignore it.", "type": "number", "minimum": 0, "maximum": 1, "default": 0.25 },
@@ -452,7 +452,8 @@
         "min": { "type": "number", "minimum": 0, "maximum": 1 }, "max": { "type": "number", "minimum": 0, "maximum": 1 }, "soft": { "type": "number", "minimum": 0, "maximum": 1 },
         "h": { "type": "number", "minimum": 0, "maximum": 360 }, "s": { "type": "number", "minimum": 0, "maximum": 1 }, "l": { "type": "number", "minimum": 0, "maximum": 1 }, "range": { "type": "number", "minimum": 0, "maximum": 1 },
         "near": { "type": "number", "minimum": 0, "maximum": 1 }, "far": { "type": "number", "minimum": 0, "maximum": 1 },
-        "part": { "enum": ["skin", "eyes", "lips", "teeth", "brows", "under-eyes", "inner-mouth"] }
+        "part": { "enum": ["skin", "eyes", "lips", "teeth", "brows", "under-eyes", "inner-mouth"] },
+        "class": { "description": "For kind segment: which class of layer.maps.segments.", "enum": ["person", "hair", "skin", "clothes", "background"] }
       },
       "additionalProperties": false
     }

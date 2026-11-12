@@ -38,8 +38,9 @@
     luma: { min: [0, 1, 0], max: [0, 1, 1], soft: [0, 1, 0.1] },
     color: { h: [0, 360, 0], s: [0, 1, 0.5], l: [0, 1, 0.5], range: [0, 1, 0.15], soft: [0, 1, 0.1] },
     depth: { near: [0, 1, 0], far: [0, 1, 1], soft: [0, 1, 0.1] },
-    face: {}
+    face: {}, segment: {}
   };
+  var SEGMENTS = { person: 1, hair: 1, skin: 1, clothes: 1, background: 1 };   /* layer.maps.segments (LE.maps) */
   var FACE_PARTS = { skin: 1, eyes: 1, lips: 1, teeth: 1, brows: 1, 'under-eyes': 1, 'inner-mouth': 1 };
   /* Documents use the hyphenated names; the names LE.maps gives its parts are accepted on input and stored hyphenated. */
   var FACE_ALIAS = { underEyes: 'under-eyes', innerMouth: 'inner-mouth' };
@@ -357,7 +358,7 @@
       version: FX.build, blends: BLENDS.slice(), paramTypes: PARAM_TYPES.slice(), spaces: FX.UI.spaces.slice(), sections: FX.UI.sections.slice(), actions: FX.actions.list(),
       maskKinds: Object.keys(MASK_KINDS).map(function (k) { return { kind: k, fields: clone(MASK_KINDS[k]) }; }),
       mask: { on: true, invert: false, parts: [{ kind: 'radial', mode: 'add', invert: false, feather: 0.25, density: 1, blur: 0 }] },
-      faceParts: Object.keys(FACE_PARTS), limits: clone(LIMITS),
+      faceParts: Object.keys(FACE_PARTS), segments: Object.keys(SEGMENTS), limits: clone(LIMITS),
       entry: { id: 'string', type: 'effect id', on: true, amount: 1, blend: 'normal', mask: null, p: {} }
     };
   };
@@ -452,6 +453,7 @@
       });
       if (src.kind === 'asset') { if (!idOk(src.asset, 80)) { warn(w, pp + '/asset', 'bad-value', 'An asset mask needs an asset id.'); return; } o.asset = src.asset; }
       if (src.kind === 'face') { if (own(FACE_ALIAS, src.part)) src = Object.assign({}, src, { part: FACE_ALIAS[src.part] }); if (!own(FACE_PARTS, src.part)) { warn(w, pp + '/part', 'bad-value', 'part is one of ' + Object.keys(FACE_PARTS).join(', ') + '.'); return; } o.part = src.part; }
+      if (src.kind === 'segment') { if (!own(SEGMENTS, src.class)) { warn(w, pp + '/class', 'bad-value', 'class is one of ' + Object.keys(SEGMENTS).join(', ') + '.'); return; } o.class = src.class; }
       Object.keys(src).forEach(function (k) { if (BAD[k]) warn(w, pp, 'forbidden-key', 'The key "' + k + '" is not allowed.'); else if (!own(o, k)) warn(w, pp + '/' + k, 'unknown-key', 'Unknown mask field; ignored.'); });
       parts.push(o);
     });

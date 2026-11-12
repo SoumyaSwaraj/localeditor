@@ -392,4 +392,77 @@ cases['face masks: part names are hyphenated in documents, LE.maps names are acc
   h.assert.noErrors(page);
 };
 
+cases['maps as inputs: g.map gives depth, subject, face and segments at full precision; the segment mask kind; the cut-out is read the legacy way'] = async ({ browser, base, h }) => {
+  const page = await fx.page(browser, base);
+  const r = await page.evaluate(() => {
+    const FX = window.LE.fx, T = window.fxT, seen = {};
+    const flat = (w, hh, paint) => { const c = document.createElement('canvas'); c.width = w; c.height = hh; paint(c.getContext('2d'), w, hh); return c; };
+    /* A 16-bit depth ramp (high byte in red, low byte in green), near = 1 at the right. */
+    const depth = flat(256, 4, (x, w, hh) => { const im = x.createImageData(w, hh); for (let j = 0; j < hh; j++) for (let i = 0; i < w; i++) { const v = Math.round(i / (w - 1) * 65535), k = (j * w + i) * 4; im.data[k] = v >> 8; im.data[k + 1] = v & 255; im.data[k + 3] = 255; } x.putImageData(im, 0, 0); });
+    /* Segments: person on the left half (red), hair in the top-left quarter (green), skin nowhere; clothes bottom-left. */
+    const seg = flat(64, 64, (x) => { x.fillStyle = '#000'; x.fillRect(0, 0, 64, 64); x.fillStyle = '#ff0000'; x.fillRect(0, 0, 32, 64); x.fillStyle = '#ffff00'; x.fillRect(0, 0, 32, 32); });
+    const clothes = flat(64, 64, (x) => { x.fillStyle = '#000'; x.fillRect(0, 0, 64, 64); x.fillStyle = '#fff'; x.fillRect(0, 32, 32, 32); });
+    /* A cut-out mask with transparency and a colour: the mask is its alpha, not its colour. */
+    const cut = flat(64, 64, (x) => { x.fillStyle = 'rgba(20, 40, 200, 1)'; x.fillRect(0, 0, 32, 64); });
+    const assets = { d: depth, s: seg, c: clothes, k: cut };
+    const layer = { id: 'p', maps: { depth: { asset: 'd' }, segments: { asset: 's', clothes: { asset: 'c' } } }, cutout: { asset: 'k' } };
+    FX.register({ id: 'test-map', version: 1, space: 'display', params: { kind: { type: 'choice', options: ['depth', 'subject', 'segments', 'face'] } },
+      passes: (g, p) => { const m = g.map(p.kind, { part: 'skin' }), again = g.map(p.kind, { part: 'skin' }); seen[p.kind] = { missing: !!m.missing, same: m === again }; return g.pass('uniform sampler2D u_m; vec4 fx(){ vec4 m = texture(u_m, v_uv); return vec4(m.rgb, 1.0) * 0.5 + vec4(vec3(m.a), 1.0) * 0.5; }', { u_m: m }); } });
+    const src = flat(256, 64, (x) => { x.fillStyle = '#808080'; x.fillRect(0, 0, 256, 64); });
+    const row = (c, y) => { const d = c.getContext('2d').getImageData(0, y, c.width, 1).data, out = []; for (let i = 0; i < d.length; i += 4) out.push(d[i]); return out; };
+    const at = (c, x, y) => Array.from(c.getContext('2d').getImageData(x, y, 1, 1).data);
+    const opt = { layer, assets: (id) => assets[id] || null };
+    const dep = FX.apply(src, Object.assign({ fx: [{ type: 'test-map', p: { kind: 'depth' } }] }, opt));
+    const ramp = row(dep, 32); let mono = true, steps = 0; for (let i = 1; i < ramp.length; i++) { if (ramp[i] < ramp[i - 1]) mono = false; if (ramp[i] !== ramp[i - 1]) steps++; }
+    const sub = FX.apply(src, Object.assign({ fx: [{ type: 'test-map', p: { kind: 'subject' } }] }, opt));
+    const sg = FX.apply(src, Object.assign({ fx: [{ type: 'test-map', p: { kind: 'segments' } }] }, opt));
+    const none = FX.apply(src, { fx: [{ type: 'test-map', p: { kind: 'depth' } }, { type: 'test-map', p: { kind: 'segments' } }], layer: { id: 'q' } });
+    /* The segment mask kind and the subject kind, as masks on an effect. */
+    FX.register({ id: 'test-white', version: 1, space: 'display', params: {}, passes: (g) => { g.color('vec3 $fx(vec3 c){ return vec3(1.0); }'); } });
+    const m = (part) => FX.apply(src, Object.assign({ fx: [{ type: 'test-white', mask: { parts: [part] } }] }, opt));
+    const person = m({ kind: 'segment', class: 'person' }), bg = m({ kind: 'segment', class: 'background' }), cl = m({ kind: 'segment', class: 'clothes' }), subj = m({ kind: 'subject' });
+    const bad = FX.cleanMask({ parts: [{ kind: 'segment', class: 'dog' }, { kind: 'segment', class: 'hair' }] });
+    return { ramp: [ramp[0], ramp[128], ramp[255], mono, steps], seen, sub: [at(sub, 40, 32)[0], at(sub, 200, 32)[0]], sg: [at(sg, 40, 10), at(sg, 40, 50), at(sg, 200, 32)], none: at(none, 100, 32), missing: seen,
+      person: [at(person, 40, 32)[0], at(person, 200, 32)[0]], bg: [at(bg, 40, 32)[0], at(bg, 200, 32)[0]], cl: [at(cl, 40, 10)[0], at(cl, 40, 50)[0]], subj: [at(subj, 40, 32)[0], at(subj, 200, 32)[0]],
+      bad: bad.mask.parts.map((q) => q.class), kinds: FX.schema().maskKinds.map((k) => k.kind), segs: FX.schema().segments, warned: JSON.stringify(FX.status().warnings) };
+  });
+  /* The test effect shows value × 0.5 + alpha × 0.5; the depth handle has alpha 1. */
+  h.assert(Math.abs(r.ramp[0] - 128) <= 1 && Math.abs(r.ramp[1] - 191) <= 2 && r.ramp[2] === 255 && r.ramp[3] && r.ramp[4] >= 100, 'depth arrives as stored, monotonic, without the steps of a mask round trip: ' + r.ramp);
+  h.assert(r.seen.depth.same && r.seen.segments.same, 'a map is computed once per run');
+  h.assert(r.sub[0] === 255 && Math.abs(r.sub[1] - 128) <= 1, 'the subject map is the cut-out\'s alpha whatever its colour: ' + r.sub);
+  h.assert(Math.abs(r.sg[0][0] - 128) <= 1 && Math.abs(r.sg[0][1] - 128) <= 1 && r.sg[0][2] <= 1 && r.sg[1][0] === 255 && Math.abs(r.sg[1][1] - 128) <= 1 && r.sg[2][0] <= 1, 'segments carry person, hair, skin and clothes: ' + JSON.stringify(r.sg));
+  h.assert(r.person[0] === 255 && r.person[1] < 140 && r.bg[0] < 140 && r.bg[1] === 255 && r.cl[0] < 140 && r.cl[1] === 255, 'the segment mask kind selects a class: ' + JSON.stringify([r.person, r.bg, r.cl]));
+  h.assert(r.subj[0] === 255 && r.subj[1] < 140, 'a coloured cut-out mask with transparency selects by its alpha, as the simple studio does: ' + r.subj);
+  h.assert(!/depth|segment/.test(r.warned), 'a missing map raises no warning through g.map: ' + r.warned);
+  h.assert.equal(r.bad.join(), 'hair', 'unknown classes are left out');
+  h.assert(r.kinds.indexOf('segment') >= 0 && r.segs.join() === 'person,hair,skin,clothes,background', 'schema() lists the kind and its classes');
+  h.assert.noErrors(page);
+};
+
+cases['silhouette stage: g.subject is the layer as it entered the stage, g.whole works there, and both ignore earlier silhouette entries'] = async ({ browser, base, h }) => {
+  const page = await fx.page(browser, base);
+  await page.evaluate(() => {
+    const FX = window.LE.fx;
+    /* Paints everything outside the silhouette red (a stand-in for a shadow or a reflection). */
+    FX.register({ id: 'test-fill-out', version: 1, space: 'display', needs: ['alpha'], params: {}, grow: () => 0, passes: (g) => g.pass('vec4 fx(){ vec4 s = src(v_uv); return s + vec4(1.0, 0.0, 0.0, 1.0) * (1.0 - s.a); }') });
+    /* Shows what it is told the subject is: white where g.subject has alpha; blue where the reduced whole has alpha instead. */
+    FX.register({ id: 'test-show-subject', version: 1, space: 'display', needs: ['alpha'], params: { whole: { type: 'bool', default: false } }, grow: () => 0,
+      passes: (g, p) => p.whole ? g.pass('uniform sampler2D u_w; vec4 fx(){ float a = texture(u_w, boxUV()).a; return vec4(0.0, 0.0, a, 1.0); }', { u_w: g.whole({ maxSide: 128 }) }) : g.pass('uniform sampler2D u_s; vec4 fx(){ float a = texture(u_s, v_uv).a; return vec4(a, a, a, 1.0); }', { u_s: g.subject() }) });
+  });
+  const r = await page.evaluate(() => {
+    const FX = window.LE.fx, T = window.fxT;
+    const src = T.card(256, 192, true);   /* a transparent disc near the top left */
+    const at = (c, x, y) => Array.from(c.getContext('2d').getImageData(x, y, 1, 1).data);
+    const hole = [Math.round(256 * 0.2), Math.round(192 * 0.3)], solid = [200, 150];
+    const a = FX.apply(src, { fx: [{ type: 'test-fill-out' }, { type: 'test-show-subject' }] });
+    const b = FX.apply(src, { fx: [{ type: 'test-fill-out' }, { type: 'test-show-subject', p: { whole: true } }] });
+    const tiled = FX.apply(T.card(1100, 700, true), { fx: [{ type: 'test-fill-out' }, { type: 'test-show-subject', p: { whole: true } }], tile: 256 });
+    return { a: [at(a, hole[0], hole[1]), at(a, solid[0], solid[1])], b: [at(b, hole[0], hole[1]), at(b, solid[0], solid[1])], tiled: [at(tiled, Math.round(1100 * 0.2), Math.round(700 * 0.3)), at(tiled, 900, 600)] };
+  });
+  h.assert(r.a[0][0] <= 2 && r.a[1][0] === 255, 'g.subject still has the hole the first silhouette entry painted over: ' + JSON.stringify(r.a));
+  h.assert(r.b[0][2] <= 2 && r.b[1][2] === 255 && r.b[1][0] === 0, 'g.whole in the silhouette stage is the layer as it entered the stage: ' + JSON.stringify(r.b));
+  h.assert(r.tiled[0][2] <= 2 && r.tiled[1][2] === 255, 'and the same in every tile: ' + JSON.stringify(r.tiled));
+  h.assert.noErrors(page);
+};
+
 module.exports = cases;

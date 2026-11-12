@@ -600,7 +600,7 @@
      it; before the first render it assumes a long side of 4,000 document px (generous: wider reach, never seams). */
   var HINTS = {}, HINT_KEYS = [];
   function hintSet(key, box) { if (!HINTS[key]) { HINT_KEYS.push(key); if (HINT_KEYS.length > 64) delete HINTS[HINT_KEYS.shift()]; } HINTS[key] = { w: box.w, h: box.h }; }
-  function hintGet(key) { return HINTS[key] || { w: 4000, h: 4000 }; }
+  function hintGet(key, box) { return box && box.w ? box : HINTS[key] || { w: 4000, h: 4000 }; }   /* radius(p, scale, box) is given the box; the rest is for callers that give none */
 
   /* ======================================================================================================================
      Spot healing, clone and patch (one entry holds every stroke, click and polygon, replayed in order)
@@ -727,8 +727,8 @@
   FX.register({
     id: 'spot-heal', name: 'Healing and clone', group: 'retouch', version: 1, space: 'display',
     params: Object.assign({ blend: { type: 'number', min: 0.2, max: 1.5, default: 0.6, step: 0.05, label: 'Blend radius', help: 'How far around a healed spot the tone and colour are matched, × the largest spot radius.' } }, dataParams(SPOT_PARAMS, 'Spots')),
-    radius: function (p, scale) {
-      var key = spotKey(p), box = hintGet(key), recs = spotDoc(p, box.w, box.h), dm = 0, rm = 0;
+    radius: function (p, scale, bx) {
+      var key = spotKey(p), box = hintGet(key, bx), recs = spotDoc(p, box.w, box.h), dm = 0, rm = 0;
       recs.forEach(function (r) { dm = Math.max(dm, Math.hypot(r.dx, r.dy)); rm = Math.max(rm, r.rad); });
       return recs.length ? Math.ceil(dm * scale) + reach(clamp(p.blend * rm, 0.75, 150), scale) + 4 : 0;
     },
@@ -991,9 +991,9 @@
   FX.register({
     id: 'liquify', name: 'Liquify', group: 'geometry', version: 1, space: 'linear',
     params: dataParams(LIQ_PARAMS, 'Strokes'),
-    radius: function (p, scale) {
+    radius: function (p, scale, bx) {
       var key = liqKey(p); if (!R.liquify.read(p).length) return 0;
-      var box = hintGet(key);
+      var box = hintGet(key, bx);
       return Math.ceil(liqMesh(p, box.w, box.h).max * scale) + 3;
     },
     passes: function (g, p) { hintSet(liqKey(p), g.box); return warpPasses(g, liqMesh(p, g.box.w, g.box.h)); },
@@ -1143,7 +1143,7 @@
   FX.register({
     id: 'face-liquify', name: 'Face-aware liquify', group: 'geometry', version: 1, space: 'linear',
     params: FACE_PARAMS,
-    radius: function (p, scale) { if (!faceOn(p)) return 0; var box = hintGet(JSON.stringify(p)); return Math.ceil(faceMesh(p, box.w, box.h).max * scale) + 3; },
+    radius: function (p, scale, bx) { if (!faceOn(p)) return 0; var box = hintGet(JSON.stringify(p), bx); return Math.ceil(faceMesh(p, box.w, box.h).max * scale) + 3; },
     passes: function (g, p) {
       if (!faceOn(p)) return undefined;
       hintSet(JSON.stringify(p), g.box);
@@ -1189,7 +1189,7 @@
       rotation: { type: 'angle', default: 0, label: 'Rotation' },
       angle: { type: 'angle', default: 0, label: 'Shift direction' }
     },
-    radius: function (p, scale) { if (!p.amount) return 0; var box = hintGet('shape|' + JSON.stringify(p)); return Math.ceil(Math.abs(p.amount) / 100 * Math.max(p.rx * box.w, p.ry * box.h) * scale) + 3; },
+    radius: function (p, scale, bx) { if (!p.amount) return 0; var box = hintGet('shape|' + JSON.stringify(p), bx); return Math.ceil(Math.abs(p.amount) / 100 * Math.max(p.rx * box.w, p.ry * box.h) * scale) + 3; },
     passes: function (g, p) {
       if (!p.amount) return undefined;
       hintSet('shape|' + JSON.stringify(p), g.box);

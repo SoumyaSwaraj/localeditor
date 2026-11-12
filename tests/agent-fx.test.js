@@ -151,7 +151,7 @@ cases['analyze and catalog("fx"): numbers to grade by, a compact index, one effe
   h.assert(r.index.ok && r.index.total >= 20 && r.index.items.every((e) => e.id && e.summary && !e.params) && JSON.stringify(r.index).length < 16000, 'catalog("fx") is a paged index: ' + r.index.total + ', ' + JSON.stringify(r.index).length + ' characters');
   h.assert(r.search.items.length >= 1 && r.search.items.length < r.index.total && r.search.items.some((e) => e.id === 'gaussian-blur'), 'catalog("fx", "blur") searches');
   h.assert(r.one.effect && r.one.effect.id === 'exposure' && r.one.effect.params.ev && r.one.effect.agent.example.type === 'exposure', 'catalog("fx", id) gives one effect in full');
-  h.assert(r.schema.schema.blends.length > 5 && r.schema.schema.maskKinds.length === 8 && Array.isArray(r.actions.actions), 'schema and actions');
+  h.assert(r.schema.schema.blends.length > 5 && r.schema.schema.maskKinds.length === 9 && Array.isArray(r.actions.actions), 'schema and actions');
   h.assert(r.fonts.ok && r.fonts.kind === 'fonts', 'the other catalogs are untouched');
   ['fx.add', 'fx.update', 'fx.remove', 'fx.reorder', 'mask.set', 'adjust.add', 'transform.set'].forEach((op) => h.assert(r.help.operations[op] && r.help.operations[op].example.op === op, 'help lists ' + op));
   h.assert(JSON.stringify(r.help).length < 40000, 'help stays compact: ' + JSON.stringify(r.help).length);

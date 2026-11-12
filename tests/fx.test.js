@@ -50,7 +50,7 @@ cases['registry: the starter set is registered, described and declared to LE.sup
   h.assert(r.sizes.largest[0] < 12000, 'no single effect description is over 12,000 characters: ' + r.sizes.largest);
   h.assert(r.sizes.schema < 6000, 'schema() stays small: ' + r.sizes.schema);
   h.assert(r.sameObjects && r.frozen && r.moved, 'descriptions are shared and frozen, and LE.fx.version() moves when the registry changes: ' + JSON.stringify([r.sameObjects, r.frozen, r.moved]));
-  h.assert(r.schema.maskKinds.length === 8 && r.schema.blends.indexOf('soft-light') >= 0 && r.schema.mask.parts[0].feather === 0.25 && r.schema.limits.params === 48, 'schema() describes mask kinds, blends and limits');
+  h.assert(r.schema.maskKinds.length === 9 && r.schema.blends.indexOf('soft-light') >= 0 && r.schema.mask.parts[0].feather === 0.25 && r.schema.limits.params === 48, 'schema() describes mask kinds, blends and limits');
   h.assert(!r.hasFns, 'descriptions are plain data');
   STARTER.forEach((id) => h.assert(r.support.indexOf('fx.' + id) >= 0, 'LE.support definition for ' + id));
   h.assert.noErrors(page);

@@ -218,6 +218,7 @@ Optional, on any layer. The model is in `docs/EXPERT-MODE.md`; effect ids, param
 | `asset` | `asset`: an image source; its alpha times its brightness |
 | `subject` | the layer's cut-out |
 | `depth` | `near far soft` (0 nearest, 1 farthest); needs `maps.depth` |
+| `segment` | `class`: `person hair skin clothes background`; needs `maps.segments` |
 | `face` | `part`: `skin eyes lips teeth brows under-eyes inner-mouth` (`underEyes` and `innerMouth` are read and stored hyphenated); needs `maps.face` |
 
 `feather` shapes `linear` and `radial` parts only; `blur` softens any part.

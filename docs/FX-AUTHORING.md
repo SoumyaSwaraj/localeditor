@@ -29,7 +29,7 @@ layer.fx = [ { id, type, on: true, amount: 1, blend: 'normal', mask: <mask|null>
 layer.layerMask = { on: true, invert: false, parts: [ { kind, mode, invert, feather, density, blur, …kind fields } ] }   // the layer mask (see "Masks")
 layer.transform = { quad: [[x,y],[x,y],[x,y],[x,y]] }                                           // TL, TR, BR, BL in page units; photo layers
 layer.retouch  = { asset, version }                                                          // reserved: a baked-overlay cache only. Strokes, spots and meshes live in effect parameters of type `data`
-layer.maps     = { depth: { asset, model, version }, normals: {…}, face: { landmarks, parts: { asset }, model, version } }
+layer.maps     = { depth: { asset, model, version }, normals: {…}, face: [packed faces], segments: { asset, clothes: { asset }, model, version } }
 layer.raw      = { profile, wb: { temp, tint }, exposure, … }                                   // kept as data until the RAW step
 ```
 
@@ -52,7 +52,8 @@ The numbers follow the workspace's CPU reference, `LE.expert.evalMask` (`assets/
 | `luma` | `min, max, soft` | display-referred Rec. 709 luminance between `min` and `max`, with `soft` shoulders |
 | `color` | `h`, `s`, `l`, `range`, `soft` | distance in hue (weighted by saturation), saturation and lightness within `range` |
 | `asset` | `asset` (image id, stretched over the layer box) | alpha × brightness, so white-on-transparent and white-on-black both work |
-| `subject` | none | the layer's cut-out mask (`layer.cutout.asset`), also when the cut-out is switched off |
+| `subject` | none | the layer's cut-out mask (`layer.cutout.asset`), also when the cut-out is switched off. Read as the simple studio reads it: the mask image's alpha when it has transparency, else its luminance |
+| `segment` | `class`: `person`, `hair`, `skin`, `clothes`, `background` | `layer.maps.segments` (`{ asset, clothes: { asset } }`, written by `LE.maps`): the asset's red, green and blue are person, hair and skin, the clothes asset is grey; background is what is not a person |
 | `depth` | `near, far, soft` (0 = nearest, 1 = farthest) | from `layer.maps.depth.asset`: 16-bit depth packed in an RGBA image, red the high byte and green the low byte, near = 1 (`docs/research/depth-face-maps.md`) |
 | `face` | `part`: `skin eyes lips teeth brows under-eyes` | from `layer.maps.face` (one packed face, a list, or `{ faces }`), drawn by `LE.maps.faceMask(face, part, w, h)` |
 
@@ -200,7 +201,9 @@ Every image handle is premultiplied RGBA in the effect's declared `space`, in a 
 | `g.mask(maskDef)` | the mask as a handle (value in every channel) |
 | `g.alpha()` | the layer's alpha as a handle (after cut-out and mask in the silhouette stage) |
 | `g.asset(id)` | a data asset: `{ id, text, bytes }`, or `null` until it has loaded |
-| `g.whole({ maxSide: 512 })` or `({ scale })` | the whole picture as it enters this effect, small (8-bit, display-referred, premultiplied), **the same for every tile**; sample it with `boxUV()`. `null` for float sources and in the silhouette stage |
+| `g.whole({ maxSide: 512 })` or `({ scale })` | the whole picture as it enters this effect, small (8-bit, display-referred, premultiplied), **the same for every tile**; sample it with `boxUV()`. In the silhouette stage it is the layer as it enters that stage (after cut-out, frame and layer mask, before any silhouette entry), so `.a` is the whole silhouette: a cast shadow or a ray can read it however long its reach. `null` for float sources |
+| `g.subject()` | silhouette stage only: the layer as it entered the stage, at working resolution (premultiplied; its `space` is on the handle). Read `.a` for the silhouette. Later silhouette entries do not change it, so a reflection does not cast a shadow and their order stops mattering. `null` before that stage |
+| `g.map(kind, { part })` | a map of the layer as a handle over the working rectangle, full precision, computed once per run: `'depth'` (`r` = stored depth, near 1, edge-extended), `'subject'` (`r` = the cut-out), `'face'` (`r` = the area `part`), `'segments'` (`r` person, `g` hair, `b` skin, `a` clothes). `handle.missing` is `true` when the layer has no such map; the handle is then constant (depth 0, the others 1) and no warning is raised |
 | `g.scene()` | what is behind the layer, aligned with the working rectangle; `null` unless the effect declares `scene` |
 | `g.stats()` | whole-image statistics of the input (`needs: ['stats']`), the same object `LE.fx.analyze` returns, measured once on a ≤ 256-pixel copy run through the entries before yours |
 | `g.rgb(color)` | `[r, g, b, a]` of a `color` parameter in the effect's space, not premultiplied |
@@ -264,7 +267,7 @@ The same in JavaScript: `LE.fx.math.oklab(lin)`, `LE.fx.math.oklabInv(lab)`, `sr
 
 **Effects that reach far.** A tile carries a border as wide as the stack's reach, up to what the device can hold; beyond that the reach is clamped (with a note) and tiles could show seams. An effect that needs the far side of the picture (a blur wider than a few hundred pixels at export size, a flare, a glow from the whole frame) should not read it from the tile: ask for `g.whole()`, a reduced copy of the entire input rendered once through the entries before this one and handed identically to every tile, and build the wide part from that. `gaussian-blur` itself still reads its tile, so radii beyond the clamp are approximate at very large export sizes.
 
-**One rectangle.** A picture that fits one working rectangle is not tiled: its border is the smallest of the stack's reach, twice the grid, and the picture's own longer side. Outside a picture there is only its extended edge, which the texture's edge clamp continues, so a 64-pixel picture under a stack that reads thousands of pixels is worked on in 512 pixels, not 1,280.
+**One rectangle.** A picture that fits one working rectangle is not tiled: its border is the smallest of the stack's reach, twice the grid, and the picture's own longer side. The grid itself (64 pixels, or 256 for stacks that read further than 400) stays at 64 for pictures under 768 pixels, which are never cut into many tiles. Outside a picture there is only its extended edge, which the texture's edge clamp continues, so a 64-pixel picture under a stack that reads thousands of pixels is worked on in 512 pixels, not 1,280.
 
 **Shared blurs.** Inside one run, `g.blur` of the same input at the same radius is computed once, and blurs of the same input at different radii share their downsampling chain, whichever effects of the stack ask. Results are identified by the input handle and how often it was written, kept within a tenth of the memory budget, and released with the run. Nothing to do in an effect; `LE.fx.configure({ shareBlur: false })` switches it off for comparison.
 

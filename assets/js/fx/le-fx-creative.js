@@ -466,9 +466,7 @@
   /* Distance from `center` (box fractions) to the farthest corner, in document pixels: the radius every radial optic is
      normalised to, so 100 % means "at the corner". */
   function farCorner(box, c) { return Math.sqrt(Math.pow(Math.max(c.x, 1 - c.x) * box.w, 2) + Math.pow(Math.max(c.y, 1 - c.y) * box.h, 2)) || 1; }
-  /* radius() is not told the layer box; reaches that scale with it assume this one (about 3,000 × 2,000 document pixels).
-     Larger boxes are still exact whenever the picture fits one rectangle (most previews and exports up to the texture limit).
-     Proposal: pass the box to radius(p, scale, box). */
+  /* radius(p, scale, box) is told the layer box; this one stands in where a caller gives none. */
   var REACH_BOX = { w: 3000, h: 2000 };
 
   /* Chromatic aberration (lateral/transverse): the red and blue images are magnified about the optical centre relative to
@@ -492,9 +490,9 @@
       angle: ANG(0, 'Shift angle'),
       center: PT(0.5, 0.5, 'Optical centre')
     },
-    radius: function (p, scale) {
+    radius: function (p, scale, box) {
       if (!p.redCyan && !p.blueYellow && !p.shift) return 0;
-      var R = farCorner(REACH_BOX, p.center), k = Math.max(Math.abs(p.redCyan), Math.abs(p.blueYellow)) / 100 * 0.012;
+      var R = farCorner(box && box.w ? box : REACH_BOX, p.center), k = Math.max(Math.abs(p.redCyan), Math.abs(p.blueYellow)) / 100 * 0.012;
       return Math.ceil((k * 1.4 * R * Math.pow(1.5, p.falloff - 1) + Math.abs(p.shift) * 1.4) * scale) + 2;
     },
     passes: function (g, p) {
@@ -578,7 +576,7 @@
       edges: CH(opts([['transparent', 'Transparent'], ['extend', 'Extend']]), 'transparent', 'Edges'),
       center: PT(0.5, 0.5, 'Centre')
     },
-    radius: function (p, scale) { if (!p.amount) return 0; var k = -p.amount / 100 * 0.3, s = p.autoScale ? CR.distortScale(k) : 1; return Math.ceil(distortMax(k, s) * farCorner(REACH_BOX, p.center) * scale) + 2; },
+    radius: function (p, scale, box) { if (!p.amount) return 0; var k = -p.amount / 100 * 0.3, s = p.autoScale ? CR.distortScale(k) : 1; return Math.ceil(distortMax(k, s) * farCorner(box && box.w ? box : REACH_BOX, p.center) * scale) + 2; },
     passes: function (g, p) {
       if (!p.amount) return;
       var k = -p.amount / 100 * 0.3, s = p.autoScale ? CR.distortScale(k) : 1;
@@ -903,7 +901,7 @@
   reg({
     id: 'radial-blur', name: 'Radial blur', group: 'blur', version: 1, space: 'linear',
     params: { amount: N(0, 100, 0, 0.5, 'Amount'), mode: CH(opts([['zoom', 'Zoom'], ['spin', 'Spin']]), 'zoom', 'Method'), center: PT(0.5, 0.5, 'Centre') },
-    radius: function (p, scale) { return p.amount > 0 ? Math.ceil(radialSpread(p) * 0.5 * farCorner(REACH_BOX, p.center) * scale) + 3 : 0; },
+    radius: function (p, scale, box) { return p.amount > 0 ? Math.ceil(radialSpread(p) * 0.5 * farCorner(box && box.w ? box : REACH_BOX, p.center) * scale) + 3 : 0; },
     passes: function (g, p) {
       if (!(p.amount > 0)) return;
       var s = radialSpread(p), Lt = s * farCorner(g.box, p.center) * g.scale, k = combPasses(Lt), n = 10, cur = g.source;
@@ -1627,7 +1625,7 @@
   reg({
     id: 'sun-rays', name: 'Sun rays', group: 'effects', version: 1, space: 'linear',
     params: { amount: N(0, 100, 0, 1, 'Amount'), position: PT(0.5, 0.15, 'Light position'), threshold: N(0, 1, 0.7, 0.01, 'Threshold'), length: N(5, 100, 50, 1, 'Length'), color: COL('#fff0d2', 'Tint') },
-    radius: function (p, scale) { return p.amount > 0 ? Math.ceil(p.length / 100 * farCorner(REACH_BOX, p.position) * scale) + 4 : 0; },
+    radius: function (p, scale, box) { return p.amount > 0 ? Math.ceil(p.length / 100 * farCorner(box && box.w ? box : REACH_BOX, p.position) * scale) + 4 : 0; },
     passes: function (g, p) {
       if (!(p.amount > 0)) return;
       var th = lin(p.threshold), pre = g.pass(PREFILTER, { u_th: [th, Math.max(th * 0.4, 0.01)] }, { scale: 0.5 });
