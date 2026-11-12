@@ -625,8 +625,13 @@
     if (patch.memoryGuard != null) s.memoryGuard = !!patch.memoryGuard;
     lsSet(KEY.limits, s);
     sendLimits();
+    syncKeepCount();
     emit('limits', limits());
     return limits();
+  }
+  /* The "versions kept" setting is the limit LE.project prunes to (not only what trimVersions enforces later). */
+  function syncKeepCount() {
+    try { if (window.LE && LE.project && typeof LE.project.setKeepCount === 'function') LE.project.setKeepCount(limits().versions); } catch (e) {}
   }
   function sendLimits() {
     var c = sw();
@@ -1562,6 +1567,7 @@
     if (/[?&]storage=1(&|$)/.test(location.search) || location.hash === '#storage') openStorage();
   }
   function boot() {
+    syncKeepCount();
     refreshInstall();
     syncThemeColor();
     wrapAssets();

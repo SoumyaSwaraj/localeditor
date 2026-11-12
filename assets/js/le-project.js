@@ -166,9 +166,14 @@
   }
 
   /* ---------- Projects ---------- */
+  /* Designs deleted in this page session. An editor can still hold a deleted design (a debounced autosave, or one
+     already waiting on its thumbnail); its late write must not bring the design back. Import revives on purpose. */
+  var removed = {};
   function save(project, opts) {
     opts = opts || {};
     if (!project || !project.id) return Promise.reject(new Error('No project to save.'));
+    if (opts.revive) delete removed[project.id];
+    if (removed[project.id]) return Promise.resolve(null);
     project.updatedAt = now();
     var json = JSON.stringify(project);
     var page = project.pages && project.pages[project.activePage || 0];
@@ -179,9 +184,11 @@
     };
     var keep = opts.thumb ? Promise.resolve(opts.thumb) : get('projects', project.id).then(function (old) { return old ? old.thumb : null; }, function () { return null; });
     return keep.then(function (thumb) {
+      if (removed[project.id]) return null;
       rec.thumb = thumb || null;
       return put('projects', rec);
-    }).then(function () {
+    }).then(function (r) {
+      if (r === null) return null;
       if (opts.created) log('created', project.id, { name: project.name });
       return rec;
     });
@@ -225,6 +232,7 @@
     });
   }
   function remove(id) {
+    if (id) removed[id] = true;
     return byProject('versions', id).then(function (vs) {
       return Promise.all((vs || []).map(function (v) { return del('versions', v.id); }));
     }).then(function () { return del('projects', id); }).then(function () {
@@ -277,9 +285,24 @@
   }
 
   /* ---------- Versions ---------- */
-  function keepCount() { var l = level(); return l === 'high' ? 30 : l === 'mid' ? 20 : 10; }
+  /* Automatic versions kept per design: the person's setting (storage manager, via setKeepCount) when given,
+     else a default from the performance level. Named versions are never pruned. */
+  var keepOverride = null;
+  function keepCount() {
+    if (keepOverride != null) return keepOverride;
+    var l = level();
+    return l === 'high' ? 30 : l === 'mid' ? 20 : 10;
+  }
+  function setKeepCount(n) {
+    if (n == null) { keepOverride = null; return keepCount(); }
+    var v = Math.round(Number(n));
+    if (!isFinite(v)) return keepCount();
+    keepOverride = Math.max(1, Math.min(200, v));
+    return keepOverride;
+  }
   function snapshot(id, label, opts) {
     opts = opts || {};
+    if (removed[id]) return Promise.resolve(null);
     var source = opts.project ? Promise.resolve({ doc: clone(opts.project), thumb: opts.thumb || null }) : get('projects', id);
     return source.then(function (rec) {
       if (!rec) throw new Error('Save the design first.');
@@ -951,7 +974,7 @@
           project.id = uid('d');
           project.name = project.name + ' (imported)';
         }
-        return save(project, { thumb: res.thumb });
+        return save(project, { thumb: res.thumb, revive: true });
       }).then(function () {
         log('imported', project.id, { warnings: res.warnings.length });
         project.warnings = res.warnings;
@@ -964,8 +987,10 @@
     SCHEMA: SCHEMA, VERSION: VERSION, LIMITS: LIMITS,
     create: create, blankPage: blankPage, hash: hash, fingerprint: fingerprint, assetIds: assetIds,
     list: list, open: open, save: save, rename: rename, duplicate: duplicate, remove: remove,
-    snapshot: snapshot, versions: versions, restore: restore, ledger: ledger, log: log, usage: usage, gc: gc, brandKit: brandKit, saveBrandKit: saveBrandKit,
+    snapshot: snapshot, versions: versions, keepCount: keepCount, setKeepCount: setKeepCount, restore: restore, ledger: ledger, log: log, usage: usage, gc: gc, brandKit: brandKit, saveBrandKit: saveBrandKit,
     putAsset: putAsset, getAsset: getAsset, assetRecord: assetRecord, assets: assets,
     validate: validate, sanitizeSvg: sanitizeSvg, exportFile: exportFile, readFile: readFile, importFile: importFile
   };
+  /* The storage manager may have loaded first; take its "versions kept" setting now (it calls setKeepCount on change). */
+  try { if (window.LEPwa && typeof LEPwa.limits === 'function') setKeepCount(LEPwa.limits().versions); } catch (e) { /* defaults stand */ }
 })();

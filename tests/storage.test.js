@@ -108,7 +108,7 @@ cases['clears a cache category from the UI after a confirmation'] = async ({ bro
   await page.click('[data-lp-clear=packs]');
   await page.waitForSelector('dialog.lp-confirm[open]');
   await page.click('dialog.lp-confirm [data-yes]');
-  await page.waitForFunction(() => caches.open('le-assets-v1').then((c) => c.keys()).then((k) => k.length === 0));
+  await h.waitForAsync(page, () => caches.open('le-assets-v1').then((c) => c.keys()).then((k) => k.length === 0));
   const r = await report(page);
   h.assert.equal(r.packs.bytes, 0, 'packs cleared');
   h.assert(r.fonts.bytes > 0 && r.models.bytes > 0, 'other categories untouched');
@@ -125,6 +125,27 @@ cases['trims version history to the last N per design and keeps named versions']
   const left = await page.evaluate((id) => window.LE.project.versions(id).then((v) => ({ n: v.length, named: v.filter((x) => x.kind === 'checkpoint').length })), s.id);
   h.assert.equal(left.n, 6, 'five automatic + one named remain');
   h.assert.equal(left.named, 1, 'the named version is kept');
+};
+
+cases['the "versions kept" setting is the limit LE.project prunes to (setKeepCount)'] = async ({ browser, base, h }) => {
+  const page = await h.open(browser, base, '/', 'desktop');
+  await page.waitForFunction(() => window.LEPwa);
+  await page.evaluate(() => window.LEPwa.setLimits({ versions: 50 }));
+  const s = await seed(page, { versions: 40 });
+  const r = await page.evaluate(async (id) => {
+    const P = window.LE.project;
+    const kept50 = (await P.versions(id)).length;
+    window.LEPwa.setLimits({ versions: 3 });
+    const keep = P.keepCount();
+    await P.snapshot(id, '');
+    const v = await P.versions(id);
+    return { kept50, keep, n: v.length, named: v.filter((x) => x.kind === 'checkpoint').length };
+  }, s.id);
+  h.assert.equal(r.kept50, 41, 'a limit of 50 keeps all 40 automatic versions (the old built-in cap was 30)');
+  h.assert.equal(r.keep, 3, 'setLimits passes the setting to LE.project');
+  h.assert.equal(r.n, 4, 'three automatic + one named after the next snapshot');
+  h.assert.equal(r.named, 1, 'the named version is kept');
+  await page.evaluate(() => window.LEPwa.setLimits({ versions: 30 }));
 };
 
 cases['free up space previews, then removes only safe things'] = async ({ browser, base, h }) => {
@@ -190,7 +211,7 @@ cases['erase everything (double confirmation) leaves this browser empty'] = asyn
   await page.fill('dialog.lp-confirm input', 'erase');
   await Promise.all([page.waitForURL(/erased=1/, { timeout: 15000 }), page.click('dialog.lp-confirm [data-yes]')]);
   await page.waitForLoadState('networkidle');
-  await page.waitForFunction(() => !indexedDB.databases || indexedDB.databases().then((l) => !l.some((d) => d.name === 'le-projects')), null, { timeout: 5000 }).catch(() => {});
+  await h.waitForAsync(page, () => !indexedDB.databases || indexedDB.databases().then((l) => !l.some((d) => d.name === 'le-projects')), null, 5000).catch(() => {});
   const left = await page.evaluate(async () => ({
     caches: await caches.keys(),
     ls: Object.keys(localStorage),
