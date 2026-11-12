@@ -469,6 +469,8 @@
     }
     if (sharp) steps.push({ operation: 'sharpen', parameters: { amount: sharp } });
     if (a.blur && !skipBlur) steps.push({ operation: 'blur', parameters: { radius: a.blur, type: 'gaussian' } });
+    /* Fade, clarity, split tone and levels (recipe format 1.1), in the same place the file pipeline runs them. */
+    if (LE.recipes && typeof LE.recipes.lookExtSteps === 'function') steps = steps.concat(LE.recipes.lookExtSteps(a) || []);
     if (layer.removeBg && (layer.removeBg.color || layer.removeBg.tolerance != null)) {
       steps.push({ operation: 'background', parameters: { color: layer.removeBg.color || '#ffffff', tolerance: layer.removeBg.tolerance == null ? 28 : layer.removeBg.tolerance } });
     }
@@ -3758,6 +3760,7 @@
   };
 
   LE.Scene = Scene;
+  LE.Scene.EXTENDED_ADJUST = true;
   LE.Scene.blank = blank;
   LE.Scene.backgroundSpec = bgSpec;
   LE.Scene.backgroundPlacement = function (bg, W, H, sw, sh) { return bgPlace(bgSpec(bg), W, H, sw, sh); };

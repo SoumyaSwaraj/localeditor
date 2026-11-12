@@ -14,7 +14,8 @@
   var BAD_KEYS = { __proto__: 1, constructor: 1, prototype: 1 };
   var IMAGE_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif', 'image/avif': 'avif', 'image/bmp': 'bmp' };
   var BLENDS = ['source-over', 'normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'];
-  var ADJUST_KEYS = ['brightness', 'contrast', 'saturation', 'warmth', 'temperature', 'tint', 'exposure', 'highlights', 'shadows', 'vibrance', 'sharpness', 'blur', 'vignette', 'grain', 'hue'];
+  var ADJUST_KEYS = ['brightness', 'contrast', 'saturation', 'warmth', 'temperature', 'tint', 'exposure', 'highlights', 'shadows', 'vibrance', 'sharpness', 'blur', 'vignette', 'grain', 'hue',
+    'fade', 'clarity', 'splitShadowHue', 'splitShadowAmount', 'splitHighlightHue', 'splitHighlightAmount', 'splitBalance', 'black', 'white', 'gamma'];
 
   function now() { return Date.now(); }
   function uid(p) { return (p || 'p') + now().toString(36) + Math.random().toString(36).slice(2, 8); }
@@ -419,6 +420,21 @@
     return { id: id, label: label, photo: photo };
   }
   function bool(v) { return v === true; }
+  /* The applied-recipe note on a photo: what the recipe added, so it can be removed or re-tuned later. */
+  function lookFilter(f) {
+    return f && typeof f === 'object' && typeof f.name === 'string' && /^[a-z-]{1,30}$/.test(f.name) ? { name: f.name, intensity: clamp(num(f.intensity, 100), 0, 100) } : null;
+  }
+  function recipeMarker(m) {
+    if (!m || typeof m !== 'object' || Array.isArray(m) || typeof m.id !== 'string' || !/^[\w.-]{1,80}$/.test(m.id)) return null;
+    var out = { id: m.id, name: str(m.name, 120).replace(/[<>]/g, ''), strength: clamp(num(m.strength, 75), 0, 200), add: {}, prev: {}, filter: m.filter === true, prevFilter: lookFilter(m.prevFilter) };
+    ADJUST_KEYS.forEach(function (k) {
+      if (m.add && typeof m.add === 'object' && m.add[k] != null && isFinite(Number(m.add[k]))) out.add[k] = clamp(Number(m.add[k]), -2000, 2000);
+      if (m.prev && typeof m.prev === 'object' && Object.prototype.hasOwnProperty.call(m.prev, k)) {
+        out.prev[k] = m.prev[k] == null || !isFinite(Number(m.prev[k])) ? null : clamp(Number(m.prev[k]), -1000, 1000);
+      }
+    });
+    return out;
+  }
   function oneOf(v, list, d) { return list.indexOf(v) >= 0 ? v : d; }
   function safeColor(v) {
     if (typeof v !== 'string') return null;
@@ -532,6 +548,8 @@
       l.adjust = {};
       var a = src.adjust && typeof src.adjust === 'object' ? src.adjust : {};
       ADJUST_KEYS.forEach(function (k) { if (a[k] != null && isFinite(Number(a[k]))) l.adjust[k] = clamp(Number(a[k]), -1000, 1000); });
+      var recipeMark = recipeMarker(a.recipe);
+      if (recipeMark) l.adjust.recipe = recipeMark;
       l.filter = src.filter && typeof src.filter.name === 'string' && /^[a-z-]{1,30}$/.test(src.filter.name) ? { name: src.filter.name, intensity: clamp(num(src.filter.intensity, 100), 0, 100) } : null;
       l.removeBg = src.removeBg && typeof src.removeBg === 'object' ? { color: safeColor(src.removeBg.color) || '#ffffff', tolerance: clamp(num(src.removeBg.tolerance, 28), 0, 255) } : null;
     } else if (l.type === 'text') {

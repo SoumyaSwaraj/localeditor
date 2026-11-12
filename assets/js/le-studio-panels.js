@@ -980,7 +980,12 @@
         body.appendChild(s);
       });
       var row = c.h('<div class="sx-row-between"></div>');
-      row.appendChild(btn(c, 'Reset adjustments', 'reset', 'btn btn-ghost btn-sm', function () { c.patch(id, { adjust: {} }); c.renderPanel(true); }));
+      row.appendChild(btn(c, 'Reset adjustments', 'reset', 'btn btn-ghost btn-sm', function () {
+        /* Patches merge, so an empty object would change nothing: clear each key that is set. */
+        var cur = (c.scene.layer(id) || {}).adjust || {}, cleared = {};
+        Object.keys(cur).forEach(function (k) { cleared[k] = null; });
+        c.patch(id, { adjust: cleared }); c.renderPanel(true);
+      }));
       row.appendChild(btn(c, 'Filters', 'filters', 'btn btn-ghost btn-sm', function () { c.openPanel('filters'); }));
       body.appendChild(row);
       body.appendChild(note(c, 'Edits are live and non-destructive. Double-click a slider label to reset it.'));
