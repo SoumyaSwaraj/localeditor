@@ -7,7 +7,7 @@
 
   /* Maker files under assets/js/makers/, loaded on first use by LE.makers.ready(). Add yours here. */
   var FILES = ['quote', 'review', 'receipt', 'milestone', 'palette', 'film',
-    'payposter', 'wifisign', 'qrinvite', 'eventkit', 'movieposter', 'albumcover', 'frontpage'];
+    'payposter', 'wifisign', 'qrinvite', 'eventkit', 'movieposter', 'albumcover', 'frontpage', 'appshots'];
 
   var SIZES = {
     square: { id: 'square', name: 'Square', w: 1080, h: 1080 },
