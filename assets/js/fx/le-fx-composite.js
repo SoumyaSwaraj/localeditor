@@ -887,7 +887,7 @@
         u_this: [lo, Math.max(lo, p.thisLo1), Math.min(hi, p.thisHi0), hi], u_under: [ulo, Math.max(ulo, p.underLo1), Math.min(uhi, p.underHi0), uhi] });
     },
     support: GPU,
-    ui: { section: 'Compositing', order: 50, controls: ['mode', 'fill', { heading: 'Blend if' }, 'channel', { control: 'line', params: ['thisLo0', 'thisLo1'], label: 'This layer: shadows' }, { control: 'line', params: ['thisHi0', 'thisHi1'], label: 'This layer: highlights' }, { control: 'line', params: ['underLo0', 'underLo1'], label: 'Underlying: shadows' }, { control: 'line', params: ['underHi0', 'underHi1'], label: 'Underlying: highlights' }, { param: 'seed', when: { mode: 'dissolve' } }] },
+    ui: { section: 'Compositing', order: 50, controls: ['mode', 'fill', { heading: 'Blend if' }, 'channel', { heading: 'This layer' }, 'thisLo0', 'thisLo1', 'thisHi0', 'thisHi1', { heading: 'Underlying layer' }, 'underLo0', 'underLo1', 'underHi0', 'underHi1', { param: 'seed', when: { mode: 'dissolve' } }] },
     agent: {
       summary: 'The full professional blend-mode set (27 modes, including vivid, linear and pin light, hard mix, subtract, divide, darker/lighter colour) blended onto the pixels behind the layer, with fill opacity and blend-if ranges for this layer and the underlying pixels (0–255, split for a soft transition). Draw time.',
       tips: ['Leave the layer\'s own blend at normal when using this, or the two blends stack.', 'Drop a texture only into the dark parts of the background: underLo0 0, underLo1 0, underHi0 90, underHi1 150.', 'Remove a white backdrop from a scanned logo: mode multiply, or thisHi0 200, thisHi1 250.', 'Fill applies to the layer pixels and its layer-stage effects together here (see the report on fill vs opacity).'],
