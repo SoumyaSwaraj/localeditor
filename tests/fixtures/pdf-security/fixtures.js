@@ -148,7 +148,8 @@
       'BT /' + f1 + ' 12 Tf 60 520 Td (UNDER-IMAGE-ECHO) Tj ET',
       'q 200 0 0 150 50 470 cm /' + imName + ' Do Q',
       '/OC /OC1 BDC BT /' + f1 + ' 12 Tf 50 420 Td (LAYER-SECRET-FOXTROT) Tj ET EMC',
-      'BT /' + f1 + ' 12 Tf 0 g 50 380 Td (Normal visible body text stays.) Tj ET'
+      'BT /' + f1 + ' 12 Tf 0 g 50 380 Td (Normal visible body text stays.) Tj ET',
+      'BT /' + f1 + ' 12 Tf 50 340 Td (FAKE-BLACKOUT-ZETA) Tj ET 0 g 46 334 170 18 re f'
     ].join('\n');
     addContent(doc, p1, content);
     await img.embed();
@@ -310,6 +311,90 @@
     image: { page: 0, x: 330, y: 841.89 - 710, w: 80, h: 60 }
   };
 
+  /* ---------- locked.pdf: RC4 40-bit (R2) with an empty user password and an owner password ---------- */
+  function md5(bytes) {
+    var K = [], r = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21];
+    for (var i = 0; i < 64; i++) K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296) >>> 0;
+    var n = bytes.length, total = ((n + 8) >> 6) + 1, words = new Uint32Array(total * 16);
+    for (i = 0; i < n; i++) words[i >> 2] |= bytes[i] << ((i % 4) * 8);
+    words[n >> 2] |= 0x80 << ((n % 4) * 8);
+    words[total * 16 - 2] = (n * 8) >>> 0;
+    words[total * 16 - 1] = Math.floor(n / 536870912) >>> 0;
+    var a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+    for (var blk = 0; blk < total; blk++) {
+      var A = a0, B = b0, C = c0, D = d0;
+      for (var j = 0; j < 64; j++) {
+        var F, g;
+        if (j < 16) { F = (B & C) | (~B & D); g = j; }
+        else if (j < 32) { F = (D & B) | (~D & C); g = (5 * j + 1) % 16; }
+        else if (j < 48) { F = B ^ C ^ D; g = (3 * j + 5) % 16; }
+        else { F = C ^ (B | ~D); g = (7 * j) % 16; }
+        var tmp = D; D = C; C = B;
+        var x = (A + F + K[j] + words[blk * 16 + g]) >>> 0;
+        var sft = r[(j >> 4) * 4 + (j % 4)];
+        B = (B + ((x << sft) | (x >>> (32 - sft)))) >>> 0;
+        A = tmp;
+      }
+      a0 = (a0 + A) >>> 0; b0 = (b0 + B) >>> 0; c0 = (c0 + C) >>> 0; d0 = (d0 + D) >>> 0;
+    }
+    var out = new Uint8Array(16);
+    [a0, b0, c0, d0].forEach(function (v, k) { for (var q = 0; q < 4; q++) out[k * 4 + q] = (v >>> (q * 8)) & 255; });
+    return out;
+  }
+  function rc4(key, data) {
+    var S0 = new Uint8Array(256), i, j = 0, t;
+    for (i = 0; i < 256; i++) S0[i] = i;
+    for (i = 0; i < 256; i++) { j = (j + S0[i] + key[i % key.length]) & 255; t = S0[i]; S0[i] = S0[j]; S0[j] = t; }
+    var out = new Uint8Array(data.length); i = 0; j = 0;
+    for (var k = 0; k < data.length; k++) { i = (i + 1) & 255; j = (j + S0[i]) & 255; t = S0[i]; S0[i] = S0[j]; S0[j] = t; out[k] = data[k] ^ S0[(S0[i] + S0[j]) & 255]; }
+    return out;
+  }
+  var PAD = new Uint8Array([0x28, 0xBF, 0x4E, 0x5E, 0x4E, 0x75, 0x8A, 0x41, 0x64, 0x00, 0x4E, 0x56, 0xFF, 0xFA, 0x01, 0x08, 0x2E, 0x2E, 0x00, 0xB6, 0xD0, 0x68, 0x3E, 0x80, 0x2F, 0x0C, 0xA9, 0xFE, 0x64, 0x53, 0x69, 0x7A]);
+  function hexOf(b) { var s = ''; for (var i = 0; i < b.length; i++) s += ('0' + b[i].toString(16)).slice(-2); return s; }
+  async function locked() {
+    var P = L();
+    var doc = await P.PDFDocument.create({ updateMetadata: false });
+    doc.setTitle('LOCKED-TITLE-KAPPA');
+    doc.setAuthor('LOCKED-AUTHOR-MU');
+    var font = await doc.embedFont(P.StandardFonts.Helvetica);
+    var page = doc.addPage([595.28, 841.89]);
+    page.drawText('A locked file', { x: 50, y: 760, size: 18, font: font });
+    var ctx = doc.context;
+    var note = ctx.register(ctx.obj({ Type: 'Annot', Subtype: 'Text', Rect: [300, 700, 320, 720], T: S('LOCKED-AUTHOR-MU'), Contents: S('LOCKED-NOTE-LAMBDA') }));
+    page.node.set(N('Annots'), ctx.obj([note]));
+    var id = new Uint8Array(16); for (var q = 0; q < 16; q++) id[q] = q * 13 + 7;
+    var ownerKey = md5(concat([te('owner'), PAD]).subarray(0, 32)).subarray(0, 5);
+    var O = rc4(ownerKey, PAD);
+    var perm = -3904;
+    var pb = new Uint8Array([perm & 255, (perm >> 8) & 255, (perm >> 16) & 255, (perm >> 24) & 255]);
+    var key = md5(concat([PAD, O, pb, id])).subarray(0, 5);
+    var U = rc4(key, PAD);
+    function objKey(ref) {
+      var n = ref.objectNumber, g = ref.generationNumber;
+      return md5(concat([key, new Uint8Array([n & 255, (n >> 8) & 255, (n >> 16) & 255, g & 255, (g >> 8) & 255])])).subarray(0, 10);
+    }
+    function encValue(v, k) {
+      if (v instanceof P.PDFString || v instanceof P.PDFHexString) return P.PDFHexString.of(hexOf(rc4(k, v.asBytes())));
+      if (v instanceof P.PDFArray) { for (var i = 0; i < v.size(); i++) v.set(i, encValue(v.get(i), k)); return v; }
+      if (v instanceof P.PDFDict) { v.entries().forEach(function (kv) { v.set(kv[0], encValue(kv[1], k)); }); return v; }
+      return v;
+    }
+    await doc.flush();
+    ctx.enumerateIndirectObjects().forEach(function (kv) {
+      var ref = kv[0], obj = kv[1], k = objKey(ref);
+      if (obj instanceof P.PDFStream) {
+        encValue(obj.dict, k);
+        var raw = obj.getContents();
+        var ns = P.PDFRawStream.of(obj.dict, rc4(k, raw));
+        ctx.assign(ref, ns);
+      } else encValue(obj, k);
+    });
+    var enc = ctx.register(ctx.obj({ Filter: 'Standard', V: 1, R: 2, O: P.PDFHexString.of(hexOf(O)), U: P.PDFHexString.of(hexOf(U)), P: perm }));
+    ctx.trailerInfo.Encrypt = enc;
+    ctx.trailerInfo.ID = ctx.obj([P.PDFHexString.of(hexOf(id)), P.PDFHexString.of(hexOf(id))]);
+    return doc.save({ useObjectStreams: false, updateFieldAppearances: false });
+  }
+
   /* Hostile and malformed inputs. */
   async function hostile() {
     var out = {};
@@ -326,6 +411,15 @@
       '4 0 obj\n<< /Kids [4 0 R] >>\nendobj\n5 0 obj\n<< /S /JavaScript /JS (x) /Next 5 0 R >>\nendobj\n6 0 obj\n<< /T (a) /Kids [6 0 R] >>\nendobj\n' +
       '7 0 obj\n<< /Subtype /Link /Rect [0 0 1 1] /A 5 0 R /Popup 7 0 R >>\nendobj\n' +
       'xref\n0 1\n0000000000 65535 f \ntrailer\n<< /Root 1 0 R /Size 8 /Prev 9 >>\nstartxref\n9\n%%EOF\n');
+    /* A drawing stream that inflates to 64 MB of spaces: decoding must stop at the cap, not exhaust memory. */
+    var zeros = new Uint8Array(64 * 1024 * 1024).fill(32);
+    var cs = new Blob([zeros]).stream().pipeThrough(new CompressionStream('deflate'));
+    var packed = new Uint8Array(await new Response(cs).arrayBuffer());
+    var bdoc = await L().PDFDocument.create();
+    var bp = bdoc.addPage([200, 200]);
+    var bomb = bdoc.context.stream(packed, { Filter: 'FlateDecode' });
+    bp.node.set(N('Contents'), bdoc.context.register(bomb));
+    out.bomb = await bdoc.save();
     out.badXref = te('%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] >>\nendobj\nxref\n0 4\nGARBAGE\ntrailer\n<< /Root 1 0 R /Size 4 >>\nstartxref\n999999\n%%EOF\n');
     return out;
   }
@@ -335,7 +429,7 @@
   }
 
   global.SecFixtures = {
-    all: all, reveal: reveal, revisions: revisions, active: active, sensitive: sensitive, redact: redact, hostile: hostile,
+    all: all, reveal: reveal, revisions: revisions, active: active, sensitive: sensitive, redact: redact, hostile: hostile, locked: locked,
     appendUpdate: appendUpdate, jpegWithExif: jpegWithExif, aadhaar: aadhaar, SENSITIVE_LINES: SENSITIVE_LINES, REDACT_BOXES: REDACT_BOXES
   };
 })(window);

@@ -61,7 +61,7 @@
 
   function friendlyError(e) {
     var m = e && e.message ? String(e.message) : String(e || 'Unknown problem');
-    if (e && e.code === 'timeout') return m;
+    if (e && (e.code === 'timeout' || e.code === 'encrypted' || e.code === 'password')) return m;
     if (/password|encrypt/i.test(m)) return 'This PDF is locked with a password.';
     if (/No PDF header|Invalid PDF|not a PDF|Expected PDF/i.test(m)) return 'This does not look like a PDF file.';
     return 'The file could not be read: ' + clip(m, 120);
@@ -597,6 +597,12 @@
   }
   function overlaps(a, b, pad) { pad = pad || 0; return a[0] < b[2] + pad && a[2] > b[0] - pad && a[1] < b[3] + pad && a[3] > b[1] - pad; }
   function contains(outer, inner, pad) { pad = pad || 0.5; return inner[0] >= outer[0] - pad && inner[1] >= outer[1] - pad && inner[2] <= outer[2] + pad && inner[3] <= outer[3] + pad; }
+  /* Share of b's area that a covers. */
+  function coverage(a, b) {
+    var w = Math.min(a[2], b[2]) - Math.max(a[0], b[0]), h = Math.min(a[3], b[3]) - Math.max(a[1], b[1]);
+    var area = Math.max(1e-6, (b[2] - b[0]) * (b[3] - b[1]));
+    return w > 0 && h > 0 ? (w * h) / area : 0;
+  }
   function union(a, b) { return a ? [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])] : b.slice(); }
   function argNums(args) { return args.map(function (a) { return a && a.t === 'n' ? a.v : 0; }); }
   function isWhiteColor(c) {
@@ -849,7 +855,7 @@
           var c = items[j];
           if (c.hiddenLayer) continue;
           if ((c.kind === 'image' && c.opaque) || (c.kind === 'path' && c.fill && c.opaque && c.fill.space !== 'other')) {
-            if (contains(c.bbox, it.bbox, 1)) { why = c.kind === 'image' ? 'underImage' : 'underShape'; break; }
+            if (contains(c.bbox, it.bbox, 1) || coverage(c.bbox, it.bbox) >= 0.9) { why = c.kind === 'image' ? 'underImage' : 'underShape'; break; }
           }
         }
       }
@@ -1191,6 +1197,54 @@
     return { words: words, text: text.join('\n') };
   }
 
+  /* Encrypted files: pdf.js can read them when only an owner password is set (the common "no printing" lock).
+     It decrypts in its worker; nothing is run. Removal is not offered until the lock is taken off. */
+  async function inspectEncrypted(bytes, report, raw) {
+    var G = {};
+    Object.keys(GROUPS).forEach(function (k) { G[k] = group(k); G[k].removable = false; });
+    report.warnings.push('This file is locked with encryption. The details below were read, but they can only be removed once the lock is taken off.');
+    var pdf;
+    try { pdf = await openJs(bytes); }
+    catch (e) { var err = new Error('This PDF needs a password to open.'); err.code = 'password'; throw err; }
+    try {
+      report.pageCount = pdf.numPages;
+      var md = await pdf.getMetadata().catch(function () { return null; });
+      var info = (md && md.info) || {};
+      [['Title', 'Title'], ['Author', 'Author'], ['Subject', 'Subject'], ['Keywords', 'Keywords'], ['Creator', 'Made with'], ['Producer', 'Saved by'], ['CreationDate', 'Created'], ['ModDate', 'Last changed']].forEach(function (p) {
+        var v = info[p[0]];
+        if (v) G.info.items.push({ label: p[1], value: clip(/Date$/.test(p[0]) ? String(v).replace(/^D:(\d{4})(\d\d)(\d\d)(\d\d)?(\d\d)?.*/, '$1-$2-$3 $4:$5') : v, 200) });
+      });
+      if (md && md.metadata && md.metadata.getAll) { var all = md.metadata.getAll(); Object.keys(all).slice(0, 30).forEach(function (k) { G.xmp.items.push({ label: k, value: clip(String(all[k]), 160) }); }); }
+      var att = await pdf.getAttachments().catch(function () { return null; });
+      Object.keys(att || {}).forEach(function (k) { G.attachments.items.push({ label: att[k].filename || k, value: fmtBytes(att[k].content ? att[k].content.length : null) }); });
+      var fields = await pdf.getFieldObjects().catch(function () { return null; });
+      Object.keys(fields || {}).forEach(function (k) { (fields[k] || []).forEach(function (f) { if (f.value && f.value !== 'Off') G.forms.items.push({ label: clip(k, 80), value: '“' + clip(String(f.value), 120) + '”' }); }); });
+      for (var i = 1; i <= Math.min(pdf.numPages, 300); i++) {
+        var page = await pdf.getPage(i);
+        var annots = await page.getAnnotations().catch(function () { return []; });
+        annots.forEach(function (a) {
+          if (a.subtype === 'Link') { if (a.url) G.links.items.push({ label: clip(a.url, 120), value: 'page ' + i }); return; }
+          if (a.subtype === 'Widget' || a.subtype === 'Popup') return;
+          var body = (a.contentsObj && a.contentsObj.str) || '';
+          var by = (a.titleObj && a.titleObj.str) || '';
+          var kindName = { Text: 'Note', FreeText: 'Text box', Highlight: 'Highlight', Underline: 'Underline', StrikeOut: 'Strike-through', Ink: 'Drawing', Stamp: 'Stamp', Square: 'Box', Circle: 'Circle', FileAttachment: 'Attached file' }[a.subtype] || a.subtype || 'Mark';
+          G.comments.items.push({ label: kindName + ' on page ' + i, value: [body ? '“' + clip(body, 120) + '”' : '', by ? 'by ' + by : ''].filter(Boolean).join(' · ') || 'no text' });
+        });
+        page.cleanup();
+      }
+    } finally { try { pdf.destroy(); } catch (e) {} }
+    if (raw.revisions > 1) G.revisions.items.push({ label: 'Saved versions', value: String(raw.revisions) });
+    G.pages.items.push({ label: 'Pages', value: String(report.pageCount) });
+    var order = ['info', 'xmp', 'attachments', 'forms', 'comments', 'revisions', 'links', 'pages'];
+    report.groups = order.map(function (k) { var g = G[k]; g.count = g.items.length; return g; });
+    report.counts = {};
+    report.groups.forEach(function (g) { report.counts[g.id] = g.count; });
+    var n = report.groups.filter(function (g) { return g.id !== 'pages'; }).reduce(function (a, g) { return a + g.count; }, 0);
+    report.findingCount = n;
+    report.summary = n ? 'This locked PDF carries ' + plural(n, 'detail') + ' you might not mean to share. Remove the lock to clean them.' : 'Nothing hidden could be read in this locked PDF.';
+    return report;
+  }
+
   async function inspectBytes(bytes, opts) {
     opts = opts || {};
     var started = now();
@@ -1201,9 +1255,7 @@
     Object.keys(GROUPS).forEach(function (k) { G[k] = group(k); });
     var report = { ok: true, encrypted: L.encrypted, version: latin1(bytes, raw.headerAt + 5, raw.headerAt + 8), byteSize: bytes.length, pageCount: 0, groups: [], warnings: [], revisions: raw.revisions };
 
-    if (L.encrypted) {
-      report.warnings.push('This file is locked with encryption. Text inside it is scrambled, so some details cannot be read until the lock is removed.');
-    }
+    if (L.encrypted) return inspectEncrypted(bytes, report, raw);
 
     /* Info dictionary */
     var info = deref(ctx, ctx.trailerInfo.Info);
@@ -2212,6 +2264,82 @@
     try { clean(af, 'Fields'); } catch (e) {}
   }
 
+
+  /* "Keep text selectable" redaction for one page. Supported only when everything a box touches is plain text
+     drawn directly by the page in a font whose widths we know: those glyphs are removed and replaced by equal
+     spacing, and a black box is drawn on top. Anything else under a box (pictures, drawings, form drawings,
+     Type 3 fonts, marked content with replacement text, unreadable streams) returns { ok: false } and the page
+     is rebuilt as a picture instead. */
+  /* A painted path that is one rectangle or one straight line reveals nothing but itself (backgrounds, table lines). */
+  function plainShape(ops, item) {
+    if (item.from < 0 || item.from > item.op) return false;
+    var list = ops.slice(item.from, item.op).map(function (o) { return o.op; }).filter(function (n) { return n !== 'h'; });
+    return (list.length === 1 && list[0] === 're') || (list.length === 2 && list[0] === 'm' && list[1] === 'l');
+  }
+  async function redactPageVector(ctx, doc, pg, vp1, rects, ocOff, fonts, label) {
+    var env = await readPage(ctx, pg, ocOff, { fonts: fonts });
+    if (env.unparsed) return { ok: false, reason: 'part of the page could not be read' };
+    var boxes = rects.map(function (r) {
+      var a = vp1.convertToPdfPoint(r.x, r.y), b = vp1.convertToPdfPoint(r.x + r.w, r.y + r.h);
+      return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])];
+    });
+    function hit(bb) { for (var i = 0; i < boxes.length; i++) if (overlaps(bb, boxes[i], 0.5)) return true; return false; }
+    var res = deref(ctx, pg.inherit.Resources);
+    var props = get(ctx, res, 'Properties');
+    var page = env.streams.page;
+    if (!page) return { ok: false, reason: 'the page has no drawing' };
+    for (var oi = 0; oi < page.ops.length; oi++) {
+      var o = page.ops[oi];
+      if (o.op !== 'BDC') continue;
+      var pd = o.args[1];
+      var keys = pd && pd.t === 'd' ? Object.keys(pd.v) : pd && pd.t === 'name' && isDict(get(ctx, props, pd.v)) ? get(ctx, props, pd.v).keys().map(function (k) { return k.decodeText(); }) : [];
+      if (keys.some(function (k) { return k === 'ActualText' || k === 'Alt' || k === 'E'; })) return { ok: false, reason: 'the page carries replacement text for screen readers' };
+    }
+    var edits = [];
+    var depth = 0;
+    for (var i = 0; i < env.items.length; i++) {
+      var it = env.items[i];
+      if (!hit(it.bbox)) continue;
+      if (it.kind === 'path' && it.stream === 'page' && plainShape(page.ops, it)) continue;
+      if (it.kind !== 'text') return { ok: false, reason: 'a picture or drawing is under a box' };
+      if (it.stream !== 'page') return { ok: false, reason: 'text under a box is inside a shared drawing' };
+      if (!it.font || !it.font.supported || it.font.type3) return { ok: false, reason: 'text under a box uses a font that cannot be edited safely' };
+      if (!it.glyphs.some(function (g) { return hit(g.bbox); })) continue;
+      var ed = editFor(env, it, function (g) { return !hit(g.bbox); });
+      if (!ed) return { ok: false, reason: 'text under a box could not be removed exactly' };
+      edits.push(ed);
+    }
+    page.ops.forEach(function (op) { if (op.op === 'q') depth++; else if (op.op === 'Q' && depth > 0) depth--; });
+    var nb = applyEdits(page.bytes, edits);
+    var draw = 'Q\n'.repeat(depth) + 'Q\nq 0 g\n' + boxes.map(function (b) { return [b[0], b[1], b[2] - b[0], b[3] - b[1]].map(fmt).join(' ') + ' re'; }).join('\n') + '\nf\nQ\n';
+    var resDict = ownResources(ctx, pg);
+    if (label) {
+      var font = await doc.embedFont(P().StandardFonts.HelveticaBold);
+      var fd = deref(ctx, resDict.get(N('Font')));
+      if (!isDict(fd)) { fd = ctx.obj({}); resDict.set(N('Font'), fd); }
+      fd.set(N('LeRedactF'), font.ref);
+      var rot = pageRotate(ctx, pg);
+      rects.forEach(function (r, bi) {
+        var b = boxes[bi];
+        var bw = (rot % 180) ? b[3] - b[1] : b[2] - b[0], bh = (rot % 180) ? b[2] - b[0] : b[3] - b[1];
+        var size = Math.min(bh * 0.6, 12);
+        var text = r.label || label;
+        while (text.length > 1 && font.widthOfTextAtSize(text, size) > bw - 4) text = text.slice(0, -1);
+        if (size < 4 || text.length < 2) return;
+        var tw = font.widthOfTextAtSize(text, size);
+        var cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2;
+        var ang = -rot * Math.PI / 180, c = Math.cos(ang), sn = Math.sin(ang);
+        var ox = -tw / 2, oy = -size * 0.35;
+        var tx = cx + ox * c - oy * sn, ty = cy + ox * sn + oy * c;
+        var enc = font.encodeText(text).toString();
+        draw += 'q 1 g BT /LeRedactF ' + fmt(size) + ' Tf ' + [c, sn, -sn, c, tx, ty].map(fmt).join(' ') + ' Tm ' + enc + ' Tj ET Q\n';
+      });
+    }
+    var pre = ctx.register(ctx.stream('q\n'));
+    pg.dict.set(N('Contents'), ctx.obj([pre, ctx.register(ctx.flateStream(nb)), ctx.register(ctx.flateStream(draw))]));
+    return { ok: true, boxes: boxes, removedRuns: edits.length };
+  }
+
   async function redactBytes(bytes, marks, opts) {
     opts = opts || {};
     var dpi = Math.max(72, Math.min(400, +opts.dpi || 200));
@@ -2231,6 +2359,8 @@
       if (pages.length !== pdf.numPages) throw new Error('The page structure is unusual, so redaction stopped to be safe.');
       var removedWidgets = new Set();
       var annotsRemoved = 0;
+      var pageModes = {}, fallbacks = [];
+      var ocOff = offLayers(ctx, catalog), fontCache = new Map();
       for (var k = 0; k < pagesWith.length; k++) {
         var p = pagesWith[k];
         if (p < 0 || p >= pages.length) continue;
@@ -2240,6 +2370,28 @@
         var jsPage = await pdf.getPage(p + 1);
         var vp1 = vpMatrix(jsPage);
         var W = vp1.width, H = vp1.height;
+        if (opts.mode === 'searchable' && !(opts.forceImage && opts.forceImage.indexOf(p) >= 0)) {
+          var vr0 = await redactPageVector(ctx, doc, pg, vp1, rects, ocOff, fontCache, opts.label || '');
+          if (vr0.ok) {
+            var kept0 = [];
+            arr(ctx, get(ctx, pg.dict, 'Annots')).forEach(function (ar) {
+              var a0 = deref(ctx, ar);
+              if (!isDict(a0)) return;
+              var rc0 = nums(ctx, get(ctx, a0, 'Rect'));
+              var hitBox = rc0.length !== 4 || vr0.boxes.some(function (b) { return overlaps([Math.min(rc0[0], rc0[2]), Math.min(rc0[1], rc0[3]), Math.max(rc0[0], rc0[2]), Math.max(rc0[1], rc0[3])], b, 0.5); });
+              var st0 = nameOf(get(ctx, a0, 'Subtype'));
+              if (hitBox || st0 === 'Popup' && !isDict(get(ctx, a0, 'Parent'))) { if (st0 === 'Widget') removedWidgets.add(ar); annotsRemoved++; }
+              else kept0.push(ar);
+            });
+            if (kept0.length) pg.dict.set(N('Annots'), ctx.obj(kept0)); else pg.dict.delete(N('Annots'));
+            ['Thumb', 'PieceInfo', 'Metadata'].forEach(function (key) { pg.dict.delete(N(key)); });
+            pageModes[p] = 'searchable';
+            jsPage.cleanup();
+            continue;
+          }
+          fallbacks.push({ page: p, reason: vr0.reason });
+        }
+        pageModes[p] = 'image';
         var scale = dpi / 72;
         var edge = 9000, area = 60e6;
         if (W * scale > edge || H * scale > edge) scale = edge / Math.max(W, H);
@@ -2273,6 +2425,7 @@
         });
         ['Contents', 'Resources', 'Annots', 'CropBox', 'BleedBox', 'TrimBox', 'ArtBox', 'Thumb', 'PieceInfo', 'Metadata', 'StructParents', 'Group', 'B', 'AA', 'VP', 'SeparationInfo', 'PresSteps', 'Trans', 'UserUnit', 'AF', 'OutputIntents', 'DPart'].forEach(function (key) { pg.dict.delete(N(key)); });
         pg.dict.set(N('MediaBox'), ctx.obj([0, 0, W, H]));
+        pg.dict.set(N('CropBox'), ctx.obj([0, 0, W, H]));
         pg.dict.set(N('Rotate'), ctx.obj(0));
         pg.dict.set(N('Resources'), res);
         pg.dict.set(N('Contents'), ctx.register(ctx.flateStream('q ' + fmt(W) + ' 0 0 ' + fmt(H) + ' 0 0 cm /RedactedPage Do Q')));
@@ -2289,11 +2442,18 @@
       }
       var saved = await saveClean(doc);
       out = saved.bytes;
-      out.report = { ok: true, mode: 'image', dpi: dpi, pages: pagesWith, annotationsRemoved: annotsRemoved, captured: plan.strings.slice(), plan: plan, warnings: [] };
+      out.report = { ok: true, mode: opts.mode === 'searchable' ? 'searchable' : 'image', pageModes: pageModes, fallbacks: fallbacks, dpi: dpi, pages: pagesWith, annotationsRemoved: annotsRemoved, captured: plan.strings.slice(), plan: plan, warnings: [] };
     } finally { try { pdf.destroy(); } catch (e) {} }
     if (opts.onProgress) opts.onProgress(pagesWith.length, pagesWith.length, 'Checking');
-    out.report.verify = await verifyBytes(out, plan, { label: opts.label, original: index });
+    var searchablePages = Object.keys(pageModes).filter(function (k) { return pageModes[k] === 'searchable'; }).map(Number);
+    out.report.verify = await verifyBytes(out, plan, { label: opts.label, mode: searchablePages.length ? 'searchable' : 'image', searchablePages: searchablePages });
     out.report.ok = out.report.verify.ok;
+    /* Selectable pages that do not pass the check are rebuilt as pictures and checked again. */
+    if (!out.report.ok && searchablePages.length) {
+      var again = await redactBytes(bytes, marks, Object.assign({}, opts, { forceImage: searchablePages.concat(opts.forceImage || []) }));
+      again.report.retried = { pages: searchablePages, problems: out.report.verify.problems };
+      return again;
+    }
     return out;
   }
 
@@ -2322,12 +2482,14 @@
             var rc = sliceRect(it.g, it.edges[c], it.edges[c + 1]);
             if (/\S/.test(it.str[c]) && inRect(rects, rc.x + rc.w / 2, rc.y + rc.h / 2) >= 0) hit += it.str[c];
           }
+          var labelText = String(opts.label || '').replace(/\s+/g, '');
+          if (hit && labelText && labelText.indexOf(hit) >= 0) hit = '';
           if (hit) { underBox++; problems.push('Text is still under a box on page ' + (p + 1) + ': “' + clip(hit, 60) + '”.'); }
         });
         var flat = pg.text.replace(/\s+/g, ' ');
         plan.pages[p].strings.forEach(function (s) {
           if (s.length >= 2 && flat.indexOf(s.replace(/\s+/g, ' ')) >= 0 && !underBox) {
-            if (opts.mode === 'searchable') warnings.push('“' + clip(s, 40) + '” still appears elsewhere on page ' + (p + 1) + '.');
+            if (opts.searchablePages && opts.searchablePages.indexOf(p) >= 0) warnings.push('“' + clip(s, 40) + '” still appears elsewhere on page ' + (p + 1) + '.');
             else problems.push('“' + clip(s, 40) + '” can still be found on page ' + (p + 1) + '.');
           }
         });
@@ -2604,7 +2766,7 @@
     function outName(suffix) { return (PS.baseName ? PS.baseName(SEC.srcName || S.name || 'document') : 'document') + suffix + '.pdf'; }
 
     var SEC = {
-      view: 'home', marks: {}, drawing: false, hits: null, terms: '', dpi: 200, label: '', labelMode: 'none',
+      view: 'home', marks: {}, drawing: false, keepText: false, hits: null, terms: '', dpi: 200, label: '', labelMode: 'none',
       sendOpts: { flatten: true, removeLinks: false, compress: true }, docId: null,
       results: {}, pane: null, busy: false
     };
@@ -2827,10 +2989,10 @@
       if (!isPlain() && docIds().length === 1) pane.appendChild(el('p', 'ps-note', 'This checks the file as you opened it. Your changes in the studio are not part of it.'));
       var opts = res.opts = res.opts || API.scrubDefaults();
       var groups = el('div', 'sec-groups');
-      rep.groups.filter(function (g) { return g.removable && g.count; }).forEach(function (g) { groups.appendChild(groupView(g, opts, true)); });
+      rep.groups.filter(function (g) { return (g.removable || rep.encrypted) && g.count && g.id !== 'pages'; }).forEach(function (g) { groups.appendChild(groupView(g, opts, !rep.encrypted)); });
       pane.appendChild(groups);
       (rep.warnings || []).forEach(function (t) { pane.appendChild(el('p', 'ps-note ps-warn', ic('alert') + '<span>' + esc(t) + '</span>')); });
-      if (rep.findingCount) {
+      if (rep.findingCount && !rep.encrypted) {
         var go2 = button('btn btn-ink btn-block sec-run', ic('shield') + '<span>Remove all of this</span>', { 'data-sec-run': 'scrub' });
         go2.addEventListener('click', function () { doScrub(src, res); });
         pane.appendChild(go2);
@@ -3022,9 +3184,17 @@
         SEC.labelMode = v; SEC.label = v === 'redacted' ? 'REDACTED' : v === 'custom' ? labIn.value : ''; labIn.hidden = v !== 'custom'; refreshMarks();
       }, 'Label'));
       s2.appendChild(labIn);
-      s2.appendChild(el('div', 'ps-label', 'Quality of redacted pages'));
+      var how = el('p', 'ps-note');
+      function explain() {
+        how.textContent = SEC.keepText ?
+          'Where a box covers only plain text, those letters are deleted from the page and the rest of its text stays selectable. If a box covers a picture, a drawing or text that cannot be edited exactly, that page is rebuilt as a picture instead. Pages without boxes stay exactly as they are.' :
+          'Pages with a box are rebuilt as a picture of the page with the boxes burned in. Nothing under a box can be copied or recovered, but text on those pages can no longer be selected. Pages without boxes stay exactly as they are.';
+      }
+      s2.appendChild(toggleRow('Keep other text selectable', 'When the boxes only cover plain text', SEC.keepText, function (v) { SEC.keepText = v; explain(); }));
+      s2.appendChild(el('div', 'ps-label', 'Quality of pages rebuilt as pictures'));
       s2.appendChild(segmented([['150', 'Standard'], ['200', 'High'], ['300', 'Best']], String(SEC.dpi), function (v) { SEC.dpi = +v; }, 'Quality'));
-      s2.appendChild(el('p', 'ps-note', 'Pages with a box are rebuilt as a picture of the page with the boxes burned in. Nothing under a box can be copied or recovered, but text on those pages can no longer be selected. Pages without boxes stay exactly as they are.'));
+      explain();
+      s2.appendChild(how);
       pane.appendChild(s2);
 
       var go3 = button('btn btn-ink btn-block sec-run', ic('redact') + '<span>Redact and verify</span>', { 'data-sec-run': 'redact' });
@@ -3130,7 +3300,7 @@
           var list = SEC.marks[uidv];
           if (list && list.length) marks.push({ page: i, rects: list.map(function (m) { return { x: m.x, y: m.y, w: m.w, h: m.h }; }) });
         });
-        return API.redact(src.bytes, marks, { dpi: SEC.dpi, label: SEC.label, onProgress: progress });
+        return API.redact(src.bytes, marks, { dpi: SEC.dpi, label: SEC.label, mode: SEC.keepText ? 'searchable' : 'image', onProgress: progress });
       });
       if (!out) return;
       SEC.results.redact = out.length ? { bytes: out, report: out.report } : { error: out.report.error };
@@ -3143,6 +3313,17 @@
       card.setAttribute('data-verified', String(!!v.ok));
       w.appendChild(card);
       if (!v.ok) { var pl = el('ul', 'sec-problems'); v.problems.forEach(function (p) { pl.appendChild(el('li', null, esc(p))); }); w.appendChild(pl); }
+      var modes = res.report.pageModes || {};
+      var reasons = {};
+      (res.report.fallbacks || []).forEach(function (f) { reasons[f.page] = f.reason; });
+      if (res.report.retried) res.report.retried.pages.forEach(function (p) { reasons[p] = 'the first check was not clean'; });
+      var pm = Object.keys(modes).map(Number).sort(function (a, b) { return a - b; });
+      if (pm.length) {
+        w.appendChild(el('h4', 'sec-sub', 'Pages changed'));
+        w.appendChild(checkList(pm.map(function (p) {
+          return { ok: true, label: 'Page ' + (p + 1) + (modes[p] === 'searchable' ? ': letters under the boxes deleted, other text still selectable' : ': rebuilt as a picture'), detail: modes[p] === 'image' && reasons[p] ? 'Because ' + reasons[p] + '.' : '' };
+        })));
+      }
       w.appendChild(el('h4', 'sec-sub', 'What was checked'));
       w.appendChild(checkList(v.checks));
       (v.warnings || []).forEach(function (t) { w.appendChild(el('p', 'ps-note ps-warn', ic('alert') + '<span>' + esc(t) + '</span>')); });

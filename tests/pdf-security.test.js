@@ -27,7 +27,7 @@ const REVEAL_MARKERS = {
   attachments: ['payroll-2024.csv'],
   forms: ['FORM-VALUE-SIERRA', 'HIDDEN-FIELD-TANGO', 'hidden field'],
   comments: ['COMMENT-TEXT-OSCAR', 'COMMENT-AUTHOR-NOVEMBER', 'HIGHLIGHT-NOTE-QUEBEC', 'Reviewer PAPA'],
-  hiddenText: ['INVISIBLE-SECRET-ALPHA', 'WHITE-SECRET-BRAVO', 'TINY-SECRET-CHARLIE', 'OFFPAGE-SECRET-DELTA', 'UNDER-IMAGE-ECHO'],
+  hiddenText: ['INVISIBLE-SECRET-ALPHA', 'WHITE-SECRET-BRAVO', 'TINY-SECRET-CHARLIE', 'OFFPAGE-SECRET-DELTA', 'UNDER-IMAGE-ECHO', 'FAKE-BLACKOUT-ZETA', 'Covered by a shape'],
   layers: ['LAYER-NAME', 'LAYER-SECRET-FOXTROT', 'switched off'],
   links: ['LINK-SECRET-ROMEO'],
   thumbnails: ['Page 1'],
@@ -36,7 +36,7 @@ const REVEAL_MARKERS = {
 };
 /* Strings that must be gone from every byte of a scrubbed file (after unpacking streams). */
 const GONE = ['TITLE-SECRET-INDIA', 'AUTHOR-SECRET-JULIET', 'PRODUCER-SECRET', 'XMP-CREATOR-KILO', 'XMP-DOCID-LIMA', 'INVISIBLE-SECRET-ALPHA', 'WHITE-SECRET-BRAVO',
-  'TINY-SECRET-CHARLIE', 'OFFPAGE-SECRET-DELTA', 'UNDER-IMAGE-ECHO', 'LAYER-SECRET-FOXTROT', 'LAYER-NAME', 'IMAGE-XMP-MIKE', 'COMMENT-AUTHOR-NOVEMBER', 'COMMENT-TEXT-OSCAR',
+  'TINY-SECRET-CHARLIE', 'OFFPAGE-SECRET-DELTA', 'UNDER-IMAGE-ECHO', 'FAKE-BLACKOUT-ZETA', 'LAYER-SECRET-FOXTROT', 'LAYER-NAME', 'IMAGE-XMP-MIKE', 'COMMENT-AUTHOR-NOVEMBER', 'COMMENT-TEXT-OSCAR',
   'HIGHLIGHT-NOTE-QUEBEC', 'Reviewer PAPA', 'LINK-SECRET-ROMEO', 'HIDDEN-FIELD-TANGO', 'ATTACHMENT-SECRET-UNIFORM', 'payroll-2024.csv', 'PIECEINFO-SECRET'];
 
 module.exports = {
@@ -182,6 +182,49 @@ module.exports = {
     h.assert.noErrors(page);
   },
 
+  'keep-text-selectable redaction deletes only the letters under the boxes, or falls back to a picture': async ({ browser, base, h }) => {
+    const page = await secPage(h, browser, base);
+    const res = await page.evaluate(async () => {
+      const S = LE.pdfSecurity, B = SecFixtures.REDACT_BOXES;
+      const src = await SecFixtures.redact();
+      const a = await S.redact(src, [{ page: 0, rects: [B.name, B.amount] }], { mode: 'searchable', label: 'REDACTED' });
+      const ixa = await S.textIndex(a);
+      const rawA = (await S.searchFile(a, ['REDACT-NAME-ZULU', 'REDACT-AMOUNT-YANKEE', '98,500'])).found;
+      /* Part of one word: only those letters go. */
+      const f = await S.findSensitive(src, { terms: ['ZULU'], wholeWords: false, kinds: [] });
+      const part = await S.redact(src, f.matches.filter((m) => m.page === 0).map((m) => ({ page: 0, rects: m.rects })), { mode: 'searchable' });
+      const ixp = await S.textIndex(part);
+      /* A picture under a box: that page becomes a picture. */
+      const b = await S.redact(src, [{ page: 0, rects: [B.name, B.image] }], { mode: 'searchable' });
+      const ixb = await S.textIndex(b);
+      /* Many boxes across two pages from find sensitive data. */
+      const sen = await SecFixtures.sensitive();
+      const hits = await S.findSensitive(sen);
+      const c = await S.redact(sen, hits.matches.map((m) => ({ page: m.page, rects: m.rects })), { mode: 'searchable' });
+      const ixc = await S.textIndex(c);
+      const leftC = hits.matches.filter((m) => ixc.pages[m.page].text.indexOf(m.text) >= 0).map((m) => m.text);
+      return {
+        a: { ok: a.report.ok, modes: a.report.pageModes, text: ixa.pages[0].text, raw: rawA },
+        part: { ok: part.report.ok, modes: part.report.pageModes, text: ixp.pages[0].text },
+        b: { ok: b.report.ok, modes: b.report.pageModes, fb: b.report.fallbacks, text: ixb.pages[0].text },
+        c: { ok: c.report.ok, modes: c.report.pageModes, left: leftC, text: ixc.pages[0].text }
+      };
+    });
+    h.assert(res.a.ok, 'selectable redaction not verified');
+    h.assert.equal(res.a.modes[0], 'searchable', 'page 1 mode');
+    h.assert(/Account holder:/.test(res.a.text) && /Keep this line visible\./.test(res.a.text), 'kept text lost: ' + res.a.text);
+    h.assert(!/ZULU|YANKEE|98,500|Salary/.test(res.a.text), 'redacted text still extractable: ' + res.a.text);
+    h.assert.equal(res.a.raw.length, 0, 'raw: ' + JSON.stringify(res.a.raw));
+    h.assert(res.part.ok && res.part.modes[0] === 'searchable', 'partial word');
+    h.assert(/REDACT-NAME/.test(res.part.text) && !/ZULU/.test(res.part.text), 'partial word text: ' + res.part.text);
+    h.assert(res.b.ok && res.b.modes[0] === 'image' && /picture/.test(res.b.fb[0].reason), 'fallback: ' + JSON.stringify(res.b));
+    h.assert.equal(res.b.text.trim(), '', 'fallback page still has text');
+    h.assert(res.c.ok, 'many boxes not verified');
+    h.assert.equal(res.c.left.length, 0, 'found text left: ' + res.c.left.join(', '));
+    h.assert(/Card bad: 4111 1111 1111 1112/.test(res.c.text), 'unmarked text lost: ' + res.c.text);
+    h.assert.noErrors(page);
+  },
+
   'verify reports failure for a cover-only redaction': async ({ browser, base, h }) => {
     const page = await secPage(h, browser, base);
     const res = await page.evaluate(async () => {
@@ -270,6 +313,28 @@ module.exports = {
     h.assert.equal(res.pages, 2, 'pages');
     h.assert(/Visible heading/.test(res.text), 'text lost');
     h.assert.equal(res.steps.length, 5, 'steps');
+    h.assert.noErrors(page);
+  },
+
+  'a locked (encrypted) file is read but never rewritten': async ({ browser, base, h }) => {
+    const page = await secPage(h, browser, base);
+    const res = await page.evaluate(async () => {
+      const S = LE.pdfSecurity;
+      const b = await SecFixtures.locked();
+      const r = await S.inspect(b);
+      const sc = await S.scrub(b);
+      const mk = await S.makeSafe(b);
+      const rd = await S.redact(b, [{ page: 0, rects: [{ x: 40, y: 60, w: 200, h: 30 }] }]);
+      const sf = await S.safetyCheck(b);
+      const flat = r.groups.map((g) => g.items.map((i) => i.label + ' ' + i.value).join(' ')).join(' | ');
+      return { enc: r.encrypted, flat, removable: r.groups.some((g) => g.removable), scrub: [sc.length, sc.report.code, sc.report.error], safe: mk.length, red: rd.length, level: sf.level, kinds: sf.findings.map((f) => f.kind) };
+    });
+    h.assert(res.enc, 'not marked as encrypted');
+    ['LOCKED-TITLE-KAPPA', 'LOCKED-AUTHOR-MU', 'LOCKED-NOTE-LAMBDA'].forEach((m) => h.assert(res.flat.indexOf(m) >= 0, 'not read: ' + m));
+    h.assert(!res.removable, 'removal offered for a locked file');
+    h.assert(res.scrub[0] === 0 && res.scrub[1] === 'encrypted' && /lock/.test(res.scrub[2]), 'scrub: ' + res.scrub);
+    h.assert(res.safe === 0 && res.red === 0, 'a locked file was rewritten');
+    h.assert(res.kinds.indexOf('encrypted') >= 0, 'safety check does not mention the lock');
     h.assert.noErrors(page);
   },
 
