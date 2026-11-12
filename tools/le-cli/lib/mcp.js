@@ -313,7 +313,10 @@ class McpServer {
           }
           return this.ok(info, [{ type: 'image', data: p.data, mimeType: p.mime }]);
         }
-        case 'design_find': return this.ok(await svc.find(a.path, a.query)).valueOf();
+        case 'design_find': {
+          const r = await svc.find(a.path, a.query);
+          return this.ok(Object.assign(r, { file: this.rel(r.file) }));
+        }
         case 'catalog_search': {
           const r = await svc.catalog(a.kind, a.query || '', { limit: a.limit || 40 });
           if (Array.isArray(r.items)) r.items = r.items.slice(0, a.limit || 40);
@@ -342,7 +345,7 @@ class McpServer {
           const notes = readNotes(abs).filter((n) => n.status !== 'done');
           let previews = [];
           try { previews = fs.readdirSync(dir).filter((f) => /^preview-\d+\.png$/.test(f)).map((f) => this.rel(path.join(dir, f))); } catch (e) { /* none */ }
-          return this.ok({ ok: true, linked: !!status, status, openNotes: notes, previews, statusFile: this.rel(path.join(dir, 'status.json')) });
+          return this.ok({ ok: true, linked: !!(status && status.linked), status, openNotes: notes, previews, statusFile: this.rel(path.join(dir, 'status.json')) });
         }
         case 'notes_read': {
           const abs = svc.sandbox.file(a.path, 'the design');

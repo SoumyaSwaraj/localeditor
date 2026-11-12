@@ -89,16 +89,18 @@ The operation list, results and error codes, the MCP tools and the API endpoints
 - **One vocabulary.** Operations go to `window.LEAgent.apply` when agent mode is present; until then a built-in adapter applies the same operations (`LE.link.applyOps` in `assets/js/le-link.js`) and normalises, validates, lints and renders with `LE.design` and `LE.Scene`.
 - **Warm pages.** `serve`, `link` and `mcp` keep one page per open design; a file is reloaded only when its bytes change. A crashed browser is restarted once. The browser and its profile are removed on exit, Ctrl+C and SIGTERM.
 
-## Speed (measured on the build machine, shared with other test runs)
+## Speed (measured on the build machine while other test runs shared it, load average ~27)
 
 | | Time |
 |---|---|
-| Cold start (`doctor`: launch, open the studio, render) | 1–2 s launch + 1.7–2.5 s studio, 5–8 s in total under load |
-| One-shot CLI `apply` (cold browser each time) | 2–6 s |
-| Warm `apply` round trip through `serve` / `mcp` | 30–150 ms |
-| Warm `render` of a 1080 px page | 150–550 ms (first render with new fonts 1–3.5 s) |
+| Browser launch (headless, pipe) | 0.3–1.1 s |
+| First design opened (studio page + load), once per design | 1.7–2.9 s |
+| `doctor` in total (launch, studio, render, seal check) | 3.5–8 s |
+| One-shot CLI `apply` / `render` (cold browser each time) | 2–10 s |
+| Warm `apply` through `serve` / `mcp` (10 runs) | median 19 ms (4–72 ms), incl. validation, lint and the file write |
+| Warm `render` of a 1080 px page (10 runs) | median 33 ms (18–323 ms); the first render that needs new fonts 1–3.5 s |
 
-Use `mcp` or `serve` when you make many changes: the engine stays warm.
+Use `mcp`, `serve` or `link` when you make many changes: the engine stays warm.
 
 ## Tests
 

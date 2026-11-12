@@ -8,7 +8,7 @@ There are two speeds and one vocabulary:
 |---|---|---|
 | What | `localeditor` command, `localeditor mcp`, `localeditor serve` API | The person's open studio tab |
 | Who sees it | Nobody, until a person opens the file | The person watches each change, can pause, stop and undo |
-| Speed | ~0.1–0.5 s per change once warm | Animated, paced for a person |
+| Speed | Tens of milliseconds per change once warm (a cold start is 2–3 s) | Animated, paced for a person |
 | Use it for | Producing and fixing files, batch work, CI, renders | Working *with* a person on the same design |
 | Operations | `apply` | `LEAgent.apply` — the same operation list |
 
