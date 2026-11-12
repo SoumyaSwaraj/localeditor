@@ -248,6 +248,7 @@
     c.openPop(anchor, m, { cls: 'sx-pop-menu' });
   }
 
+  var customSize = null;   /* Design → Resize custom form: { key: project id, w, h, lock } */
   /* ---------- Design: templates + sizes ---------- */
   var TEMPLATES = [
     { id: 'caption', name: 'Bold caption', build: function (W, H, s) {
@@ -434,13 +435,19 @@
     body.appendChild(presets);
 
     var custom = c.ui.section('Custom size');
-    var form = c.h('<form class="sx-form"><div class="sx-wh"><label>Width<input class="sx-input" type="number" min="16" max="16000" value="' + d.width + '"></label><button type="button" class="sx-iconbtn sx-ratio-lock" aria-pressed="true" aria-label="Lock aspect ratio">' + c.ic('lock') + '</button><label>Height<input class="sx-input" type="number" min="16" max="16000" value="' + d.height + '"></label></div><div class="sx-row-end"><button type="submit" class="btn btn-gold btn-sm">Preview size</button></div></form>');
+    /* The typed size and the lock survive a re-render of this panel (a hover preview, an autosave): before, every
+       re-render rebuilt the form with the lock on and the current size, so "Preview size" read 1080 × 1080. */
+    var base = c.S.preview && c.S.preview.pre ? c.S.preview.pre : d;   /* the size before any preview */
+    var key = (c.S.project ? c.S.project.id : '') + '|' + base.width + 'x' + base.height;
+    var cs = customSize && customSize.key === key ? customSize : (customSize = { key: key, w: d.width, h: d.height, lock: true });
+    var form = c.h('<form class="sx-form"><div class="sx-wh"><label>Width<input class="sx-input" type="number" min="16" max="16000" value="' + cs.w + '"></label><button type="button" class="sx-iconbtn sx-ratio-lock" aria-pressed="' + cs.lock + '" aria-label="Lock aspect ratio">' + c.ic('lock') + '</button><label>Height<input class="sx-input" type="number" min="16" max="16000" value="' + cs.h + '"></label></div><div class="sx-row-end"><button type="submit" class="btn btn-gold btn-sm">Preview size</button></div></form>');
     var ins = form.querySelectorAll('input');
     var lock = form.querySelector('.sx-ratio-lock');
-    var ratio = d.width / d.height;
-    lock.onclick = function () { lock.setAttribute('aria-pressed', lock.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); ratio = Number(ins[0].value) / Number(ins[1].value) || 1; };
-    ins[0].addEventListener('input', function () { if (lock.getAttribute('aria-pressed') === 'true') ins[1].value = Math.round(Number(ins[0].value) / ratio) || ''; });
-    ins[1].addEventListener('input', function () { if (lock.getAttribute('aria-pressed') === 'true') ins[0].value = Math.round(Number(ins[1].value) * ratio) || ''; });
+    var ratio = (Number(cs.w) / Number(cs.h)) || d.width / d.height;
+    function keep() { cs.w = ins[0].value; cs.h = ins[1].value; cs.lock = lock.getAttribute('aria-pressed') === 'true'; }
+    lock.onclick = function () { lock.setAttribute('aria-pressed', lock.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); ratio = Number(ins[0].value) / Number(ins[1].value) || 1; keep(); };
+    ins[0].addEventListener('input', function () { if (lock.getAttribute('aria-pressed') === 'true') ins[1].value = Math.round(Number(ins[0].value) / ratio) || ''; keep(); });
+    ins[1].addEventListener('input', function () { if (lock.getAttribute('aria-pressed') === 'true') ins[0].value = Math.round(Number(ins[1].value) * ratio) || ''; keep(); });
     form.onsubmit = function (e) {
       e.preventDefault();
       var w = c.clamp(Math.round(Number(ins[0].value) || 0), 16, 16000), h = c.clamp(Math.round(Number(ins[1].value) || 0), 16, 16000);

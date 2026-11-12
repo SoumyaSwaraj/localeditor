@@ -387,14 +387,16 @@ cases['resize with Cancel leaves the page as it was'] = async ({ browser, base, 
 };
 cases['custom width and height in Resize create that size'] = async ({ browser, base, h }) => {
   const page = await photoPage(browser, base, h);
-  /* Park the cursor: the start-screen click leaves it where a size preset now opens, and hovering a preset
-     previews it (by design), which re-renders this form while it is being filled. */
-  await page.mouse.move(2, 2);
   await h.openPanel(page, 'design', { tab: 'resize' });
-  h.assert(!(await page.evaluate(() => window.LEStudio.S.preview)), 'no hover preview before typing');
   const ins = page.locator('#sx-panel-body input.sx-input[type=number]');
   await page.locator('.sx-ratio-lock').click(); // unlock ratio
   await ins.nth(0).fill('900'); await ins.nth(1).fill('500');
+  /* The panel re-renders while the person types (a hover preview of a preset, an autosave): the typed size and
+     the unlocked ratio must survive it. This was the bug (the form came back locked at the current size). */
+  await page.evaluate(() => window.LEStudio.renderPanel(true));
+  await page.waitForTimeout(150);
+  h.assert.equal(await page.getAttribute('.sx-ratio-lock', 'aria-pressed'), 'false', 'ratio stays unlocked');
+  h.assert.equal(await ins.nth(0).inputValue() + 'x' + await ins.nth(1).inputValue(), '900x500', 'typed size kept');
   await page.getByRole('button', { name: 'Preview size' }).click();
   await page.waitForSelector('#sx-bar [data-cmd=sizeUse]');
   await page.click('#sx-bar [data-cmd=sizeUse]');
