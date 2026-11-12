@@ -38,6 +38,7 @@ Declarations with `panels` or `wrap` must come **after** `le-studio-panels.js`, 
 | Module | Why it is safe |
 |---|---|
 | `assets/js/le-stock.js` (40 KB, 10 KB gzip) | A library: only the collage photo search reads `LE.stock`, inside functions run on a tap. |
+| `assets/js/le-studio-variables.js` + `studio-variables.css` (Fields, Create many; `docs/VARIABLES.md`) | Panels only. Its model `le-variables.js` is not declared at all: it loads on demand, through `LE.varBoot` in `le-objects.js` when a page with values is drawn. |
 
 ## What stays blocking, and what it would take
 

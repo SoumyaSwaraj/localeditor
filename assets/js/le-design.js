@@ -392,6 +392,7 @@
       }
     }
 
+    src = readBind(src, path, l, d, rep, type);   /* template fields (docs/VARIABLES.md) */
     if (type === 'text') readText(src, path, l, d, rep);
     else if (type === 'image') readImage(src, path, l, d, rep, st, page);
     else if (type === 'shape') readShape(src, path, l, rep);
@@ -705,25 +706,87 @@
     return out;
   }
 
+  var VAR_TYPES = ['text', 'number', 'date', 'image', 'colour', 'color', 'url', 'boolean'];
   function readVariables(v, rep) {
     if (v == null) return null;
-    if (!Array.isArray(v)) { rep.err('/variables', 'variables is a list of { "key", "label", "type", "default" }.'); return null; }
+    if (!Array.isArray(v)) { rep.err('/variables', 'variables is a list of { "key", "label", "type", "sample", "required" }.'); return null; }
     if (v.length > LIMITS.variables) rep.err('/variables', 'Up to ' + LIMITS.variables + ' variables.');
     var seen = {};
-    return v.slice(0, LIMITS.variables).map(function (x, i) {
+    var list = v.slice(0, LIMITS.variables).map(function (x, i) {
       var p = '/variables/' + i;
       if (!isObj(x)) { rep.err(p, 'Each variable is an object.'); return null; }
-      if (typeof x.key !== 'string' || !/^[A-Za-z_][\w.-]{0,39}$/.test(x.key)) { rep.err(p + '/key', 'A variable key starts with a letter and uses letters, numbers, "_", "-" or ".", like "name".'); return null; }
-      if (seen[x.key]) { rep.err(p + '/key', 'The variable "' + x.key + '" is listed twice.'); return null; }
-      seen[x.key] = 1;
-      var o = { key: x.key, label: plain(x.label == null ? x.key : x.label, 80), type: x.type == null ? 'text' : x.type };
-      if (o.type !== 'text' && o.type !== 'image') { rep.err(p + '/type', 'type is "text" or "image".'); return null; }
-      if (x.default != null) {
-        if (typeof x.default !== 'string') rep.err(p + '/default', 'default must be text.');
-        else o.default = x.default.slice(0, 2000);
-      }
-      return o;
+      var key = x.key != null ? x.key : x.name;
+      if (typeof key !== 'string' || !/^[A-Za-z_][\w.-]{0,39}$/.test(key)) { rep.err(p + '/key', 'A variable key starts with a letter and uses letters, numbers, "_", "-" or ".", like "name".'); return null; }
+      if (seen[key]) { rep.err(p + '/key', 'The variable "' + key + '" is listed twice.'); return null; }
+      seen[key] = 1;
+      if (x.type != null && VAR_TYPES.indexOf(x.type) < 0) { rep.err(p + '/type', 'type is one of text, number, date, image, colour, url, boolean.'); return null; }
+      ['default', 'sample'].forEach(function (k) { if (x[k] != null && typeof x[k] !== 'string' && !isNum(x[k]) && typeof x[k] !== 'boolean') rep.err(p + '/' + k, k + ' must be text, a number or true / false.'); });
+      if (x.required != null && typeof x.required !== 'boolean') rep.err(p + '/required', 'Use true or false.');
+      return Object.assign({}, x, { key: key, label: x.label == null ? key : plain(x.label, 80) });
     }).filter(Boolean);
+    return LE.Scene && LE.Scene.variablesOf ? LE.Scene.variablesOf(list) : list;
+  }
+  /* Template values (docs/VARIABLES.md): { key: text | number | true/false }. An image field's value is an image source
+     like any "src" (data: URI, relative path, device id); it is stored as the photo's asset id. */
+  function readValues(v, path, rep, st, vars, pageIndex) {
+    if (v == null) return null;
+    if (!isObj(v)) { rep.err(path, 'values is an object of field values, like { "name": "Ana" }.'); return null; }
+    var types = {};
+    (vars || []).forEach(function (x) { types[x.key] = x.type; });
+    var out = {};
+    Object.keys(v).slice(0, 60).forEach(function (k) {
+      var p = ptr(path, k), x = v[k];
+      if (!/^[A-Za-z_][\w.-]{0,39}$/.test(k) && k !== '#' && k !== '#total') { rep.err(p, 'Value keys are variable keys, like "name".'); return; }
+      if (typeof x === 'string' && x.length > 2000) { rep.err(p, 'A value is limited to 2000 characters.'); return; }
+      if (typeof x !== 'string' && !isNum(x) && typeof x !== 'boolean') { rep.err(p, 'A value is text, a number or true / false.'); return; }
+      if (typeof x === 'string' && (/^data:image\//i.test(x) || (types[k] === 'image' && x && !/^sample:/.test(x)))) {
+        var it = readSrc(x, p, rep, st, { page: pageIndex, value: k });
+        if (it) out[k] = { img: it };
+        return;
+      }
+      out[k] = x;
+    });
+    return out;
+  }
+  function valuesDone(vals) {
+    if (!vals) return null;
+    var o = {};
+    Object.keys(vals).forEach(function (k) { var x = vals[k]; if (isObj(x) && x.img) { if (x.img.id) o[k] = x.img.id; } else o[k] = x; });
+    return LE.Scene && LE.Scene.valuesOf ? LE.Scene.valuesOf(o) : o;
+  }
+  /* Layer fields: bind { content, color, show, fit }, and on text overflow ("shrink" | "wrap" | "ellipsis") and minSize.
+     Shorthand: "color": "{{brand}}" (or "fill") binds the colour; "fit": "shrink" on text with a {{field}} shrinks the
+     filled-in text when it is drawn, not the template once. */
+  COMMON.push('bind');
+  BY_TYPE.text.push('overflow', 'minSize');
+  var TOKEN_ONLY = /^\{\{\s*([A-Za-z_][\w.-]{0,39})\s*\}\}$/;
+  function readBind(src, path, l, d, rep, type) {
+    var b = src.bind;
+    var hasTok = function (k) { return typeof src[k] === 'string' && TOKEN_ONLY.test(src[k].trim()); };
+    if (b == null && !hasTok('color') && !hasTok('fill') && !(type === 'text' && (src.overflow != null || src.minSize != null))) {
+      if (!(type === 'text' && src.fit === 'shrink' && /\{\{/.test(String(src.text || '')))) return src;
+    }
+    var o = {};
+    if (b != null) {
+      if (typeof b === 'string') b = { content: b };
+      if (!isObj(b)) { rep.err(path + '/bind', 'bind is a field key ("photo") or { "content", "color", "show", "fit" }.'); return src; }
+      ['content', 'color', 'show'].forEach(function (k) {
+        if (b[k] == null) return;
+        if (typeof b[k] !== 'string' || !/^!?[A-Za-z_][\w.-]{0,39}$/.test(b[k]) || (k !== 'show' && b[k].charAt(0) === '!')) rep.err(path + '/bind/' + k, k + ' is the key of a field, like "' + (k === 'show' ? 'vip' : k === 'color' ? 'brand' : 'photo') + '".');
+        else o[k] = b[k];
+      });
+      if (b.fit != null) { if (b.fit !== 'cover' && b.fit !== 'contain') rep.err(path + '/bind/fit', 'fit is "cover" or "contain".'); else o.fit = b.fit; }
+      if (o.content && type !== 'image' && type !== 'svg') rep.err(path + '/bind/content', 'content binds a photo (image layer) or a QR code (svg layer with "qr").');
+    }
+    var copy = Object.assign({}, src);
+    ['color', 'fill'].forEach(function (k) { if (hasTok(k)) { o.color = TOKEN_ONLY.exec(src[k].trim())[1]; delete copy[k]; } });
+    if (o.content || o.color || o.show) l.bind = o;
+    if (type === 'text') {
+      if (src.overflow != null) { if (['shrink', 'wrap', 'ellipsis'].indexOf(src.overflow) < 0) rep.err(path + '/overflow', 'overflow is "shrink", "wrap" or "ellipsis".'); else l.overflow = src.overflow; }
+      if (src.minSize != null) { var ms = numberAt(src.minSize, path + '/minSize', rep, 'minSize'); if (ms != null) l.minSize = clamp(ms, 1, 5000); }
+      if (src.fit === 'shrink' && /\{\{/.test(String(src.text || ''))) { if (!l.overflow) l.overflow = 'shrink'; delete copy.fit; }
+    }
+    return copy;
   }
 
   /* ---------- Async stages ---------- */
@@ -1033,12 +1096,15 @@
     if (raw.version == null) rep.err('/version', 'Add "version": 1.');
     else if (Number(raw.version) > VERSION) { rep.err('/version', 'This design needs a newer LocalEditor (version ' + plain(raw.version, 8) + ').'); return Promise.resolve(done()); }
     else if (Number(raw.version) !== VERSION) rep.err('/version', '"version" must be 1.');
-    var TOP = ['$schema', 'format', 'version', 'name', 'pages', 'variables', 'remix', 'notes'];
+    var TOP = ['$schema', 'format', 'version', 'name', 'pages', 'variables', 'values', 'remix', 'notes'];
     Object.keys(raw).forEach(function (k) { if (TOP.indexOf(k) < 0) rep.warn(ptr('', k), 'unknown-key', 'The key "' + plain(k, 40) + '" is not part of the format and was ignored.'); });
     if (raw.name != null && typeof raw.name !== 'string') rep.err('/name', 'name must be text.');
     if (!Array.isArray(raw.pages) || !raw.pages.length) { rep.err('/pages', 'A design needs "pages": [ { "width", "height", "layers": [ … ] } ].'); return Promise.resolve(done()); }
     if (raw.pages.length > LIMITS.pages) rep.err('/pages', 'A design can have up to ' + LIMITS.pages + ' pages.');
+    var stHolder = {};
+    var st0 = function () { return stHolder.st || (stHolder.st = { ids: {}, link: !!opts.link, dropped: [] }); };
     var variables = readVariables(raw.variables, rep);
+    var topValues = readValues(raw.values, '/values', rep, st0(), variables, null);
     var remix = null;
     if (raw.remix != null) {
       if (!isObj(raw.remix)) rep.err('/remix', 'remix is { "name", "by" }.');
@@ -1048,13 +1114,13 @@
       }
     }
 
-    var st = { ids: {}, link: !!opts.link, dropped: [] };
+    var st = stHolder.st || { ids: {}, link: !!opts.link, dropped: [] };
     var notesIn = raw.notes;
     var pageIds = [];
     var pages = raw.pages.slice(0, LIMITS.pages).map(function (p, pi) {
       var path = '/pages/' + pi;
       if (!isObj(p)) { rep.err(path, 'A page must be an object.'); return null; }
-      var PKEYS = ['id', 'name', 'width', 'height', 'background', 'collage', 'carousel', 'maker', 'layers'];
+      var PKEYS = ['id', 'name', 'width', 'height', 'background', 'collage', 'carousel', 'maker', 'print', 'values', 'layers'];
       Object.keys(p).forEach(function (k) { if (PKEYS.indexOf(k) < 0) rep.warn(ptr(path, k), 'unknown-key', 'The key "' + plain(k, 40) + '" is not part of a page and was ignored.'); });
       var pid = '';
       if (p.id != null) {
@@ -1073,6 +1139,9 @@
       if (p.width == null && p.height == null && !(isObj(p.collage) && p.collage.template) && !makerOnly) rep.warn(path, 'default-size', 'No width or height; the page is 1080 × 1080.');
       if (p.carousel != null) readCarousel(p.carousel, path + '/carousel', page, rep);
       if (p.maker != null) readMaker(p.maker, path + '/maker', page, rep, makerOnly);
+      if (p.print != null) { page.printIn = isObj(p.print) && LE.Scene && LE.Scene.printOf ? LE.Scene.printOf(p.print) : null; if (!page.printIn) rep.err(path + '/print', 'print is { "paper", "w", "h", "dpi" } in millimetres, like { "paper": "a4", "w": 210, "h": 297, "dpi": 300 }.'); }
+      var ownValues = readValues(p.values, path + '/values', rep, st, variables, pi);
+      if (topValues || ownValues) page.values = Object.assign({}, topValues || {}, ownValues || {});
       var bgr = readBackground(p.background, path + '/background', rep, st, page);
       page.bg = bgr.bg;
       page.bgImg = bgr.img || null;
@@ -1101,6 +1170,7 @@
     pages.forEach(function (p) {
       if (p.bgImg) imgs.push(p.bgImg);
       p.drafts.forEach(function (d) { if (d.img) imgs.push(d.img); if (d.fxImg && d.fxImg.kind !== 'remote') imgs.push(d.fxImg); if (d.cutImg) imgs.push(d.cutImg); });
+      Object.keys(p.values || {}).forEach(function (k) { var x = p.values[k]; if (isObj(x) && x.img && imgs.indexOf(x.img) < 0 && x.img.kind !== 'remote') imgs.push(x.img); });
     });
 
     return expertStage(pages, imgs, rep, st).then(function (after) { return resolveImages(imgs, opts, rep, st, out).then(after); }).then(function () {
@@ -1206,6 +1276,9 @@
           doc.carousel = LE.Scene && LE.Scene.carouselOf ? LE.Scene.carouselOf(car) : car;
         }
         if (page.maker) doc.maker = page.maker;
+        if (page.printIn) doc.print = page.printIn;
+        var vals = valuesDone(page.values);
+        if (vals) doc.values = vals;
         return doc;
       });
       pages.forEach(function (p) {
@@ -1289,7 +1362,7 @@
         if (l.type === 'image' && l.src && !assets[l.src]) rep.warn(path, 'missing-image', 'The photo for ' + label + ' is missing.', l.id);
         if (l.type === 'text') {
           if (l.font && !knownFont(l.font)) rep.warn(path + '/font', 'unknown-font', 'The font "' + l.font + '" does not ship with LocalEditor; a fallback font is used. Pick one from the font list.', l.id);
-          var m = opts.measure ? opts.measure(l) : measureText(l);
+          var m = String(l.text || '').indexOf('{{') >= 0 ? null : opts.measure ? opts.measure(l) : measureText(l);   /* template fields: LE.variables.lint measures the filled text */
           if (m) {
             if (m.height > l.h * 1.04 + 2) rep.warn(path, 'overflow', 'Text ' + label + ' needs ' + Math.ceil(m.height) + ' px but its box is ' + Math.round(l.h) + ' px tall. Make the box taller, the text smaller, or use "fit": "shrink".', l.id);
             else if (m.broke) rep.warn(path, 'overflow', 'A word in ' + label + ' is wider than its box and breaks mid-word. Widen the box or use a smaller size.', l.id);
@@ -1314,6 +1387,7 @@
         }
       });
     });
+    if (LE.variables && LE.variables.lint) LE.variables.lint(project, rep);   /* unknown pipes, unknown fields, filled-in overflow */
     return rep.warnings.slice(start);
   }
   /* lint with sampled contrast over photos and gradients: renders each page once at low resolution with its text
@@ -1592,8 +1666,23 @@
       if (l.color && l.color !== '#17131F') o.color = l.color;
       if (l.mode && l.mode !== 'pen') o.mode = l.mode;
     }
+    if (l.bind) { o.bind = {}; ['content', 'color', 'show', 'fit'].forEach(function (k) { if (l.bind[k]) o.bind[k] = l.bind[k]; }); }
+    if (l.type === 'text' && l.overflow) o.overflow = l.overflow;
+    if (l.type === 'text' && l.minSize) o.minSize = r2(l.minSize);
     expertOut(l, o, ctx);
     return o;
+  }
+  function valuesOut(v, ctx) {
+    var o = {};
+    Object.keys(v).sort().forEach(function (k) {
+      var x = v[k];
+      if (typeof x === 'string' && /^[a-f0-9]{64}$/.test(x) && ctx.assets[x]) {
+        if (ctx.images === 'none') { ctx.dropped.push({ kind: 'photo', layer: k, name: k }); return; }
+        x = ctx.ref(x, k) || x;
+      }
+      o[k] = x;
+    });
+    return Object.keys(o).length ? o : undefined;
   }
   function sortKeys(o) {
     if (!isObj(o)) return o;
@@ -1699,7 +1788,7 @@
         return o;
       });
     }
-    if (Array.isArray(st.variables) && st.variables.length) doc.variables = st.variables.map(function (v) { var o = { key: v.key, label: v.label, type: v.type || 'text' }; if (v.default != null) o.default = v.default; return o; });
+    if (Array.isArray(st.variables) && st.variables.length) doc.variables = st.variables.map(function (v) { var o = { key: v.key, label: v.label, type: v.type || 'text' }; if (v.default != null) o.default = v.default; if (v.sample != null) o.sample = v.sample; if (v.required) o.required = true; return o; });
     /* Older projects kept page ids by position in meta.studio.pageIds; used only when no page has its own id. */
     var legacyIds = Array.isArray(st.pageIds) && !(project.pages || []).some(function (p) { return p && p.id; }) ? st.pageIds : [];
     doc.pages = (project.pages || []).map(function (p, pi) {
@@ -1718,9 +1807,19 @@
         o.maker.values = sortKeys(clone(p.maker.values || {}));
         if (p.maker.sig) o.maker.sig = p.maker.sig;
       }
+      if (p.print && p.print.w) { o.print = { w: p.print.w, h: p.print.h, dpi: p.print.dpi }; if (p.print.paper) o.print = Object.assign({ paper: p.print.paper }, o.print); }
+      if (p.values) o.values = valuesOut(p.values, ctx);
       o.layers = (p.layers || []).map(function (l) { return layerOut(l, ctx); });
       return o;
     });
+    /* Values shared by every page are written once, at the top. */
+    var vs = doc.pages.map(function (o) { return o.values ? JSON.stringify(o.values) : ''; });
+    if (vs[0] && vs.every(function (x) { return x === vs[0]; })) {
+      var top = {};
+      Object.keys(doc).forEach(function (k) { if (k === 'pages') top.values = doc.pages[0].values; top[k] = doc[k]; });
+      doc.pages.forEach(function (o) { delete o.values; });
+      doc = top;
+    }
     return { doc: doc, assets: assetList, dropped: ctx.dropped, missing: missing };
   }
 
