@@ -11,11 +11,16 @@
   var cooldown = {};
   var tokenFlight = null;
   var lastLimit = null;
+  var quotas = {};
+  var lastError = {};
+  var UTM = 'utm_source=localeditor&utm_medium=referral';
+  var UNSPLASH_API = 'https://api.unsplash.com/';
 
   function emptyKeys() {
     return {
       pixabay: '',
       pexels: '',
+      unsplash: '',
       openverse: { clientId: '', clientSecret: '', token: '', tokenExp: 0, email: '' }
     };
   }
@@ -28,6 +33,7 @@
     return {
       pixabay: typeof raw.pixabay === 'string' ? raw.pixabay : '',
       pexels: typeof raw.pexels === 'string' ? raw.pexels : '',
+      unsplash: typeof raw.unsplash === 'string' ? raw.unsplash : '',
       openverse: {
         clientId: typeof ov.clientId === 'string' ? ov.clientId : '',
         clientSecret: typeof ov.clientSecret === 'string' ? ov.clientSecret : '',
@@ -43,6 +49,7 @@
     partial = partial || {};
     if (partial.pixabay != null) cur.pixabay = String(partial.pixabay);
     if (partial.pexels != null) cur.pexels = String(partial.pexels);
+    if (partial.unsplash != null) cur.unsplash = String(partial.unsplash);
     if (partial.openverse && typeof partial.openverse === 'object') {
       var o = partial.openverse;
       if (o.clientId != null) cur.openverse.clientId = String(o.clientId);
@@ -59,12 +66,79 @@
     return keys();
   }
 
+  var PROVIDER_META = {
+    pixabay: {
+      id: 'pixabay', name: 'Pixabay', needsKey: true, keyLabel: 'API key',
+      keyHelpUrl: 'https://pixabay.com/api/docs/',
+      keyHint: 'Free: sign in to Pixabay and copy the key shown in the API documentation.',
+      creditText: 'Photos from Pixabay', creditUrl: 'https://pixabay.com/',
+      termsUrl: 'https://pixabay.com/service/license-summary/',
+      supports: { orientation: true, page: true }
+    },
+    pexels: {
+      id: 'pexels', name: 'Pexels', needsKey: true, keyLabel: 'API key',
+      keyHelpUrl: 'https://www.pexels.com/api/new/',
+      keyHint: 'Free: sign in to Pexels, request API access, and copy the key.',
+      creditText: 'Photos provided by Pexels', creditUrl: 'https://www.pexels.com/',
+      termsUrl: 'https://www.pexels.com/api/documentation/#guidelines',
+      supports: { orientation: true, page: true }
+    },
+    openverse: {
+      id: 'openverse', name: 'Openverse', needsKey: false, keyLabel: 'Client ID and secret (optional)',
+      keyHelpUrl: 'https://api.openverse.org/v1/#tag/auth',
+      keyHint: 'No key needed to search; register this device for a higher request limit.',
+      creditText: 'Images from Openverse', creditUrl: 'https://openverse.org/',
+      termsUrl: 'https://docs.openverse.org/terms_of_service.html',
+      supports: { orientation: true, page: true }
+    },
+    unsplash: {
+      id: 'unsplash', name: 'Unsplash', needsKey: true, keyLabel: 'Access Key',
+      keyHelpUrl: 'https://unsplash.com/oauth/applications',
+      keyHint: 'Free: create an Unsplash developer app and paste its Access Key, never the Secret key.',
+      creditText: 'Photos from Unsplash', creditUrl: 'https://unsplash.com/?' + UTM,
+      termsUrl: 'https://unsplash.com/api-terms',
+      supports: { orientation: true, page: true }
+    }
+  };
+  var PROVIDER_ORDER = ['pixabay', 'pexels', 'openverse', 'unsplash'];
+
+  function hasKeyFor(id) {
+    var k = keys();
+    if (id === 'openverse') return !!(k.openverse.clientId && k.openverse.clientSecret) || !!k.openverse.token;
+    return !!rawKey(k[id]);
+  }
+
+  function statusFor(id) {
+    var meta = PROVIDER_META[id];
+    if (meta.needsKey && !hasKeyFor(id)) return 'needs-key';
+    if (coolingLeft(id)) return 'rate-limited';
+    if (lastError[id]) return 'error';
+    return 'ok';
+  }
+
   function providers() {
-    return [
-      { id: 'pixabay', name: 'Pixabay' },
-      { id: 'pexels', name: 'Pexels' },
-      { id: 'openverse', name: 'Openverse' }
-    ];
+    return PROVIDER_ORDER.map(function (id) {
+      var m = PROVIDER_META[id];
+      return {
+        id: m.id,
+        name: m.name,
+        needsKey: m.needsKey,
+        hasKey: hasKeyFor(id),
+        keyLabel: m.keyLabel,
+        keyHelpUrl: m.keyHelpUrl,
+        keyHint: m.keyHint,
+        creditText: m.creditText,
+        creditUrl: m.creditUrl,
+        termsUrl: m.termsUrl,
+        supports: { orientation: m.supports.orientation, page: m.supports.page },
+        status: statusFor(id)
+      };
+    });
+  }
+
+  function quota(provider) {
+    var q = quotas[provider];
+    return q ? { limit: q.limit, remaining: q.remaining, at: q.at } : null;
   }
 
   function defaultMax() {
@@ -123,6 +197,7 @@
   function clearCredential(provider) {
     if (provider === 'pixabay') setKeys({ pixabay: '' });
     else if (provider === 'pexels') setKeys({ pexels: '' });
+    else if (provider === 'unsplash') setKeys({ unsplash: '' });
     else if (provider === 'openverse') setKeys({ openverse: { token: '', tokenExp: 0 } });
   }
 
@@ -174,6 +249,20 @@
     return lastLimit;
   }
 
+  function noteQuota(provider, headers) {
+    if (!provider || !headers || !headers.get) return;
+    var rem = headers.get('x-ratelimit-remaining');
+    var lim = headers.get('x-ratelimit-limit');
+    var r = rem == null || rem === '' ? NaN : Number(rem);
+    var l = lim == null || lim === '' ? NaN : Number(lim);
+    if (!isFinite(r) && !isFinite(l)) return;
+    quotas[provider] = {
+      limit: isFinite(l) ? l : (quotas[provider] ? quotas[provider].limit : null),
+      remaining: isFinite(r) ? r : null,
+      at: Date.now()
+    };
+  }
+
   function readJson(res) {
     return res.text().then(function (text) {
       var data = null;
@@ -203,7 +292,10 @@
       credentials: 'omit',
       referrerPolicy: 'no-referrer',
       cache: 'no-store'
-    }).then(readJson);
+    }).then(readJson).then(function (out) {
+      noteQuota(opts.provider, out.headers);
+      return out;
+    });
   }
 
   function orientParam(provider, value) {
@@ -218,6 +310,12 @@
       if (v === 'horizontal' || v === 'landscape') return 'landscape';
       if (v === 'vertical' || v === 'portrait') return 'portrait';
       if (v === 'square') return 'square';
+      return '';
+    }
+    if (provider === 'unsplash') {
+      if (v === 'horizontal' || v === 'landscape' || v === 'wide') return 'landscape';
+      if (v === 'vertical' || v === 'portrait' || v === 'tall') return 'portrait';
+      if (v === 'square' || v === 'squarish') return 'squarish';
       return '';
     }
     if (v === 'horizontal' || v === 'landscape' || v === 'wide') return 'wide';
@@ -283,6 +381,54 @@
       });
     }
     return { hits: hits, page: page, total: (data && data.total_results) || hits.length, limit: lastLimit };
+  }
+
+  function withUtm(url) {
+    url = String(url || '');
+    if (!url) return '';
+    if (url.indexOf('utm_source=') >= 0) return url;
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + UTM;
+  }
+
+  function unsplashSized(raw, maxEdge) {
+    var u;
+    try { u = new URL(raw); } catch (e) { return String(raw || ''); }
+    ['w', 'h', 'fit', 'q', 'fm', 'dpr', 'crop'].forEach(function (k) { u.searchParams.delete(k); });
+    u.searchParams.set('w', String(maxEdge));
+    u.searchParams.set('fit', 'max');
+    u.searchParams.set('q', '80');
+    u.searchParams.set('fm', 'jpg');
+    return u.toString();
+  }
+
+  function mapUnsplash(data, page) {
+    var list = data && data.results ? data.results : [];
+    var edge = defaultMax();
+    var hits = [];
+    for (var i = 0; i < list.length; i++) {
+      var p = list[i];
+      var urls = p && p.urls ? p.urls : {};
+      if (!p || (!urls.raw && !urls.regular && !urls.small)) continue;
+      var user = p.user || {};
+      var who = user.name || '';
+      var links = p.links || {};
+      hits.push({
+        id: String(p.id),
+        provider: 'unsplash',
+        thumb: urls.small || urls.thumb || '',
+        importUrl: urls.raw ? unsplashSized(urls.raw, edge) : (urls.regular || urls.small || ''),
+        w: p.width || 0,
+        h: p.height || 0,
+        photographer: who,
+        photographerUrl: withUtm(user.links && user.links.html),
+        pageUrl: withUtm(links.html),
+        license: 'Unsplash License',
+        attribution: who ? ('Photo by ' + who + ' on Unsplash') : 'Photo on Unsplash',
+        filesize: null,
+        downloadLocation: links.download_location || ''
+      });
+    }
+    return { hits: hits, page: page, total: (data && data.total) || hits.length, limit: lastLimit };
   }
 
   function ccLicense(v) {
@@ -364,6 +510,42 @@
     });
   }
 
+  function unsplashAuth(key) {
+    return { Accept: 'application/json', 'Accept-Version': 'v1', Authorization: 'Client-ID ' + key };
+  }
+
+  function searchUnsplash(q, page, per, orientation) {
+    var key = rawKey(keys().unsplash);
+    if (!key) {
+      var missing = new Error('Add an Unsplash Access Key to search Unsplash.');
+      missing.status = 401;
+      missing.provider = 'unsplash';
+      return Promise.reject(missing);
+    }
+    var url = UNSPLASH_API + 'search/photos?query=' + encodeURIComponent(q) +
+      '&page=' + page + '&per_page=' + per + '&content_filter=high';
+    if (orientation) url += '&orientation=' + encodeURIComponent(orientation);
+    return apiFetch(url, { headers: unsplashAuth(key), provider: 'unsplash' }).then(function (res) {
+      var remaining = res.headers && res.headers.get ? res.headers.get('x-ratelimit-remaining') : null;
+      var bodyText = res.data ? JSON.stringify(res.data.errors || res.data.error || '') : '';
+      if (res.status === 429 || (res.status === 403 && (remaining === '0' || /rate limit/i.test(bodyText)))) {
+        var hasRetry = res.headers && res.headers.get && res.headers.get('retry-after');
+        if (!hasRetry) {
+          cooldown.unsplash = Date.now() + 3600000;
+          var limited = new Error('Unsplash hourly limit reached. Try again later.');
+          limited.status = 429;
+          limited.provider = 'unsplash';
+          limited.retryAfter = 3600;
+          throw limited;
+        }
+        throw httpError('unsplash', 429, res.headers);
+      }
+      if (res.status === 401 || res.status === 403) throw httpError('unsplash', 401, res.headers);
+      if (!res.ok || !res.data) throw httpError('unsplash', res.status, res.headers);
+      return mapUnsplash(res.data, page);
+    });
+  }
+
   function bearer() {
     var o = keys().openverse;
     if (o.token && o.tokenExp && (o.tokenExp - Date.now()) > TOKEN_SKEW) return Promise.resolve(o.token);
@@ -400,7 +582,7 @@
   function search(q, opts) {
     opts = opts || {};
     var provider = opts.provider || 'openverse';
-    if (provider !== 'pixabay' && provider !== 'pexels' && provider !== 'openverse') {
+    if (!PROVIDER_META[provider]) {
       return Promise.reject(new Error('Unknown photo source.'));
     }
     var blocked = guard(provider);
@@ -408,12 +590,21 @@
     q = String(q || '').replace(/^\s+|\s+$/g, '').slice(0, 200);
     if (!q && provider !== 'openverse') return Promise.reject(new Error('Enter a search term.'));
     var page = clampInt(opts.page, 1, 500, 1);
-    var per = clampInt(opts.perPage, 1, provider === 'openverse' ? 20 : 80, 20);
+    var per = clampInt(opts.perPage, 1, provider === 'openverse' ? 20 : (provider === 'unsplash' ? 30 : 80), 20);
     if (provider === 'pixabay') per = clampInt(per, 3, 200, 20);
     var orientation = orientParam(provider, opts.orientation);
-    if (provider === 'pixabay') return searchPixabay(q, page, per, orientation);
-    if (provider === 'pexels') return searchPexels(q, page, per, orientation);
-    return searchOpenverse(q, page, per, orientation, false);
+    var run;
+    if (provider === 'pixabay') run = searchPixabay(q, page, per, orientation);
+    else if (provider === 'pexels') run = searchPexels(q, page, per, orientation);
+    else if (provider === 'unsplash') run = searchUnsplash(q, page, per, orientation);
+    else run = searchOpenverse(q, page, per, orientation, false);
+    return run.then(function (out) {
+      delete lastError[provider];
+      return out;
+    }, function (err) {
+      if (err && err.status !== 401 && err.status !== 429) lastError[provider] = true;
+      throw err;
+    });
   }
 
   function registerOpenverse(info) {
@@ -565,6 +756,7 @@
     if (!isFinite(maxEdge) || maxEdge < 64) maxEdge = defaultMax();
     var url = String(hit.importUrl || hit.url || '');
     if (hit.provider === 'pixabay' || hit.provider === 'pexels') return url;
+    if (hit.provider === 'unsplash' || /^https:\/\/images\.unsplash\.com\//.test(url)) return unsplashSized(url, maxEdge);
     var size = fileBytes(hit.filesize);
     var original = looksOriginal(url);
     if (!size && original && hit.thumb) return hit.thumb;
@@ -784,18 +976,41 @@
   }
 
   function sourceOf(hit) {
-    return {
+    var out = {
       provider: String(hit.provider || ''),
       photographer: String(hit.photographer || ''),
       pageUrl: String(hit.pageUrl || ''),
       license: String(hit.license || ''),
       attribution: String(hit.attribution || '')
     };
+    if (hit.photographerUrl) out.photographerUrl = String(hit.photographerUrl);
+    return out;
   }
 
   function fileBase(hit) {
     var base = String(hit.photographer || hit.provider || 'photo').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '');
     return (base || 'photo').slice(0, 48);
+  }
+
+  /* Unsplash API guideline: report a real download. Fire and forget; never breaks the import. */
+  function pingDownload(hit) {
+    try {
+      if (!hit || hit.provider !== 'unsplash' || !hit.downloadLocation) return;
+      var loc = String(hit.downloadLocation);
+      if (loc.indexOf(UNSPLASH_API) !== 0) return;
+      var key = rawKey(keys().unsplash);
+      if (!key) return;
+      var p = fetch(loc, {
+        method: 'GET',
+        headers: unsplashAuth(key),
+        credentials: 'omit',
+        referrerPolicy: 'no-referrer',
+        cache: 'no-store'
+      });
+      if (p && p.then) p.then(function (res) {
+        if (res && res.body && res.body.cancel) { try { res.body.cancel(); } catch (e) {} }
+      }, function () {});
+    } catch (e2) {}
   }
 
   function importHit(hit) {
@@ -814,12 +1029,14 @@
       file.source = source;
       file.width = out.width;
       file.height = out.height;
+      pingDownload(hit);
       return { file: file, blob: file, width: out.width, height: out.height, type: type, source: source };
     });
   }
 
   LE.stock = {
     providers: providers,
+    quota: quota,
     keys: keys,
     setKeys: setKeys,
     search: search,

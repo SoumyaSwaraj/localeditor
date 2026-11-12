@@ -1,0 +1,45 @@
+{
+  "result_count": 10000,
+  "page_count": 20,
+  "page_size": 20,
+  "page": 1,
+  "results": [
+    {
+      "id": "4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d",
+      "title": "Cat November 2010-1a",
+      "indexed_on": "2022-08-27T10:00:00Z",
+      "foreign_landing_url": "https://commons.wikimedia.org/w/index.php?curid=4357473",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/4d/Cat_November_2010-1a.jpg",
+      "creator": "Alvesgaspar",
+      "creator_url": "https://commons.wikimedia.org/wiki/User:Alvesgaspar",
+      "license": "by-sa",
+      "license_version": "3.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "provider": "wikimedia",
+      "source": "wikimedia",
+      "category": "photograph",
+      "filesize": 8000000,
+      "filetype": "jpg",
+      "tags": [{ "name": "cat" }],
+      "attribution": "\"Cat November 2010-1a\" by Alvesgaspar is licensed under CC BY-SA 3.0.",
+      "mature": false,
+      "height": 3000,
+      "width": 4000,
+      "thumbnail": "https://api.openverse.org/v1/images/4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d/thumb/",
+      "detail_url": "https://api.openverse.org/v1/images/4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d/",
+      "related_url": "https://api.openverse.org/v1/images/4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d/related/"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "title": "Mature one",
+      "foreign_landing_url": "https://example.org/m",
+      "url": "https://example.org/m.jpg",
+      "creator": "X",
+      "license": "by",
+      "mature": true,
+      "height": 100,
+      "width": 100,
+      "thumbnail": "https://api.openverse.org/v1/images/m/thumb/"
+    }
+  ]
+}
