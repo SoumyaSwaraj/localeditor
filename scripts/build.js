@@ -72,6 +72,7 @@ const TOOLS = [
   ['pdf', 'organize-pdf', 'Organize PDF', 'Reorder, delete, duplicate and insert PDF pages.', 'layers'],
   ['pdf', 'add-page-numbers', 'Add Page Numbers', 'Number PDF pages with custom position and format.', 'numbers'],
   ['pdf', 'watermark-pdf', 'Watermark PDF', 'Add a text watermark such as CONFIDENTIAL to every page.', 'stamp'],
+  ['pdf', 'verify', 'Verify a File', 'Check a file against its fingerprint receipt. Nothing is uploaded.', 'fingerprint'],
   ['text', 'word-counter', 'Word Counter', 'Count words, characters, sentences and reading time.', 'text'],
   ['text', 'case-converter', 'Case Converter', 'UPPER, lower, Title, camelCase, snake_case and more.', 'case'],
   ['text', 'text-diff', 'Text Compare (Diff)', 'Highlight differences between two texts line by line.', 'diff'],

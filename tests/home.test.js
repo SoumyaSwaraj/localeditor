@@ -46,7 +46,7 @@ cases['tool search and chips filter the directory'] = async ({ browser, base, h 
   await page.fill('[data-dir-search]', '');
   await page.click('[data-dir-cat="pdf"]');
   shown = await visible();
-  h.assert(shown.length === 8 && shown.includes('Split PDF'), 'PDF chip shows the 8 PDF tools, got ' + shown.length);
+  h.assert(shown.length === 9 && shown.includes('Split PDF'), 'PDF chip shows the 9 PDF tools, got ' + shown.length);
   h.assert.equal(await page.getAttribute('[data-dir-cat="pdf"]', 'aria-pressed'), 'true');
   h.assert.noErrors(page);
 };

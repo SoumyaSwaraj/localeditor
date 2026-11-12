@@ -29,6 +29,7 @@ Prefer asserting on the scene document (`h.doc(page)`) over pixels. Test at desk
 | `studio-phone.test.js` | 390x844 and 360x740 with touch: tab bar, sheets and snapping, touch editing, tap targets, no sideways scroll |
 | `studio-panels.test.js` | shallow "panel opens" checks for areas being rebuilt, plus shell regressions |
 | `studio-layout.test.js` | desktop layout at 1440x900, 1366x768, 1280x720, 1280x560 |
+| `shell.test.js` | studio shell (2.11): phone tabs + More, sheet snaps and scrubbing, toolbar priority/overflow, touch handles, export action, sticky actions, toasts, touch wording, coach marks, short laptops, keyboard menus and focus, contrast, object-URL caches |
 | `studio-monkey.test.js` | seeded random command sequences never throw or corrupt the document |
 | `site-pages.test.js` | all 31 tool/info pages: console, sideways scroll, title/h1/main |
 | `themes.test.js` | dark/light, console errors, gold button ink `#2A1F0A`, theme toggle |

@@ -8,6 +8,10 @@ Kept by the lead architect. Things reported by the team that are not yet assigne
 - **Replay end tag.** The "Made with LocalEditor" tag on replay videos is off by default. Turning it on by default would help reach.
 - **Open source and self-hosting.** Not decided.
 
+## Decisions made by the owner
+- **Camera RAW decoder (12 November 2026):** allowed as an optional download with its licence shown, as an exception to the licence rule. Worth one legal read of how the licence text, source offer and replaceability are presented before launch.
+- **Download policy (12 November 2026):** `docs/DOWNLOADS.md`.
+
 ## Not yet assigned
 - **QA-010** Convert to PDF turns Word, Markdown, HTML and PowerPoint into page pictures with no text layer. Belongs with the next PDF wave.
 - **PDF wave, second half:** D11 saved form details, D14 compare versions, D15 bundle builder, D16 stamps and comment summary, D17 invoice maker, D18 tables to spreadsheet, D19 saved PDF workflows, D20 fingerprint receipt. D21 to D26 (teacher kit) are not requested yet.
@@ -31,6 +35,15 @@ Kept by the lead architect. Things reported by the team that are not yet assigne
 - **Redact:** "Apply permanently" does not cover photo backgrounds; version history may still hold the original photo.
 - **Makers:** style chips have no previews; story sizes leave empty space in a few styles.
 - **Photo privacy check:** HEIC can be read but not cleaned in Chromium; GIF is not checked.
+
+## Reported by the studio shell pass (12 November 2026)
+- **Duplicate download toast:** `IT.download` in `app.js` always says "Download started" and the studio adds its own "Downloaded 1.5 MB".
+- **Collage on phone:** the zero-photo start still does nothing silently; slot cells still show resize handles; the Replace sheet has an empty "Other photos on this device" label.
+- **Draw panel:** the Pen, Marker, Highlighter and Eraser row duplicates the toolbar.
+- **Remover label:** "Remove BG" is wide and pushes Filters into More at 360 px; use a shorter label or icon on phones.
+- **Resize:** custom width and height keeps the ratio lock on, so 500 × 300 becomes 500 × 500 (failing test `studio-edit › custom width and height in Resize`).
+- **Layers panel ARIA** (QA-018, QA-019), locked layers cannot be selected on the canvas (QA-003), Elements thumbnail (QA-017).
+- **On-screen keyboard** may cover text being typed; scrolling the text above the keyboard is not built. Safe-area insets on notched phones are unchecked.
 
 ## Never verified in this build environment
 Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen readers, the Android share sheet, real AWS (deploy, CloudFront function, headers policy), and every stock API (Pixabay, Pexels, Openverse, Unsplash are all tested against mocked responses).

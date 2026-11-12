@@ -76,35 +76,57 @@
 }
 .le-marquee.is-on { display: block; }
 
+/* Handles: on touch the element is the 44px hit area and the visible knob is drawn smaller inside it (::after);
+   with a mouse the element is the small knob itself. le-objects.js adds .no-ns / .no-ew (edge handles only where there is
+   room), .is-tiny (corner hit areas move outward) and .rot-below / .rot-inside (rotate knob never clipped at the top). */
 .le-h {
   position: absolute;
   box-sizing: border-box;
-  width: 22px;
-  height: 22px;
-  margin: -11px 0 0 -11px;
-  background: #fff;
-  border: 1.5px solid #E2B15A;
-  border-radius: 2px;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  background: transparent;
+  border: 0;
   pointer-events: auto;
   touch-action: none;
   z-index: 1;
 }
-.le-h::before {
+.le-h::after {
   content: "";
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 40px;
-  height: 40px;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
   transform: translate(-50%, -50%);
+  background: #fff;
+  border: 1.5px solid #E2B15A;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(23, 19, 31, 0.28);
+  pointer-events: none;
 }
+.le-h[data-h="n"]::after, .le-h[data-h="s"]::after { width: 24px; height: 8px; }
+.le-h[data-h="e"]::after, .le-h[data-h="w"]::after { width: 8px; height: 24px; }
 @media (pointer: fine) {
   .le-h {
     width: 12px;
     height: 12px;
     margin: -6px 0 0 -6px;
+    background: #fff;
+    border: 1.5px solid #E2B15A;
+    border-radius: 2px;
   }
-  .le-h::before { width: 16px; height: 16px; }
+  .le-h::after { content: none; }
+  .le-h::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translate(-50%, -50%);
+  }
 }
 .le-h[data-h="nw"] { left: 0; top: 0; }
 .le-h[data-h="n"] { left: 50%; top: 0; }
@@ -114,21 +136,36 @@
 .le-h[data-h="s"] { left: 50%; top: 100%; }
 .le-h[data-h="sw"] { left: 0; top: 100%; }
 .le-h[data-h="w"] { left: 0; top: 50%; }
+.le-sel.no-ns .le-h[data-h="n"], .le-sel.no-ns .le-h[data-h="s"],
+.le-sel.no-ew .le-h[data-h="e"], .le-sel.no-ew .le-h[data-h="w"] { display: none; }
+.le-sel.is-tiny .le-h[data-h="nw"] { transform: translate(-12px, -12px); }
+.le-sel.is-tiny .le-h[data-h="ne"] { transform: translate(12px, -12px); }
+.le-sel.is-tiny .le-h[data-h="se"] { transform: translate(12px, 12px); }
+.le-sel.is-tiny .le-h[data-h="sw"] { transform: translate(-12px, 12px); }
 .le-h[data-h="rotate"] {
   left: 50%;
-  top: -36px;
-  width: 22px;
-  height: 22px;
-  margin: -11px 0 0 -11px;
-  border-radius: 50%;
+  top: -40px;
   display: grid;
   place-items: center;
   cursor: grab;
 }
-@media (pointer: coarse) {
-  .le-h[data-h="rotate"] { top: -46px; }
+.le-h[data-h="rotate"]::after { width: 26px; height: 26px; border-radius: 50%; z-index: 0; }
+.le-sel.rot-below .le-h[data-h="rotate"] { top: calc(100% + 40px); }
+.le-sel.rot-inside .le-h[data-h="rotate"] { top: 30px; }
+@media (pointer: fine) {
+  .le-h[data-h="rotate"] {
+    top: -32px;
+    width: 22px;
+    height: 22px;
+    margin: -11px 0 0 -11px;
+    border-radius: 50%;
+  }
+  .le-sel.rot-below .le-h[data-h="rotate"] { top: calc(100% + 32px); }
+  .le-sel.rot-inside .le-h[data-h="rotate"] { top: 22px; }
 }
 .le-h[data-h="rotate"] svg {
+  position: relative;
+  z-index: 1;
   width: 14px;
   height: 14px;
   display: block;
