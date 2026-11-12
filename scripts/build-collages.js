@@ -421,6 +421,18 @@ function ransom(sh, word, x, y, size, rng) {
 
 function addStyle(meta) { STYLES.push(meta); }
 
+/* Compact slot geometry for catalogue cards: "x,y,w,h[,rot][,mask]" in whole % of the page, ';'-joined.
+   Decoded by LE.collage.artSlots(); lets every card show its real arrangement without loading the pack. */
+function artOf(t) {
+  return t.slots.slice().sort(function (a, b) { return (a.z || 0) - (b.z || 0); }).slice(0, 40).map(function (s) {
+    var p = [s.x / t.w, s.y / t.h, s.w / t.w, s.h / t.h].map(function (v) { return Math.round(v * 100); });
+    var mask = s.maskPath ? 'p' : s.mask === 'ellipse' ? 'ellipse' : s.mask === 'heart' ? 'heart' : s.mask === 'star' ? 'star' : '';
+    if (s.rot || mask) p.push(Math.round(s.rot || 0));
+    if (mask) p.push(mask);
+    return p.join(',');
+  }).join(';');
+}
+
 function assemble(meta) {
   assert(meta.variants.length >= 1, meta.id + ' empty');
   return meta.variants.map(function (v, i) {
@@ -497,7 +509,10 @@ function main() {
       });
       var sizeKey = t.w + 'x' + t.h;
       if (sizes.indexOf(sizeKey) < 0) sizes.push(sizeKey);
-      indexTemplates.push({ id: t.id, style: t.style, name: t.name, w: t.w, h: t.h, slots: t.slots.length, featured: !!t.featured });
+      indexTemplates.push({
+        id: t.id, style: t.style, name: t.name, w: t.w, h: t.h, slots: t.slots.length, featured: !!t.featured,
+        bgc: t.bg.type === 'solid' ? t.bg.color : t.bg.colors[0], art: artOf(t)
+      });
     });
     var tags = meta.tags.slice();
     if (classicMap[meta.id] && tags.indexOf('classic') < 0) tags.push('classic');
@@ -531,7 +546,7 @@ function main() {
 }
 
 addStyle({
-  id: 'silhouette', name: 'Silhouette', group: 'style', cats: ['paper', 'people', 'books', 'street'],
+  id: 'silhouette', name: 'Silhouette', group: 'style', cats: ['people', 'paper', 'street', 'books'],
   tags: ['profile', 'type', 'cutout'],
   variants: [
     { name: 'Profile letters', size: 'sq', bg: solid('#F7F4EF'), mode: 'scatter', tiles: 6, flip: false },
@@ -636,7 +651,7 @@ addStyle({
       }
       var pad = v.pad || 28;
       var box = { x: pad, y: v.band ? sh.h * 0.28 : pad, w: sh.w - pad * 2, h: v.band ? sh.h * 0.44 : sh.h - pad * 2 };
-      if (v.plant) box = { x: 56, y: 48, w: sh.w - 112, h: sh.h * 0.58 };
+      if (v.plant) box = { x: 64, y: 64, w: sh.w - 128, h: sh.h * 0.74 };
       if (v.frame) {
         sh.shape('rect', box.x - 14, box.y - 14, box.w + 28, box.h + 28, {
           name: 'Frame', fill: { type: 'none' }, stroke: { width: v.frame, color: v.bg.color === '#FBF8F4' || v.plant ? INK : WHITE }

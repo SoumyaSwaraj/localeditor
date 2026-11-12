@@ -47,7 +47,7 @@ Apply flow:
 3. Every cell is a slot.
 
 ## Stock library — `LE.stock` in `assets/js/le-stock.js`
-Providers: **pixabay**, **pexels**, **openverse**. Unsplash is build-time only unless a user later pastes a key; do not add a Unsplash search tab unless trivial.
+Providers: **pixabay**, **pexels**, **openverse**, **unsplash** (in-app search with the user's own Access Key; hotlinked URLs, download ping and credit line per Unsplash API terms). The studio renders provider chips, key fields and credit links from `LE.stock.providers()`, so a new provider needs no UI change.
 
 Keys: `localStorage` `le-stock-keys` `{ pixabay, pexels, openverse: { clientId, clientSecret, token, tokenExp, email } }`. Settings UI in Uploads → Stock → Keys, and a compact keys sheet.
 

@@ -1805,7 +1805,7 @@
 
   /* ---------- Apps ---------- */
   var APPS = [
-    ['collage', 'Collage', 'grid', 'Arrange uploads in a grid'], ['watermark', 'Watermark', 'stamp', 'Text or logo, tiled'], ['meme', 'Meme', 'meme', 'Top & bottom captions'],
+    ['collage', 'Collage', 'grid', 'Layouts, spacing & styles'], ['watermark', 'Watermark', 'stamp', 'Text or logo, tiled'], ['meme', 'Meme', 'meme', 'Top & bottom captions'],
     ['palette', 'Palette', 'palette', 'Extract brand colors'], ['metadata', 'Metadata', 'metadata', 'EXIF & location'], ['compare', 'Before / after', 'compare', 'Side-by-side image'],
     ['batch', 'Batch', 'batch', 'Apply a look to many'], ['upscale', 'Upscale', 'upscale', 'Bigger exports'], ['contact', 'Contact sheet', 'sheet', 'All uploads on one page']
   ];
@@ -1828,44 +1828,9 @@
     }
   };
   var APP_RENDER = {
-    collage: function (c, body) {
-      if (needProject(c, body)) return;
-      var ids = Object.keys(c.S.project.assets || {});
-      var layouts = [['2h', '2 side by side', [[0, 0, .5, 1], [.5, 0, .5, 1]]], ['2v', '2 stacked', [[0, 0, 1, .5], [0, .5, 1, .5]]], ['3', '1 + 2', [[0, 0, .6, 1], [.6, 0, .4, .5], [.6, .5, .4, .5]]], ['4', '2 × 2', [[0, 0, .5, .5], [.5, 0, .5, .5], [0, .5, .5, .5], [.5, .5, .5, .5]]], ['3h', '3 columns', [[0, 0, 1 / 3, 1], [1 / 3, 0, 1 / 3, 1], [2 / 3, 0, 1 / 3, 1]]], ['5', 'Hero + 4', [[0, 0, 1, .55], [0, .55, .25, .45], [.25, .55, .25, .45], [.5, .55, .25, .45], [.75, .55, .25, .45]]]];
-      var gap = 16, rad = 12;
-      var s = c.ui.section('Layout');
-      var g = grid('sx-grid-3');
-      layouts.forEach(function (lay) {
-        var b = c.h('<button type="button" class="sx-layout" aria-label="' + lay[1] + '"><span class="sx-layout-art">' + lay[2].map(function (r) { return '<i style="left:' + r[0] * 100 + '%;top:' + r[1] * 100 + '%;width:' + r[2] * 100 + '%;height:' + r[3] * 100 + '%"></i>'; }).join('') + '</span><small>' + lay[1] + '</small></button>');
-        b.onclick = function () {
-          if (ids.length < 2) { c.toast('Upload at least two photos first.'); c.pickFiles('tray'); return; }
-          var d = c.doc();
-          var W = d.width, H = d.height, kk = Math.min(W, H) / 1080;
-          var gp = gap * kk;
-          c.batch(function () {
-            var made = lay[2].map(function (r, i) {
-              var id = ids[i % ids.length];
-              var m = c.mem[id];
-              var x = r[0] * W + gp, y = r[1] * H + gp, w = r[2] * W - gp * (r[0] + r[2] >= 0.999 ? 2 : 1.5), h = r[3] * H - gp * (r[1] + r[3] >= 0.999 ? 2 : 1.5);
-              if (r[0] > 0) { x -= gp / 2; } if (r[1] > 0) { y -= gp / 2; }
-              return c.scene.add({ type: 'image', src: id, name: 'Collage ' + (i + 1), x: x, y: y, w: w, h: h, radius: rad * kk, crop: c.coverCrop(m.canvas.width, m.canvas.height, null, w, h, null) });
-            });
-            var gid = c.scene.group(made);
-            c.patch(gid, { name: 'Collage' });
-            c.scene.select([gid]);
-          });
-          c.toast('Collage added — double-click a cell to re-crop it');
-        };
-        g.appendChild(b);
-      });
-      s.querySelector('.sx-sec-body').appendChild(g);
-      body.appendChild(s);
-      var s2 = c.ui.section('Spacing');
-      s2.querySelector('.sx-sec-body').appendChild(c.ui.slider({ label: 'Gap', min: 0, max: 60, value: gap, onInput: function (v) { gap = v; } }));
-      s2.querySelector('.sx-sec-body').appendChild(c.ui.slider({ label: 'Corner radius', min: 0, max: 60, value: rad, onInput: function (v) { rad = v; } }));
-      body.appendChild(s2);
-      body.appendChild(btn(c, 'Upload more photos', 'uploads', 'btn btn-ghost btn-sm', function () { c.pickFiles('tray'); }));
-      body.appendChild(note(c, ids.length + ' photo' + (ids.length === 1 ? '' : 's') + ' in this design. Cells cycle through your uploads.'));
+    collage: function (c, body, o) {
+      if (window.LEStudioCollage && LEStudioCollage.renderApp) { LEStudioCollage.renderApp(c, body, o); return; }
+      body.appendChild(note(c, 'Collage could not load. Reload the studio.'));
     },
     watermark: function (c, body) {
       if (needProject(c, body)) return;

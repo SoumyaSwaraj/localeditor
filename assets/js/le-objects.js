@@ -320,6 +320,47 @@
     return { id: id, label: label, photo: photo };
   }
 
+  /* Collage meta (doc.collage): plain data the collage builder re-opens from. */
+  function collageOf(c) {
+    if (!c || typeof c !== 'object' || Array.isArray(c)) return null;
+    var out = { v: 1 };
+    function word(v, n) { return typeof v === 'string' ? v.replace(/[^\w.:-]/g, '').slice(0, n) : ''; }
+    if (word(c.layout, 40)) out.layout = word(c.layout, 40);
+    if (word(c.template, 60)) out.template = word(c.template, 60);
+    if (word(c.aspect, 12)) out.aspect = word(c.aspect, 12);
+    ['spacing', 'margin', 'radius'].forEach(function (k) {
+      var v = Number(c[k]);
+      if (c[k] != null && isFinite(v)) out[k] = Math.round(clamp(v, 0, 4000) * 100) / 100;
+    });
+    if (c.border && typeof c.border === 'object') {
+      var bw = Number(c.border.width);
+      var bc = typeof c.border.color === 'string' ? c.border.color.replace(/[^#\w(),.%\s-]/g, '').slice(0, 40) : '';
+      out.border = { width: isFinite(bw) ? Math.round(clamp(bw, 0, 400) * 100) / 100 : 0, color: bc || '#FFFFFF' };
+    }
+    if (Array.isArray(c.cells)) {
+      out.cells = c.cells.slice(0, 60).filter(function (r) {
+        return Array.isArray(r) && r.length === 4 && r.every(function (v) { return typeof v === 'number' && isFinite(v); });
+      }).map(function (r) { return r.map(function (v) { return Math.round(clamp(v, 0, 1) * 1e4) / 1e4; }); });
+    }
+    if (Array.isArray(c.order)) out.order = c.order.slice(0, 60).map(function (id) { return word(String(id == null ? '' : id), 40); });
+    return out;
+  }
+  /* Keeps a crop's centre and zoom when the photo moves into a frame of another shape. */
+  function refitCrop(crop, iw, ih, W, H) {
+    crop = crop || { x: 0, y: 0, w: 1, h: 1 };
+    function cover(T) {
+      var A = iw / ih;
+      return A > T ? { w: T / A, h: 1 } : { w: 1, h: A / T };
+    }
+    if (!iw || !ih || !W || !H) return { x: crop.x, y: crop.y, w: crop.w, h: crop.h };
+    var was = cover((crop.w * iw) / (crop.h * ih));
+    var zoom = Math.max(1, Math.min(was.w / crop.w, was.h / crop.h) || 1);
+    var next = cover(W / H);
+    var w = next.w / zoom, h = next.h / zoom;
+    var cx = crop.x + crop.w / 2, cy = crop.y + crop.h / 2;
+    return { x: clamp(cx - w / 2, 0, 1 - w), y: clamp(cy - h / 2, 0, 1 - h), w: w, h: h };
+  }
+
   function sanitizeMaskPath(d) {
     if (typeof d !== 'string' || !d || d.length > 20000) return '';
     if (!/[MmLlCcQqAaZzHhVv]/.test(d)) return '';
@@ -970,7 +1011,8 @@
       width: this._doc.width,
       height: this._doc.height,
       background: this._doc.background,
-      layers: this._doc.layers
+      layers: this._doc.layers,
+      collage: this._doc.collage || undefined
     });
   };
   P._histInfo = function () {
@@ -1017,6 +1059,7 @@
     this._doc.height = data.height;
     this._doc.background = data.background || { type: 'color', color: '#ffffff' };
     this._doc.layers = data.layers || [];
+    if (data.collage) this._doc.collage = collageOf(data.collage); else delete this._doc.collage;
     this._clearBitmaps();
     this._jobs = {};
     var self = this;
@@ -1081,6 +1124,7 @@
     (doc.layers || []).forEach(function (layer) {
       self._doc.layers.push(normalize(layer, self, true));
     });
+    if (collageOf(doc.collage)) this._doc.collage = collageOf(doc.collage);
     this._sel = [];
     this._hist = { undo: [], redo: [], key: null, base: null, pushed: false };
     this._clearBitmaps();
@@ -2763,6 +2807,13 @@
     }
     if (this._crop) {
       var ch = this._handle(e.target);
+      if (this._crop.pan) {
+        /* Photo slot: the frame stays, the photo pans inside it. A tap outside the cell ends crop. */
+        var cl = this._find(this._crop.id);
+        if (cl && this._hits(cl, doc.x, doc.y)) { this._gesture = { type: 'croppan', last: doc }; return; }
+        this._applyCrop();
+        return;
+      }
       if (ch && ch !== 'rotate') {
         var cur = this._cropLocal();
         this._gesture = { type: 'crop', handle: ch, start: cur, anchor: this._toFullLocal(doc.x, doc.y) };
@@ -2843,6 +2894,10 @@
       this._applyPinch();
       return;
     }
+    if (Object.keys(this._pointers).length >= 2 && this._gesture && this._gesture.type === 'croppinch') {
+      this._applyCropPinch();
+      return;
+    }
     var local = this._localFromEvent(e);
     var doc = this._cssToDoc(local.x, local.y);
     var g = this._gesture;
@@ -2891,6 +2946,7 @@
     else if (g.type === 'erase') { this._erase(g.last, doc); g.last = doc; }
     else if (g.type === 'shape') this._updateShape(doc);
     else if (g.type === 'crop') this._applyCropDrag(doc);
+    else if (g.type === 'croppan') this._applyCropPan(doc);
   };
 
   P._up = function (e) {
@@ -2915,6 +2971,7 @@
     if (g.type === 'path') this._finishPath();
     if (g.type === 'shape') this._finishShape();
     if (g.type === 'erase') this._finishErase();
+    if (g.type === 'move' && g.swap) this._finishSlotSwap(g);
     this._guides = [];
     this._tidySelection();
     this._endHist();
@@ -2941,6 +2998,11 @@
     var a = this._pointers[ids[0]], b = this._pointers[ids[1]];
     var rect = this.el.getBoundingClientRect();
     var mid = { x: (a.x + b.x) / 2 - rect.left, y: (a.y + b.y) / 2 - rect.top };
+    var held = this._crop && this._crop.pan ? this._find(this._crop.id) : null;
+    if (held) {
+      this._gesture = { type: 'croppinch', dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, crop: clone(held.crop), at: this._cssToDoc(mid.x, mid.y) };
+      return;
+    }
     this._gesture = {
       type: 'pinch',
       dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
@@ -2971,6 +3033,11 @@
     var dy = e.deltaY, dx = e.deltaX;
     if (e.deltaMode === 1) { dx *= 16; dy *= 16; }
     if (e.deltaMode === 2) { dx *= this.el.clientWidth; dy *= this.el.clientHeight; }
+    if (this._crop && this._crop.pan) {
+      var held = this._find(this._crop.id);
+      if (held) this._zoomSlotCrop(held, held.crop, Math.exp(-dy * 0.002), this._cssToDoc(local.x, local.y));
+      return;
+    }
     if (e.ctrlKey || e.metaKey) this._zoomAt(this._zoom * Math.exp(-dy * 0.0015), local.x, local.y);
     else {
       if (e.shiftKey && !dx) { dx = dy; dy = 0; }
@@ -3016,6 +3083,7 @@
     });
     this._guides = snapped.guides;
     this._after();
+    this._slotDropCheck(doc);
   };
 
   P._snapRect = function (box, ignore) {
@@ -3514,8 +3582,10 @@
       rot: layer.rotation || 0,
       flipX: !!layer.flipX,
       flipY: !!layer.flipY,
+      pan: !!layer.slot,
       snap: this._snapshot()
     };
+    this._cropEl.classList.toggle('is-pan', !!layer.slot);
     this._tool = 'crop';
     this.el.setAttribute('data-tool', 'crop');
     this._emit('tool', { tool: 'crop' });
@@ -3606,6 +3676,132 @@
     this.el.setAttribute('data-tool', this._tool);
     this._restore(snap, true);
     this._emit('tool', { tool: this._tool });
+  };
+
+  /* ---------- Photo slots: pan / zoom inside the cell, drag-to-swap, collage meta ---------- */
+  P._assetSize = function (src) {
+    var node = src ? assetNode(this._assets[src]) : null;
+    if (!node) return null;
+    return { w: node.naturalWidth || node.width, h: node.naturalHeight || node.height };
+  };
+  P._slotCropSet = function (layer, crop) {
+    var s = this._crop;
+    var self = this;
+    this._live(function () {
+      layer.crop = crop;
+      if (s && s.id === layer.id) {
+        s.fw = layer.w / crop.w;
+        s.fh = layer.h / crop.h;
+        var c = localToWorld(layer, -crop.x * s.fw + s.fw / 2, -crop.y * s.fh + s.fh / 2);
+        s.cx = c.x;
+        s.cy = c.y;
+      }
+      self._scheduleImage(layer.id);
+    });
+    this._layout();
+  };
+  P._applyCropPan = function (doc) {
+    var g = this._gesture;
+    var layer = this._find(this._crop.id);
+    if (!layer) return;
+    var a = worldToLocal(layer, g.last.x, g.last.y);
+    var b = worldToLocal(layer, doc.x, doc.y);
+    g.last = doc;
+    var c = layer.crop || { x: 0, y: 0, w: 1, h: 1 };
+    var fw = layer.w / c.w, fh = layer.h / c.h;
+    this._slotCropSet(layer, {
+      x: clamp(c.x - (b.x - a.x) / fw, 0, 1 - c.w),
+      y: clamp(c.y - (b.y - a.y) / fh, 0, 1 - c.h),
+      w: c.w, h: c.h
+    });
+  };
+  /* Zooms the photo by factor f from crop `from`, keeping the image point under `doc` still. */
+  P._zoomSlotCrop = function (layer, from, f, doc) {
+    from = from || { x: 0, y: 0, w: 1, h: 1 };
+    f = Math.max(f, Math.max(from.w, from.h));
+    f = Math.min(f, Math.min(from.w, from.h) / 0.04);
+    var w = from.w / f, h = from.h / f;
+    var p = doc ? worldToLocal(layer, doc.x, doc.y) : { x: layer.w / 2, y: layer.h / 2 };
+    var u = clamp(p.x / layer.w, 0, 1), v = clamp(p.y / layer.h, 0, 1);
+    var ix = from.x + u * from.w, iy = from.y + v * from.h;
+    this._slotCropSet(layer, { x: clamp(ix - u * w, 0, 1 - w), y: clamp(iy - v * h, 0, 1 - h), w: w, h: h });
+  };
+  P._applyCropPinch = function () {
+    var ids = Object.keys(this._pointers);
+    var g = this._gesture;
+    var layer = this._crop && this._find(this._crop.id);
+    if (ids.length < 2 || !g || !layer) return;
+    var a = this._pointers[ids[0]], b = this._pointers[ids[1]];
+    var dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    this._zoomSlotCrop(layer, g.crop, dist / g.dist, g.at);
+  };
+  /* Public: zoom the photo inside the slot being cropped (or any slot) by a factor. */
+  P.zoomSlot = function (id, f) {
+    var layer = this._find(id);
+    if (!layer || layer.type !== 'image') return;
+    var own = !this._crop || this._crop.id !== id;
+    if (own) this._before(null);
+    this._zoomSlotCrop(layer, layer.crop, f, null);
+    if (own) this._after();
+  };
+  P._slotAt = function (x, y, skipId) {
+    var layers = this._doc.layers;
+    for (var i = layers.length - 1; i >= 0; i--) {
+      var l = layers[i];
+      if (l.id === skipId || l.type !== 'image' || !l.slot || l.visible === false || this._hidden(l) || this._locked(l)) continue;
+      if (this._hits(l, x, y)) return l.id;
+    }
+    return null;
+  };
+  P._slotDropCheck = function (doc) {
+    var g = this._gesture;
+    if (!g || g.type !== 'move' || g.roots.length !== 1) return;
+    var moving = this._find(g.roots[0]);
+    if (!moving || moving.type !== 'image' || !moving.slot) return;
+    var target = this._slotAt(doc.x, doc.y, moving.id);
+    g.swap = target;
+    this._hoverEl.classList.toggle('is-drop', !!target);
+    this._hover = target;
+    this._layout();
+  };
+  P._swapPhotos = function (A, B) {
+    var sa = this._assetSize(A.src), sb = this._assetSize(B.src);
+    var ca = A.crop, cb = B.crop;
+    ['src', 'adjust', 'filter', 'removeBg'].forEach(function (k) { var t = A[k]; A[k] = B[k]; B[k] = t; });
+    A.crop = A.src && sb ? refitCrop(cb, sb.w, sb.h, A.w, A.h) : { x: 0, y: 0, w: 1, h: 1 };
+    B.crop = B.src && sa ? refitCrop(ca, sa.w, sa.h, B.w, B.h) : { x: 0, y: 0, w: 1, h: 1 };
+    this._scheduleImage(A.id);
+    this._scheduleImage(B.id);
+  };
+  P._finishSlotSwap = function (g) {
+    var A = this._find(g.roots[0]), B = this._find(g.swap);
+    this._hoverEl.classList.remove('is-drop');
+    this._hover = null;
+    if (!A || !B) return;
+    var self = this;
+    this._live(function () {
+      var st = g.starts[A.id];
+      if (st) self._shiftTree(A, st.x - A.x, st.y - A.y);
+      self._swapPhotos(A, B);
+    });
+    this._emit('slot-swap', { from: A.id, to: B.id });
+  };
+  /* Public: swap the photos of two slot layers (frames, masks and borders stay). One undo step. */
+  P.swapSlots = function (a, b) {
+    var A = this._find(a), B = this._find(b);
+    if (!A || !B || A.type !== 'image' || B.type !== 'image' || a === b) return false;
+    this._before(null);
+    this._swapPhotos(A, B);
+    this._after();
+    return true;
+  };
+  P.collage = function () { return this._doc.collage ? clone(this._doc.collage) : null; };
+  P.setCollage = function (meta, opts) {
+    var key = opts && opts.coalesce ? String(opts.coalesce) : null;
+    this._before(key);
+    var m = collageOf(meta);
+    if (m) this._doc.collage = m; else delete this._doc.collage;
+    this._after();
   };
 
   P._marqueeHits = function (box) {
@@ -3762,6 +3958,8 @@
   LE.Scene = Scene;
   LE.Scene.EXTENDED_ADJUST = true;
   LE.Scene.blank = blank;
+  LE.Scene.collageOf = collageOf;
+  LE.Scene.refitCrop = refitCrop;
   LE.Scene.backgroundSpec = bgSpec;
   LE.Scene.backgroundPlacement = function (bg, W, H, sw, sh) { return bgPlace(bgSpec(bg), W, H, sw, sh); };
 })(typeof window !== 'undefined' ? window : this);
