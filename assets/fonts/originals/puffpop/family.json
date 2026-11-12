@@ -1,0 +1,78 @@
+{
+ "family": "Puffpop",
+ "slug": "puffpop",
+ "source": "localeditor",
+ "version": "1.000",
+ "intent": "positive",
+ "feel": [
+  "playful",
+  "bold"
+ ],
+ "description": "Puffy and fun. Big, round and happy.",
+ "uses": [
+  "Party invites",
+  "Toy and sweet shops",
+  "Stickers"
+ ],
+ "concept": "Bubble display: heavy, wide and fully rounded, small counters, tight-but-not-touching spacing.",
+ "category": "sans",
+ "weights": [
+  400,
+  700
+ ],
+ "italic": false,
+ "license": "LocalEditor-Proprietary (pending owner decision)",
+ "files": {
+  "400": {
+   "woff2": "assets/fonts/originals/puffpop/puffpop-400.woff2",
+   "woff": "assets/fonts/originals/puffpop/puffpop-400.woff"
+  },
+  "700": {
+   "woff2": "assets/fonts/originals/puffpop/puffpop-700.woff2",
+   "woff": "assets/fonts/originals/puffpop/puffpop-700.woff"
+  }
+ },
+ "bytes": {
+  "400": {
+   "woff2": 19396,
+   "woff": 24472
+  },
+  "700": {
+   "woff2": 20344,
+   "woff": 25416
+  }
+ },
+ "metrics": {
+  "unitsPerEm": 1000,
+  "ascender": 950,
+  "descender": -250,
+  "lineGap": 0,
+  "capHeight": 700,
+  "xHeight": 545
+ },
+ "parameters": {
+  "regular": {
+   "st": 128,
+   "ratio": 0.86,
+   "wid": 1.14,
+   "sq": 0.6,
+   "stemcap": "round",
+   "term": "round",
+   "diagcut": "round",
+   "aperture": 0.4,
+   "xh": 545,
+   "spacing": 0.94,
+   "join": 0.7,
+   "v": {
+    "a": 1,
+    "g": 1,
+    "y": "curve"
+   }
+  },
+  "bold": {
+   "st": 170,
+   "wid": 1.2,
+   "join": 0.6
+  }
+ }
+}

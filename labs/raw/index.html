@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>RAW lab</title>
+<style>
+  :root { --bg:#faf8f4; --ink:#17131f; --mute:#6b6577; --card:#fff; --line:#e3ded5; --gold:#e8b84a; --goldink:#2a1f0a; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#17131f; --ink:#f3efe8; --mute:#a59fb2; --card:#221c2d; --line:#362e45; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 16px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } p.lead { color: var(--mute); margin: 0 0 14px; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  button, .btn { min-height:44px; padding:0 14px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); font:inherit; font-weight:600; cursor:pointer; }
+  button.gold { background:var(--gold); border-color:var(--gold); color:var(--goldink); }
+  button:disabled { opacity:.5; }
+  label { display:flex; flex-direction:column; gap:2px; font-size:13px; color:var(--mute); min-width:150px; }
+  input[type=range] { width:100%; } select { min-height:40px; font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:0 8px; }
+  input[type=file] { max-width: 100%; }
+  canvas { max-width:100%; height:auto; border:1px solid var(--line); border-radius:8px; background:#000; }
+  pre { white-space:pre-wrap; font-size:12px; margin:0; max-height:220px; overflow:auto; }
+  #status { color:var(--mute); min-height:22px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>RAW lab</h1>
+  <p class="lead">Opens a DNG (or, with the optional module, a camera RAW file) entirely in this browser. Nothing is uploaded. Research prototype for the Expert mode RAW step; not linked from the site.</p>
+  <div class="panel">
+    <div class="row">
+      <input type="file" id="file" aria-label="Choose a RAW file">
+      <button id="synth" class="gold">Make a test DNG</button>
+      <label>Size <select id="synthSize"><option value="256x192">256 x 192</option><option value="1024x768" selected>1024 x 768</option><option value="4000x3000">4000 x 3000 (12 MP)</option></select></label>
+      <label>Storage <select id="synthComp"><option value="none">Uncompressed 14-bit</option><option value="lj92" selected>Lossless JPEG</option></select></label>
+    </div>
+    <p id="status" role="status">Choose a file, or make a test DNG.</p>
+  </div>
+  <div class="panel">
+    <div class="row">
+      <label>Exposure <input type="range" id="exposure" min="-3" max="3" step="0.05" value="0"></label>
+      <label>White balance (K) <input type="range" id="temp" min="2500" max="9000" step="50" value="6500"></label>
+      <label>Tint <input type="range" id="tint" min="-100" max="100" step="1" value="0"></label>
+      <label>Shadows <input type="range" id="shadows" min="-1" max="1" step="0.05" value="0"></label>
+      <label>Highlight recovery <select id="hl"><option value="ratio">Colour propagation</option><option value="clip">Clip to white</option><option value="none">None</option></select></label>
+      <label>Look <select id="look"></select></label>
+      <label>Size <select id="half"><option value="1">Half size (fast)</option><option value="0">Full size</option></select></label>
+    </div>
+  </div>
+  <div class="panel"><canvas id="out" width="320" height="240" aria-label="Developed picture"></canvas><div id="meta"></div></div>
+  <div class="panel"><pre id="log"></pre></div>
+</main>
+<script src="../../tools/dng-synth/dng-synth.js"></script>
+<script src="../../assets/js/raw/raw-core.js"></script>
+<script src="../../assets/js/raw/raw-develop.js"></script>
+<script src="../../assets/js/raw/raw.js"></script>
+<script src="lab.js"></script>
+</body>
+</html>

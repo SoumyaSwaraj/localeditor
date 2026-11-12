@@ -1,0 +1,81 @@
+{
+ "family": "Flarepoint",
+ "slug": "flarepoint",
+ "source": "localeditor",
+ "version": "1.000",
+ "intent": "attention",
+ "feel": [
+  "bold",
+  "technical"
+ ],
+ "description": "Round, black and sharp-cut. Modern and punchy.",
+ "uses": [
+  "Social posts",
+  "App promos",
+  "Thumbnails"
+ ],
+ "concept": "Geometric black with deep ink traps and angled cuts: round bowls, pointed apexes, single-storey a.",
+ "category": "sans",
+ "weights": [
+  400,
+  700
+ ],
+ "italic": false,
+ "license": "LocalEditor-Proprietary (pending owner decision)",
+ "files": {
+  "400": {
+   "woff2": "assets/fonts/originals/flarepoint/flarepoint-400.woff2",
+   "woff": "assets/fonts/originals/flarepoint/flarepoint-400.woff"
+  },
+  "700": {
+   "woff2": "assets/fonts/originals/flarepoint/flarepoint-700.woff2",
+   "woff": "assets/fonts/originals/flarepoint/flarepoint-700.woff"
+  }
+ },
+ "bytes": {
+  "400": {
+   "woff2": 16756,
+   "woff": 21572
+  },
+  "700": {
+   "woff2": 17232,
+   "woff": 22060
+  }
+ },
+ "metrics": {
+  "unitsPerEm": 1000,
+  "ascender": 950,
+  "descender": -250,
+  "lineGap": 0,
+  "capHeight": 700,
+  "xHeight": 500
+ },
+ "parameters": {
+  "regular": {
+   "st": 118,
+   "ratio": 0.86,
+   "sq": 0.56,
+   "term": [
+    "cut",
+    35
+   ],
+   "inktrap": 1.0,
+   "apex": "point",
+   "xh": 500,
+   "wid": 1.02,
+   "aperture": 0.55,
+   "spacing": 0.92,
+   "join": 0.66,
+   "v": {
+    "a": 1,
+    "g": 1,
+    "y": "straight"
+   }
+  },
+  "bold": {
+   "st": 160,
+   "wid": 1.06,
+   "join": 0.58
+  }
+ }
+}

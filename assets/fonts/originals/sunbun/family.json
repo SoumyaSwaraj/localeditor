@@ -1,0 +1,79 @@
+{
+ "family": "Sunbun",
+ "slug": "sunbun",
+ "source": "localeditor",
+ "version": "1.000",
+ "intent": "positive",
+ "feel": [
+  "friendly",
+  "playful"
+ ],
+ "description": "Round and sunny. Cheerful without shouting.",
+ "uses": [
+  "Kids and family",
+  "Cafes",
+  "Birthday cards"
+ ],
+ "concept": "Round geometric with fully rounded ends: circular bowls, single-storey a, soft everywhere.",
+ "category": "sans",
+ "weights": [
+  400,
+  700
+ ],
+ "italic": false,
+ "license": "LocalEditor-Proprietary (pending owner decision)",
+ "files": {
+  "400": {
+   "woff2": "assets/fonts/originals/sunbun/sunbun-400.woff2",
+   "woff": "assets/fonts/originals/sunbun/sunbun-400.woff"
+  },
+  "700": {
+   "woff2": "assets/fonts/originals/sunbun/sunbun-700.woff2",
+   "woff": "assets/fonts/originals/sunbun/sunbun-700.woff"
+  }
+ },
+ "bytes": {
+  "400": {
+   "woff2": 18620,
+   "woff": 23512
+  },
+  "700": {
+   "woff2": 19084,
+   "woff": 24132
+  }
+ },
+ "metrics": {
+  "unitsPerEm": 1000,
+  "ascender": 950,
+  "descender": -250,
+  "lineGap": 0,
+  "capHeight": 700,
+  "xHeight": 505
+ },
+ "parameters": {
+  "regular": {
+   "st": 94,
+   "ratio": 0.92,
+   "sq": 0.55,
+   "stemcap": "round",
+   "term": "round",
+   "diagcut": "round",
+   "aperture": 0.62,
+   "xh": 505,
+   "wid": 1.06,
+   "spacing": 1.0,
+   "join": 0.8,
+   "v": {
+    "a": 1,
+    "g": 1,
+    "y": "curve"
+   }
+  },
+  "bold": {
+   "st": 140,
+   "ratio": 0.88,
+   "wid": 1.1,
+   "join": 0.7
+  }
+ }
+}

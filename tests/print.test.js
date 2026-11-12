@@ -214,7 +214,15 @@ cases['photo book: varied pages with page numbers; a multi-page make lands as pa
     await new Promise((res) => setTimeout(res, 300));
     c.syncProject();
     const remade = c.S.project.pages.map((p) => p.maker && p.maker.values.title);
-    return { n: b.pages.length, kinds, folios, problems: b.pages.reduce((a, p) => a + LE.makers.check(p).length, 0), made, remade, active: c.S.project.activePage };
+    const active = c.S.project.activePage;
+    /* One undo on the page in view brings back the whole 8-page run; redo remakes all 12 again. */
+    c.scene.undo();
+    c.syncProject();
+    const undone = c.S.project.pages.map((p) => p.maker && p.maker.values.title);
+    c.scene.redo();
+    c.syncProject();
+    const redone = c.S.project.pages.map((p) => p.maker && p.maker.values.title);
+    return { n: b.pages.length, kinds, folios, problems: b.pages.reduce((a, p) => a + LE.makers.check(p).length, 0), made, remade, active, undone, redone };
   });
   h.assert.equal(r.n, 12);
   h.assert(new Set(r.kinds.slice(1, -1)).size >= 3, 'inside pages vary: ' + r.kinds.join(','));
@@ -225,7 +233,9 @@ cases['photo book: varied pages with page numbers; a multi-page make lands as pa
   h.assert(r.made.every((m) => m[0] === 'photobook' && m[1] === 'square-20' && m[2] === 2362), JSON.stringify(r.made[0]));
   h.assert.equal(r.remade.length, 12, 'remake grew the run to 12 pages');
   h.assert(r.remade.every((t) => t === 'Trip, again'), 'every page remade');
-  h.assert.equal(r.active, 0);
+  h.assert.equal(r.active, 2, 'the page Edit details was opened from stays in view');
+  h.assert(r.undone.length === 8 && r.undone.every((x) => x === 'Trip'), 'one undo restores the whole run: ' + r.undone.join(','));
+  h.assert(r.redone.length === 12 && r.redone.every((x) => x === 'Trip, again'), 'one redo remakes it again');
   h.assert.noErrors(page);
 };
 

@@ -4,10 +4,16 @@ node_modules/
 
 # local model evaluation downloads (scripts/fetch-models.js)
 /assets/models/local/
-/assets/vendor/ort-webgpu/
+# large background-remover models built by `node scripts/fetch-models.js pro` (over 100 MB each; uploaded to S3 by scripts/deploy.sh)
+/assets/models/pro/
+__pycache__/
 
 # OCR language packs fetched by scripts/fetch-ocr-data.js (the English pack is committed)
 /assets/models/ocr/more/
 
 # Chinese, Japanese and Korean fonts, fetched at deploy time (node scripts/fetch-fonts.js --cjk; see docs/FONTS.md)
 /assets/fonts/cjk/
+# camera RAW module build cache: toolchain, sources, objects (tools/raw-decoder/build.sh)
+/tools/raw-decoder/.cache/
+# sample RAW files fetched by scripts/fetch-raw-samples.js
+/labs/raw/samples/

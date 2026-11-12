@@ -58,7 +58,18 @@ After a deploy, open the site, then open it again: installed copies show **"A ne
 
 Content types the CLI would get wrong are set explicitly: `manifest.webmanifest` → `application/manifest+json`, `*.wasm` → `application/wasm`, `*.onnx` → `application/octet-stream`, `*.mjs` → `text/javascript`, `*.leworkflow` → `application/vnd.localeditor.workflow+json`, `*.leproject` → `application/vnd.localeditor.project+zip`, graphics data → `application/json`.
 
-Never uploaded: `scripts/`, `tests/`, `docs/`, `infra/`, Markdown files, `.git`, `.claude`, `node_modules`.
+Never uploaded: `scripts/`, `tests/`, `docs/`, `infra/`, Markdown files, `.git`, `.claude`, `node_modules`, `assets/models/local/` (evaluation downloads and model sources).
+
+### Large background-remover models (`assets/models/pro/`)
+
+Three files of 109 MB, 481 MB and 223 MB are too big for GitHub, so they are not in the repository. Build them once on the deploy machine, then deploy as usual; they go up with the other `*.onnx` files (`application/octet-stream`, one year, immutable):
+
+```bash
+python3 -m venv ~/le-models-venv && ~/le-models-venv/bin/pip install -r scripts/models/requirements.txt
+PYTHON=~/le-models-venv/bin/python node scripts/fetch-models.js pro      # about 1.3 GB of downloads; 20 to 40 minutes
+```
+
+If they are missing, `deploy.sh` prints a warning, keeps any copies already in the bucket (also with `--delete`), and the app shows those options as "Not available on this copy of the app". The WebGPU engine they need (`assets/vendor/ort-webgpu/`, 29 MB, 7 MB compressed) is in the repository. Details: `docs/research/background-remover-pro.md`.
 
 ## 4. One-time CloudFront setup
 

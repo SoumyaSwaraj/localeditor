@@ -77,6 +77,16 @@ if [ -n "$(git status --porcelain 2>/dev/null | grep -v -E ' (sw\.js|sitemap\.xm
   echo "Warning: the working tree has uncommitted changes; they will be deployed." >&2
 fi
 
+# Large background-remover models (git-ignored, over 100 MB each): built by `node scripts/fetch-models.js pro`.
+# They go up with the other *.onnx files below. Without them the app shows those options as "Not available on this copy".
+PRO_MODELS=(birefnet-lite-1024-fp16.onnx birefnet-1024-fp16.onnx ben2-1024-fp16.onnx)
+PRO_MISSING=()
+for f in "${PRO_MODELS[@]}"; do [ -f "assets/models/pro/$f" ] || PRO_MISSING+=("$f"); done
+if [ "${#PRO_MISSING[@]}" -gt 0 ]; then
+  echo "Warning: assets/models/pro/ is missing ${PRO_MISSING[*]}. Run 'node scripts/fetch-models.js pro' to build them;" >&2
+  echo "         copies already in the bucket are kept (also with --delete)." >&2
+fi
+
 DEST="s3://$BUCKET"
 VERB=(s3 sync)
 [ "$FULL" = 1 ] && VERB=(s3 cp --recursive)
@@ -85,7 +95,8 @@ COMMON=(--only-show-errors --no-progress)
 
 # Never uploaded: tooling, tests, docs, repo files.
 NEVER=(--exclude ".git/*" --exclude ".claude/*" --exclude "node_modules/*" --exclude "scripts/*" --exclude "tests/*"
-       --exclude "docs/*" --exclude "infra/*" --exclude "*.md" --exclude ".gitignore" --exclude ".nojekyll" --exclude "*.DS_Store")
+       --exclude "docs/*" --exclude "infra/*" --exclude "*.md" --exclude ".gitignore" --exclude ".nojekyll" --exclude "*.DS_Store"
+       --exclude "assets/models/local/*")   # evaluation downloads and model sources (scripts/fetch-models.js), never shipped
 
 # Cache classes. The service worker keeps installed copies fresh, so code only needs a short HTTP cache.
 CC_PAGE="public, max-age=0, no-cache"
@@ -134,7 +145,9 @@ pass "$CC_PAGE" "text/javascript; charset=utf-8" "sw.js"
 if [ "$DELETE" = 1 ]; then
   echo "== Removing files that are no longer part of the site"
   # Files already uploaded above have the same size, so this pass only deletes (and uploads any file no class matched).
-  run "${AWS[@]}" s3 sync . "$DEST" --delete "${NEVER[@]}" "${COMMON[@]}" --size-only
+  KEEP_PRO=()
+  [ "${#PRO_MISSING[@]}" -gt 0 ] && KEEP_PRO=(--exclude "assets/models/pro/*")
+  run "${AWS[@]}" s3 sync . "$DEST" --delete "${NEVER[@]}" "${KEEP_PRO[@]}" "${COMMON[@]}" --size-only
 fi
 
 if [ -n "$DIST" ]; then

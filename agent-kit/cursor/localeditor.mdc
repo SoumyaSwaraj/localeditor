@@ -1,0 +1,14 @@
+---
+description: Make or edit LocalEditor designs live in Cursor's browser while the person watches (posts, thumbnails, posters, slides, .ledesign.json).
+globs: ["**/*.ledesign.json"]
+alwaysApply: false
+---
+
+# LocalEditor in Cursor's browser
+
+- Open `http://127.0.0.1:8765/studio/?agent=1` (start `python3 -m http.server 8765 --bind 127.0.0.1` in the LocalEditor repo) or `https://localeditor.net/studio/?agent=1`. The person taps **Turn on agent mode**; never click it, or Pause / Stop / Take over, yourself.
+- If you can run JavaScript in the page, use `window.LEAgent`. Otherwise use the **Console** tab: type one JSON command into "Agent command", press **Run**, read "Agent result". `{"op":"help"}` describes everything.
+- Loop: `begin({ name: 'Cursor', task })` → `state({ image: true })` → small labelled `apply([...])` → `check()` → apply fixes → resolve `pending.notes` → `end({ summary })`.
+- Readable ids, shorthand positions, `"fit": "shrink"` headlines, fonts and icons from `catalog()`, images as `data:` URIs or `slot: true`, no HTML in text.
+- `conflict` → re-read `state()`; `interrupted` → re-plan; `paused` → wait; `no-session` → ask in chat.
+- For `.ledesign.json` files without a browser, follow `docs/FORMAT-DESIGN.md`. Full guide: `docs/AGENT-GUIDE.md`.

@@ -31,11 +31,13 @@
     var wantGpu = m.ep === 'webgpu' || (m.ep === 'auto' && !!self.navigator.gpu && !!m.webgpuBase);
     if (wantGpu) {
       try {
-        var adapter = self.navigator.gpu ? await self.navigator.gpu.requestAdapter() : null;
-        if (!adapter) throw new Error('No WebGPU adapter');
+        /* onnxruntime-web 1.31 WebGPU build (native WebGPU provider, asyncify wasm). Ops it lacks run on its CPU side. */
+        var adapter = self.navigator.gpu ? await self.navigator.gpu.requestAdapter({ powerPreference: 'high-performance' }) : null;
+        if (!adapter) throw new Error('No WebGPU adapter (this device has no usable graphics card for this option)');
+        if (m.needF16 && !adapter.features.has('shader-f16')) throw new Error('This graphics card cannot run half-precision models (WebGPU shader-f16 missing)');
         importScripts(m.webgpuBase + 'ort.webgpu.min.js');
         ort = self.ort;
-        ort.env.wasm.wasmPaths = { mjs: m.webgpuBase + 'ort-wasm-simd-threaded.jsep.module.js', wasm: m.webgpuBase + 'ort-wasm-simd-threaded.jsep.wasm' };
+        ort.env.wasm.wasmPaths = { mjs: m.webgpuBase + 'ort-wasm-simd-threaded.asyncify.module.js', wasm: m.webgpuBase + 'ort-wasm-simd-threaded.asyncify.wasm' };
         ep = 'webgpu';
       } catch (e) {
         if (m.ep === 'webgpu') throw e;
@@ -63,12 +65,14 @@
     inName = session.inputNames[0];
     outName = session.outputNames[0];
     var t2 = now();
-    /* Warm-up: the first run pays one-off kernel set-up, so keep it out of the "inference" number. */
-    var s = spec.size;
-    var zero = new ort.Tensor('float32', new Float32Array(3 * s * s), [1, 3, s, s]);
-    var feeds = {}; feeds[inName] = zero;
-    var tw = now();
-    try { await session.run(feeds); } catch (e) { throw new Error('warm-up run failed: ' + explain(e)); }
+    /* Warm-up: the first run pays one-off kernel set-up, so keep it out of the "inference" number. Large models skip it
+       (m.warmup === false): one of their runs costs as much as the photo itself. */
+    var s = spec.size, tw = now();
+    if (m.warmup !== false) {
+      var zero = new ort.Tensor('float32', new Float32Array(3 * s * s), [1, 3, s, s]);
+      var feeds = {}; feeds[inName] = zero;
+      try { await session.run(feeds); } catch (e) { throw new Error('warm-up run failed: ' + explain(e)); }
+    }
     var t3 = now();
     return { ep: ep, threads: ep === 'wasm' ? threads : 1, isolated: !!self.crossOriginIsolated,
       timings: { runtimeMs: t1 - t0, sessionMs: t2 - t1, warmupMs: t3 - tw } };
@@ -306,8 +310,12 @@
       if (spec.sigmoid) v = 1 / (1 + Math.exp(-v));
       m0[i] = v; if (v < mn) mn = v; if (v > mx) mx = v;
     }
-    var span = mx - mn || 1;
-    for (i = 0; i < plane; i++) m0[i] = (m0[i] - mn) / span;
+    /* Models that already output probabilities (spec.minmax === false, the large options) are not stretched: a photo with
+       no clear subject then stays faint and the coverage check below can say so, instead of amplifying haze. */
+    if (spec.minmax !== false) {
+      var span = mx - mn || 1;
+      for (i = 0; i < plane; i++) m0[i] = (m0[i] - mn) / span;
+    }
     if (o.debugRaw) t.raw = { min: mn, max: mx, dims: o0.dims.slice() };
     if (o0.dispose) o0.dispose();
 
