@@ -1916,7 +1916,9 @@
   }
   function safeName(n) { return String(n || 'design').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase().slice(0, 60) || 'design'; }
   function download(blob, name) {
-    if (window.IT && IT.download) { IT.download(blob, name); return; }
+    /* One toast system in the studio: its own toast says it started; callers then replace it with
+       "Downloaded 1.5 MB". The site-wide "Download started" would be a second, duplicate message. */
+    if (window.IT && IT.download) { IT.download(blob, name, { quiet: true }); toast('Download started'); return; }
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = name;

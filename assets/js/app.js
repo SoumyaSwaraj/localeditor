@@ -50,7 +50,8 @@
     return (i ? (Math.round(b * 10) / 10) : Math.round(b)) + ' ' + u[i];
   };
 
-  IT.download = function (blobOrUrl, filename) {
+  /* opts.quiet: the caller shows its own message (the studio says "Downloaded 1.5 MB" in its own toast). */
+  IT.download = function (blobOrUrl, filename, opts) {
     var url = typeof blobOrUrl === 'string' ? blobOrUrl : URL.createObjectURL(blobOrUrl);
     var a = document.createElement('a');
     a.href = url;
@@ -59,7 +60,7 @@
     a.click();
     a.remove();
     if (typeof blobOrUrl !== 'string') setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-    IT.say('Download started');
+    if (!(opts && opts.quiet)) IT.say('Download started');
   };
 
   IT.copy = function (text) {
