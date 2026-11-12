@@ -556,7 +556,7 @@
         if (spec.valign === 'middle') y += Math.max(0, (spec.h - hh) / 2);
         else if (spec.valign === 'bottom') y += Math.max(0, spec.h - hh);
       }
-      var l = base({ id: spec.id, name: spec.name, x: x, y: y, w: f.width, h: hh, rotation: spec.rotation, opacity: spec.opacity, blend: spec.blend, shadow: spec.shadow }, 'text', 'Text');
+      var l = base({ id: spec.id, name: spec.name, x: x, y: y, w: Math.ceil(f.width + 0.5), h: hh, rotation: spec.rotation, opacity: spec.opacity, blend: spec.blend, shadow: spec.shadow }, 'text', 'Text');
       l.text = String(spec.text == null ? '' : spec.text);
       l.font = f.font;
       l.weight = f.weight;
@@ -786,7 +786,7 @@
         var env = makeEnv(m, vals, size, style, opts, needs);
         var res = m.build(clone(vals), env);
         if (hasNeeds(needs) && pass < 3) { pass++; return loadNeeds(needs).then(run); }
-        return { res: res, env: env };
+        return Promise.resolve({ res: res, env: env });
       }
       return run().then(function (out) {
         var res = out.res || {};
@@ -897,8 +897,56 @@
     return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
+  /* QA fixtures for a maker: its sample, the least it accepts (required fields only, no photos) and the worst case
+     (every field at its limit, long words, every list row, photos). photos: asset ids to use for photo inputs. */
+  var WORDS = ('remember the afternoon light across the harbour when everything we owned fitted into two small bags and nobody ' +
+    'knew our names extraordinary wonderful unbelievable thoughtfulness neighbourhood').split(' ');
+  function filler(n, offset) {
+    var out = '', i = offset || 0;
+    while (out.length < n) { var w = WORDS[i++ % WORDS.length]; out += (out ? ' ' : '') + w; }
+    out = out.slice(0, n).replace(/\s+\S*$/, '');
+    return out.charAt(0).toUpperCase() + out.slice(1);
+  }
+  function cases(id, photos) {
+    var m = get(id);
+    if (!m) return null;
+    photos = photos || [];
+    var minimal = {}, worst = {};
+    m.inputs.forEach(function (inp, i) {
+      var t = inp.type;
+      if (inp.required) {
+        if (t === 'text' || t === 'longtext') minimal[inp.key] = 'Hi';
+        else if (t === 'photo') minimal[inp.key] = photos[0] || 'missing-photo';
+        else if (t === 'photos') minimal[inp.key] = [photos[0] || 'missing-photo'];
+        else if (t === 'choice') minimal[inp.key] = String(typeof inp.options[0] === 'object' ? inp.options[0].id : inp.options[0]);
+        else if (t === 'date') minimal[inp.key] = '2026-01-31';
+        else if (t === 'number') minimal[inp.key] = inp.min != null ? inp.min : 0;
+        else if (t === 'list') minimal[inp.key] = inp.columns ? [inp.columns.map(function () { return 'A'; })] : ['A'];
+        else if (t === 'toggle') minimal[inp.key] = false;
+        else if (t === 'color') minimal[inp.key] = '#000000';
+      }
+      if (t === 'text') worst[inp.key] = filler(maxOf(inp, 80), i * 3);
+      else if (t === 'longtext') worst[inp.key] = filler(maxOf(inp, 600), i);
+      else if (t === 'photo') worst[inp.key] = photos[i % Math.max(1, photos.length)] || 'missing-photo';
+      else if (t === 'photos') { worst[inp.key] = []; for (var p = 0; p < maxOf(inp, 4); p++) worst[inp.key].push(photos[p % Math.max(1, photos.length)] || 'missing-photo'); }
+      else if (t === 'choice') { var o = inp.options[inp.options.length - 1]; worst[inp.key] = String(typeof o === 'object' ? o.id : o); }
+      else if (t === 'date') worst[inp.key] = '2024-02-29';
+      else if (t === 'number') worst[inp.key] = inp.max != null ? inp.max : 999999;
+      else if (t === 'toggle') worst[inp.key] = true;
+      else if (t === 'color') worst[inp.key] = '#F4F1EA';
+      else if (t === 'list') {
+        worst[inp.key] = [];
+        var cm = inp.cellMax || 48;
+        for (var r = 0; r < maxOf(inp, 15); r++) {
+          worst[inp.key].push(inp.columns ? inp.columns.map(function (c, ci) { return ci === inp.columns.length - 1 ? '9,999,999.99'.slice(0, Math.min(12, cm)) : filler(cm, r + ci); }) : filler(cm, r));
+        }
+      }
+    });
+    return { sample: clone(m.sample.values || {}), minimal: minimal, worst: worst };
+  }
+
   LE.makers = {
-    FILES: FILES, SIZES: SIZES, TYPES: TYPES,
+    FILES: FILES, SIZES: SIZES, TYPES: TYPES, cases: cases,
     register: register, list: list, get: get, ready: ready,
     validate: validate, build: build, check: check, signature: signature, renderPage: renderPage,
     decodeValues: decodeValues, encodeValues: encodeValues,
