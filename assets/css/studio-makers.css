@@ -112,3 +112,4 @@
 @media (prefers-reduced-motion: reduce) {
   .mk-sheet, .mk-card-sheet, .mk-thumb img, .mk-card { transition: none; }
 }
+.mk-sheet .sx-seg button, .mk-sheet .btn-sm, .mk-banner .btn-sm { min-height: 44px; }
