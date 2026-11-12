@@ -129,12 +129,13 @@ rawLib().then(function () { return { formats: LE.raw.formats(), presets: LE.raw.
 | `studio/index.html` | one `<script>` for `le-raw-studio.js` after `le-studio.js` |
 | `tools/dng-synth/dng-synth.js` | `writeDNG({ shutter: [n, d] })` writes the exposure time (for bracket tests) |
 | `tests/fx.test.js` | the section list in the registry case now has every section of `docs/EXPERT-UI.md` (it lacked Detail) |
-| `assets/js/expert/expert.js` | the develop panel sorts registrations inside a section by `ui.order` (as `docs/FX-AUTHORING.md` says), so Develop comes first in Light; one sort key and a 1-line helper |
 
 Not changed: `le-project.js`, `le-fx-gl.js`, `le-studio*.js`. The float-source provider is a registry in the pack
 (`LE.fx.sources.register(kind, provider)`), and the pack wraps `LE.fx.layer`: for a RAW/HDR layer it develops the float data, then
 hands the developed picture to the unchanged `LE.fx.layer` as the layer's photo (crop, legacy adjust and filters, retouch, cut-out,
-the rest of the stack, masks). **Proposal**: move that wrapper into `FX.layer` itself (about 25 lines) so other float sources (depth,
+the rest of the stack, masks). **Proposal (workspace)**: sort registrations inside a section by `ui.order`, as `docs/FX-AUTHORING.md`
+says (`assets/js/expert/expert.js`, the `defs()` sort); today Develop is listed after the starter Light effects. Tried here; it changes
+which effect `tests/expert-ui.test.js` finds first in the add-effect search, so it belongs with the workspace owner. **Proposal**: move that wrapper into `FX.layer` itself (about 25 lines) so other float sources (depth,
 scans, a future HDR display path) use it without a pack.
 
 ## Limits, said plainly

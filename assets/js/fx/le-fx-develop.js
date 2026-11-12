@@ -249,7 +249,7 @@
       ]
     },
     agent: {
-      summary: 'The RAW develop basics in one pass: profile (tone curve and colour rendering), white balance in kelvin with the camera\'s own colour matrices, exposure in stops on linear data, highlights, shadows, whites and blacks shaped on a filmic curve, highlight recovery, vibrance and saturation. On a RAW or HDR layer it is the output transform from scene light to the display (gamut compression plus a hue-preserving filmic curve) and always runs last of the develop entries; on an ordinary photo, Profile "Auto" means no curve, so it is a set of tone controls.',
+      summary: 'The RAW develop basics in one pass: profile (tone response and colour rendering), white balance in kelvin with the camera\'s own colour matrices, exposure in stops on linear data, highlights, shadows, whites and blacks shaped on a filmic tone response, highlight recovery, vibrance and saturation. On a RAW or HDR layer it is the output transform from scene light to the display (gamut compression plus a hue-preserving filmic tone response) and always runs last of the develop entries; on an ordinary photo, Profile "Auto" adds no base response, so it is a set of tone controls.',
       tips: [
         'Start from the defaults a RAW layer opens with (profile Auto = Standard, white balance As shot); then exposure first, then highlights and shadows, then whites and blacks. Read LE.fx.analyze after each step.',
         'Backlit portrait: exposure +0.3 to +0.7, shadows +40 to +60, highlights -40 to -70, whites -10, blacks -5, vibrance +10; white balance As shot or Custom 5600-6200 K for warm skin.',
@@ -331,7 +331,7 @@
     support: { needs: ['webgl2', 'webgl-float'], wants: [], memoryMB: 160 },
     ui: { section: 'Detail', order: 5, controls: [{ heading: 'Sharpening' }, 'sharpen', 'radius', 'detail', 'masking', { heading: 'Noise reduction' }, 'luminance', 'lumDetail', 'color', 'colorDetail', { heading: 'Raw' }, 'demosaic'] },
     agent: {
-      summary: 'Capture sharpening and noise reduction for RAW and HDR layers, on linear light before the tone curve (the creative pack has the generic sharpen and denoise for finished pictures). Luminance noise uses an edge-preserving guided filter in a variance-stabilised domain; colour noise averages chromaticity weighted by brightness; sharpening is an unsharp mask with a noise threshold (Detail) and an edge mask (Masking). A RAW layer opens with values chosen from its ISO.',
+      summary: 'Capture sharpening and noise reduction for RAW and HDR layers, on linear light before the tone response (the creative pack has the generic sharpen and denoise for finished pictures). Luminance noise uses an edge-preserving guided filter in a variance-stabilised domain; colour noise averages chromaticity weighted by brightness; sharpening is an unsharp mask with a noise threshold (Detail) and an edge mask (Masking). A RAW layer opens with values chosen from its ISO.',
       tips: [
         'Typical for a clean base-ISO RAW: sharpen 40, radius 1.0, detail 25, masking 0, luminance 0, colour 25.',
         'High-ISO indoor (ISO 3200-6400): luminance 35-55, lumDetail 40-50, colour 30-45, sharpen 25-35 with masking 40-60 so flat walls stay smooth.',
@@ -479,7 +479,7 @@
     support: GPU,
     ui: { section: 'Light', order: 2, controls: ['method', 'strength', 'detail', 'highlights', 'shadows', 'saturation', { param: 'halo', when: { method: ['local', 'fusion'] } }] },
     agent: {
-      summary: 'Tone mapping for scene-referred HDR (a merged bracket set, or one RAW used for an HDR look): compresses the brightness range before the filmic curve of develop.basic. Local keeps local contrast with an edge-aware base/detail split (little halo); Exposure fusion blends virtual exposures by how well each part is exposed (the bright, airy look of fused brackets); Global is a plain log compression without halos.',
+      summary: 'Tone mapping for scene-referred HDR (a merged bracket set, or one RAW used for an HDR look): compresses the brightness range before the filmic tone response of develop.basic. Local keeps local contrast with an edge-aware base/detail split (little halo); Exposure fusion blends virtual exposures by how well each part is exposed (the bright, airy look of fused brackets); Global is a plain log compression without halos.',
       tips: [
         'Natural HDR of a bracketed interior with windows: method local, strength 55-70, detail 15-25, highlights -20, shadows +20, halo 60, saturation 0 to +10.',
         'Single-image HDR look from one RAW: method local, strength 35-50, detail 20-35, halo 50; then develop.basic highlights -30, shadows +30.',

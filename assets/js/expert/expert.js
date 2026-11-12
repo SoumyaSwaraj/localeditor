@@ -169,7 +169,7 @@
       o.order = i;
       byId[o.id] = o;
       return o;
-    }).sort(function (a, b) { return a.rank - b.rank || uiOrder(a) - uiOrder(b) || a.order - b.order; });   /* ui.order sorts inside a section (docs/FX-AUTHORING.md) */
+    }).sort(function (a, b) { return a.rank - b.rank || a.order - b.order; });
     var bySec = {};
     list.forEach(function (d) { (bySec[d.section] = bySec[d.section] || []).push(d.id); });
     defCache = { src: R, n: raw.length, list: list, byId: byId, bySec: bySec, t: now };
@@ -177,7 +177,6 @@
   }
   function def(id) { defs(); return defCache.byId[id] || null; }
   function sectionTypes(sec) { defs(); return defCache.bySec[sec] || []; }
-  function uiOrder(d) { return d.ui && typeof d.ui.order === 'number' ? d.ui.order : 50; }
   function sections() {
     var seen = {}, out = [];
     defs().forEach(function (d) { if (!seen[d.section]) { seen[d.section] = 1; out.push(d.section); } });
