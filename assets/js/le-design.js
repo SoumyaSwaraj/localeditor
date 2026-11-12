@@ -336,8 +336,8 @@
   var COMMON = ['id', 'name', 'type', 'x', 'y', 'w', 'h', 'rotation', 'opacity', 'blend', 'visible', 'locked', 'flipX', 'flipY', 'groupId', 'shadow'];
   var BY_TYPE = {
     text: ['text', 'font', 'weight', 'italic', 'size', 'color', 'fill', 'align', 'lineHeight', 'letterSpacing', 'uppercase', 'underline', 'strike', 'stroke', 'background', 'curve', 'fit'],
-    image: ['src', 'source', 'crop', 'fit', 'radius', 'border', 'mask', 'maskPath', 'slot', 'adjust', 'recipe', 'filter', 'removeBg', 'fx'],
-    shape: ['shape', 'params', 'radius', 'fill', 'stroke'],
+    image: ['src', 'source', 'crop', 'fit', 'radius', 'border', 'mask', 'maskPath', 'slot', 'adjust', 'recipe', 'filter', 'removeBg', 'fx', 'cutout'],
+    shape: ['shape', 'params', 'radius', 'fill', 'stroke', 'redact'],
     svg: ['assetId', 'svg', 'color', 'strokeWidth', 'iconStyle', 'qr', 'icon'],
     icon: ['icon', 'assetId', 'color', 'strokeWidth', 'iconStyle'],
     path: ['points', 'smoothing', 'width', 'color', 'mode'],
@@ -536,6 +536,59 @@
       if (fx) { d.fx = clone(fx); d.fxImg = readSrc(fx.src, path + '/fx/src', rep, st, { page: page.index, layer: l.id }); }
     }
     if (src.source != null) { var so2 = objAt(src.source, path + '/source', rep, 'source'); if (so2) d.source = clone(so2); }
+    if (src.cutout != null) readCutout(src.cutout, path + '/cutout', l, d, rep, st, page, src.src);
+  }
+
+  /* Image cut-out (wave 2): { src (or asset), enabled, model, feather, refine, outline }. The mask is an image like
+     any other (data: URI, relative path or a device image id). In a template link the photo is dropped, and the
+     cut-out goes with it. */
+  function readCutout(v, path, l, d, rep, st, page, photo) {
+    var c = objAt(v, path, rep, 'cutout');
+    if (!c) return;
+    var maskSrc = c.src != null ? c.src : c.asset;
+    if (st.link) { st.dropped.push(path); return; }
+    if (maskSrc == null || maskSrc === '') { rep.err(path + '/src', 'A cut-out needs its mask image in "src" (a data: URI, a relative path or a device image id).'); return; }
+    if (photo == null || photo === '') { rep.warn(path, 'cutout-no-photo', 'A cut-out needs the photo it was made for; it was left out.', l.id); return; }
+    var out = { enabled: true, model: '', feather: 0, refine: 'guided', version: 1, outline: null };
+    var en = boolAt(c.enabled, path + '/enabled', rep);
+    if (en != null) out.enabled = en;
+    if (c.model != null) {
+      if (typeof c.model !== 'string' || !/^[\w.-]{1,40}$/.test(c.model)) rep.err(path + '/model', 'model is a short id such as "u2netp".');
+      else out.model = c.model;
+    }
+    var fe = numberAt(c.feather, path + '/feather', rep, 'feather');
+    if (fe != null) out.feather = clamp(fe, 0, 50);
+    if (c.refine != null) {
+      if (c.refine !== 'guided' && c.refine !== 'none') rep.err(path + '/refine', 'refine is "guided" or "none".');
+      else out.refine = c.refine;
+    }
+    if (c.outline != null) {
+      var ol = objAt(c.outline, path + '/outline', rep, 'outline');
+      if (ol) {
+        var ow = numberAt(ol.width, path + '/outline/width', rep, 'width');
+        if (ow > 0) out.outline = { color: colorAt(ol.color, path + '/outline/color', rep) || '#ffffff', width: clamp(ow, 0, 200) };
+      }
+    }
+    d.cutout = out;
+    d.cutImg = readSrc(maskSrc, path + '/src', rep, st, { page: page.index, layer: l.id });
+    if (d.cutImg && d.cutImg.kind === 'remote') { rep.warn(path + '/src', 'remote-mask', 'Cut-out masks are not downloaded from the web; embed the mask or use a relative path.', l.id); d.cutImg = null; }
+  }
+  /* Shape redaction (wave 2): { mode: solid | pixelate | blur, amount 0–500 (0 = automatic), color }. */
+  function readRedact(v, path, l, rep) {
+    var r = objAt(v, path, rep, 'redact');
+    if (!r) return;
+    var o = { mode: 'solid', amount: 0, color: '#17131F' };
+    if (r.mode != null) {
+      if (['solid', 'pixelate', 'blur'].indexOf(r.mode) < 0) rep.err(path + '/mode', 'redact mode is "solid", "pixelate" or "blur".');
+      else o.mode = r.mode;
+    }
+    var am = numberAt(r.amount, path + '/amount', rep, 'amount');
+    if (am != null) o.amount = clamp(Math.round(am), 0, 500);
+    if (r.color != null) {
+      if (typeof r.color !== 'string' || !/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(r.color)) rep.err(path + '/color', 'redact color is a hex colour such as "#17131F".');
+      else o.color = r.color;
+    }
+    l.redact = o;
   }
 
   function readShape(src, path, l, rep) {
@@ -553,6 +606,7 @@
     var rv = numberAt(src.radius, path + '/radius', rep, 'radius');
     if (rv != null) l.radius = rv;
     l.fill = src.fill == null ? { type: 'none' } : fillAt(src.fill, path + '/fill', rep);
+    if (src.redact != null) readRedact(src.redact, path + '/redact', l, rep);
     if (src.stroke != null) {
       var s = typeof src.stroke === 'string' ? { color: src.stroke, width: 4 } : objAt(src.stroke, path + '/stroke', rep, 'stroke');
       if (s) {
@@ -873,6 +927,61 @@
     return Promise.resolve();
   }
 
+  /* Page carousel (wave 2): { slides 1–20, slideWidth }; slideWidth × slides = page width (slideWidth may be left out). */
+  function readCarousel(v, path, page, rep) {
+    var c = objAt(v, path, rep, 'carousel');
+    if (!c) return;
+    if (c.slides == null) { rep.err(path + '/slides', 'A carousel needs "slides": how many slides the page is split into (1–20).'); return; }
+    var n = numberAt(c.slides, path + '/slides', rep, 'slides');
+    if (n == null) return;
+    n = Math.round(n);
+    if (n < 1 || n > 20) { rep.err(path + '/slides', 'slides must be from 1 to 20.'); return; }
+    var sw = c.slideWidth == null ? null : numberAt(c.slideWidth, path + '/slideWidth', rep, 'slideWidth');
+    page.carouselIn = { slides: n, slideWidth: sw };
+  }
+  /* Page maker (wave 2): { id, style, size, values, sig }. A page with only "maker" (no layers) is generated by
+     LE.makers.build when the file is read; with layers, the layers are kept and the maker is remembered for remaking. */
+  function readMaker(v, path, page, rep, generate) {
+    var m = objAt(v, path, rep, 'maker');
+    if (!m) return;
+    if (typeof m.id !== 'string' || !/^[\w.:-]{1,40}$/.test(m.id)) { rep.err(path + '/id', 'A maker needs "id", such as "quote".'); return; }
+    ['style', 'size', 'sig'].forEach(function (k) { if (m[k] != null && (typeof m[k] !== 'string' || !/^[\w.:-]{0,40}$/.test(m[k]))) rep.err(path + '/' + k, k + ' is a short id.'); });
+    if (m.values != null && !isObj(m.values)) rep.err(path + '/values', 'values is an object of the maker\'s form fields.');
+    page.makerIn = { id: m.id, style: m.style || '', size: m.size || '', values: isObj(m.values) ? clone(m.values) : {}, sig: m.sig || '' };
+    page.makerGenerate = !!generate;
+  }
+  function makerStage(page, rep, st) {
+    var mi = page.makerIn;
+    if (!mi) return Promise.resolve();
+    var meta = LE.Scene && LE.Scene.makerOf ? LE.Scene.makerOf(mi) : clone(mi);
+    if (!page.makerGenerate) { if (meta) page.maker = meta; return Promise.resolve(); }
+    if (!LE.makers || typeof LE.makers.build !== 'function') {
+      rep.warn(page.path + '/maker', 'maker-unavailable', 'Quick makers are not available here, so this page is empty. Open the file in the studio to generate it.');
+      if (meta) page.maker = meta;
+      return Promise.resolve();
+    }
+    return withTimeout(LE.makers.build(mi.id, mi.values, { style: mi.style || undefined, size: mi.size || undefined }), 20000).then(function (res) {
+      var built = res && res.pages && res.pages[0];
+      if (!built) throw new Error('The maker made no page.');
+      if (res.pages.length > 1) rep.warn(page.path + '/maker', 'maker-pages', 'This maker makes ' + res.pages.length + ' pages; one file page holds the first. Add a page per slide to keep the rest.');
+      if (page.sizeGiven && (page.width !== built.width || page.height !== built.height)) rep.warn(page.path + '/maker', 'maker-size', 'The maker size ' + built.width + ' × ' + built.height + ' replaces the page size; pick a maker "size" to change it.');
+      page.width = built.width; page.height = built.height;
+      if (!page.bgGiven && built.background) page.bg = clone(built.background);
+      (res.warnings || []).forEach(function (w) { if (w && w.message) rep.warn(page.path + '/maker', 'maker-note', String(w.message).slice(0, 300)); });
+      (built.layers || []).forEach(function (bl) {
+        var l = clone(bl);
+        var id = String(l.id || l.type || 'layer').replace(/[^\w:.-]/g, '-').slice(0, 40) || 'layer';
+        if (st.ids[id]) { var n = 2; while (st.ids[id + '-' + n]) n++; id = id + '-' + n; }
+        st.ids[id] = 1;
+        l.id = id;
+        page.drafts.push({ l: l, path: page.path + '/maker', placed: true, raw: true, icon: l.type === 'svg' && !!l.assetId && !l.svg });
+      });
+      page.maker = LE.Scene && LE.Scene.makerOf ? LE.Scene.makerOf(built.maker || mi) : clone(built.maker || mi);
+    }).catch(function (err) {
+      rep.err(page.path + '/maker', 'The maker "' + plain(mi.id, 40) + '" could not make this page: ' + plain((err && err.message) || err, 160));
+    });
+  }
+
   /* The main read: text or object → { ok, project, assets, remote, errors, warnings }. */
   function parse(input, opts) {
     opts = opts || {};
@@ -918,7 +1027,7 @@
     var pages = raw.pages.slice(0, LIMITS.pages).map(function (p, pi) {
       var path = '/pages/' + pi;
       if (!isObj(p)) { rep.err(path, 'A page must be an object.'); return null; }
-      var PKEYS = ['id', 'name', 'width', 'height', 'background', 'collage', 'layers'];
+      var PKEYS = ['id', 'name', 'width', 'height', 'background', 'collage', 'carousel', 'maker', 'layers'];
       Object.keys(p).forEach(function (k) { if (PKEYS.indexOf(k) < 0) rep.warn(ptr(path, k), 'unknown-key', 'The key "' + plain(k, 40) + '" is not part of a page and was ignored.'); });
       var pid = '';
       if (p.id != null) {
@@ -927,13 +1036,16 @@
         else pid = p.id;
       }
       pageIds.push(pid);
-      var page = { index: pi, path: path, width: 1080, height: 1080, drafts: [], collageIn: p.collage, bgGiven: p.background != null };
+      var page = { index: pi, id: pid, path: path, width: 1080, height: 1080, drafts: [], collageIn: p.collage, bgGiven: p.background != null, sizeGiven: p.width != null || p.height != null };
       ['width', 'height'].forEach(function (k) {
         if (p[k] == null) return;
         if (!isNum(p[k]) || p[k] < 16 || p[k] > 20000) rep.err(path + '/' + k, k + ' must be a number of pixels from 16 to 20000.');
         else page[k] = Math.round(p[k]);
       });
-      if (p.width == null && p.height == null && !(isObj(p.collage) && p.collage.template)) rep.warn(path, 'default-size', 'No width or height; the page is 1080 × 1080.');
+      var makerOnly = p.maker != null && !(Array.isArray(p.layers) && p.layers.length);
+      if (p.width == null && p.height == null && !(isObj(p.collage) && p.collage.template) && !makerOnly) rep.warn(path, 'default-size', 'No width or height; the page is 1080 × 1080.');
+      if (p.carousel != null) readCarousel(p.carousel, path + '/carousel', page, rep);
+      if (p.maker != null) readMaker(p.maker, path + '/maker', page, rep, makerOnly);
       var bgr = readBackground(p.background, path + '/background', rep, st, page);
       page.bg = bgr.bg;
       page.bgImg = bgr.img || null;
@@ -961,11 +1073,13 @@
     var imgs = [];
     pages.forEach(function (p) {
       if (p.bgImg) imgs.push(p.bgImg);
-      p.drafts.forEach(function (d) { if (d.img) imgs.push(d.img); if (d.fxImg && d.fxImg.kind !== 'remote') imgs.push(d.fxImg); });
+      p.drafts.forEach(function (d) { if (d.img) imgs.push(d.img); if (d.fxImg && d.fxImg.kind !== 'remote') imgs.push(d.fxImg); if (d.cutImg) imgs.push(d.cutImg); });
     });
 
     return resolveImages(imgs, opts, rep, st, out).then(function () {
       return Promise.all(pages.map(function (p) { return collageStage(p, rep); }));
+    }).then(function () {
+      return Promise.all(pages.map(function (p) { return makerStage(p, rep, st); }));
     }).then(function () {
       var all = [];
       pages.forEach(function (p) { all = all.concat(p.drafts); });
@@ -987,7 +1101,13 @@
         var W = page.width, H = page.height;
         var layers = page.drafts.map(function (d) {
           var l = d.l;
-          if (l.type === 'image') {
+          if (l.type === 'image' && d.cutout) {
+            var cid = d.cutImg && d.cutImg.id;
+            if (cid && !out.meta[cid] && opts.assets && opts.assets[cid]) out.meta[cid] = clone(opts.assets[cid]);
+            if (cid && out.meta[cid]) { l.cutout = d.cutout; l.cutout.asset = cid; }
+            else rep.warn(d.path + '/cutout/src', 'missing-image', 'The cut-out mask is not available, so the photo shows its full background.', l.id);
+          }
+          if (l.type === 'image' && !d.raw) {
             if (d.img && d.img.id) {
               l.src = d.img.id;
               var dm = out.meta[d.img.id];
@@ -1050,7 +1170,15 @@
           }
         }
         var doc = { v: 1, width: W, height: H, background: bg, layers: layers };
+        if (page.id) doc.id = page.id;
         if (page.collage) doc.collage = page.collage;
+        if (page.carouselIn) {
+          var cs = page.carouselIn.slides, sw = page.carouselIn.slideWidth;
+          if (sw != null && Math.abs(sw * cs - W) > 1) rep.warn(page.path + '/carousel/slideWidth', 'carousel-width', 'slideWidth × slides should equal the page width (' + W + '); slides are ' + r2(W / cs) + ' px wide.');
+          var car = { v: 1, slides: cs, slideWidth: r2(W / cs) };
+          doc.carousel = LE.Scene && LE.Scene.carouselOf ? LE.Scene.carouselOf(car) : car;
+        }
+        if (page.maker) doc.maker = page.maker;
         return doc;
       });
       pages.forEach(function (p) {
@@ -1066,7 +1194,7 @@
       if (Object.keys(fx).length) studio.fx = fx;
       if (variables && variables.length) studio.variables = variables;
       if (remix) studio.remix = remix;
-      if (pageIds.some(Boolean)) studio.pageIds = pageIds.slice(0, outPages.length);
+      /* Page ids live on the pages themselves (page.id), so they follow a page when it is moved or deleted. */
       studio.originalSize = { w: outPages[0].width, h: outPages[0].height };
       var assetMeta = {};
       Object.keys(out.meta).forEach(function (id) { assetMeta[id] = out.meta[id]; });
@@ -1265,6 +1393,21 @@
       if (l.adjust && isObj(l.adjust.recipe)) o.recipe = recipeOut(l.adjust.recipe);
       if (l.filter && l.filter.name) o.filter = { name: l.filter.name, intensity: l.filter.intensity == null ? 100 : r2(l.filter.intensity) };
       if (l.removeBg) o.removeBg = { color: l.removeBg.color, tolerance: l.removeBg.tolerance };
+      if (l.cutout && l.cutout.asset) {
+        /* The mask travels like the photo: embedded, as a path, or by id; with no photos (template links) it is dropped. */
+        if (!hasPhoto) { if (ctx.images === 'none') ctx.dropped.push({ kind: 'cutout', layer: l.id, name: l.name }); }
+        else {
+          var cm = ctx.ref(l.cutout.asset, (l.name || l.id) + '-mask');
+          if (cm) {
+            o.cutout = { src: cm };
+            if (l.cutout.enabled === false) o.cutout.enabled = false;
+            if (l.cutout.model) o.cutout.model = l.cutout.model;
+            if (l.cutout.feather) o.cutout.feather = r2(l.cutout.feather);
+            if (l.cutout.refine && l.cutout.refine !== 'guided') o.cutout.refine = l.cutout.refine;
+            if (l.cutout.outline && l.cutout.outline.width > 0) o.cutout.outline = { color: l.cutout.outline.color, width: r2(l.cutout.outline.width) };
+          }
+        }
+      }
       if (st.fx && st.fx[l.id]) {
         if (ctx.images === 'none') ctx.dropped.push({ kind: 'effect', layer: l.id, name: l.name });
         else { var fx = clone(st.fx[l.id]); if (fx.src) fx.src = ctx.ref(fx.src, l.id + '-fx') || fx.src; o.fx = sortKeys(fx); }
@@ -1279,6 +1422,11 @@
         if (l.stroke.dash && l.stroke.dash.length) o.stroke.dash = l.stroke.dash.slice();
         if (l.stroke.cap && l.stroke.cap !== 'butt') o.stroke.cap = l.stroke.cap;
         if (l.stroke.join && l.stroke.join !== 'miter') o.stroke.join = l.stroke.join;
+      }
+      if (l.redact) {
+        o.redact = { mode: l.redact.mode || 'solid' };
+        if (l.redact.amount) o.redact.amount = l.redact.amount;
+        if (l.redact.color && l.redact.color !== '#17131F') o.redact.color = l.redact.color;
       }
     } else if (l.type === 'svg') {
       if (l.assetId) o.assetId = l.assetId;
@@ -1390,14 +1538,24 @@
     var remix = opts.remix !== undefined ? opts.remix : st.remix;
     if (remix && (remix.name || remix.by)) { doc.remix = {}; if (remix.name) doc.remix.name = remix.name; if (remix.by) doc.remix.by = remix.by; }
     if (Array.isArray(st.variables) && st.variables.length) doc.variables = st.variables.map(function (v) { var o = { key: v.key, label: v.label, type: v.type || 'text' }; if (v.default != null) o.default = v.default; return o; });
-    var pageIds = Array.isArray(st.pageIds) ? st.pageIds : [];
+    /* Older projects kept page ids by position in meta.studio.pageIds; used only when no page has its own id. */
+    var legacyIds = Array.isArray(st.pageIds) && !(project.pages || []).some(function (p) { return p && p.id; }) ? st.pageIds : [];
     doc.pages = (project.pages || []).map(function (p, pi) {
       var o = {};
-      if (pageIds[pi]) o.id = pageIds[pi];
+      var pid = p.id || legacyIds[pi];
+      if (pid) o.id = pid;
       o.width = p.width; o.height = p.height;
       o.background = backgroundOut(p.background, ctx, pi);
       var c = p.collage ? collageOut(p.collage) : undefined;
       if (c) o.collage = c;
+      if (p.carousel && p.carousel.slides > 1) o.carousel = { slides: p.carousel.slides, slideWidth: r2(p.carousel.slideWidth) };
+      if (p.maker && p.maker.id) {
+        o.maker = { id: p.maker.id };
+        if (p.maker.style) o.maker.style = p.maker.style;
+        if (p.maker.size) o.maker.size = p.maker.size;
+        o.maker.values = sortKeys(clone(p.maker.values || {}));
+        if (p.maker.sig) o.maker.sig = p.maker.sig;
+      }
       o.layers = (p.layers || []).map(function (l) { return layerOut(l, ctx); });
       return o;
     });
