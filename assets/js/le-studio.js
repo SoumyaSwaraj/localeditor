@@ -12,6 +12,14 @@
     });
     return out;
   }
+  /* For hooks where every module contributes markup (toolbar-add): all non-empty strings, in registration order. */
+  function fireAll(name, a, b) {
+    var out = '';
+    (HOOKS[name] || []).forEach(function (f) {
+      try { var r = f(ctx, a, b); if (typeof r === 'string') out += r; } catch (err) { console.error(err); }
+    });
+    return out;
+  }
 
   function byId(id) { return document.getElementById(id); }
   var root = byId('sx');
@@ -818,7 +826,7 @@
         tb('addPhoto', 'image', 'Add photo', { text: true }) + tb('addText', 'text', 'Add text', { text: true }) + tb('elements', 'elements', 'Elements', { text: true }) + SEP +
         tb('replaceAll', 'swap', 'Replace colours & fonts', { text: 'Replace all' }) + tb('pagesPanel', 'pages', 'Pages') + '<span class="sx-grow"></span>' + tb('compareHold', 'compare', 'Hold to compare', { cls: 'sx-hold' }) : '<span class="sx-tb-label">' + ic('shield') + 'Private by design — nothing leaves this device</span>';
     }
-    html += fire('toolbar-add', kind, l) || '';
+    html += fireAll('toolbar-add', kind, l);
     var custom = fire('toolbar', kind, l);
     if (typeof custom === 'string') html = custom;
     E.tool.innerHTML = html;
@@ -2424,6 +2432,20 @@
   document.addEventListener('visibilitychange', function () { if (document.hidden) flushSave(); });
   window.addEventListener('pagehide', flushSave);
 
+  /* A photo the person added, as opposed to a working mask (cut-out masks are assets named "background-*",
+     the convention the cut-out module documents, and are referenced from layer.cutout.asset). Every photo picker
+     (collage slots, replace, uploads) should list only these. Takes an asset id or an asset meta object. */
+  function isUserPhoto(a) {
+    var p = S.project;
+    var id = typeof a === 'string' ? a : a && a.id;
+    var m = typeof a === 'string' ? (p && p.assets && p.assets[a]) || (S.mem[a] && S.mem[a].meta) : a;
+    if (!m || !id) return false;
+    if (/^background-/.test(m.name || '') || m.role === 'mask') return false;
+    var asMask = function (l) { return !!(l && l.cutout && l.cutout.asset === id); };
+    if (scene.layers().some(asMask)) return false;
+    return !(p && (p.pages || []).some(function (pg) { return (pg.layers || []).some(asMask); }));
+  }
+
   /* ---------- Context for panels ---------- */
   var ctx = {
     S: S, scene: scene, LE: LE, E: E, ic: ic, esc: esc, h: h, ui: ui, clamp: clamp, clone: clone, debounce: debounce, fmtBytes: fmtBytes,
@@ -2434,7 +2456,7 @@
     openModal: openModal, closeModal: closeModal, colorPop: colorPop, cmd: cmd, docColors: docColors, addRecent: addRecent,
     addText: addText, addLayers: addLayers, addShape: addShape, addSvg: addSvg, shapeList: shapeList, shapeSpec: shapeSpec, isOpenShape: isOpenShape,
     placeImage: placeImage, applyMask: applyMask, setBackground: setBackground, setAsBackground: setAsBackground, coverCrop: coverCrop, rememberEl: rememberEl,
-    pickFiles: pickFiles, addFiles: addFiles, ingest: ingest, replaceImage: replaceImage, openReplace: openReplace, thumbUrl: thumbUrl, mem: S.mem, startCrop: startCrop, cropRatio: cropRatio, startTextEdit: startTextEdit,
+    pickFiles: pickFiles, addFiles: addFiles, ingest: ingest, isUserPhoto: isUserPhoto, replaceImage: replaceImage, openReplace: openReplace, thumbUrl: thumbUrl, mem: S.mem, startCrop: startCrop, cropRatio: cropRatio, startTextEdit: startTextEdit,
     size: {
       preview: previewSize, commit: commitSize, cancel: cancelPreview, apply: applySizeNow, reset: resetSize, revert: revertSize, compare: compareSizes, compute: computeResize,
       source: resizeSource, opts: sizeOpts, setChain: function (v) { S.chain = !!v; }, chain: function () { return S.chain; }

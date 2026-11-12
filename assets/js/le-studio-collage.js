@@ -69,10 +69,23 @@
     if (t.group === 'style') return false;
     return !!CLASSIC[t.style];
   }
+  /* Photos the person added: never a cut-out mask or another working image (c.isUserPhoto, shared by every picker;
+     the name test is the fallback when the studio is older than the helper). */
+  var MANY_PHOTOS = 10;
+  function isMaskName(a) { return /^background-/.test((a && a.name) || ''); }
+  /* An entry from the device-wide photo list: never a mask by name, nor one this design uses as a mask. */
+  function pickable(c, a) {
+    if (!a || isMaskName(a)) return false;
+    var mine = c.S.project && c.S.project.assets && c.S.project.assets[a.id];
+    return !(mine && typeof c.isUserPhoto === 'function' && !c.isUserPhoto(a.id));
+  }
   function uploadIds(c) {
     var assets = c.S.project && c.S.project.assets;
     if (!assets) return [];
-    return Object.keys(assets).filter(function (id) { return /^[a-f0-9]{64}$/.test(id); });
+    return Object.keys(assets).filter(function (id) {
+      if (!/^[a-f0-9]{64}$/.test(id)) return false;
+      return typeof c.isUserPhoto === 'function' ? c.isUserPhoto(id) : !isMaskName(assets[id]);
+    });
   }
   function shuffled(list, avoidSame) {
     var out = list.slice();
@@ -557,7 +570,7 @@
     });
     if (LE.project && LE.project.assets) {
       LE.project.assets().then(function (list) {
-        (list || []).slice(0, 60).forEach(function (a) {
+        (list || []).filter(function (a) { return pickable(c, a); }).slice(0, 60).forEach(function (a) {
           if (shown[a.id] || !grid.isConnected) return;
           shown[a.id] = 1;
           grid.appendChild(tile(a.id, a.name));
@@ -1357,7 +1370,7 @@
       body.appendChild(sub);
       body.appendChild(all);
       LE.project.assets().then(function (list) {
-        list = (list || []).filter(function (a) { return mine.indexOf(a.id) < 0; });
+        list = (list || []).filter(function (a) { return mine.indexOf(a.id) < 0 && pickable(c, a); });
         if (!list.length) {
           sub.remove();
           if (!mine.length) body.appendChild(c.ui.empty('No uploads yet', 'Choose a photo from this device, or search stock.', [{ label: 'This device', gold: true, fn: function () { repTab = 'device'; paintTabs(); paint(); } }]));
