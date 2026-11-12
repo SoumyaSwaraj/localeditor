@@ -478,7 +478,7 @@ function packSizes() {
   const all = walk(ROOT);
   const editor = all.filter((f) => !ON_DEMAND.test(f) && !PAGES.notPrecached(f) && f !== PACKS_JSON);
   const basic = editor.filter((f) => !EXPERT.test(f)).map(fileInfo);
-  const expert = all.filter((f) => EXPERT.test(f)).map(fileInfo);
+  const expert = all.filter((f) => EXPERT.test(f) && !ON_DEMAND.test(f)).map(fileInfo);   /* test-only files such as the mock registry are never part of a pack */
   const models = all.filter((f) => MODELS.test(f)).map((f) => Object.assign(fileInfo(f), { model: modelIdOf(f) }));
   const fonts = totals(all.filter((f) => FONT_LIBRARY.test(f)).map(fileInfo));
   const icons = totals(all.filter((f) => ICON_PACKS.test(f) && /\.json$/.test(f)).map(fileInfo));

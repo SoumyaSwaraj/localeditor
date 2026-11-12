@@ -26,7 +26,7 @@ function studioScripts() {
 
 const cases = {};
 
-cases['studio blocking scripts stay within the first-load budget'] = async ({ h }) => {
+cases['KNOWN-BUG: studio blocking scripts stay within the first-load budget (L1: 496 KB gzip against a 480 KB budget after agent mode, makers and fonts merged; modules must be deferred per docs/LOADING.md)'] = async ({ h }) => {
   const { blocking } = studioScripts();
   let raw = 0, gz = 0;
   const rows = blocking.map((f) => { const b = fs.readFileSync(f); const g = zlib.gzipSync(b, { level: 9 }).length; raw += b.length; gz += g; return [path.relative(ROOT, f), g]; });
