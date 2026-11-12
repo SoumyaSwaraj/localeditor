@@ -431,13 +431,15 @@ function buildMeta() {
 
   const llms = `# LocalEditor
 
-> LocalEditor is a private image studio plus ${TOOLS.length} browser tools for images, PDFs, text, and everyday tasks. Editing runs on the device. Files are not uploaded, no account is required, and the site can be installed for offline use.
+> LocalEditor is a private photo studio (with an Expert mode for colour grading, RAW and HDR, retouching, relighting and over 110 effects), a PDF studio, 25 quick makers and ${TOOLS.length} browser tools for images, PDFs, text and everyday tasks. Editing runs on the device. Files are not uploaded, no account is required, and the site can be installed for offline use.
 
 Key facts:
 - Price: free, unlimited, no watermarks, no sign-up.
 - Privacy: all processing happens on the user's device; no server receives files.
 - Offline: a service worker caches every tool after the first visit.
-- Install: Android/desktop via "Install app"; iOS via Safari Share → Add to Home Screen.
+- Install: choose everything, the design studio only or the PDF studio only (Android/desktop via "Install app"; iOS via Safari Share → Add to Home Screen).
+- Studios: Photo studio /studio/, Expert mode /studio/?mode=expert, PDF studio /pdf-studio/, Convert to PDF /convert-to-pdf/.
+- Fonts: 257 open-licence families and 20 originals, served from this site.
 
 ${CATS.map((c) => `## ${c.name}\n\n${TOOLS.filter((t) => t.cat === c.id).map((t) => `- [${t.name}](${SITE}${t.slug}/): ${t.desc}`).join('\n')}`).join('\n\n')}
 
@@ -450,6 +452,15 @@ A coding agent (Claude Code, Cursor, Codex, OpenCode, Antigravity and others) ca
 - [Agent kit](${SITE}agent-kit/README.md): drop-in instruction files for Claude Code, Codex/OpenCode, Cursor and Gemini.
 - [Design file format](${SITE}docs/FORMAT-DESIGN.md) and its [JSON Schema](${SITE}schema/design-1.json): \`.ledesign.json\`, the plain file an agent can write.
 - [Recipe workflows](${SITE}docs/FORMAT-WORKFLOW.md) and [PDF workflows](${SITE}docs/FORMAT-PDF-WORKFLOW.md).
+
+## Expert mode and RAW
+
+The photo studio has a second workspace, Expert mode (${SITE}studio/?mode=expert): a develop panel, masks, scopes and over 110 effects stored as plain data on each layer (\`layer.fx\`). Agents add and change them with \`fx.add\`, \`fx.update\`, \`mask.set\` and \`adjust.add\`; \`LEAgent.catalog('fx')\` lists them. Camera RAW (DNG, and camera formats through an optional decoder) and HDR merge open in it. Depth and face maps are made on the device.
+
+- [Expert mode](${SITE}expert/): colour grading, RAW and HDR, retouching, relighting, shadows, compositing.
+- [Effect reference](${SITE}docs/FX-REFERENCE.md): every effect, parameter, range and a paste-ready \`fx\` entry.
+- [RAW develop and HDR merge](${SITE}docs/RAW-HDR.md): document model and limits.
+- [Command line and MCP](${SITE}docs/AGENT-CLI.md) and [For AI agents](${SITE}ai-agents/).
 
 ## Optional
 

@@ -356,7 +356,7 @@
       "faq": [
         ["Where should an agent start?", "With the agent guide. It is one document and explains the live channel, the operations, the errors and how to work with a person who is watching. The agent kit has short instruction files that point to it."],
         ["Is there a plain summary for language models?", "Yes, llms.txt at the root of the site lists every page and tool in plain text."],
-        ["Can an agent use the Expert mode effects?", "Expert effects are stored as readable data in design files, so a design file an agent writes can carry them. The live agent operations cover pages, layers, makers, recipes and collages, and do not include Expert effects."]
+        ["Can an agent use the Expert mode effects?", "Yes. Expert effects are readable data on each layer. An agent can add, change, mask and remove them live or from the command line, and a design file it writes can carry them. Making depth and face maps, opening camera RAW files and merging HDR are not agent operations yet."]
       ],
       "related": ["photo", "expert", "tools"]
     },
@@ -1756,7 +1756,7 @@
         ["Who turns it on?", "You do. The agent cannot press the buttons that allow agent mode, or the ones that pause, stop or take over. Those belong to you."],
         ["Can an agent run code in my browser through this?", "No. Changes are plain data, checked by the same gate as a design file. Anything with scripts or HTML is refused, and a batch of changes is applied completely or not at all."],
         ["What if my agent can only open links?", "It can send a link that carries its changes. You see what will change and must press Apply changes before anything happens."],
-        ["What can it make?", "Pages, text, shapes, icons, photo slots, collages, quick makers and recipes. Live agent operations do not include the Expert mode effects."]
+        ["What can it make?", "Pages, text, shapes, icons, photo slots, collages, quick makers, recipes and Expert mode effects with their masks."]
       ],
       "related": ["agent-cli", "open-design-format", "quick-makers"],
       "keywords": ["ai agent", "agent mode", "ai assistant", "coding agent", "let ai edit", "ai design", "watch ai edit", "automate design", "llm", "chatbot design"]

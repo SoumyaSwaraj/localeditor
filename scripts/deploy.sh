@@ -145,7 +145,7 @@ pass "$CC_PAGE" "" "*.html" "robots.txt" "sitemap.xml" "llms.txt" "*.ico"
 #     format specs and the agent kit as plain Markdown, and the JSON Schema at its $id URL. The includes come after
 #     NEVER on purpose, so only these Markdown files are let through; every other docs/ and *.md file stays private.
 echo "-- $CC_PAGE (text/markdown): agent guide, format specs, agent kit"
-run "${AWS[@]}" "${VERB[@]}" . "$DEST" --exclude "*" "${NEVER[@]}" --include "docs/AGENT-GUIDE.md" --include "docs/FORMAT-DESIGN.md" \
+run "${AWS[@]}" "${VERB[@]}" . "$DEST" --exclude "*" "${NEVER[@]}" --include "docs/AGENT-GUIDE.md" --include "docs/AGENT-CLI.md" --include "docs/FX-REFERENCE.md" --include "docs/RAW-HDR.md" --include "docs/FORMAT-DESIGN.md" \
   --include "docs/FORMAT-WORKFLOW.md" --include "docs/FORMAT-PDF-WORKFLOW.md" --include "agent-kit/*" \
   --cache-control "$CC_PAGE" --content-type "text/markdown; charset=utf-8" "${COMMON[@]}"
 pass "$CC_PAGE" "application/schema+json" "schema/*.json"
