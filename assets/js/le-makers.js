@@ -8,7 +8,9 @@
   /* Maker files under assets/js/makers/, loaded on first use by LE.makers.ready(). Add yours here. */
   var FILES = ['quote', 'review', 'receipt', 'milestone', 'palette', 'film',
     /* Print set: calendars, charts, labels, stickers, photo books, zines, catalogues. */
-    'calendar', 'chart', 'labels', 'stickers', 'photobook', 'zine', 'catalogue'];
+    'calendar', 'chart', 'labels', 'stickers', 'photobook', 'zine', 'catalogue',
+    /* Second social set: posters, event kit, QR signs and invitations, store screenshots, link cards. */
+    'payposter', 'wifisign', 'qrinvite', 'eventkit', 'movieposter', 'albumcover', 'frontpage', 'appshots', 'linkcard'];
 
   var SIZES = {
     square: { id: 'square', name: 'Square', w: 1080, h: 1080 },
@@ -117,6 +119,8 @@
         var mx = maxOf(inp, inp.type === 'text' ? 80 : 600);
         if (s.length > mx) return { error: label + ' is too long (' + s.length + ' of ' + mx + ' characters).' };
         if (inp.type === 'longtext' && s.split('\n').length > (inp.maxLines || 12)) return { error: label + ' has too many lines.' };
+        /* pattern: an optional RegExp (or source string) the whole value must match; patternHint says what is expected. */
+        if (s && inp.pattern && !(inp.pattern instanceof RegExp ? inp.pattern : new RegExp(inp.pattern)).test(s)) return { error: inp.patternHint || (label + ' is not in the expected format.') };
         return { value: s || undefined };
       }
       case 'photo':
@@ -968,9 +972,18 @@
       aspect: W / H, tall: H / W > 1.5, portrait: H / W > 1.1 && H / W <= 1.5, square: Math.abs(H / W - 1) < 0.1,
       type: { display: Math.round(132 * k), h1: Math.round(92 * k), h2: Math.round(64 * k), h3: Math.round(46 * k), body: Math.round(36 * k), small: Math.round(28 * k), caption: Math.round(22 * k) },
       random: rnd, seed: seed,
-      page: function (bg) {
+      /* own gives this page its own size (multi-page makers whose pages differ, e.g. an invitation and a print sheet):
+         { w, h } in px, optionally with print ({ paper, w, h (mm), dpi }), or { paper: 'a4' } for a paper size from
+         LE.makers.PAPER (its px at 300 dpi and its doc.print). Without it the page takes the chosen size. */
+      page: function (bg, own) {
         var background = typeof bg === 'string' ? { type: 'color', color: bg } : (bg || { type: 'color', color: '#FFFFFF' });
-        return { v: 1, width: W, height: H, background: background, layers: [] };
+        var pg = { v: 1, width: W, height: H, background: background, layers: [] };
+        if (own && own.paper && !(own.w > 0)) { var ps = paperSize(own.paper); own = ps ? { w: ps.w, h: ps.h, print: ps.print } : null; }
+        if (own && own.w > 0 && own.h > 0) {
+          pg.width = Math.round(own.w); pg.height = Math.round(own.h); pg.ownSize = true;
+          if (own.print) pg.ownPrint = printMeta(own.print);
+        }
+        return pg;
       },
       fit: fit, text: text, shape: shape, rect: rect, line: line, ellipse: function (spec) { return shape('ellipse', spec); },
       star: function (spec) { return shape('star', Object.assign({ params: { points: 5, innerRatio: 0.45 } }, spec)); },
@@ -1068,7 +1081,7 @@
         return t;
       },
       /* Cut and fold guides as one group of ordinary layers named "Cut marks" (hide or delete it in Layers).
-         o: { cells (boxes to crop around), marks (default true), lines (dashed lines along every cell edge),
+         o: { cells (boxes to crop around), page ({ w, h } when the marks go on a page of its own size), marks (default true), lines (dashed lines along every cell edge),
          outlines ([{ x, y, w, h, shape: rect|ellipse, radius }]), folds, cuts ([[x1, y1, x2, y2]]), holes ([{ x, y, d }]),
          color, width (px), len and gap (mm), name }. Put the result first in page.layers so it sits under the design. */
       cutMarks: function (o) {
@@ -1076,7 +1089,7 @@
         var color = o.color || '#77737F', width = o.width || Math.max(2, mm(0.2)), out = [];
         var dash = [mm(1.6), mm(1.2)];
         if (o.cells && o.cells.length) {
-          var t = cropTicks(o.cells, { w: W, h: H }, mm(o.len || 5), mm(o.gap == null ? 1.5 : o.gap), mm(1.5));
+          var t = cropTicks(o.cells, o.page || { w: W, h: H }, mm(o.len || 5), mm(o.gap == null ? 1.5 : o.gap), mm(1.5));
           if (o.marks !== false) ['top', 'bottom', 'left', 'right'].forEach(function (sd) { if (t[sd]) out.push(segLayer('crop-' + sd, 'Crop marks ' + sd, t[sd].segs, color, width)); });
           if (o.lines) {
             var B = t.bounds, segs = [];
@@ -1159,8 +1172,11 @@
         if (!pages.length) throw new Error('Maker ' + id + ' made no pages.');
         var meta = { v: 1, id: m.id, style: style, size: size.id, values: v.values };
         pages.forEach(function (p) {
-          p.width = size.w; p.height = size.h;
-          if (size.print) p.print = clone(size.print); else delete p.print;
+          /* A page with its own size (env.page(bg, own)) keeps it and its own print meta; the others take the chosen
+             size, and doc.print when that size is a paper size. */
+          if (p.ownSize) { if (p.ownPrint) p.print = p.ownPrint; else delete p.print; }
+          else { p.width = size.w; p.height = size.h; if (size.print) p.print = clone(size.print); else delete p.print; }
+          delete p.ownSize; delete p.ownPrint;
           var mm = clone(meta);
           mm.sig = signature(p.layers);
           p.maker = LE.Scene && LE.Scene.makerOf ? LE.Scene.makerOf(mm) : mm;
@@ -1280,6 +1296,12 @@
     var minimal = {}, worst = {};
     m.inputs.forEach(function (inp, i) {
       var t = inp.type;
+      if (inp.pattern) {
+        /* A patterned field cannot take filler text: its own longest valid example stands in. */
+        if (inp.worst != null) worst[inp.key] = inp.worst;
+        if (inp.required && inp.worst != null) minimal[inp.key] = inp.worst;
+        return;
+      }
       if (inp.required) {
         if (t === 'text' || t === 'longtext') minimal[inp.key] = 'Hi';
         else if (t === 'photo') minimal[inp.key] = photos[0] || 'missing-photo';
