@@ -1801,6 +1801,7 @@
       });
       b3.appendChild(go);
       body.appendChild(s3);
+      if (window.LE && LE.support && LE.support.studioSettings) LE.support.studioSettings(c, body);
     }
   };
 

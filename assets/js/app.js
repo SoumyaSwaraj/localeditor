@@ -540,3 +540,21 @@
   js.async = true;
   document.head.appendChild(js);
 })();
+
+/* Device support checks (LE.support): loads le-support.js and le-support.css on every page. Features may push
+   their definitions onto window.LE_SUPPORT_DEFS before it arrives. See docs/SUPPORT.md. */
+(function () {
+  'use strict';
+  if (window.__leSupportLoader) return;
+  window.__leSupportLoader = true;
+  window.LE_SUPPORT_DEFS = window.LE_SUPPORT_DEFS || [];
+  var base = document.documentElement.getAttribute('data-root') || '';
+  var css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = base + 'assets/css/le-support.css';
+  document.head.appendChild(css);
+  var js = document.createElement('script');
+  js.src = base + 'assets/js/le-support.js';
+  js.async = true;
+  document.head.appendChild(js);
+})();
