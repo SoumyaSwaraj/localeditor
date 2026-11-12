@@ -155,7 +155,7 @@ Not planned: accounts, cloud sync, a hosted gallery, a forced watermark, an in-a
 
 | Item | What | State |
 |---|---|---|
-| Design pass 3 | **Apple-like interface**: system type stack, near-white and true-dark surfaces with one tint, translucent bars and sheets, segmented controls and grouped lists, product-page marketing pages. Principles (clarity, deference, depth), never Apple's own fonts, icons or marks. Expert keeps its conventional pro-editor layout. | Building |
+| Design pass 3 | **Theme system with 4–5 themes**; the default is the Apple-like one (named for its feel, never "Apple"), the current Lapis design is kept as a theme, plus three more. Default theme: system type stack, near-white and true-dark surfaces with one tint, translucent bars and sheets, segmented controls and grouped lists, product-page marketing pages. Principles (clarity, deference, depth), never Apple's own fonts, icons or marks. Expert keeps its conventional pro-editor layout. | Building |
 | Install choice | Install the **Design studio only**, the **PDF studio only**, or the **whole suite**: three manifests, one worker, offline files follow the installed app. `docs/INSTALL.md` when it lands. | Building |
 | D9, D10 | Make scanned PDFs searchable; scan with the camera, in the PDF studio. | Building |
 | 2.8, 2.10 | Screenshot and code beautifier; photobooth strips; recap collages (quick makers). | Building |
