@@ -309,7 +309,7 @@
   /* Store a .cube file as a project asset; resolves to { id, name, size }. */
   function storeLut(file) {
     return file.text().then(function (text) {
-      var lut = parseCube(text);
+      var G = LE.fx && LE.fx.grade, lut = G && G.parseCube ? G.parseCube(text) : parseCube(text);   /* the grading pack's parser: 1D, shaper + 3D, capped at 65³ */
       var blob = new Blob([text], { type: 'text/plain' });
       var name = file.name || 'look.cube';
       var put = LE.project && LE.project.putAsset ? LE.project.putAsset({ blob: blob, name: name, type: 'text/plain' }) : Promise.resolve({ id: 'lut-' + X.uid() });
