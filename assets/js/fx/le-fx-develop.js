@@ -407,7 +407,9 @@
         'Wide-angle barrel distortion: distortion +5 to +25; a fisheye-like look is beyond this model.',
         'Corner darkening of a fast prime wide open: vignetting +20 to +45, midpoint 40-60.',
         'Purple fringes on branches against a bright sky or on backlit hair: defringePurple 4-10; green fringes behind the focus plane: defringeGreen 2-6.',
-        'Night city lights with coloured edges: autoCA true, then caRed or caBlue +-10 to +-30 by eye.',
+        'Night city lights with coloured edges: autoCA true, then caRed or caBlue +-10 to +-30 by eye; vignetting 0 (dark corners suit night scenes).',
+        'Backlit portrait: defringePurple 4-8 along the backlit hair, vignetting +10 to +20 at most so the face stays the brightest area.',
+        'High-ISO indoor: vignetting correction lifts noisy corners too: keep it under +25 and add luminance noise reduction in develop.detail.',
         'Pitfalls: distortion moves the picture edges inward, so crop after it; defringe can grey out genuinely purple objects at edges.'
       ],
       example: { type: 'develop.lens', p: { distortion: 12, vignette: 30, midpoint: 50, autoCA: true, defringePurple: 6 } }
@@ -420,7 +422,7 @@
    *   full resolution through its linear coefficients ("fast guided filter", He and Sun 2015), radius rho = (0.6 % to 4 %) of the
    *   picture's long side; Halo control raises the edge-awareness (smaller eps) and lowers the radius.
    *   local:  L' = g + (B - g) * (1 - 0.85 s) * (1 + 0.5 hl [B > g] - 0.5 sh [B < g]) + (L - B) * (1 + d)
-   *   fusion: virtual exposures of -2.5 s, 0, +2.5 s stops are weighted per pixel by how well exposed the BASE would be in each
+   *   fusion: five virtual exposures, -2k, -k, 0, +k, +2k stops with k = 1.2 + 1.8 s, are weighted per pixel by how well exposed the BASE would be in each
    *           (Gaussian around display value 0.5, sigma 0.2, Mertens et al. 2007), giving a smooth local gain; detail is kept.
    *   global: L' = g + (L - g) * (1 - 0.6 s) (plain log compression, one colour pass).
    *   g = log2(0.18) (scene middle grey). Colour ratios are kept (Y'/Y on every channel), then saturation moves chroma in linear light. */
@@ -431,7 +433,7 @@
     'vec4 fx(){ vec4 s = texture(u_src, v_uv); float a = s.a > 0.0 ? s.a : 1.0; vec3 c = s.rgb / a; float Y = max(dot(c, vec3(0.2126, 0.7152, 0.0722)), 1e-7); float L = log2(Y);',
     '  vec4 ab = texture(u_ab, v_uv); float B = ab.x * L + ab.y; float g = u_q.z; float Ln;',
     '  if (u_q.x < 1.5) { float bd = B - g; bd *= u_p.x * (bd > 0.0 ? 1.0 + 0.5 * u_p.z : 1.0 - 0.5 * u_p.w); Ln = g + bd + (L - B) * (1.0 + u_p.y); }',
-    '  else { float acc = 0.0, wsum = 0.0; for (int i = -1; i <= 1; i++) { float ev = float(i) * u_p.x; float v = clamp(toDisplay(vec3(exp2(B + ev - g) * 0.18)).x, 0.0, 1.0); float w = exp(-(v - 0.5) * (v - 0.5) / 0.08) + 1e-4; if (i > 0) w *= 1.0 + 0.6 * u_p.w; if (i < 0) w *= 1.0 + 0.6 * u_p.z; acc += w * ev; wsum += w; } Ln = L + acc / wsum + (L - B) * u_p.y; }',
+    '  else { float acc = 0.0, wsum = 0.0; for (int i = -2; i <= 2; i++) { float ev = float(i) * u_p.x; float v = clamp(toDisplay(vec3(exp2(B + ev - g) * 0.18)).x, 0.0, 1.0); float w = exp(-(v - 0.5) * (v - 0.5) / 0.08) + 1e-4; if (i > 0) w *= 1.0 + 0.6 * u_p.w; if (i < 0) w *= 1.0 - 0.6 * u_p.z; acc += w * ev; wsum += w; } Ln = L + acc / wsum + (L - B) * u_p.y; }',
     '  vec3 o = c * exp2(Ln - L); float Yo = dot(o, vec3(0.2126, 0.7152, 0.0722)); o = vec3(Yo) + (o - vec3(Yo)) * u_q.y;',
     '  return vec4(o * s.a, s.a); }'
   ].join('\n');
@@ -469,7 +471,7 @@
       var m = g.blur(q.rho, { source: low });
       var abl = g.pass(NR_PASS2, { u_src: m, u_eps: q.eps }, { scale: 0.25 }); g.release(m);
       var ab = g.blur(q.rho, { source: abl }); g.release(abl); g.release(low);
-      var out = g.pass(TM_FINAL, { u_src: src, u_ab: ab, u_p: [q.mode === 'fusion' ? 2.5 * q.s : 1 - 0.85 * q.s, q.detail, q.hl, q.sh], u_q: [q.mode === 'fusion' ? 2 : 1, q.sat, Math.log2(0.18), 0] });
+      var out = g.pass(TM_FINAL, { u_src: src, u_ab: ab, u_p: [q.mode === 'fusion' ? 1.2 + 1.8 * q.s : 1 - 0.85 * q.s, q.detail, q.hl, q.sh], u_q: [q.mode === 'fusion' ? 2 : 1, q.sat, Math.log2(0.18), 0] });
       g.release(ab);
       return out;
     },

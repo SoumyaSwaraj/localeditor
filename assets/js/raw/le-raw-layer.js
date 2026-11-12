@@ -562,7 +562,7 @@
           var lay = { raw: raw };
           return hdrWorkingCopy(lay, {}).then(function (w) {
             if (w.asShot) raw.asShot = { temp: Math.round(w.asShot[0]), tint: round(w.asShot[1], 1) };
-            var fx = res.meta.mode === 'fusion' ? [{ type: 'develop.basic', p: { profile: 'neutral' } }] : [{ type: 'develop.tonemap', p: { method: 'local', strength: 60, detail: 18, highlights: -20, shadows: 20, halo: 60 } }, { type: 'develop.basic', p: { profile: 'neutral', vibrance: 8 } }];
+            var fx = res.meta.mode === 'fusion' ? [{ type: 'develop.basic', p: { profile: 'neutral' } }] : [{ type: 'develop.tonemap', p: { method: 'local', strength: 50, detail: 15, highlights: -15, shadows: 15, halo: 60 } }, { type: 'develop.basic', p: { profile: 'standard', vibrance: 8 } }];
             var ctx = { asShot: w.asShot, wb: wbFor(raw), extent: Math.max(res.width, res.height), scene: true };
             return renderDefault(w, fx, { w: res.width, h: res.height }, ctx).then(function (canvas) {
               return toBlob(canvas, 'image/jpeg', 0.92).then(function (jb) {
