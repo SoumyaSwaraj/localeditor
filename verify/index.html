@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Check a File Against Its Fingerprint | LocalEditor</title>
+<meta name="description" content="Drop a file to see its SHA-256 fingerprint and check it against a fingerprint receipt. The file is checked on your device and never uploaded.">
+<meta name="keywords" content="verify file, sha-256 checker, file fingerprint, check file unchanged, document checksum, verify pdf, hash check offline">
+<link rel="canonical" href="https://localeditor.net/verify/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#141318">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LocalEditor">
+<meta property="og:title" content="Is this the same file?">
+<meta property="og:description" content="Check a file against its fingerprint receipt. Nothing is uploaded.">
+<meta property="og:url" content="https://localeditor.net/verify/">
+<meta property="og:image" content="https://localeditor.net/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<link rel="stylesheet" href="../assets/css/verify.css">
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Verify a File","url":"https://localeditor.net/verify/","applicationCategory":"UtilitiesApplication","operatingSystem":"Any (browser-based)","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Drop a file to see its SHA-256 fingerprint and check it against a fingerprint receipt. The file is checked on your device and never uploaded.","featureList":["SHA-256 fingerprint of any file","Checks a file against the fingerprint in a receipt link or QR code","Works offline","No upload — files stay on your device"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"LocalEditor","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Verify a File","item":"https://localeditor.net/verify/"}]}]}
+</script>
+</head>
+<body class="vf-page">
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>LocalEditor</a>
+  <span class="nav-spacer"></span>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#pdf">PDF tools</a> › Verify a File</nav>
+
+  <section class="hero vf-hero">
+    <span class="eyebrow">Fingerprint check</span>
+    <h1>Is this <em>the same file?</em></h1>
+    <p class="lead">Drop a file to see its fingerprint. If you came here from a receipt’s QR code or link, you will see at once whether the file matches it. The file is checked on this device and never uploaded.</p>
+  </section>
+
+  <section class="card tool-app vf-app" aria-label="Check a file">
+    <div class="vf-expected" id="vf-expected" hidden>
+      <span class="vf-label">Fingerprint from the receipt</span>
+      <strong class="vf-short" id="vf-exp-short"></strong>
+      <code class="vf-full" id="vf-exp-full"></code>
+    </div>
+    <div class="dropzone vf-drop" id="vf-drop" tabindex="0" role="button" aria-label="Drop a file here or choose one">
+      <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 11v3a8 8 0 0 1-1.2 4.2M8.5 8.6A4 4 0 0 1 16 11v2.5M16 17.5c-.3 1.2-.8 2.4-1.4 3.4M5 15.5c.6-1.4 1-2.9 1-4.5a6 6 0 0 1 10.6-3.9M19.5 16c.3-1.6.5-3.3.5-5a8 8 0 0 0-1.4-4.5M3.5 12A8.5 8.5 0 0 1 5 7"/></svg></div>
+      <strong>Drop a file here or tap to choose</strong>
+      <small>Any file type · it stays on this device</small>
+      <input type="file" id="vf-file" aria-label="Choose a file">
+    </div>
+    <div class="vf-result" id="vf-result" hidden aria-live="polite">
+      <div class="vf-verdict" id="vf-verdict"><span class="vf-verdict-ic" aria-hidden="true"></span><div><strong id="vf-verdict-title"></strong><p id="vf-verdict-text"></p></div></div>
+      <dl class="vf-facts">
+        <dt>File</dt><dd id="vf-name"></dd>
+        <dt>Size</dt><dd id="vf-size"></dd>
+        <dt>Fingerprint (SHA-256)</dt><dd><strong class="vf-short" id="vf-short"></strong><code class="vf-full" id="vf-full"></code></dd>
+      </dl>
+      <div class="actions"><button type="button" class="btn" id="vf-copy">Copy fingerprint</button><button type="button" class="btn btn-ghost" id="vf-again">Check another file</button></div>
+    </div>
+    <details class="vf-manual" id="vf-manual">
+      <summary>Compare with a fingerprint you were sent</summary>
+      <label for="vf-paste">Paste the fingerprint (64 letters and numbers)</label>
+      <input class="input" id="vf-paste" autocomplete="off" spellcheck="false" inputmode="text" placeholder="e.g. 0e667d3a…">
+      <p class="vf-paste-msg" id="vf-paste-msg" aria-live="polite"></p>
+    </details>
+    <p class="vf-private"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.2 7 10 4-1.8 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></svg>Checked on this device. The file is not uploaded, and the fingerprint in the link (after the #) is never sent to a server.</p>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>What a match proves, and what it does not</h2>
+      <p><strong>A match proves</strong> the file you dropped is byte for byte the same file the receipt was made from: nothing in it has been added, removed or changed since then.</p>
+      <p><strong>It does not prove</strong> who made the file, when it was first created, or that what it says is true. Anyone can make a receipt for any file. A different fingerprint only tells you the files are not identical; re-saving or re-printing a document to PDF changes the fingerprint even when the text looks the same.</p>
+    </section>
+    <section class="card">
+      <h2>How it works</h2>
+      <ol><li>Someone makes a fingerprint receipt in the <a href="../pdf-studio/">PDF studio</a> (Office kit → Fingerprint receipt). It shows a SHA-256 fingerprint and a QR code.</li><li>You scan the QR code or open its link. The fingerprint is in the part of the link after the #, which browsers keep on your device.</li><li>Drop your copy of the file here. This page works out its fingerprint and compares the two.</li></ol>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>&copy; 2026 LocalEditor · Files stay on this device.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script src="page.js"></script>
+</body>
+</html>
