@@ -274,6 +274,16 @@ body:not(.cv-has-files) .cv-only-files { display: none !important; }
 .cv-field select.input { padding-right: 28px; }
 .cv-seg { flex-wrap: nowrap; width: 100%; }
 .cv-seg button { flex: 1 1 0; min-width: 0; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+/* Save as: searchable text or pictures (QA-010) */
+.cv-out { flex-direction: column; border-radius: 14px; gap: 3px; }
+.cv-out button { display: grid; gap: 1px; justify-items: start; text-align: left; white-space: normal; min-height: 48px; padding: 7px 12px; border-radius: 11px; }
+.cv-out button strong { font-size: 13.5px; font-weight: 680; color: var(--ink); }
+.cv-out button small { font-size: 12px; font-weight: 560; color: var(--muted); }
+.cv-out-hint { margin: 0 2px; }
+.cv-serif { font-family: "Instrument Serif", Georgia, serif; font-size: 15px !important; }
+.cv-result { display: inline-flex; align-items: center; gap: 5px; font-weight: 650; }
+.cv-result::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex: none; }
+.cv-result.is-picture::before { background: var(--warn); }
 .cv-range-head { display: flex; justify-content: space-between; align-items: baseline; }
 .cv-range-head output { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
 .cv-field input[type="range"] { accent-color: var(--amethyst); height: 24px; margin: 0; }
