@@ -2,6 +2,16 @@
 
 Written 12 November 2026 by the lead architect. This supersedes the "Plans afterwards" list in `docs/HANDOFF.md`; the hard rules in that file still apply.
 
+## Status (lead architect, 12 November 2026, evening)
+
+Integration branch: `evergrow/focused-pasteur-t84h3j`. Last full run on the combined build: 405 passed, 16 known, 14 failed (cross-module; being fixed).
+
+**Merged:** phase 1 (landing and design system, photo backgrounds, collage, recipes, Unsplash, install and storage, background-remover prototype, QA suite); device support check; open design format and template links; export (every size, carousel, replay, copy, share); photo privacy check and redact; background remover in the studio with three options and the thumbnail kit; quick makers framework and six makers; category hubs and feature pages; PDF security (D1–D4, D6); PDF bulk (D5, D7, D8, D12, D13); OCR and camera-scan prototypes (labs only); photo-resolution fix.
+
+**In progress:** integration fixes across modules; site data pass and deep links; studio shell phone pass; pro background-remover models (BiRefNet lite, BiRefNet full, BEN2); makers set 2 (posters, event kit, invitations, payment and Wi-Fi posters, app-store screenshots, link cards); makers set 3 (printables, photo book and zine, catalogue from a spreadsheet); PDF office tools (D11, D14, D15, D16, D19, D20, font bug); PDF documents (real-text convert for QA-010, D17 invoices, D18 tables).
+
+**Not started:** template variables and bulk create (2.6); screenshot beautifier (2.8); photobooth strips and recap collages (2.10); OCR and camera scan in the PDF studio (D9, D10 product build); wave 3 (live link, self-check loop, local bridge and MCP, brand file, design as code, embed, agent kit, agent activity).
+
 ## The three goals
 
 1. **Easy.** Anyone can make something good in a minute, on a phone, with one hand.
