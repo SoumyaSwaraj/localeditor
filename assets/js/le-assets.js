@@ -934,6 +934,25 @@
     });
   }
 
+  /* Every style at once is a large download: it goes through the download policy and the shared progress chip
+     (LE.downloads, docs/DOWNLOADS.md). The person tapped a button that showed the size, so only free space can stop it. */
+  var saveStylesNow = saveStyleOffline;
+  saveStyleOffline = function (styleId, onProgress) {
+    var D = window.LE && LE.downloads;
+    if (styleId !== 'all' || !D || !D.request) return saveStylesNow(styleId, onProgress);
+    var ready = memory.withicons ? Promise.resolve() : load('withicons');
+    return ready.then(function () {
+      var w = memory.withicons || {};
+      var total = (w.styles || []).reduce(function (a, s) { return a + (s.bytes || 0); }, 0) + (w.paletteBytes || 0);
+      return D.request({ id: 'icons:all', name: 'All icon styles', bytes: total, kind: 'pack', reason: 'Every icon style, offline', confirmed: true });
+    }).then(function (r) {
+      if (!r.ok) { var err = new Error('There is not enough space to save every icon style.'); err.code = r.why; throw err; }
+      var t = D.track('icons:all', { name: 'Icon styles' });
+      return saveStylesNow('all', function (p) { if (p && p.totalBytes) t.progress(p.bytes, p.totalBytes); if (onProgress) onProgress(p); })
+        .then(function (x) { t.done(); return x; }, function (e) { t.fail(e); throw e; });
+    });
+  };
+
   function removeStyleOffline(styleId) {
     delete packs[styleId];
     if (styleState[styleId]) styleState[styleId].offline = false;
@@ -1236,7 +1255,7 @@
 
   function colorSets() {
     var sets = [
-      { id: 'localeditor', name: 'LocalEditor', group: 'brand', colors: ['#FBF8F3', '#F2D594', '#E2B15A', '#E0668E', '#D07A45', '#7457F0', '#4E36C9', '#2F6BFF', '#17A37A', '#110F17'] },
+      { id: 'localeditor', name: 'LocalEditor', group: 'brand', colors: ['#FAFAFA', '#E6EEFF', '#81A6FE', '#3F67D9', '#2E51B6', '#182D6B', '#FEB38C', '#EF8C57', '#14874E', '#141414'] },
       { id: 'amethyst', name: 'Amethyst', group: 'brand', colors: ['#F3EEFF', '#D9CEFF', '#B7A4FA', '#7457F0', '#4E36C9', '#2A2154'] },
       { id: 'champagne', name: 'Champagne', group: 'brand', colors: ['#FBF6EA', '#F2D594', '#E2B15A', '#B9832F', '#6E4E16'] },
       { id: 'rose-brand', name: 'Rose', group: 'brand', colors: ['#FDE8EF', '#F2A8C0', '#E0668E', '#B53D68', '#5C1C34'] },

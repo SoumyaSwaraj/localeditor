@@ -1,0 +1,80 @@
+{
+ "family": "Breezeway",
+ "slug": "breezeway",
+ "source": "localeditor",
+ "version": "1.000",
+ "intent": "positive",
+ "feel": [
+  "calm",
+  "friendly"
+ ],
+ "description": "Light and breezy, leaning forward. Relaxed and upbeat.",
+ "uses": [
+  "Travel",
+  "Wellness",
+  "Summer posts"
+ ],
+ "concept": "Light humanist sans with a breezy slant: very open shapes, tailed l, angled cuts. Optimistic movement.",
+ "category": "sans",
+ "weights": [
+  400,
+  700
+ ],
+ "italic": false,
+ "license": "LocalEditor-Proprietary (pending owner decision)",
+ "files": {
+  "400": {
+   "woff2": "assets/fonts/originals/breezeway/breezeway-400.woff2",
+   "woff": "assets/fonts/originals/breezeway/breezeway-400.woff"
+  },
+  "700": {
+   "woff2": "assets/fonts/originals/breezeway/breezeway-700.woff2",
+   "woff": "assets/fonts/originals/breezeway/breezeway-700.woff"
+  }
+ },
+ "bytes": {
+  "400": {
+   "woff2": 17456,
+   "woff": 22392
+  },
+  "700": {
+   "woff2": 18132,
+   "woff": 23160
+  }
+ },
+ "metrics": {
+  "unitsPerEm": 1000,
+  "ascender": 950,
+  "descender": -250,
+  "lineGap": 0,
+  "capHeight": 700,
+  "xHeight": 500
+ },
+ "parameters": {
+  "regular": {
+   "st": 72,
+   "ratio": 0.8,
+   "stress": 15,
+   "slant": 9,
+   "aperture": 0.92,
+   "term": [
+    "cut",
+    20
+   ],
+   "xh": 500,
+   "wid": 0.96,
+   "sq": 0.57,
+   "spacing": 1.04,
+   "join": 0.86,
+   "v": {
+    "l": "tail",
+    "y": "curve"
+   }
+  },
+  "bold": {
+   "st": 112,
+   "ratio": 0.76,
+   "join": 0.76
+  }
+ }
+}

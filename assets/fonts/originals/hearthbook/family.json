@@ -1,0 +1,81 @@
+{
+ "family": "Hearthbook",
+ "slug": "hearthbook",
+ "source": "localeditor",
+ "version": "1.000",
+ "intent": "trust",
+ "feel": [
+  "elegant",
+  "trust"
+ ],
+ "description": "Classic bookish serif. Warm, literate and credible.",
+ "uses": [
+  "Invitations",
+  "Quotes",
+  "Long reads"
+ ],
+ "concept": "Classical book face with a high x-height: angled stress, bracketed serifs, ball terminals, moderate contrast.",
+ "category": "serif",
+ "weights": [
+  400,
+  700
+ ],
+ "italic": false,
+ "license": "LocalEditor-Proprietary (pending owner decision)",
+ "files": {
+  "400": {
+   "woff2": "assets/fonts/originals/hearthbook/hearthbook-400.woff2",
+   "woff": "assets/fonts/originals/hearthbook/hearthbook-400.woff"
+  },
+  "700": {
+   "woff2": "assets/fonts/originals/hearthbook/hearthbook-700.woff2",
+   "woff": "assets/fonts/originals/hearthbook/hearthbook-700.woff"
+  }
+ },
+ "bytes": {
+  "400": {
+   "woff2": 19704,
+   "woff": 25108
+  },
+  "700": {
+   "woff2": 20248,
+   "woff": 25728
+  }
+ },
+ "metrics": {
+  "unitsPerEm": 1000,
+  "ascender": 950,
+  "descender": -250,
+  "lineGap": 0,
+  "capHeight": 700,
+  "xHeight": 500
+ },
+ "parameters": {
+  "regular": {
+   "st": 88,
+   "ratio": 0.38,
+   "stress": 22,
+   "serif": "bracket",
+   "sl": 40,
+   "sth": 18,
+   "term": "ball",
+   "ball": 0.55,
+   "aperture": 0.7,
+   "xh": 500,
+   "wid": 0.97,
+   "sq": 0.56,
+   "spacing": 1.0,
+   "join": 0.76,
+   "v": {
+    "g": 2
+   }
+  },
+  "bold": {
+   "st": 130,
+   "ratio": 0.34,
+   "sth": 22,
+   "wid": 1.0,
+   "join": 0.68
+  }
+ }
+}

@@ -2011,6 +2011,7 @@
       if (PS.onSaved) PS.onSaved(S.lastSave);
       if (rep.warnings && rep.warnings.length) showReport(rep);
       E.saved.textContent = 'Saved ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (!(rep.warnings && rep.warnings.length) && IT.celebrate) IT.celebrate('PDF saved on this device');
       return bytes;
     } catch (err) {
       pr.end();

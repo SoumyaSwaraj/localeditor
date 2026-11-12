@@ -2114,7 +2114,7 @@
     ctx.strokeRect(0, 0, this._doc.width, this._doc.height);
     var car = this._doc.carousel;
     if (car && car.slides > 1) {
-      ctx.strokeStyle = 'rgba(116,87,240,.85)';
+      ctx.strokeStyle = 'rgba(88,132,248,.9)';
       ctx.lineWidth = 1.5 / this._zoom;
       ctx.setLineDash([6 / this._zoom, 5 / this._zoom]);
       for (var si = 1; si < car.slides; si++) {
@@ -2468,7 +2468,7 @@
     var raw = this._bgRaw(bg, s);
     ctx.save();
     ctx.lineWidth = 2 / this._zoom;
-    ctx.strokeStyle = '#7457F0';
+    ctx.strokeStyle = '#5884F8';
     ctx.strokeRect(0, 0, this._doc.width, this._doc.height);
     if (raw && s.fit !== 'tile') {
       var p = bgPlace(s, this._doc.width, this._doc.height, raw.nw, raw.nh);
@@ -2478,7 +2478,7 @@
       if (Math.abs(Math.sin(p.rad)) > 0.5) { hw = raw.nw * p.ky / 2; hh = raw.nh * p.kx / 2; }
       ctx.setLineDash([6 / this._zoom, 5 / this._zoom]);
       ctx.lineWidth = 1.5 / this._zoom;
-      ctx.strokeStyle = 'rgba(116,87,240,.85)';
+      ctx.strokeStyle = 'rgba(88,132,248,.9)';
       ctx.strokeRect(-hw, -hh, hw * 2, hh * 2);
     }
     ctx.restore();
@@ -2906,7 +2906,7 @@
       if (!cached || cached.key !== key) this._scheduleSvg(layer.id);
     }
     if (!img) {
-      ctx.fillStyle = 'rgba(116,87,240,.12)';
+      ctx.fillStyle = 'rgba(88,132,248,.12)';
       ctx.fillRect(0, 0, layer.w, layer.h);
       return;
     }

@@ -7,7 +7,7 @@
 <meta name="description" content="A private, Canva-style photo and design studio that runs on your device. Layers, text, shapes, stickers, filters, sizes, and export. Nothing is uploaded.">
 <link rel="canonical" href="https://localeditor.net/studio/">
 <meta name="robots" content="index,follow">
-<meta name="theme-color" content="#141318">
+<meta name="theme-color" content="#161616">
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../assets/css/app.css">
@@ -59,8 +59,10 @@
 <script src="../assets/js/app.js"></script>
 <script src="../assets/js/le-engine.js"></script>
 <script src="../assets/js/le-fonts.js"></script>
+<script src="../assets/js/le-fonts-originals.js"></script>
 <script src="../assets/js/le-assets.js"></script>
-<script src="../assets/js/le-stock.js"></script>
+<script src="../assets/js/le-load.js"></script>
+<script>LE.modules.defer({ id: 'stock', src: '../assets/js/le-stock.js', rerender: ['apps', 'uploads', 'elements'] }); /* docs/LOADING.md */</script>
 <script src="../assets/js/le-objects.js"></script>
 <script src="../assets/js/le-project.js"></script>
 <script src="../assets/js/le-fx-boot.js"></script>

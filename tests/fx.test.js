@@ -397,7 +397,11 @@ cases['studio: nothing under assets/js/fx/ loads until a document needs it, and 
   const fs = require('fs'), path = require('path');
   h.assert(fs.statSync(path.join(fx.ROOT, 'assets/js/le-fx-boot.js')).size < 2600, 'le-fx-boot.js is ' + fs.statSync(path.join(fx.ROOT, 'assets/js/le-fx-boot.js')).size + ' bytes');
   const build = require(path.join(fx.ROOT, 'scripts/build.js'));
-  h.assert(build.precacheList().every((f) => f.indexOf('assets/js/fx/') < 0) && build.precacheList().indexOf('./assets/js/le-fx-boot.js') >= 0, 'fx/ is on demand, the boot stub is precached');
+  /* The renderer belongs to the expert pack (scripts/build.js decides whether that pack is saved with the basic one); the stub is basic. */
+  const list = build.precacheList(), inPrecache = list.some((f) => f.indexOf('assets/js/fx/') >= 0);
+  h.assert(list.indexOf('./assets/js/le-fx-boot.js') >= 0, 'the boot stub is precached');
+  if (build.EXPERT && build.packDecision) h.assert(build.EXPERT.test('assets/js/fx/le-fx.js') && inPrecache === !!build.packDecision().expertWithBasic, 'fx/ follows the expert pack decision');
+  else h.assert(!inPrecache, 'fx/ is on demand');
   const page = await h.studioWithSample(browser, base, 'desktop');
   const fetched = () => page.evaluate(() => performance.getEntriesByType('resource').map((e) => e.name).filter((n) => /\/assets\/js\/fx\//.test(n)).map((n) => n.split('/').pop()));
   await page.evaluate(() => window.LEStudio.scene.render(0.25));

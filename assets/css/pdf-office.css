@@ -61,7 +61,7 @@ body.po-open { overflow: hidden; }
 }
 .po-foot-msg { flex: 1 1 200px; margin: 0; font-size: 13px; color: var(--muted); min-width: 0; }
 .po-foot-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.po-work .btn-gold, .po-work .btn-gold:hover { color: var(--gold-ink, #2A1F0A); }
+.po-work .btn-gold, .po-work .btn-gold:hover { color: var(--gold-ink); }
 .po-work .btn svg { width: 16px; height: 16px; stroke: currentColor; flex: none; }
 .po-work .btn-gold:disabled { background: var(--surface-2); color: var(--faint); border-color: var(--border); box-shadow: none; cursor: not-allowed; }
 .po-go { min-width: 160px; justify-content: center; }
@@ -121,7 +121,7 @@ body.po-open { overflow: hidden; }
 /* details */
 .po-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .po-chip { min-height: 40px; }
-.po-chip[aria-checked="true"] { background: #1B1722; border-color: #1B1722; color: #fff; }
+.po-chip[aria-checked="true"] { background: #191919; border-color: #191919; color: #fff; }
 [data-theme="dark"] .po-chip[aria-checked="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
 .po-chip-add svg { width: 15px; height: 15px; }
 .po-editor, .po-detail-form { display: grid; gap: 10px; }
@@ -232,7 +232,7 @@ body.po-open { overflow: hidden; }
 .po-stamp { display: grid; place-items: center; min-height: 64px; padding: 6px; border: 1px solid var(--border); border-radius: var(--r-sm, 10px); background: #fff; cursor: pointer; }
 .po-stamp canvas { max-width: 100%; max-height: 48px; width: auto; height: auto; }
 .po-stamp[aria-checked="true"] { border-color: var(--amethyst); box-shadow: 0 0 0 2px color-mix(in srgb, var(--amethyst) 35%, transparent); }
-.po-stamp-own { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 680; color: #5B3FD9; }
+.po-stamp-own { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 680; color: var(--primary-active); }
 .po-stamp-own svg { width: 16px; height: 16px; }
 .po-stamp-preview { display: grid; place-items: center; min-height: 220px; padding: 24px; border: 1px solid var(--line); border-radius: var(--r-lg, 20px); background: #fff; }
 .po-stamp-preview canvas { max-width: 100%; height: auto; }

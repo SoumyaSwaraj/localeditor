@@ -78,7 +78,7 @@
 
   /* ---------- Library (LE.assets first, built-in fallback) ---------- */
   var FALLBACK_SETS = [
-    ['localeditor', 'LocalEditor', 'Brand', ['#17131f', '#3b2f63', '#7457f0', '#a48bff', '#e0668e', '#f2a65a', '#e2c178', '#f6efe1', '#ffffff', '#efedf3']],
+    ['localeditor', 'LocalEditor', 'Brand', ['#141414', '#182d6b', '#2e51b6', '#3f67d9', '#81a6fe', '#e6eeff', '#ef8c57', '#feb38c', '#ffffff', '#f5f5f5']],
     ['neutrals', 'Neutrals', 'Neutrals', ['#ffffff', '#f5f5f4', '#e7e5e4', '#d6d3d1', '#a8a29e', '#78716c', '#57534e', '#44403c', '#292524', '#0c0a09']],
     ['greys', 'Cool greys', 'Neutrals', ['#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b', '#475569', '#334155', '#1e293b', '#0f172a']],
     ['warm', 'Warm', 'Mood', ['#7c2d12', '#c2410c', '#f97316', '#fdba74', '#fde68a', '#fef3c7']],

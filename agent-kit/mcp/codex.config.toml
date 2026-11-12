@@ -1,0 +1,7 @@
+# Append to ~/.codex/config.toml. Codex starts the server in the folder you run codex in, and only files under it
+# can be used (add "--root", "/some/folder" to args to choose another).
+[mcp_servers.localeditor]
+command = "npx"
+args = ["-y", "localeditor", "mcp"]
+# Optional: point at a browser if none is found automatically.
+# env = { LE_BROWSER = "/usr/bin/chromium" }

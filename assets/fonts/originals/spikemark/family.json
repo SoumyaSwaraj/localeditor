@@ -1,0 +1,79 @@
+{
+ "family": "Spikemark",
+ "slug": "spikemark",
+ "source": "localeditor",
+ "version": "1.000",
+ "intent": "tension",
+ "feel": [
+  "tense",
+  "elegant"
+ ],
+ "description": "Spiky, high-contrast serif. Dark, dramatic, a bit dangerous.",
+ "uses": [
+  "Thrillers",
+  "Metal and goth",
+  "Luxury with an edge"
+ ],
+ "concept": "Condensed wedge serif: triangular spur serifs, high contrast, pointed apexes, tapered terminals. Cold elegance with teeth.",
+ "category": "serif",
+ "weights": [
+  400,
+  700
+ ],
+ "italic": false,
+ "license": "LocalEditor-Proprietary (pending owner decision)",
+ "files": {
+  "400": {
+   "woff2": "assets/fonts/originals/spikemark/spikemark-400.woff2",
+   "woff": "assets/fonts/originals/spikemark/spikemark-400.woff"
+  },
+  "700": {
+   "woff2": "assets/fonts/originals/spikemark/spikemark-700.woff2",
+   "woff": "assets/fonts/originals/spikemark/spikemark-700.woff"
+  }
+ },
+ "bytes": {
+  "400": {
+   "woff2": 19212,
+   "woff": 24376
+  },
+  "700": {
+   "woff2": 19220,
+   "woff": 24504
+  }
+ },
+ "metrics": {
+  "unitsPerEm": 1000,
+  "ascender": 950,
+  "descender": -250,
+  "lineGap": 0,
+  "capHeight": 700,
+  "xHeight": 470
+ },
+ "parameters": {
+  "regular": {
+   "st": 108,
+   "ratio": 0.24,
+   "stress": 0,
+   "serif": "wedge",
+   "sl": 44,
+   "sth": 28,
+   "term": "taper",
+   "apex": "point",
+   "xh": 470,
+   "wid": 0.8,
+   "sq": 0.62,
+   "aperture": 0.22,
+   "spacing": 0.94,
+   "join": 0.62
+  },
+  "bold": {
+   "st": 148,
+   "ratio": 0.2,
+   "sl": 48,
+   "sth": 34,
+   "wid": 0.84,
+   "join": 0.56
+  }
+ }
+}

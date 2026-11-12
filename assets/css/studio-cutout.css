@@ -10,7 +10,7 @@
 .sxc-ask { margin: 0 0 12px; }
 .sxc-ask h3 { margin: 0 0 6px; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
 .sxc-ask-p { margin: 0 0 12px; font-size: 13.5px; line-height: 1.5; color: var(--muted); text-wrap: pretty; min-height: 3em; }
-.sxc-ask .btn-gold, .sxc-tk-go .btn-gold { color: var(--gold-ink, #2A1F0A); }
+.sxc-ask .btn-gold, .sxc-tk-go .btn-gold { color: var(--gold-ink); }
 .sxc-other { margin: 4px 0 0; border-top: 1px solid var(--line); }
 .sxc-other > summary, .sxc-about > summary {
   display: flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; list-style: none;
@@ -69,6 +69,33 @@
   .sxc-pick { grid-template-columns: 80px minmax(0, 1fr); gap: 10px; }
   .sxc-ex { width: 80px; }
 }
+
+/* Quality ladder (Quick / Better / Best) and the folded groups */
+.sxc-ladder { display: grid; gap: 10px; }
+.sxc-fold { border-top: 1px solid var(--line); }
+.sxc-fold > summary {
+  display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; list-style: none;
+  font-size: 13px; font-weight: 650; color: var(--muted);
+}
+.sxc-fold > summary::-webkit-details-marker { display: none; }
+.sxc-fold > summary::after {
+  content: ""; width: 6px; height: 6px; margin-left: auto; margin-right: 4px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px); transition: transform var(--dur-1, 120ms) var(--ease, ease);
+}
+.sxc-fold[open] > summary::after { transform: rotate(-135deg) translateY(-1px); }
+.sxc-fold > summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 6px; }
+.sxc-count {
+  display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 99px;
+  background: var(--surface-2); color: var(--muted); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.sxc-foldbody { display: grid; gap: 10px; padding-bottom: 10px; }
+.sxc-opt.is-weak, .sxc-opt.is-missing { background: var(--surface-2); border-style: dashed; }
+.sxc-opt.is-weak .sxc-ex, .sxc-opt.is-missing .sxc-ex { opacity: 0.6; filter: grayscale(0.6); }
+.sxc-pick.is-static { cursor: default; }
+span.sxc-ex { display: block; }
+.sxc-confirm h3 { overflow-wrap: anywhere; }
+.sxc-confirm .sxc-confirm-no { margin-top: 8px; width: 100%; justify-content: center; min-height: 44px; }
+.sxc-confirm .sx-note { margin: 0 0 12px; }
 
 .sxc-more { margin-top: 6px; }
 

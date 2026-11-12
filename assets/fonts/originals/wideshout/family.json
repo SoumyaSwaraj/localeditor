@@ -1,0 +1,74 @@
+{
+ "family": "Wideshout",
+ "slug": "wideshout",
+ "source": "localeditor",
+ "version": "1.000",
+ "intent": "attention",
+ "feel": [
+  "bold",
+  "playful"
+ ],
+ "description": "Extra wide and loud. Best for one or two big words.",
+ "uses": [
+  "Banners",
+  "Logos",
+  "Short headlines"
+ ],
+ "concept": "Extended heavy sans: very wide letters with ink traps, so short words fill a banner.",
+ "category": "sans",
+ "weights": [
+  400,
+  700
+ ],
+ "italic": false,
+ "license": "LocalEditor-Proprietary (pending owner decision)",
+ "files": {
+  "400": {
+   "woff2": "assets/fonts/originals/wideshout/wideshout-400.woff2",
+   "woff": "assets/fonts/originals/wideshout/wideshout-400.woff"
+  },
+  "700": {
+   "woff2": "assets/fonts/originals/wideshout/wideshout-700.woff2",
+   "woff": "assets/fonts/originals/wideshout/wideshout-700.woff"
+  }
+ },
+ "bytes": {
+  "400": {
+   "woff2": 18440,
+   "woff": 23516
+  },
+  "700": {
+   "woff2": 18904,
+   "woff": 24012
+  }
+ },
+ "metrics": {
+  "unitsPerEm": 1000,
+  "ascender": 950,
+  "descender": -250,
+  "lineGap": 0,
+  "capHeight": 700,
+  "xHeight": 520
+ },
+ "parameters": {
+  "regular": {
+   "st": 158,
+   "wid": 1.36,
+   "xh": 520,
+   "ratio": 0.8,
+   "sq": 0.64,
+   "aperture": 0.3,
+   "term": "h",
+   "inktrap": 0.7,
+   "spacing": 0.95,
+   "join": 0.72
+  },
+  "bold": {
+   "st": 212,
+   "wid": 1.44,
+   "ratio": 0.76,
+   "join": 0.58,
+   "spacing": 0.9
+  }
+ }
+}

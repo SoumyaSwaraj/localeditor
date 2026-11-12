@@ -259,11 +259,26 @@ async function savedProjects(page) {
   await page.evaluate(() => window.LEStudio.saveNow());
   return page.evaluate(() => window.LE.project.list());
 }
+/* WCAG contrast of each visible element's computed text colour against its own (or nearest painted ancestor's)
+   background. Returns [{ text, color, bg, ratio }]. Used for the rule "the primary action's text meets AA (4.5:1)". */
+async function inkContrast(page, selector) {
+  return page.evaluate((sel) => {
+    const parse = (c) => { const m = (c || '').match(/[\d.]+/g); return m ? m.map(Number) : [0, 0, 0, 0]; };
+    const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    const lum = (c) => 0.2126 * lin(c[0]) + 0.7152 * lin(c[1]) + 0.0722 * lin(c[2]);
+    const bgOf = (el) => { for (let n = el; n; n = n.parentElement) { const c = parse(getComputedStyle(n).backgroundColor); if (c.length < 4 || c[3] > 0.5) return c; } return [255, 255, 255]; };
+    return [...document.querySelectorAll(sel)].filter((e) => e.offsetParent !== null || getComputedStyle(e).position === 'fixed').map((e) => {
+      const fg = parse(getComputedStyle(e).color), bg = bgOf(e);
+      const a = lum(fg), b = lum(bg);
+      return { text: (e.innerText || e.getAttribute('aria-label') || '').trim().slice(0, 24), color: getComputedStyle(e).color, bg: 'rgb(' + bg.slice(0, 3).join(', ') + ')', ratio: Math.round(((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)) * 100) / 100 };
+    });
+  }, selector);
+}
 /* Compare two scene docs ignoring nothing but ids order: returns true when identical JSON. */
 const sameDoc = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 module.exports = {
   ROOT, serve, chromium, VIEWPORTS, open, studioWithSample, openPanel, doc, noOverflow, assert,
   FIXTURE, PHOTO, sleep, makeJpeg, openTheme, newDesign, openPhotoDesign, addPhoto, layers, selection, select, click, addLayers, rect, centerOf, handleBox,
-  drag, touchDrag, capture, imageInfo, pdfInfo, pdfRead, key, savedProjects, sameDoc
+  drag, touchDrag, capture, imageInfo, pdfInfo, pdfRead, key, savedProjects, sameDoc, inkContrast
 };

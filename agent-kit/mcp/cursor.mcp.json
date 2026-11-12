@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "localeditor": {
+      "command": "npx",
+      "args": ["-y", "localeditor", "mcp", "--root", "${workspaceFolder}"]
+    }
+  }
+}

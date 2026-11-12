@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Depth lab</title>
+<link rel="stylesheet" href="lab.css">
+</head>
+<body>
+<main>
+  <h1>Depth lab</h1>
+  <p class="lead">Makes a depth map on this device, then proves it is useful: lens blur, a movable light and fog. Nothing downloads until you press <b>Make depth map</b>. <a href="index.html">Maps lab</a> &middot; <a href="face.html">Face lab</a></p>
+
+  <div class="panel">
+    <div id="drop">Drop a photo here, or <label class="btn" style="display:inline-flex;color:var(--ink)">Choose a photo<input id="file" type="file" accept="image/*" class="hidden"></label>
+      or pick one from the pool: <select id="pool" style="min-height:36px"></select></div>
+    <p class="hint" id="srcinfo"></p>
+    <div class="row" style="margin-top:8px">
+      <label>Depth option<select id="model"></select></label>
+      <label>Input size (long side)<select id="side"><option value="266">266 px, fastest</option><option value="392">392 px</option><option value="518" selected>518 px, model's native size</option></select></label>
+      <label class="chk"><input type="checkbox" id="refine"> Refine edges with the photo</label>
+      <button class="gold" id="go" disabled>Make depth map</button>
+      <button id="cancel" class="hidden">Cancel</button>
+    </div>
+    <progress id="bar" max="1" value="0" class="hidden"></progress>
+    <p id="status"></p>
+    <table id="timings" class="hidden"></table>
+  </div>
+
+  <div class="panel" id="maps" hidden>
+    <h2>The maps</h2>
+    <div class="grid">
+      <div class="cell"><canvas id="cPhoto"></canvas><span class="cap">Photo</span></div>
+      <div class="cell"><canvas id="cDepth"></canvas><span class="cap">Depth (white = near)</span></div>
+      <div class="cell"><canvas id="cNormals"></canvas><span class="cap">Normals from depth</span></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <label>Normal strength <input type="range" id="nStrength" min="0" max="4" step="0.05" value="1"></label>
+      <label>Normal smoothing <input type="range" id="nSmooth" min="0" max="8" step="1" value="2"></label>
+      <label class="chk"><input type="checkbox" id="colormap"> Colour the depth map</label>
+    </div>
+  </div>
+
+  <div class="panel demo" id="demoBlur" hidden>
+    <h2>Lens blur from depth</h2>
+    <div class="cell"><canvas id="gBlur"></canvas><span class="cap" id="capBlur">Click the photo to focus there</span></div>
+    <div class="row" style="margin-top:8px">
+      <label>Focus distance <input type="range" id="bFocus" min="0" max="1" step="0.005" value="0.7"></label>
+      <label>Aperture (blur size) <input type="range" id="bAper" min="0" max="1" step="0.01" value="0.5"></label>
+      <label>Focus range <input type="range" id="bRange" min="0.02" max="0.4" step="0.01" value="0.08"></label>
+      <label class="chk"><input type="checkbox" id="bRefined"> Use refined depth</label>
+      <label class="chk"><input type="checkbox" id="bShowCoc"> Show blur amount</label>
+      <button id="bHold">Hold for original</button>
+    </div>
+  </div>
+
+  <div class="panel demo" id="demoLight" hidden>
+    <h2>Relight from depth normals</h2>
+    <div class="cell"><canvas id="gLight"></canvas><span class="cap">Drag on the photo to move the light</span></div>
+    <div class="row" style="margin-top:8px">
+      <label>Light height <input type="range" id="lHeight" min="0.05" max="1.5" step="0.01" value="0.5"></label>
+      <label>Strength <input type="range" id="lGain" min="0" max="2" step="0.01" value="0.9"></label>
+      <label>Ambient <input type="range" id="lAmb" min="0" max="1" step="0.01" value="0.55"></label>
+      <label>Rim light <input type="range" id="lRim" min="0" max="2" step="0.01" value="0.5"></label>
+      <label>View <select id="lView"><option value="0">Relit photo</option><option value="1">Shading only</option><option value="2">Normals</option></select></label>
+      <button id="lHold">Hold for original</button>
+    </div>
+  </div>
+
+  <div class="panel demo" id="demoFog" hidden>
+    <h2>Fog by depth</h2>
+    <div class="cell"><canvas id="gFog"></canvas></div>
+    <div class="row" style="margin-top:8px">
+      <label>Density <input type="range" id="fDens" min="0" max="3" step="0.01" value="1.2"></label>
+      <label>Starts at <input type="range" id="fStart" min="0" max="0.9" step="0.01" value="0.25"></label>
+      <label>Brightness <input type="range" id="fBright" min="0" max="1" step="0.01" value="0.85"></label>
+      <label class="chk"><input type="checkbox" id="fRefined"> Use refined depth</label>
+      <button id="fHold">Hold for original</button>
+    </div>
+  </div>
+  <p class="hint" id="gpuinfo"></p>
+</main>
+<script src="maps.js"></script>
+<script src="depth-lab.js"></script>
+</body>
+</html>

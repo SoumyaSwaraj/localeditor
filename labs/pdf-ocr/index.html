@@ -89,8 +89,22 @@
 
   /* Gate through LE.support when present; otherwise run directly. */
   async function gated(id, fn) {
+    if (!(await allowed())) return;
     if (window.LE && LE.support && typeof LE.support.gate === 'function') return LE.support.gate(id, fn);
     return fn();
+  }
+  /* Download policy (LE.downloads, docs/DOWNLOADS.md) where the page loads it: one question only when one is needed. */
+  async function allowed() {
+    var D = window.LE && LE.downloads;
+    if (!D) return true;
+    D.used('ocr');
+    var l = (await LE.ocr.languagesWithCache()).filter(function (x) { return x.id === $('lang').value; })[0];
+    if (!l || l.cached) return true;
+    /* After "Not now", pressing the button again is the answer: no second question. */
+    var r = await D.request({ id: 'ocr:' + l.id, name: 'Text recognition (' + l.label + ')', bytes: l.bytes + 3899472, kind: 'model', reason: 'Reads the text in scanned pages', confirmed: allowed.later === l.id });
+    allowed.later = r.ok ? null : l.id;
+    if (!r.ok) setStatus(r.why === 'space' ? 'Not downloaded: there is not enough space.' : 'Not downloaded. Press the button again to download it (' + Math.round((l.bytes + 3899472) / 1048576) + ' MB).');
+    return r.ok;
   }
 
   /* language list: English ships with the lab; the other packs are optional downloads (scripts/fetch-ocr-data.js stages them locally) */

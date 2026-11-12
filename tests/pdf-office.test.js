@@ -39,7 +39,14 @@ async function fontCase(h, browser, base, part, parts) {
   await page.waitForFunction(() => window.LE && LE.pdf && LE.fonts);
   const res = await page.evaluate(async ([part, parts]) => {
     await LE.pdf.ready();
-    const fams = LE.fonts.list().map((f) => f.family);
+    /* The original 44 families plus a sample of the F1 library: static and variable (instanced in LE.fonts.bytes),
+       serif, display, mono, and script families' Latin glyphs. CJK families need the text and are left out. */
+    const ORIGINAL = ['Inter', 'Poppins', 'Montserrat', 'DM Sans', 'Manrope', 'Space Grotesk', 'Outfit', 'Nunito', 'Work Sans', 'Rubik', 'Plus Jakarta Sans',
+      'Playfair Display', 'Lora', 'Merriweather', 'DM Serif Display', 'Cormorant Garamond', 'Libre Baskerville', 'Fraunces', 'EB Garamond', 'Instrument Serif',
+      'Bebas Neue', 'Anton', 'Archivo Black', 'Abril Fatface', 'Righteous', 'Lobster', 'Bungee', 'Oswald', 'Syne', 'Dancing Script', 'Great Vibes', 'Caveat',
+      'Sacramento', 'Pacifico', 'Satisfy', 'Allura', 'Kalam', 'Shadows Into Light', 'Homemade Apple', 'Mr Dafoe', 'Alex Brush', 'JetBrains Mono', 'Space Mono', 'IBM Plex Mono'];
+    const SAMPLE = ['Roboto', 'Open Sans', 'Roboto Slab', 'Source Serif 4', 'Bodoni Moda', 'Kanit', 'Press Start 2P', 'Fira Code', 'Amiri', 'Heebo', 'Noto Sans Devanagari', 'Permanent Marker'];
+    const fams = ORIGINAL.concat(SAMPLE);
     const mine = fams.filter((f, i) => i % parts === part);
     const CHARS = Array.from({ length: 94 }, (_, i) => String.fromCharCode(33 + i)).join('') + 'éüßñçøåÆŁœ€';
     const out = {};
@@ -654,8 +661,7 @@ module.exports = {
         const small = await page.evaluate(() => [...document.querySelectorAll('.po-work button:not([hidden]), .po-work select, .po-work input:not([type=checkbox]):not([type=color])')]
           .filter((b) => b.offsetParent && !b.closest('[hidden]') && !b.closest('details:not([open])')).map((b) => [b.className || b.tagName, b.getBoundingClientRect().height]).filter((x) => x[1] > 0 && x[1] < 43.5));
         h.assert.equal(small.length, 0, job + ' has small targets: ' + JSON.stringify(small.slice(0, 4)));
-        const gold = await page.evaluate(() => { const b = document.querySelector('.po-go'); return b && !b.disabled ? getComputedStyle(b).color : 'rgb(42, 31, 10)'; });
-        h.assert.equal(gold, 'rgb(42, 31, 10)', 'gold ink');
+        (await h.inkContrast(page, '.po-go:not(:disabled)')).forEach((c) => h.assert(c.ratio >= 4.5, 'primary text ' + c.color + ' on ' + c.bg + ' is ' + c.ratio + ':1'));
         await page.evaluate(() => PS.office.close());
       }
       h.assert.noErrors(page);

@@ -306,6 +306,7 @@
     opts = opts || {};
     var t = E.toast;
     t.innerHTML = '<span>' + esc(msg) + '</span>' + (opts.action ? '<button type="button" class="sx-toast-act">' + esc(opts.action.label) + '</button>' : '');
+    t.classList.toggle('is-done', !!opts.done || /^(Downloaded|Saved|Copied)\b/.test(String(msg)));
     t.hidden = false;
     placeToast();
     requestAnimationFrame(function () { t.classList.add('is-on'); });
@@ -715,11 +716,11 @@
   function renderHead() {
     var name = S.project ? S.project.name : 'Untitled design';
     E.head.innerHTML =
-      '<a class="sx-brand" href="../" aria-label="LocalEditor home"><span class="sx-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><defs><linearGradient id="sx-foil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F8E3AE"/><stop offset=".55" stop-color="#E2B15A"/><stop offset="1" stop-color="#B9832F"/></linearGradient></defs><rect width="32" height="32" rx="10" fill="url(#sx-foil)"/><circle cx="16" cy="16" r="7.5" fill="none" stroke="#2A1F0A" stroke-width="1.8"/><circle cx="16" cy="16" r="1.8" fill="#2A1F0A"/></svg></span><span class="sx-brand-txt"><strong>LocalEditor</strong><span>Studio</span></span></a>' +
+      '<a class="sx-brand" href="../" aria-label="LocalEditor home"><span class="sx-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3F67D9"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span class="sx-brand-txt"><strong>LocalEditor</strong><span>Studio</span></span></a>' +
       '<button type="button" class="sx-headbtn sx-file-btn" data-cmd="fileMenu" aria-haspopup="menu" aria-expanded="false" aria-label="File menu">' + ic('menu') + '<span>File</span></button>' +
       '<label class="sx-name"><span class="sr">Design name</span><input id="sx-name" value="' + esc(name) + '" maxlength="120" spellcheck="false" aria-label="Design name"></label>' +
       '<span class="sx-save" id="sx-save" data-state="' + (S.dirty ? 'dirty' : 'saved') + '"><i aria-hidden="true"></i><span>' + (S.project ? (S.dirty ? 'Saving…' : 'Saved on this device') : 'On this device') + '</span></span>' +
-      '<span class="sx-grow"></span>' +
+      '<span class="sx-grow"></span>' + modeSeg() +
       '<button type="button" class="sx-iconbtn sx-head-act" data-cmd="undo" aria-label="Undo (Ctrl+Z)" title="Undo (Ctrl+Z)"' + (S.canUndo ? '' : ' disabled') + '>' + ic('undo') + '</button>' +
       '<button type="button" class="sx-iconbtn sx-head-act" data-cmd="redo" aria-label="Redo (Ctrl+Shift+Z)" title="Redo (Ctrl+Shift+Z)"' + (S.canRedo ? '' : ' disabled') + '>' + ic('redo') + '</button>' +
       '<span class="sx-sep sx-hide-phone"></span>' +
@@ -2631,6 +2632,7 @@
         '<button type="button" data-cmd="shareTemplate"' + (S.project ? '' : ' disabled') + '>' + ic('share') + 'Share as template link</button>' : '') +
       '<button type="button" data-cmd="export"' + (S.project ? '' : ' disabled') + '>' + ic('download') + 'Download image…<kbd>Ctrl E</kbd></button><hr>' +
       (window.LEAgent ? '<button type="button" data-cmd="agentMode">' + ic('sparkle') + 'Agent mode…</button>' : '') +
+      '<button type="button" data-cmd="mode:' + (xpOn() ? 'simple' : 'expert') + '">' + ic('adjust') + (xpOn() ? 'Simple mode' : 'Expert mode') + '</button>' +
       '<button type="button" data-cmd="settings">' + ic('gauge') + 'Performance</button>' +
       '<button type="button" data-theme-toggle>' + ic('moon') + (document.documentElement.getAttribute('data-theme') === 'dark' ? 'Light mode' : 'Dark mode') + '</button>' +
       '<button type="button" data-cmd="shortcuts">' + ic('keyboard') + 'Shortcuts<kbd>?</kbd></button>' +
@@ -2942,6 +2944,29 @@
   window.LEStudio = ctx;
 
   function fontCss(f) { return LE.fonts && LE.fonts.css ? LE.fonts.css(f) : '"' + f + '", sans-serif'; }
+
+  /* ---------- Expert mode boot hook (docs/EXPERT-UI.md): the workspace in assets/js/expert/ loads on the first switch ---------- */
+  (window.LE_SUPPORT_DEFS = window.LE_SUPPORT_DEFS || []).push({ id: 'expert.workspace', name: 'Expert mode', group: 'Photo studio', needs: ['canvas-2d'], wants: ['webgl2', 'pointer-fine', 'device-memory-4gb'], memoryMB: 400 });
+  var XP_JS = new URL('../assets/js/expert/expert.js', location.href).href;
+  function xpOn() { return root.classList.contains('is-expert'); }
+  function xpData(l) { return l && (l.type === 'adjust' || (l.fx && l.fx.length) || (l.mask && l.mask.parts) || l.retouch); }
+  function modeSeg() { var x = xpOn(); return '<span class="sx-mode" role="group" aria-label="Workspace"><button type="button" data-cmd="mode:simple" aria-pressed="' + !x + '">Simple</button><button type="button" data-cmd="mode:expert" aria-pressed="' + x + '">Expert</button></span><button type="button" class="sx-iconbtn sx-mode-t" data-cmd="mode:toggle" aria-pressed="' + x + '" aria-label="Expert mode" title="Expert mode">' + ic('adjust') + '</button>'; }
+  function setMode(m, boot) {
+    if (!boot) lsSet('le-studio-mode', m);
+    var paint = function () { E.head.querySelectorAll('[data-cmd^="mode:"]').forEach(function (b) { var c = b.getAttribute('data-cmd'); b.setAttribute('aria-pressed', String(c === 'mode:toggle' ? xpOn() : c === 'mode:' + (xpOn() ? 'expert' : 'simple'))); }); renderToolbar(); };
+    if (m !== 'expert') { if (LE.expert) LE.expert.leave(); paint(); return Promise.resolve(); }
+    var go = function () { return LE.lazy(XP_JS).then(function () { return LE.expert.enter(ctx); }).then(paint, function (err) { console.error(err); toast('Expert mode could not load. Check your connection and try again.'); }); };
+    return LE.support ? LE.support.gate('expert.workspace', { title: 'Expert mode', run: go, onCancel: paint }) : go();
+  }
+  ctx.mode = setMode;
+  (PANELS._cmds = PANELS._cmds || {}).mode = function (c, arg) { closePop(); setMode(arg === 'toggle' ? (xpOn() ? 'simple' : 'expert') : arg); };
+  (HOOKS['toolbar-add'] = HOOKS['toolbar-add'] || []).push(function (c, kind, l) { if (!xpOn() && xpData(l)) return '<button type="button" class="sx-tb sx-tb-chip sx-xp-mark" data-cmd="mode:expert" data-pri="2" title="Open in Expert">Edited in Expert</button>'; });
+  (HOOKS.ready = HOOKS.ready || []).push(function () {
+    var u = new URL(location.href), q = u.searchParams.get('mode');
+    if (q) { u.searchParams.delete('mode'); history.replaceState(null, '', u.pathname + u.search); }
+    if ((q || lsGet('le-studio-mode', 'simple')) === 'expert') setMode('expert', !q);
+    else if (S.project && scene.layers().some(xpData)) toast('This design has Expert edits.', { action: { label: 'Open in Expert', fn: function () { setMode('expert'); } }, ms: 6000 });
+  });
 
   /* ---------- Boot ---------- */
   var TOOL_MAP = {

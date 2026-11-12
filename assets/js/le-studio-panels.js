@@ -1821,6 +1821,8 @@
       storage(c, s2.querySelector('.sx-sec-body'));
       var s3 = c.ui.section('Offline');
       var b3 = s3.querySelector('.sx-sec-body');
+      /* One place for every offline download (docs/DOWNLOADS.md); the old button stays as the fallback. */
+      if (window.LE && LE.downloads && LE.downloads.studioRow) LE.downloads.studioRow(c, b3); else {
       b3.appendChild(note(c, 'Fonts and graphics are fetched from this site the first time you use them, then cached. Save them all now to work fully offline.'));
       var go = btn(c, 'Save fonts & graphics for offline', 'download', 'btn btn-ghost btn-sm', function () {
         go.disabled = true;
@@ -1828,7 +1830,9 @@
         p1.then(function () { return LE.assets && LE.assets.saveAllOffline ? LE.assets.saveAllOffline() : null; }).then(function () { go.querySelector('span').textContent = 'Saved for offline'; c.toast('Fonts and graphics are saved for offline use'); }).catch(function () { go.disabled = false; go.querySelector('span').textContent = 'Try again'; c.toast('Could not save everything — check your connection.'); });
       });
       b3.appendChild(go);
+      }
       body.appendChild(s3);
+      if (window.LE && LE.surround) LE.surround.section(c, body);
       if (window.LE && LE.support && LE.support.studioSettings) LE.support.studioSettings(c, body);
     }
   };

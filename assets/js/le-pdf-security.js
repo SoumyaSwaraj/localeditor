@@ -3280,7 +3280,7 @@
         g.drawImage(c, x, y, w, h);
         var size = PS.refSize(ref);
         var k = w / size.w;
-        g.fillStyle = 'rgba(116,87,240,0.55)';
+        g.fillStyle = 'rgba(88,132,248,0.55)';
         m.rects.forEach(function (r) { g.fillRect(x + r.x * k, y + r.y * k, Math.max(2, r.w * k), Math.max(2, r.h * k)); });
       }).catch(function () {});
     }
