@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-/* Generates index.html, about/, 404.html, manifest, sitemap.xml, robots.txt, llms.txt and sw.js.
-   Run from repo root:  node scripts/build.js */
+/* Generates index.html, about/, 404.html, offline.html, manifest, sitemap.xml, robots.txt, llms.txt and sw.js.
+   Run from repo root:  node scripts/build.js
+   LE_BUILD_VERSION=abc node scripts/build.js pins the worker version (tests, reproducible deploys).
+   require('./scripts/build.js') only exposes the generators (manifestJSON, precacheList, swSource) and writes nothing. */
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const SITE = 'https://localeditor.net/';
-const VERSION = 'it-' + new Date().toISOString().replace(/\D/g, '').slice(0, 12);
+const VERSION = process.env.LE_BUILD_VERSION || new Date().toISOString().replace(/\D/g, '').slice(0, 12);
 
 const I = { // 24x24 stroke icons
   compress: '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>',
@@ -278,22 +280,74 @@ function buildAbout() {
   fs.writeFileSync(path.join(ROOT, '404.html'), notFound);
 }
 
-function buildMeta() {
-  const manifest = {
+/* ---------- Manifest ---------- */
+/* Screenshots are captured by scripts/screenshots.js. A missing file is left out so the manifest never points at a 404. */
+const SCREENSHOTS = [
+  { src: 'assets/screenshots/studio-narrow.webp', sizes: '780x1688', form_factor: 'narrow', label: 'The photo studio on a phone: layers, text and filters, all on your device' },
+  { src: 'assets/screenshots/home-narrow.webp', sizes: '780x1688', form_factor: 'narrow', label: 'Every tool in one place, working offline' },
+  { src: 'assets/screenshots/studio-wide.webp', sizes: '1440x900', form_factor: 'wide', label: 'Design with layers, templates and collages' },
+  { src: 'assets/screenshots/home-wide.webp', sizes: '1440x900', form_factor: 'wide', label: 'A private photo studio, a PDF studio and 30 tools' },
+];
+const SHORTCUTS = [
+  { name: 'Photo studio', short_name: 'Studio', description: 'Start a new design', url: './studio/', icon: 'studio' },
+  { name: 'Make a collage', short_name: 'Collage', description: 'Arrange several photos', url: './studio/?tool=collage', icon: 'collage' },
+  { name: 'PDF studio', short_name: 'PDF', description: 'Edit, sign and fill PDFs', url: './pdf-studio/', icon: 'pdf' },
+  { name: 'Compress a photo', short_name: 'Compress', description: 'Shrink a photo for the web or email', url: './image-compressor/', icon: 'compress' },
+];
+const IMAGE_TYPES = { 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/webp': ['.webp'], 'image/gif': ['.gif'], 'image/avif': ['.avif'] };
+
+function manifestJSON() {
+  const exists = (rel) => fs.existsSync(path.join(ROOT, rel));
+  const icon192 = [{ src: 'assets/icons/icon-192.png', sizes: '192x192', type: 'image/png' }];
+  return {
+    id: '/',
     name: 'LocalEditor',
     short_name: 'LocalEditor',
-    description: 'Private image studio and everyday tools that stay on your device.',
-    start_url: './', scope: './', id: './', display: 'standalone', display_override: ['window-controls-overlay', 'standalone'],
-    background_color: '#E7E5EB', theme_color: '#141318', orientation: 'any', categories: ['productivity', 'utilities', 'photo'],
+    description: 'A private photo studio, PDF studio and everyday tools. Everything stays on your device and works offline.',
+    lang: 'en',
+    dir: 'ltr',
+    start_url: './',
+    scope: './',
+    display: 'standalone',
+    display_override: ['standalone', 'minimal-ui'],
+    orientation: 'any',
+    background_color: '#E7E5EB',
+    theme_color: '#141318',
+    categories: ['photo', 'productivity', 'utilities', 'graphics'],
+    prefer_related_applications: false,
     icons: [
       { src: 'assets/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: 'assets/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
       { src: 'assets/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-      { src: 'assets/icons/icon.svg', sizes: 'any', type: 'image/svg+xml' },
+      { src: 'assets/icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
     ],
-    shortcuts: ['image-compressor', 'merge-pdf', 'jpg-to-pdf', 'qr-code-generator'].map((s) => { const t = TOOLS.find((x) => x.slug === s); return { name: t.name, url: `./${s}/`, icons: [{ src: 'assets/icons/icon-192.png', sizes: '192x192' }] }; }),
+    screenshots: SCREENSHOTS.filter((s) => exists(s.src)).map((s) => Object.assign({ type: 'image/webp' }, s)),
+    shortcuts: SHORTCUTS.map((s) => {
+      const file = `assets/icons/shortcuts/${s.icon}-96.png`;
+      return { name: s.name, short_name: s.short_name, description: s.description, url: s.url, icons: exists(file) ? [{ src: file, sizes: '96x96', type: 'image/png' }] : icon192 };
+    }),
+    file_handlers: [{
+      action: './studio/',
+      accept: Object.assign({
+        'application/vnd.localeditor.project+zip': ['.leproject'],
+        'application/vnd.localeditor.workflow+json': ['.leworkflow'],
+      }, IMAGE_TYPES),
+      icons: icon192,
+      launch_type: 'single-client',
+    }],
+    share_target: {
+      action: './studio/?share-target=1',
+      method: 'POST',
+      enctype: 'multipart/form-data',
+      params: { title: 'title', text: 'text', url: 'url', files: [{ name: 'media', accept: ['image/*', '.leproject', '.leworkflow'] }] },
+    },
+    launch_handler: { client_mode: ['navigate-existing', 'auto'] },
   };
-  fs.writeFileSync(path.join(ROOT, 'manifest.webmanifest'), JSON.stringify(manifest, null, 2));
+}
+
+function buildMeta() {
+  fs.writeFileSync(path.join(ROOT, 'manifest.webmanifest'), JSON.stringify(manifestJSON(), null, 2) + '\n');
+
 
   const today = new Date().toISOString().slice(0, 10);
   const urls = [''];
@@ -323,67 +377,295 @@ ${CATS.map((c) => `## ${c.name}\n\n${TOOLS.filter((t) => t.cat === c.id).map((t)
   fs.writeFileSync(path.join(ROOT, 'llms.txt'), llms);
 }
 
+
+/* Shown by the worker when someone opens a page offline that was never saved on this device. */
+function buildOffline() {
+  const links = [['', 'Home'], ['studio/', 'Photo studio'], ['pdf-studio/', 'PDF studio'], ['convert-to-pdf/', 'Convert to PDF'], ['image-compressor/', 'Compress a photo'], ['merge-pdf/', 'Merge PDF']];
+  const html = head({
+    title: 'Offline — LocalEditor',
+    desc: 'You are offline. Everything saved on this device keeps working.',
+    url: SITE + 'offline.html',
+    rootRel: '/'
+  }).replace('<meta name="robots" content="index,follow,max-image-preview:large">', '<meta name="robots" content="noindex">') +
+    '<main id="main" class="container" style="max-width:720px"><section class="hero"><span class="eyebrow">Offline</span><h1>This page is not on this device yet</h1>' +
+    '<p class="lead">You are offline, and this page was never opened here before. Everything below is saved on this device and works without a connection.</p></section>' +
+    '<div class="content"><section class="card"><ul>' + links.map(([u, n]) => `<li><a href="/${u}">${n}</a></li>`).join('') + '</ul>' +
+    '<p style="margin-top:1em"><a class="btn" href="">Try again</a></p></section></div></main>' + foot('/');
+  fs.writeFileSync(path.join(ROOT, 'offline.html'), html);
+}
+
+/* ---------- Service worker ---------- */
+/* Never shipped to the precache: build tooling, docs, tests, infra. */
+const SKIP = ['scripts', 'node_modules', 'tests', 'docs', 'infra', 'sw.js', 'README.md', 'CLAUDE.md', 'llms.txt', 'robots.txt', 'sitemap.xml', 'og.png'];
 function walk(dir, out = []) {
   for (const f of fs.readdirSync(dir)) {
-    if (f.startsWith('.') || ['scripts', 'node_modules', 'sw.js', 'README.md', 'llms.txt', 'robots.txt', 'sitemap.xml', 'og.png'].includes(f)) continue;
+    if (f.startsWith('.') || SKIP.includes(f)) continue;
     const p = path.join(dir, f);
     if (fs.statSync(p).isDirectory()) walk(p, out); else out.push(path.relative(ROOT, p).split(path.sep).join('/'));
   }
   return out;
 }
+/* Downloaded on request and owned by a runtime cache (listed in the storage manager), never precached. */
+const ON_DEMAND = /^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
+/* If one of these fails to download, the new version is not installed (the old one keeps working). */
+const CRITICAL = ['./', './offline.html', './studio/', './assets/js/app.js', './assets/css/app.css', './assets/js/le-pwa.js', './assets/css/le-pwa.css', './manifest.webmanifest'];
 
-const ON_DEMAND = /^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/collage\/|^assets\/data\/collages\//;
+function precacheList() {
+  return walk(ROOT).filter((f) => !ON_DEMAND.test(f)).map((f) => f.endsWith('index.html') ? f.replace(/index\.html$/, '') : f).map((f) => './' + f).sort();
+}
+
+/* The worker itself. Written as a real function so it is syntax-checked here, then serialized into sw.js.
+   Caches:
+     le-app-<version>  everything in ASSETS, cache-first. A new version installs beside it and waits
+                       until the person says "Update" or no open tab has work in progress.
+     le-fonts-v1       font library files, cache-first, size-capped (LRU).
+     le-assets-v1      graphics JSON (icon packs, collage layouts), stale-while-revalidate, size-capped (LRU).
+     le-photos-v1      collage pool photos, cache-first, size-capped (LRU).
+     le-models-v1      on-device AI models, cache-first, never precached, never trimmed automatically.
+     le-share-v1       files shared to the app from the system share sheet until the studio picks them up. */
+function swMain(VERSION, ASSETS, CRITICAL) {
+  'use strict';
+  var CACHE = 'le-app-' + VERSION;
+  var RT = { fonts: 'le-fonts-v1', assets: 'le-assets-v1', photos: 'le-photos-v1', models: 'le-models-v1', share: 'le-share-v1' };
+  var KEEP = [RT.fonts, RT.assets, RT.photos, RT.models, RT.share];
+  var MB = 1024 * 1024;
+  var caps = {};
+  caps[RT.fonts] = 120 * MB;
+  caps[RT.assets] = 600 * MB;
+  caps[RT.photos] = 80 * MB;
+  var puts = {};
+
+  function post(msg) {
+    return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+      list.forEach(function (c) { c.postMessage(msg); });
+    });
+  }
+  /* A redirected response cannot answer a navigation, so store a clean copy. */
+  function plain(res) {
+    if (!res.redirected) return Promise.resolve(res);
+    return res.blob().then(function (b) { return new Response(b, { status: res.status, statusText: res.statusText, headers: res.headers }); });
+  }
+  /* One missing file must not break the install: six lanes, failures collected, only CRITICAL files are fatal. */
+  function precache(name) {
+    return caches.open(name).then(function (c) {
+      var queue = ASSETS.slice();
+      var failed = [];
+      function lane() {
+        var u = queue.shift();
+        if (!u) return Promise.resolve();
+        return fetch(new Request(u, { cache: 'reload', credentials: 'same-origin' })).then(function (res) {
+          if (!res.ok) throw new Error(String(res.status));
+          return plain(res).then(function (r) { return c.put(u, r); });
+        }).catch(function () { failed.push(u); }).then(lane);
+      }
+      var lanes = [];
+      for (var i = 0; i < 6; i++) lanes.push(lane());
+      return Promise.all(lanes).then(function () { return { count: ASSETS.length - failed.length, failed: failed }; });
+    });
+  }
+
+  self.addEventListener('install', function (e) {
+    var first = !self.registration.active;
+    e.waitUntil(precache(CACHE).then(function (r) {
+      var bad = r.failed.filter(function (u) { return CRITICAL.indexOf(u) >= 0; });
+      if (bad.length) throw new Error('Could not save ' + bad.join(', ') + ' for offline use');
+      /* The very first install has nothing open to protect, so it may take over at once. */
+      if (first) self.skipWaiting();
+      return post({ type: 'le-installed', version: VERSION, first: first, count: r.count, failed: r.failed });
+    }).catch(function (err) {
+      return caches.delete(CACHE).then(function () { throw err; });
+    }));
+  });
+
+  self.addEventListener('activate', function (e) {
+    e.waitUntil(caches.keys().then(function (keys) {
+      return Promise.all(keys.filter(function (k) {
+        return k !== CACHE && KEEP.indexOf(k) < 0 && (k.indexOf('le-app-') === 0 || /^it-\d+$/.test(k));
+      }).map(function (k) { return caches.delete(k); }));
+    }).then(function () { return self.clients.claim(); }).then(function () {
+      return post({ type: 'le-activated', version: VERSION });
+    }));
+  });
+
+  /* ---- Size-capped runtime caches. Cache.keys() is insertion order; a hit re-inserts the entry, so the
+     front of the list is the least recently used. Entries carry x-le-bytes / x-le-at when this worker stored them. */
+  function entrySize(res) {
+    if (!res) return Promise.resolve(0);
+    var n = Number(res.headers.get('x-le-bytes')) || Number(res.headers.get('content-length'));
+    if (n) return Promise.resolve(n);
+    return res.blob().then(function (b) { return b.size; }, function () { return 0; });
+  }
+  function stamp(res) {
+    return res.blob().then(function (b) {
+      var h = new Headers(res.headers);
+      h.set('x-le-bytes', String(b.size));
+      h.set('x-le-at', String(Date.now()));
+      return new Response(b, { status: res.status, statusText: res.statusText, headers: h });
+    });
+  }
+  function trim(name, cap) {
+    if (!cap || KEEP.indexOf(name) < 0 || name === RT.models) return Promise.resolve({ removed: 0 });
+    return caches.open(name).then(function (c) {
+      return c.keys().then(function (keys) {
+        return Promise.all(keys.map(function (k) { return c.match(k).then(entrySize); })).then(function (sizes) {
+          var total = sizes.reduce(function (a, b) { return a + b; }, 0);
+          var jobs = [];
+          for (var i = 0; i < keys.length && total > cap; i++) { total -= sizes[i]; jobs.push(c.delete(keys[i])); }
+          return Promise.all(jobs).then(function () { return { removed: jobs.length }; });
+        });
+      });
+    });
+  }
+  function store(e, name, req, res) {
+    return caches.open(name).then(function (c) {
+      return stamp(res).then(function (r) { return c.put(req, r); });
+    }).then(function () {
+      puts[name] = (puts[name] || 0) + 1;
+      if (caps[name] && puts[name] % 10 === 1) return trim(name, caps[name]);
+    });
+  }
+  function touch(e, name, req, hit) {
+    var at = Number(hit.headers.get('x-le-at')) || 0;
+    if (Date.now() - at < 6 * 3600 * 1000) return;
+    var copy = hit.clone();
+    e.waitUntil(caches.open(name).then(function (c) { return stamp(copy).then(function (r) { return c.put(req, r); }); }).catch(function () {}));
+  }
+  /* Runtime caches: cache-first (revalidate=false) or stale-while-revalidate (revalidate=true). */
+  function runtime(e, name, revalidate, lru) {
+    var req = e.request;
+    return caches.open(name).then(function (c) { return c.match(req, { ignoreSearch: true }); }).then(function (hit) {
+      if (hit && !revalidate) { if (lru) touch(e, name, req, hit); return hit; }
+      var net = fetch(req).then(function (res) {
+        if (res && res.status === 200 && res.type === 'basic') {
+          var copy = res.clone();
+          e.waitUntil((lru ? store(e, name, req, copy) : caches.open(name).then(function (c) { return c.put(req, copy); })).catch(function () {}));
+        }
+        return res;
+      }).catch(function (err) { if (hit) return hit; throw err; });
+      if (hit) { e.waitUntil(net.catch(function () {})); return hit; }
+      return net;
+    });
+  }
+
+  /* App files: this version's cache first, so an open page never mixes old and new code. */
+  function navKeys(url) {
+    var p = url.pathname;
+    var out = [url.origin + p];
+    if (/\/index\.html$/.test(p)) out.push(url.origin + p.replace(/index\.html$/, ''));
+    else if (!/\/$/.test(p) && !/\.[a-z0-9]+$/i.test(p)) out.push(url.origin + p + '/');
+    return out;
+  }
+  function app(e, url) {
+    var req = e.request;
+    var nav = req.mode === 'navigate';
+    return caches.open(CACHE).then(function (c) {
+      var keys = nav ? navKeys(url) : [req];
+      function next(i) {
+        if (i >= keys.length) return Promise.resolve(null);
+        return c.match(keys[i], { ignoreSearch: true }).then(function (r) { return r || next(i + 1); });
+      }
+      return next(0).then(function (hit) {
+        if (hit) return hit;
+        return fetch(req).then(function (res) {
+          if (!nav && res.status === 200 && res.type === 'basic' && url.pathname.indexOf('/assets/') >= 0) {
+            var copy = res.clone();
+            e.waitUntil(c.put(req, copy).catch(function () {}));
+          }
+          return res;
+        }).catch(function (err) {
+          if (!nav) throw err;
+          return c.match('./offline.html').then(function (r) { return r || c.match('./'); }).then(function (r) { return r || Response.error(); });
+        });
+      });
+    });
+  }
+
+  /* Android share sheet: POST multipart, park the files in le-share-v1, open the studio, which picks them up. */
+  function receiveShare(e) {
+    var studio = new URL('./studio/', self.location).href;
+    return e.request.formData().then(function (form) {
+      var files = form.getAll('media').filter(function (f) { return f && typeof f !== 'string'; }).slice(0, 20);
+      var id = String(Date.now());
+      return caches.open(RT.share).then(function (c) {
+        return Promise.all(files.map(function (f, i) {
+          var h = { 'content-type': f.type || 'application/octet-stream', 'x-le-name': encodeURIComponent(f.name || 'shared-' + i), 'x-le-at': id, 'x-le-bytes': String(f.size) };
+          return c.put(new Request(new URL('./__share/' + id + '/' + i, self.location).href), new Response(f, { headers: h }));
+        }));
+      }).then(function () { return Response.redirect(studio + '?shared=' + id, 303); });
+    }).catch(function () { return Response.redirect(studio + '?shared=failed', 303); });
+  }
+
+  self.addEventListener('fetch', function (e) {
+    var req = e.request;
+    var url = new URL(req.url);
+    if (url.origin !== self.location.origin) return;
+    if (req.method === 'POST' && /\/studio\/$/.test(url.pathname) && url.searchParams.has('share-target')) { e.respondWith(receiveShare(e)); return; }
+    if (req.method !== 'GET' || req.headers.has('range')) return;
+    var p = url.pathname;
+    if (/\/sw\.js$/.test(p) || p.indexOf('/__share/') >= 0) return;
+    if (p.indexOf('/assets/models/') >= 0) { e.respondWith(runtime(e, RT.models, false, false)); return; }
+    if (p.indexOf('/assets/fonts/library/') >= 0) { e.respondWith(runtime(e, RT.fonts, false, true)); return; }
+    if (/\/assets\/data\/[\w\/-]+\.json$/.test(p)) { e.respondWith(runtime(e, RT.assets, true, true)); return; }
+    if (p.indexOf('/assets/photos/') >= 0) { e.respondWith(runtime(e, RT.photos, false, true)); return; }
+    e.respondWith(app(e, url));
+  });
+
+  /* Pages talk to the worker through le-pwa.js. */
+  function askBusy(client) {
+    return new Promise(function (resolve) {
+      var ch = new MessageChannel();
+      var t = setTimeout(function () { resolve(true); }, 1500);
+      ch.port1.onmessage = function (m) { clearTimeout(t); resolve(!!(m.data && m.data.busy)); };
+      client.postMessage({ type: 'le-busy?' }, [ch.port2]);
+    });
+  }
+  self.addEventListener('message', function (e) {
+    var d = e.data || {};
+    var port = e.ports && e.ports[0];
+    function reply(v) { if (port) port.postMessage(v); }
+    if (d.type === 'le-skip-waiting') { self.skipWaiting(); reply({ ok: true }); }
+    else if (d.type === 'le-version') reply({ version: VERSION, cache: CACHE, files: ASSETS.length });
+    else if (d.type === 'le-apply-if-idle') {
+      e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+        /* The tab that asked has already said it is idle (it may be leaving). */
+        var me = e.source && e.source.id;
+        return Promise.all(list.filter(function (c) { return c.id !== me; }).map(askBusy));
+      }).then(function (busy) {
+        var idle = !busy.some(Boolean);
+        if (idle) self.skipWaiting();
+        reply({ applied: idle });
+      }));
+    } else if (d.type === 'le-limits' && d.caps) {
+      Object.keys(d.caps).forEach(function (k) { if (KEEP.indexOf(k) >= 0 && d.caps[k] > 0) caps[k] = d.caps[k]; });
+      reply({ ok: true });
+    } else if (d.type === 'le-trim') {
+      e.waitUntil(trim(d.name, d.cap || caps[d.name]).then(reply, function () { reply({ removed: 0 }); }));
+    } else if (d.type === 'le-precache') {
+      e.waitUntil(precache(CACHE).then(function (r) { reply({ count: r.count, failed: r.failed }); }, function () { reply({ count: 0, failed: ASSETS }); }));
+    }
+  });
+}
+
+function swSource(opts = {}) {
+  const version = opts.version || VERSION;
+  const files = opts.files || precacheList();
+  return `/* LocalEditor service worker, version ${version}. Generated by scripts/build.js; edit the generator, not this file. */\n` +
+    `(${swMain.toString()})(${JSON.stringify(version)}, ${JSON.stringify(files)}, ${JSON.stringify(CRITICAL)});\n`;
+}
 
 function buildSW() {
-  const files = walk(ROOT).filter((f) => !ON_DEMAND.test(f)).map((f) => f.endsWith('index.html') ? f.replace(/index\.html$/, '') : f).map((f) => './' + f);
-  const sw = `/* LocalEditor service worker — generated by scripts/build.js */
-const CACHE = '${VERSION}';
-const ASSETS = ${JSON.stringify(files, null, 0)};
-const KEEP = ['le-fonts-v1', 'le-assets-v1'];
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => Promise.all(ASSETS.map((u) => c.add(new Request(u, { cache: 'reload' })).catch(() => {})))).then(() => self.skipWaiting()));
-});
-self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE && KEEP.indexOf(k) < 0).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
-});
-function stable(name, req, revalidate) {
-  return caches.open(name).then((c) => c.match(req, { ignoreSearch: true }).then((hit) => {
-    if (hit && !revalidate) return hit;
-    const net = fetch(req).then((res) => {
-      if (res && res.ok) c.put(req, res.clone());
-      return res;
-    }).catch((err) => { if (hit) return hit; throw err; });
-    if (hit) { net.catch(() => {}); return hit; }
-    return net;
-  }));
-}
-self.addEventListener('fetch', (e) => {
-  const req = e.request;
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-  if (url.origin !== location.origin) return;
-  if (url.pathname.indexOf('/assets/fonts/library/') >= 0) { e.respondWith(stable('le-fonts-v1', req, false)); return; }
-  if (/\\/assets\\/data\\/[\\w\\/-]+\\.json$/.test(url.pathname)) { e.respondWith(stable('le-assets-v1', req, true)); return; }
-  const vendor = url.pathname.indexOf('/assets/vendor/') >= 0;
-  const code = !vendor && (req.mode === 'navigate' || /\\.(js|css|webmanifest)$/.test(url.pathname) || url.pathname.endsWith('/sw.js'));
-  if (code) {
-    e.respondWith((req.mode === 'navigate' ? fetch(req) : fetch(req, { cache: 'no-cache' })).then((r) => {
-      if (r.ok) { const cp = r.clone(); caches.open(CACHE).then((c) => c.put(req, cp)); }
-      return r;
-    }).catch(() => caches.match(req, { ignoreSearch: true }).then((r) => r || (req.mode === 'navigate' ? caches.match('./') : Promise.reject()))));
-    return;
-  }
-  e.respondWith(caches.match(req, { ignoreSearch: true }).then((r) => r || fetch(req).then((res) => {
-    if (res.ok) { const cp = res.clone(); caches.open(CACHE).then((c) => c.put(req, cp)); }
-    return res;
-  })));
-});
-`;
-  fs.writeFileSync(path.join(ROOT, 'sw.js'), sw);
+  const files = precacheList();
+  fs.writeFileSync(path.join(ROOT, 'sw.js'), swSource({ files }));
   return files.length;
 }
 
-buildIndex(); buildAbout(); buildMeta();
-const n = buildSW();
-const missing = TOOLS.filter((t) => !fs.existsSync(path.join(ROOT, t.slug, 'index.html'))).map((t) => t.slug);
-console.log(`Built. ${TOOLS.length} tools listed, ${n} files precached.${missing.length ? ' MISSING: ' + missing.join(', ') : ' All tool pages present.'}`);
+module.exports = { ROOT, VERSION, ON_DEMAND, CRITICAL, manifestJSON, precacheList, swSource };
+
+if (require.main === module) {
+  buildIndex(); buildAbout(); buildOffline(); buildMeta();
+  const n = buildSW();
+  const missing = TOOLS.filter((t) => !fs.existsSync(path.join(ROOT, t.slug, 'index.html'))).map((t) => t.slug);
+  const lost = CRITICAL.filter((u) => !precacheList().includes(u));
+  if (lost.length) { console.error('Critical files missing from the precache: ' + lost.join(', ')); process.exitCode = 1; }
+  console.log(`Built. ${TOOLS.length} tools listed, ${n} files precached (worker ${VERSION}).${missing.length ? ' MISSING: ' + missing.join(', ') : ' All tool pages present.'}`);
+}

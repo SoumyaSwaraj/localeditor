@@ -1649,6 +1649,7 @@
       sb.appendChild(btn(c, 'Clean up unused photos', 'trash', 'btn btn-ghost btn-sm', function () {
         LE.project.gc({ grace: 0 }).then(function (r) { if (c.S.project) c.saveNow(); c.toast(r.removed ? 'Freed ' + c.fmtBytes(r.freed) + ' (' + r.removed + ' photo' + (r.removed > 1 ? 's' : '') + ')' : 'Nothing to clean up'); storage(c, sb); });
       }));
+      if (window.LEPwa) sb.appendChild(btn(c, 'Manage all storage on this device', 'download', 'btn btn-ghost btn-sm', function () { LEPwa.openStorage(); }));
     }).catch(function () { sb.innerHTML = ''; sb.appendChild(note(c, 'Storage details are not available in this browser.')); });
   }
   var LEDGER_TXT = { created: 'Created', opened: 'Opened', autosaved: 'Autosaved', checkpoint: 'Saved a version', exported: 'Exported', imported: 'Imported', deleted: 'Deleted', restored: 'Restored a version', duplicated: 'Duplicated', renamed: 'Renamed', gc: 'Cleaned up storage', resized: 'Resized', 'size-reverted': 'Reverted a resize' };

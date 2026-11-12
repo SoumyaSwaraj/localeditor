@@ -440,3 +440,23 @@
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', '#141318');
 })();
+
+/* Install, updates and storage manager: loads le-pwa.js and le-pwa.css on every page.
+   The install prompt can fire before le-pwa.js arrives, so it is kept here until then. */
+(function () {
+  'use strict';
+  if (window.__lePwaLoader) return;
+  window.__lePwaLoader = true;
+  var early = window.__lePwaEarly = { prompt: null, installed: false };
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); early.prompt = e; });
+  window.addEventListener('appinstalled', function () { early.installed = true; early.prompt = null; });
+  var base = document.documentElement.getAttribute('data-root') || '';
+  var css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = base + 'assets/css/le-pwa.css';
+  document.head.appendChild(css);
+  var js = document.createElement('script');
+  js.src = base + 'assets/js/le-pwa.js';
+  js.async = true;
+  document.head.appendChild(js);
+})();
