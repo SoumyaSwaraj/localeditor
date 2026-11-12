@@ -18,6 +18,9 @@ Everything under `assets/vendor/`, `assets/fonts/`, and `assets/data/` is vendor
 | marked | 18.1.3 | MIT | `assets/vendor/marked.umd.js` | https://github.com/markedjs/marked |
 | html2canvas | 1.4.1 | MIT | `assets/vendor/html2canvas.min.js` | https://github.com/niklasvh/html2canvas |
 | onnxruntime-web | 1.22.0 | MIT | `assets/vendor/ort/ort.wasm.min.js`, `assets/vendor/ort/ort-wasm-simd-threaded.module.js` (renamed from `.mjs` so every static host serves a JavaScript MIME type), `assets/vendor/ort/ort-wasm-simd-threaded.wasm`; licence text `assets/vendor/licenses/onnxruntime-LICENSE.txt` | https://www.npmjs.com/package/onnxruntime-web · https://github.com/microsoft/onnxruntime |
+| tesseract.js worker script (text recognition) | 7.0.0 | Apache-2.0 (the minified worker also bundles `buffer` MIT, `ieee754` BSD-3-Clause, `regenerator-runtime` MIT, `zlibjs` MIT, `bmp-js` MIT, `is-url` MIT, `wasm-feature-detect` Apache-2.0) | `assets/vendor/tesseract/worker.min.js`; licence text `assets/vendor/licenses/tesseract.js-LICENSE.txt` | https://www.npmjs.com/package/tesseract.js · https://github.com/naptha/tesseract.js |
+| tesseract.js-core (Tesseract 5 LSTM engine, Leptonica, compiled to WebAssembly) | 7.0.0 | Apache-2.0 | `assets/vendor/tesseract/tesseract-core-simd-lstm.wasm.js`, `assets/vendor/tesseract/tesseract-core-lstm.wasm.js` (no-SIMD fallback); licence text `assets/vendor/licenses/tesseract.js-core-LICENSE.txt` | https://www.npmjs.com/package/tesseract.js-core · https://github.com/naptha/tesseract.js-core |
+| GlyphLessFont (572-byte blank-glyph TrueType font, embedded as base64 in the invisible text layer of searchable PDFs) | from Tesseract `pdf_ttf.h` | Apache-2.0 | inside `labs/pdf-ocr/ocr.js` | https://github.com/tesseract-ocr/tesseract |
 
 The word “QR Code” is a registered trademark of Denso Wave Incorporated.
 
@@ -107,3 +110,13 @@ Downloaded only when the user asks (studio background remover, `assets/js/le-bgr
 | Chooser example images | LocalEditor (made from pool photos, see `assets/data/collages/photos.json` for their CC licences and credits: arch-01, books-02, people-07) | `assets/img/cutout/*.jpg` | rendered by the background remover |
 
 Training-data note: u2netp and u2net are trained on DUTS-TR; u2net_human_seg on the Supervisely Person dataset. u2netp is trained on DUTS-TR, a research saliency dataset with no stated licence. The Apache-2.0 grant covers the weights; the dataset provenance is an unresolved residual risk that the owner should accept knowingly.
+Training-data note: u2netp is trained on DUTS-TR, a research saliency dataset with no stated licence. The Apache-2.0 grant covers the weights; the dataset provenance is an unresolved residual risk that the owner should accept knowingly.
+
+### Text recognition language data
+
+Downloaded only when the user asks (scanned PDF text, labs/pdf-ocr; see `docs/research/pdf-ocr-scan.md`). Cached in Cache Storage `le-models-v1`. `tessdata_fast` is the integer LSTM data published by the Tesseract project; the licence file is `assets/vendor/licenses/tessdata_fast-LICENSE.txt`. The `@tesseract.js-data/*` npm packages repackage the same data and label themselves MIT; we use the upstream Apache-2.0 files instead.
+
+| Name | License | Files | Source |
+|---|---|---|---|
+| tessdata_fast `eng` (4.1 MB) | Apache-2.0 | `assets/models/ocr/eng.traineddata` (committed) | https://github.com/tesseract-ocr/tessdata_fast |
+| tessdata_fast `spa` `por` `fra` `deu` `hin` `ara` (1.1 to 2.3 MB each) | Apache-2.0 | `assets/models/ocr/more/<id>.traineddata` (not committed; `node scripts/fetch-ocr-data.js`) | https://github.com/tesseract-ocr/tessdata_fast |

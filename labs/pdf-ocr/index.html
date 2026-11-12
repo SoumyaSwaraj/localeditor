@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Scanned PDF text lab</title>
+<style>
+  :root { --bg:#faf8f4; --ink:#17131f; --mute:#6b6577; --card:#fff; --line:#e3ded5; --gold:#e8b84a; --goldink:#2a1f0a; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#17131f; --ink:#f3efe8; --mute:#a59fb2; --card:#221c2d; --line:#362e45; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.lead { color: var(--mute); margin: 0 0 16px; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .row { display:flex; flex-wrap:wrap; gap:12px; align-items:end; }
+  label { display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--mute); }
+  select, input[type=number] { min-height:44px; font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:0 8px; }
+  button, .btn { min-height:44px; padding:0 16px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); font:inherit; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; text-decoration:none; }
+  button.gold { background:var(--gold); border-color:var(--gold); color:var(--goldink); }
+  button:disabled { opacity:.5; cursor:default; }
+  #drop { border:2px dashed var(--line); border-radius:12px; padding:22px; text-align:center; color:var(--mute); }
+  #drop.over { border-color:var(--gold); background:rgba(232,184,74,.12); }
+  progress { width:100%; height:10px; }
+  #status { color:var(--mute); min-height:22px; margin:8px 0 0; }
+  .stage { position:relative; width:100%; border-radius:10px; overflow:hidden; border:1px solid var(--line); background:#fff; }
+  .stage canvas { display:block; width:100%; height:auto; }
+  .stage canvas#boxes { position:absolute; inset:0; }
+  textarea { width:100%; min-height:180px; font:13px/1.4 ui-monospace, Menlo, monospace; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; font-variant-numeric:tabular-nums; }
+  td, th { text-align:left; padding:4px 8px; border-bottom:1px solid var(--line); }
+  .hidden { display:none; }
+  .hint { font-size:12px; color:var(--mute); }
+  .cols { display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Scanned PDF text lab</h1>
+  <p class="lead">Recognises text in a scanned PDF or photo on this device and writes a searchable PDF. Nothing is downloaded until you press <b>Recognise</b>; nothing is uploaded, ever.</p>
+
+  <div class="panel">
+    <div id="drop">Drop a scanned PDF or an image here, or <label class="btn" style="display:inline-flex;color:var(--ink)">Choose a file<input id="file" type="file" accept="application/pdf,image/*" class="hidden"></label></div>
+    <p class="hint" id="srcinfo"></p>
+  </div>
+
+  <div class="panel">
+    <div class="row">
+      <label>Language <select id="lang"></select></label>
+      <label>Page <input id="pageNo" type="number" min="1" value="1" style="width:80px"></label>
+      <label>Resolution <select id="dpi"><option value="150">150 dpi (fast)</option><option value="200" selected>200 dpi</option><option value="300">300 dpi (slow)</option></select></label>
+      <label>Clean-up <select id="prep"><option value="auto" selected>Flatten light + denoise</option><option value="none">None</option></select></label>
+      <button class="gold" id="run" disabled>Recognise this page</button>
+      <button id="make" disabled>Make searchable PDF</button>
+      <button id="cancel" disabled>Cancel</button>
+      <a class="btn hidden" id="download" download="searchable.pdf">Download PDF</a>
+    </div>
+    <progress id="bar" max="1" value="0" class="hidden"></progress>
+    <p id="status" role="status"></p>
+  </div>
+
+  <div class="cols">
+    <div class="panel"><div class="stage" id="stage"><canvas id="page" width="10" height="10"></canvas><canvas id="boxes" width="10" height="10"></canvas></div>
+      <p class="hint">Green boxes are confident words, orange is below 70, red below 40.</p></div>
+    <div class="panel"><textarea id="text" aria-label="Recognised text" placeholder="Recognised text appears here"></textarea>
+      <table id="stats"></table></div>
+  </div>
+</main>
+
+<script src="../../assets/vendor/pdf.min.js"></script>
+<script src="../../assets/vendor/pdf-lib.min.js"></script>
+<script>
+/* Capability declaration for the site-wide LE.support module (see docs/research/pdf-ocr-scan.md). */
+(window.LE_SUPPORT_DEFS = window.LE_SUPPORT_DEFS || []).push({ id: 'ocr.english-fast', needs: ['wasm', 'wasm-simd', 'worker'], wants: ['cache-storage', 'device-memory-4gb'], memoryMB: 350, downloadMB: 8.1 });
+</script>
+<script src="ocr.js"></script>
+<script>
+(function () {
+  'use strict';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '../../assets/vendor/pdf.worker.min.js';
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { bytes: null, kind: null, name: '', pdf: null, ctrl: null, last: null, pageCanvas: null };
+
+  function setStatus(t) { $('status').textContent = t; }
+  function busy(b) { $('run').disabled = b || !state.bytes; $('make').disabled = b || !state.bytes; $('cancel').disabled = !b; $('bar').classList.toggle('hidden', !b); }
+  function fmtMB(n) { return (n / 1048576).toFixed(1) + ' MB'; }
+
+  /* Gate through LE.support when present; otherwise run directly. */
+  async function gated(id, fn) {
+    if (window.LE && LE.support && typeof LE.support.gate === 'function') return LE.support.gate(id, fn);
+    return fn();
+  }
+
+  /* language list: English ships with the lab; the other packs are optional downloads (scripts/fetch-ocr-data.js stages them locally) */
+  (async function fillLangs() {
+    var list = await LE.ocr.languagesWithCache(), sel = $('lang');
+    list.forEach(function (l) {
+      var o = document.createElement('option'); o.value = l.id;
+      o.textContent = l.label + ' (' + fmtMB(l.bytes) + (l.cached ? ', downloaded' : l.bundled ? ', included' : ', optional download') + ')';
+      sel.appendChild(o);
+    });
+    sel.value = 'eng';
+  })();
+
+  /* input */
+  async function openBytes(buf, name, type) {
+    state.name = name; state.kind = /pdf/i.test(type) || /\.pdf$/i.test(name) ? 'pdf' : 'image';
+    var bytes = new Uint8Array(buf);
+    if (state.kind === 'image') {
+      var blob = new Blob([bytes], { type: type || 'image/png' }), bmp = await createImageBitmap(blob);
+      var doc = await PDFLib.PDFDocument.create(), img = /jpe?g/i.test(type) ? await doc.embedJpg(bytes) : /png/i.test(type) ? await doc.embedPng(bytes) : null;
+      if (!img) { var c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height; c.getContext('2d').drawImage(bmp, 0, 0); var png = await new Promise(function (r) { c.toBlob(r, 'image/png'); }); img = await doc.embedPng(new Uint8Array(await png.arrayBuffer())); }
+      var k = 72 / 200, pg = doc.addPage([img.width * k, img.height * k]); pg.drawImage(img, { x: 0, y: 0, width: img.width * k, height: img.height * k });
+      bytes = await doc.save(); bmp.close && bmp.close();
+    }
+    state.bytes = bytes;
+    state.pdf = await pdfjsLib.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise;
+    $('pageNo').max = state.pdf.numPages; $('pageNo').value = 1;
+    $('srcinfo').textContent = name + ': ' + state.pdf.numPages + ' page' + (state.pdf.numPages === 1 ? '' : 's') + ', ' + fmtMB(bytes.length);
+    $('download').classList.add('hidden');
+    await showPage(1);
+    busy(false); setStatus('Ready.');
+  }
+  $('file').addEventListener('change', function () { var f = this.files[0]; if (f) f.arrayBuffer().then(function (b) { return openBytes(b, f.name, f.type); }).catch(fail); });
+  var drop = $('drop');
+  ['dragenter', 'dragover'].forEach(function (e) { drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (e) { drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (ev) { var f = ev.dataTransfer.files[0]; if (f) f.arrayBuffer().then(function (b) { return openBytes(b, f.name, f.type); }).catch(fail); });
+
+  async function renderPage(n, dpi) {
+    var pg = await state.pdf.getPage(n), vp0 = pg.getViewport({ scale: 1 }), s = dpi / 72, vp = pg.getViewport({ scale: s });
+    var c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    var cx = c.getContext('2d', { willReadFrequently: true }); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+    await pg.render({ canvasContext: cx, viewport: vp }).promise;
+    return c;
+  }
+  async function showPage(n) {
+    var c = await renderPage(n, 100), p = $('page'); p.width = c.width; p.height = c.height; p.getContext('2d').drawImage(c, 0, 0);
+    var b = $('boxes'); b.width = c.width; b.height = c.height; b.getContext('2d').clearRect(0, 0, b.width, b.height);
+  }
+  function drawBoxes(res) {
+    var b = $('boxes'), ctx = b.getContext('2d'), k = b.width / res.width;
+    ctx.clearRect(0, 0, b.width, b.height); ctx.lineWidth = 1;
+    res.words.forEach(function (w) {
+      ctx.strokeStyle = w.confidence >= 70 ? '#1a9f4b' : w.confidence >= 40 ? '#e08a00' : '#d12c2c';
+      ctx.strokeRect(w.bbox.x0 * k, w.bbox.y0 * k, (w.bbox.x1 - w.bbox.x0) * k, (w.bbox.y1 - w.bbox.y0) * k);
+    });
+  }
+  function table(rows) { $('stats').innerHTML = rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>'; }).join(''); }
+
+  function onProgress(p) {
+    if (p.stage === 'engine') { $('bar').value = p.fraction * 0.4; setStatus('Downloading the text engine (first time only), ' + fmtMB(p.loaded) + ' of ' + fmtMB(p.total)); }
+    else if (p.stage === 'language') { $('bar').value = 0.4 + p.fraction * 0.4; setStatus(p.cached ? 'Language data from this device' : 'Downloading language data, ' + fmtMB(p.loaded) + ' of ' + fmtMB(p.total)); }
+    else if (p.stage === 'starting') { $('bar').value = 0.85; setStatus('Starting the engine'); }
+  }
+
+  async function recognisePage() {
+    var n = Math.max(1, Math.min(state.pdf.numPages, +$('pageNo').value || 1)), dpi = +$('dpi').value;
+    state.ctrl = new AbortController(); busy(true); $('bar').removeAttribute('value'); window.__ocrDone = false; window.__ocrError = null;
+    try {
+      await LE.ocr.load($('lang').value, onProgress);
+      setStatus('Rendering page ' + n + ' at ' + dpi + ' dpi'); $('bar').removeAttribute('value');
+      var c = await renderPage(n, dpi);
+      setStatus('Recognising text…');
+      var res = await LE.ocr.recognize(c, { lang: $('lang').value, signal: state.ctrl.signal, prep: $('prep').value, dpi: dpi });
+      state.last = res; drawBoxes(res);
+      $('text').value = res.text.trim();
+      var lows = res.words.filter(function (w) { return w.confidence < 60; }).length;
+      table([['Words', res.words.length], ['Mean confidence', Math.round(res.confidence) + ' %'], ['Words under 60 %', lows],
+        ['Image', c.width + ' × ' + c.height + ' px'], ['Clean-up', res.timings.prepMs + ' ms' + (res.prep ? ' (noise ' + res.prep.noise.toFixed(1) + (res.prep.denoised ? ', denoised' : '') + ')' : '')],
+        ['Recognition', res.timings.recognizeMs + ' ms'], ['Total', res.ms + ' ms']]);
+      setStatus('Done: ' + res.words.length + ' words in ' + (res.ms / 1000).toFixed(1) + ' s.');
+      window.__ocrResult = { words: res.words.length, confidence: res.confidence, text: res.text, ms: res.ms };
+      window.__ocrDone = true;
+    } catch (e) { fail(e); } finally { busy(false); }
+  }
+
+  /* Reopen the output with pdf.js and compare what it extracts with what we recognised. */
+  async function verify(bytes, expect) {
+    var pdf = await pdfjsLib.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise, text = '', items = 0;
+    for (var i = 1; i <= pdf.numPages; i++) { var tc = await (await pdf.getPage(i)).getTextContent(); items += tc.items.length; text += tc.items.map(function (t) { return t.str; }).join(' ') + '\n'; }
+    var got = text.split(/\s+/).filter(Boolean), want = (expect || '').split(/\s+/).filter(Boolean), bag = {};
+    got.forEach(function (w) { bag[w] = (bag[w] || 0) + 1; });
+    var hit = 0; want.forEach(function (w) { if (bag[w] > 0) { bag[w]--; hit++; } });
+    return { pages: pdf.numPages, items: items, extractedWords: got.length, expectedWords: want.length, recall: want.length ? hit / want.length : 1, sample: text.slice(0, 200) };
+  }
+  window.__ocrVerify = verify;
+
+  async function makeSearchable() {
+    state.ctrl = new AbortController(); busy(true); $('bar').removeAttribute('value'); window.__ocrDone = false; window.__ocrError = null;
+    var t0 = performance.now();
+    try {
+      var out = await LE.ocr.makeSearchable(state.bytes, { lang: $('lang').value, dpi: +$('dpi').value, signal: state.ctrl.signal, onProgress: function (p) {
+        if (p.stage === 'page') { $('bar').value = p.fraction; setStatus('Page ' + p.page + ' of ' + state.pdf.numPages + '…'); } else if (p.stage === 'engine' || p.stage === 'language' || p.stage === 'starting') onProgress(p);
+      } });
+      var blob = new Blob([out], { type: 'application/pdf' }), a = $('download');
+      if (a.dataset.url) URL.revokeObjectURL(a.dataset.url);
+      a.dataset.url = a.href = URL.createObjectURL(blob); a.classList.remove('hidden'); a.download = state.name.replace(/\.[^.]+$/, '') + '-searchable.pdf';
+      var all = out.report.pages.map(function (p) { return p.words || 0; }).reduce(function (x, y) { return x + y; }, 0);
+      var v = await verify(out, state.last ? state.last.text : '');
+      table([['Pages', out.report.pages.length], ['Words written', all], ['Output', fmtMB(out.length) + ' (input ' + fmtMB(state.bytes.length) + ')'],
+        ['Reopened with pdf.js', v.extractedWords + ' words extracted, ' + v.items + ' text items'], ['Total', Math.round(performance.now() - t0) + ' ms']]);
+      setStatus('Searchable PDF ready (' + all + ' words). Reopened and checked.');
+      window.__ocrOutput = { bytes: out.length, report: out.report, verify: v, ms: Math.round(performance.now() - t0) };
+      window.__ocrOutBytes = out;
+      window.__ocrDone = true;
+    } catch (e) { fail(e); } finally { busy(false); }
+  }
+
+  function fail(e) {
+    if (e && e.name === 'AbortError') { setStatus('Stopped.'); window.__ocrError = 'aborted'; return; }
+    setStatus('Failed: ' + (e && e.message || e)); window.__ocrError = String(e && e.message || e); console.error(e);
+  }
+
+  $('run').addEventListener('click', function () { gated('ocr.english-fast', recognisePage); });
+  $('make').addEventListener('click', function () { gated('ocr.english-fast', makeSearchable); });
+  $('cancel').addEventListener('click', function () { if (state.ctrl) state.ctrl.abort(); });
+  $('pageNo').addEventListener('change', function () { if (state.pdf) showPage(Math.max(1, Math.min(state.pdf.numPages, +this.value || 1))); });
+  window.__ocrReady = true;
+})();
+</script>
+</body>
+</html>

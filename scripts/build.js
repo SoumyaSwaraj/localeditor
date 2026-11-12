@@ -402,7 +402,7 @@ function walk(dir, out = []) {
   return out;
 }
 /* Downloaded on request and owned by a runtime cache (listed in the storage manager), never precached. */
-const ON_DEMAND = /^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
+const ON_DEMAND = /^assets\/vendor\/tesseract\/|^assets\/vendor\/pdf-lib-crypt|^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
 /* If one of these fails to download, the new version is not installed (the old one keeps working). */
 const CRITICAL = ['./', './offline.html', './studio/', './assets/js/app.js', './assets/css/app.css', './assets/js/le-pwa.js', './assets/css/le-pwa.css', './manifest.webmanifest'];
 
