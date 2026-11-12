@@ -206,8 +206,8 @@ cases['themes: comfort fallbacks are declared (reduced transparency, reduced mot
   ['clear', 'lapis', 'graphite', 'paper', 'contrast'].forEach((k) => h.assert(k === 'clear' || css.includes(':root[data-skin="' + k + '"]'), 'theme block ' + k));
 };
 
-cases['themes: every theme fits 360 and 1440 with no console errors on the main surfaces'] = async ({ browser, base, h }) => {
-  for (const skin of ['clear', 'lapis', 'graphite', 'paper', 'contrast']) {
+['clear', 'lapis', 'graphite', 'paper', 'contrast'].forEach((skin) => {
+  cases['themes: ' + skin + ' fits 360 and 1440 with no console errors on the main surfaces'] = async ({ browser, base, h }) => {
     for (const theme of ['light', 'dark']) {
       for (const vp of ['small', 'desktop']) {
         for (const url of ['/', '/photo/', '/studio/', '/pdf-studio/', '/storage-manager/']) {
@@ -219,8 +219,8 @@ cases['themes: every theme fits 360 and 1440 with no console errors on the main 
         }
       }
     }
-  }
-};
+  };
+});
 
 cases['no retired gold, foil or amethyst literals in CSS or inline styles'] = async ({ h }) => {
   const OLD = /#(E2B15A|F3CC7C|F2D594|2A1F0A|2C220F|C9963F|E9BE6A|B9832F|F8E3AE|F6D68E|E8BD6E|E7BA66|CBB78E|7457F0|8D74FF|6A4FE8|5B3FD9|4E36C9|A893FF|B3A1FF|141318|17131F|FBF8F3|F7F6F3|F7EFDC)\b|rgba?\(\s*(226,\s*177,\s*90|242,\s*213,\s*148|185,\s*131,\s*47|116,\s*87,\s*240|42,\s*31,\s*10)\b/i;
