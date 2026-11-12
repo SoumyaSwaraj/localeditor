@@ -30,7 +30,7 @@ Prefer asserting on the scene document (`h.doc(page)`) over pixels. Test at desk
 | `studio-panels.test.js` | shallow "panel opens" checks for areas being rebuilt, plus shell regressions |
 | `studio-layout.test.js` | desktop layout at 1440x900, 1366x768, 1280x720, 1280x560 |
 | `studio-monkey.test.js` | seeded random command sequences never throw or corrupt the document |
-| `pages.test.js` | all 31 tool/info pages: console, sideways scroll, title/h1/main |
+| `site-pages.test.js` | all 31 tool/info pages: console, sideways scroll, title/h1/main |
 | `themes.test.js` | dark/light, console errors, gold button ink `#2A1F0A`, theme toggle |
 | `tools.test.js` | one happy path per representative tool, PDF studio, convert-to-PDF |
 

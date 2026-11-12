@@ -5,6 +5,7 @@
    require('./scripts/build.js') only exposes the generators (manifestJSON, precacheList, swSource) and writes nothing. */
 const fs = require('fs');
 const path = require('path');
+const PAGES = require('./build-pages'); // category hubs and feature pages (assets/data/site.json)
 const ROOT = path.resolve(__dirname, '..');
 const SITE = 'https://localeditor.net/';
 const VERSION = process.env.LE_BUILD_VERSION || new Date().toISOString().replace(/\D/g, '').slice(0, 12);
@@ -406,7 +407,7 @@ const ON_DEMAND = /^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^asset
 const CRITICAL = ['./', './offline.html', './studio/', './assets/js/app.js', './assets/css/app.css', './assets/js/le-pwa.js', './assets/css/le-pwa.css', './manifest.webmanifest'];
 
 function precacheList() {
-  return walk(ROOT).filter((f) => !ON_DEMAND.test(f)).map((f) => f.endsWith('index.html') ? f.replace(/index\.html$/, '') : f).map((f) => './' + f).sort();
+  return walk(ROOT).filter((f) => !ON_DEMAND.test(f) && !PAGES.notPrecached(f)).map((f) => f.endsWith('index.html') ? f.replace(/index\.html$/, '') : f).map((f) => './' + f).sort();
 }
 
 /* The worker itself. Written as a real function so it is syntax-checked here, then serialized into sw.js.
@@ -657,10 +658,11 @@ function buildSW() {
   return files.length;
 }
 
-module.exports = { ROOT, VERSION, ON_DEMAND, CRITICAL, manifestJSON, precacheList, swSource };
+module.exports = { ROOT, VERSION, ON_DEMAND, CRITICAL, manifestJSON, precacheList, swSource, TOOLS, CATS, I };
 
 if (require.main === module) {
-  buildIndex(); buildAbout(); buildOffline(); buildMeta();
+  buildIndex(); buildAbout(); buildOffline();
+  PAGES.build(); buildMeta(); PAGES.build({ quiet: true }); // pages first (sitemap lists them), then their llms.txt section
   const n = buildSW();
   const missing = TOOLS.filter((t) => !fs.existsSync(path.join(ROOT, t.slug, 'index.html'))).map((t) => t.slug);
   const lost = CRITICAL.filter((u) => !precacheList().includes(u));
