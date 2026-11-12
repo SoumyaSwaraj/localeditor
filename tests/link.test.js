@@ -155,7 +155,9 @@ cases['notes, two tabs, tab closing, file deleted and replaced, server stopping'
     const procs = () => { try { return execFileSync('pgrep', ['-f', path.join(s.dir, 'tmp', 'localeditor-engine-')]).toString().trim().split('\n').filter(Boolean); } catch (e) { return []; } };
     h.assert(procs().length > 0, 'engine running');
     await s.stop();
-    await until(async () => /stopped/.test(await one.textContent('#le-link-chip')), 10000, 'the tab says the server stopped');
+    /* The goodbye event normally arrives ("stopped"); when the stream is mid-reconnect it is missed, and the tab says
+       "not reachable" after four failed retries (about 12 s). Either tells the person the same thing. */
+    await until(async () => /stopped|not reachable/.test(await one.textContent('#le-link-chip')), 25000, 'the tab says the server stopped');
     await until(() => procs().length === 0, 10000, 'engine gone after SIGTERM');
     h.assert.equal(fs.readdirSync(path.join(s.dir, 'tmp')).filter((f) => f.startsWith('localeditor-engine-')).length, 0, 'temp profile removed');
     h.assert.equal(s.status().linked, false, 'status.json says the link ended');

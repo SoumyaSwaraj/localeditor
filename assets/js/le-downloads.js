@@ -800,7 +800,8 @@
   /* The cache is the truth ("Reset all settings" clears localStorage but not the marker): copy it back into the mirror. */
   function syncKeep() {
     if (typeof caches === 'undefined') return Promise.resolve(keep());
-    return caches.open(CACHES.packs).then(function (c) { return c.match(markerUrl()); }).then(function (r) { return r ? r.json() : null; }).then(function (j) {
+    /* caches.match with a cache name reads without creating the cache (caches.open would leave an empty one behind after "Erase everything"). */
+    return caches.match(markerUrl(), { cacheName: CACHES.packs }).then(function (r) { return r ? r.json() : null; }).then(function (j) {
       var k = lsGet(KEEP_KEY, null);
       if (j && Array.isArray(j.keep)) {
         if (!k || keepOf(k.keep).join() !== keepOf(j.keep).join()) lsSet(KEEP_KEY, { keep: keepOf(j.keep), chosen: true, app: j.app || null, at: j.at || Date.now() });

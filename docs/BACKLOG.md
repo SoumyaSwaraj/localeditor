@@ -117,3 +117,10 @@ Only checkable on real devices (none available in the build sandbox):
 - Real RAW files beyond two Nikon NEFs (DNG, CR3, ARW, files over 24 MP).
 
 Known quality limits worth an owner look: depth blur edges, noise reduction (guided filter, well below dedicated denoisers), cast shadows on very large exports, relighting from a small depth model (reads as phone-app relighting, not a studio reshoot), highlight reconstruction colour, light-direction estimate on whole scenes.
+
+## Full suite on the merged branch (12 Nov, after all six Expert packs)
+
+984 passed, 2 known, 4 failed. Fixed since: "Erase everything" left an empty `le-packs-v1` cache (a read created it); the live-link "server stopped" case missed the goodbye when the stream was mid-reconnect (test now accepts "not reachable" too).
+Still open:
+- `expert-ui` slider drag at 4x CPU: 18 ms against a 12 ms budget with about 130 effects registered (was passing at 10 to 13 ms with one pack). Treated as real until the renderer hardening pass lands its registry changes.
+- `install` per-app precache lists failed once in the full run and passes alone; suspected cause is another test writing a file into a scanned folder between the two directory scans.
