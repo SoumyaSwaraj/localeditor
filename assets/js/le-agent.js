@@ -343,7 +343,7 @@
     var st = p.meta.studio || {};
     return {
       pages: clone(p.pages), active: p.activePage || 0, assets: clone(p.assets || {}), blobs: {}, name: p.name,
-      studio: { icons: clone(st.icons || {}), qr: clone(st.qr || {}), fx: clone(st.fx || {}), pageIds: clone(st.pageIds || []), variables: clone(st.variables || null), remix: clone(st.remix || null) },
+      studio: { icons: clone(st.icons || {}), qr: clone(st.qr || {}), fx: clone(st.fx || {}), pageIds: (p.pages || []).map(function (pg, i) { return pg.id || (st.pageIds || [])[i] || ''; }), variables: clone(st.variables || null), remix: clone(st.remix || null) },
       touched: {}, pagesTouched: {}, replacedPages: {}, select: null, warnings: [], regen: false, structural: false, renamed: false
     };
   }
@@ -727,7 +727,7 @@
         W.active = 0;
         W.name = P.name;
         W.renamed = true;
-        W.studio.pageIds = st.pageIds || [];
+        W.studio.pageIds = P.pages.map(function (pg, i) { return pg.id || (st.pageIds || [])[i] || ''; });
         W.studio.variables = st.variables || null;
         W.studio.remix = st.remix || null;
         W.pages.forEach(function (p, i) { W.replacedPages[i] = 1; });
@@ -822,7 +822,10 @@
 
   /* ---------- the gate and the commit ---------- */
   function gate(W, p) {
-    var studio = Object.assign({}, p.meta.studio || {}, { icons: W.studio.icons, qr: W.studio.qr, fx: W.studio.fx, pageIds: W.studio.pageIds });
+    var studio = Object.assign({}, p.meta.studio || {}, { icons: W.studio.icons, qr: W.studio.qr, fx: W.studio.fx });
+    delete studio.pageIds;
+    /* Page ids live on the pages (open format): the working list by position is written onto them here. */
+    W.pages.forEach(function (pg, i) { var pid = (W.studio.pageIds || [])[i]; if (pid) pg.id = pid; else delete pg.id; });
     if (W.studio.variables) studio.variables = W.studio.variables; else delete studio.variables;
     if (W.studio.remix) studio.remix = W.studio.remix; else delete studio.remix;
     var raw = { schema: LE.project.SCHEMA, v: LE.project.VERSION, id: p.id, name: W.name, kind: p.kind || 'design', createdAt: p.createdAt, updatedAt: p.updatedAt, pages: W.pages, activePage: W.active, assets: W.assets, meta: { app: (p.meta && p.meta.app) || '2.0', studio: studio } };
@@ -853,7 +856,7 @@
     return A.normScene;
   }
   function normalizePage(pg) {
-    try { var s = normScene(); s.load(pg); return s.toJSON(); } catch (e) { return clone(pg); }
+    try { var s = normScene(); s.load(pg); var o = s.toJSON(); if (pg.id) o.id = pg.id; return o; } catch (e) { return clone(pg); }
   }
   function decodeBlob(blob, name) { return LE.load(new File([blob], name || 'image', { type: blob.type || 'image/png' })); }
   /* New images: into this device's asset store (browser) or memory only (headless), and onto the canvas. */
@@ -880,7 +883,7 @@
     var before = clone(p.pages), beforeActive = p.activePage || 0;
     var structural = final.pages.length !== before.length || final.active !== beforeActive;
     Object.keys(final.assets || {}).forEach(function (id) { if (!p.assets[id]) p.assets[id] = c.S.mem[id] ? c.S.mem[id].meta : final.assets[id]; });
-    if (final.studio) ['icons', 'qr', 'fx', 'pageIds', 'variables', 'remix'].forEach(function (k) { if (final.studio[k] != null) p.meta.studio[k] = final.studio[k]; else if (k === 'variables' || k === 'remix') delete p.meta.studio[k]; });
+    if (final.studio) ['icons', 'qr', 'fx', 'pageIds', 'variables', 'remix'].forEach(function (k) { if (final.studio[k] != null) p.meta.studio[k] = final.studio[k]; else if (k === 'variables' || k === 'remix' || k === 'pageIds') delete p.meta.studio[k]; });
     if (final.name && final.name !== p.name) p.name = final.name;
     A.committing = true;
     try {
@@ -890,6 +893,7 @@
       } else {
         final.pages.forEach(function (pg, i) { if (i !== beforeActive) p.pages[i] = pg; });
         var act = final.pages[beforeActive];
+        if (act.id) p.pages[beforeActive].id = act.id; else delete p.pages[beforeActive].id;
         if (JSON.stringify(act) !== JSON.stringify(before[beforeActive])) {
           var norm = normalizePage(act);
           c.replaceDoc(norm, true);
@@ -1306,7 +1310,7 @@
   }
   function pagesInfo(p) {
     var ids = (p.meta.studio && p.meta.studio.pageIds) || [];
-    return p.pages.map(function (pg, i) { return { index: i, id: ids[i] || null, width: pg.width, height: pg.height, layers: (pg.layers || []).length, current: i === (p.activePage || 0) }; });
+    return p.pages.map(function (pg, i) { return { index: i, id: pg.id || ids[i] || null, width: pg.width, height: pg.height, layers: (pg.layers || []).length, current: i === (p.activePage || 0) }; });
   }
   function stateLite() {
     var p = project();

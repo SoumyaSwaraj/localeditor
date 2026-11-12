@@ -142,4 +142,25 @@ cases['first-run coach marks never show while agent mode is on'] = async ({ brow
   h.assert.noErrors(page);
 };
 
+cases['agent page ids live on the pages: they survive the person deleting and reordering pages in the studio'] = async ({ browser, base, h }) => {
+  const page = await h.newDesign(browser, base, 'desktop', 'Instagram post');
+  await page.waitForFunction(() => window.LEAgent && window.LEStudio && window.LEStudio.S.project);
+  await page.evaluate(() => window.LEStudio.coach('off'));
+  const p = page.evaluate(() => LEAgent.begin({ name: 'Test agent', task: 'Page ids' }));
+  await page.click('.sxa-ask [data-yes]');
+  h.assert((await p).ok, 'session started');
+  await page.evaluate(() => LEAgent._person.setSpeed('instant'));
+  const r = await page.evaluate(() => LEAgent.apply([{ op: 'page.add', id: 'two', layers: [] }, { op: 'page.add', id: 'three', layers: [] }]));
+  h.assert(r.ok, 'pages added: ' + JSON.stringify(r.errors));
+  const ids = () => page.evaluate(async () => (await LEAgent.state()).pages.map((x) => x.id || '-').join(','));
+  const start = await ids();
+  h.assert(/two,three$/.test(start), 'ids after add: ' + start);
+  /* The person deletes the first page and moves "three" to the front in the studio. */
+  await page.evaluate(() => { const c = window.LEStudio, pr = c.S.project; c.deletePage(0); c.syncProject(); const pg = pr.pages.splice(1, 1)[0]; pr.pages.splice(0, 0, pg); c.loadPage(0); c.syncProject(); });
+  h.assert.equal(await ids(), 'three,two', 'ids follow their pages');
+  const saved = await page.evaluate(() => JSON.parse(LE.design.stringify(window.LEStudio.S.project).text).pages.map((x) => x.id || '-').join(','));
+  h.assert.equal(saved, 'three,two', 'and are written to the design file');
+  h.assert.noErrors(page);
+};
+
 module.exports = cases;
