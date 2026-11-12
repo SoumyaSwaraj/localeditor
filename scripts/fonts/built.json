@@ -193,19 +193,19 @@
    "latin": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
   },
   "missing": {},
-  "rev": "9fb38c",
-  "bytes": 376112,
+  "rev": "26c795",
+  "bytes": 589132,
   "sizes": {
-   "v:cyrillic": 18748,
-   "v:greek": 18996,
-   "v:vietnamese": 10252,
-   "v:latin-ext": 85068,
-   "v:latin": 48256,
-   "vi:cyrillic": 19980,
-   "vi:greek": 20484,
-   "vi:vietnamese": 10596,
-   "vi:latin-ext": 91900,
-   "vi:latin": 51832
+   "v:cyrillic": 29636,
+   "v:greek": 30200,
+   "v:vietnamese": 15268,
+   "v:latin-ext": 133336,
+   "v:latin": 72920,
+   "vi:cyrillic": 32196,
+   "vi:greek": 33184,
+   "vi:vietnamese": 16216,
+   "vi:latin-ext": 146460,
+   "vi:latin": 79716
   },
   "wght": [
    100,
@@ -216,7 +216,8 @@
   "pkg": "@fontsource-variable/inter",
   "version": "5.3.0",
   "gfVersion": "v20",
-  "lastModified": "2025-09-10"
+  "lastModified": "2025-09-10",
+  "scriptFirst": false
  },
  "noto-sans-devanagari": {
   "family": "Noto Sans Devanagari",
@@ -765,12 +766,12 @@
    "latin": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
   },
   "missing": {},
-  "rev": "bc5d18",
-  "bytes": 68620,
+  "rev": "ae8600",
+  "bytes": 120608,
   "sizes": {
-   "v:vietnamese": 8608,
-   "v:latin-ext": 18668,
-   "v:latin": 41344
+   "v:vietnamese": 12984,
+   "v:latin-ext": 30736,
+   "v:latin": 76888
   },
   "wght": [
    200,
@@ -781,7 +782,8 @@
   "pkg": "@fontsource-variable/bricolage-grotesque",
   "version": "5.3.0",
   "gfVersion": "v9",
-  "lastModified": "2025-09-11"
+  "lastModified": "2025-09-11",
+  "scriptFirst": false
  },
  "public-sans": {
   "family": "Public Sans",
@@ -1162,13 +1164,13 @@
    "latin": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
   },
   "missing": {},
-  "rev": "31c8ad",
-  "bytes": 115680,
+  "rev": "7e6841",
+  "bytes": 211104,
   "sizes": {
-   "v:latin-ext": 18228,
-   "v:latin": 36932,
-   "vi:latin-ext": 20808,
-   "vi:latin": 39712
+   "v:latin-ext": 31292,
+   "v:latin": 62724,
+   "vi:latin-ext": 40840,
+   "vi:latin": 76248
   },
   "wght": [
    100,
@@ -1179,7 +1181,8 @@
   "pkg": "@fontsource-variable/dm-sans",
   "version": "5.3.0",
   "gfVersion": "v17",
-  "lastModified": "2025-09-11"
+  "lastModified": "2025-09-11",
+  "scriptFirst": false
  },
  "montserrat": {
   "family": "Montserrat",
@@ -2124,17 +2127,17 @@
    "latin": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
   },
   "missing": {},
-  "rev": "e0a570",
-  "bytes": 178024,
+  "rev": "905744",
+  "bytes": 266404,
   "sizes": {
-   "v:cyrillic": 16388,
-   "v:vietnamese": 10308,
-   "v:latin-ext": 27908,
-   "v:latin": 31076,
-   "vi:cyrillic": 17320,
-   "vi:vietnamese": 11600,
-   "vi:latin-ext": 30344,
-   "vi:latin": 33080
+   "v:cyrillic": 26320,
+   "v:vietnamese": 15836,
+   "v:latin-ext": 43656,
+   "v:latin": 49648,
+   "vi:cyrillic": 25012,
+   "vi:vietnamese": 16212,
+   "vi:latin-ext": 42412,
+   "vi:latin": 47308
   },
   "wght": [
    200,
@@ -2145,7 +2148,8 @@
   "pkg": "@fontsource-variable/nunito-sans",
   "version": "5.3.0",
   "gfVersion": "v19",
-  "lastModified": "2025-09-16"
+  "lastModified": "2025-09-16",
+  "scriptFirst": false
  },
  "pt-sans": {
   "family": "PT Sans",
@@ -5238,17 +5242,17 @@
    "latin": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
   },
   "missing": {},
-  "rev": "26f0ac",
-  "bytes": 480860,
+  "rev": "ca64c3",
+  "bytes": 857176,
   "sizes": {
-   "v:cyrillic": 51808,
-   "v:vietnamese": 10956,
-   "v:latin-ext": 74960,
-   "v:latin": 97548,
-   "vi:cyrillic": 54508,
-   "vi:vietnamese": 12248,
-   "vi:latin-ext": 78260,
-   "vi:latin": 100572
+   "v:cyrillic": 95120,
+   "v:vietnamese": 16932,
+   "v:latin-ext": 125644,
+   "v:latin": 182412,
+   "vi:cyrillic": 99908,
+   "vi:vietnamese": 19352,
+   "vi:latin-ext": 131424,
+   "vi:latin": 186384
   },
   "wght": [
    300,
@@ -5259,7 +5263,8 @@
   "pkg": "@fontsource-variable/merriweather",
   "version": "5.3.0",
   "gfVersion": "v33",
-  "lastModified": "2025-09-02"
+  "lastModified": "2025-09-02",
+  "scriptFirst": false
  },
  "libre-baskerville": {
   "family": "Libre Baskerville",
@@ -5650,19 +5655,19 @@
    "latin": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
   },
   "missing": {},
-  "rev": "0648eb",
-  "bytes": 328792,
+  "rev": "76f021",
+  "bytes": 810228,
   "sizes": {
-   "v:cyrillic": 36508,
-   "v:greek": 20184,
-   "v:vietnamese": 13508,
-   "v:latin-ext": 42212,
-   "v:latin": 50936,
-   "vi:cyrillic": 34972,
-   "vi:greek": 20556,
-   "vi:vietnamese": 13920,
-   "vi:latin-ext": 44420,
-   "vi:latin": 51576
+   "v:cyrillic": 93440,
+   "v:greek": 49336,
+   "v:vietnamese": 29500,
+   "v:latin-ext": 100872,
+   "v:latin": 122360,
+   "vi:cyrillic": 90356,
+   "vi:greek": 51644,
+   "vi:vietnamese": 32208,
+   "vi:latin-ext": 110324,
+   "vi:latin": 130188
   },
   "wght": [
    200,
@@ -5673,7 +5678,8 @@
   "pkg": "@fontsource-variable/source-serif-4",
   "version": "5.3.1",
   "gfVersion": "v15",
-  "lastModified": "2026-10-01"
+  "lastModified": "2026-10-01",
+  "scriptFirst": false
  },
  "cormorant": {
   "family": "Cormorant",
@@ -5834,19 +5840,19 @@
    "latin": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
   },
   "missing": {},
-  "rev": "f3d802",
-  "bytes": 310740,
+  "rev": "1f60ae",
+  "bytes": 656204,
   "sizes": {
-   "v:cyrillic": 28068,
-   "v:greek": 19252,
-   "v:vietnamese": 11408,
-   "v:latin-ext": 42656,
-   "v:latin": 52496,
-   "vi:cyrillic": 29264,
-   "vi:greek": 19364,
-   "vi:vietnamese": 11248,
-   "vi:latin-ext": 43256,
-   "vi:latin": 53728
+   "v:cyrillic": 61688,
+   "v:greek": 41144,
+   "v:vietnamese": 22312,
+   "v:latin-ext": 89668,
+   "v:latin": 110080,
+   "vi:cyrillic": 62708,
+   "vi:greek": 42040,
+   "vi:vietnamese": 21960,
+   "vi:latin-ext": 91424,
+   "vi:latin": 113180
   },
   "wght": [
    200,
@@ -5857,7 +5863,8 @@
   "pkg": "@fontsource-variable/literata",
   "version": "5.3.0",
   "gfVersion": "v40",
-  "lastModified": "2025-09-11"
+  "lastModified": "2025-09-11",
+  "scriptFirst": false
  },
  "newsreader": {
   "family": "Newsreader",
@@ -5891,15 +5898,15 @@
    "latin": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
   },
   "missing": {},
-  "rev": "aa4502",
-  "bytes": 222544,
+  "rev": "870727",
+  "bytes": 516172,
   "sizes": {
-   "v:vietnamese": 11932,
-   "v:latin-ext": 36244,
-   "v:latin": 58084,
-   "vi:vietnamese": 12080,
-   "vi:latin-ext": 39684,
-   "vi:latin": 64520
+   "v:vietnamese": 27248,
+   "v:latin-ext": 86608,
+   "v:latin": 132000,
+   "vi:vietnamese": 27904,
+   "vi:latin-ext": 95540,
+   "vi:latin": 146872
   },
   "wght": [
    200,
@@ -5910,7 +5917,8 @@
   "pkg": "@fontsource-variable/newsreader",
   "version": "5.3.0",
   "gfVersion": "v26",
-  "lastModified": "2025-09-08"
+  "lastModified": "2025-09-08",
+  "scriptFirst": false
  },
  "fraunces": {
   "family": "Fraunces",
@@ -5944,15 +5952,15 @@
    "latin": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
   },
   "missing": {},
-  "rev": "387e32",
-  "bytes": 180908,
+  "rev": "52ab09",
+  "bytes": 321500,
   "sizes": {
-   "v:vietnamese": 11572,
-   "v:latin-ext": 33584,
-   "v:latin": 36620,
-   "vi:vietnamese": 12948,
-   "vi:latin-ext": 40528,
-   "vi:latin": 45656
+   "v:vietnamese": 19700,
+   "v:latin-ext": 59388,
+   "v:latin": 67304,
+   "vi:vietnamese": 22128,
+   "vi:latin-ext": 71460,
+   "vi:latin": 81520
   },
   "wght": [
    100,
@@ -5963,7 +5971,8 @@
   "pkg": "@fontsource-variable/fraunces",
   "version": "5.3.0",
   "gfVersion": "v38",
-  "lastModified": "2025-09-10"
+  "lastModified": "2025-09-10",
+  "scriptFirst": false
  },
  "alegreya": {
   "family": "Alegreya",
@@ -6557,11 +6566,11 @@
    "latin": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
   },
   "missing": {},
-  "rev": "9855e7",
-  "bytes": 40016,
+  "rev": "c8212b",
+  "bytes": 71280,
   "sizes": {
-   "v:latin-ext": 14132,
-   "v:latin": 25884
+   "v:latin-ext": 25020,
+   "v:latin": 46260
   },
   "wght": [
    400,
@@ -6572,7 +6581,8 @@
   "pkg": "@fontsource-variable/bodoni-moda",
   "version": "5.3.0",
   "gfVersion": "v28",
-  "lastModified": "2025-09-16"
+  "lastModified": "2025-09-16",
+  "scriptFirst": false
  },
  "prata": {
   "family": "Prata",

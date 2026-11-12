@@ -174,14 +174,17 @@ async function buildFamily(f, entry, outDir, subsetsWanted) {
   const axis = meta.variable && meta.variable.wght;
   const hasItalic = (meta.styles || []).indexOf('italic') >= 0;
   if (entry.variable && axis) {
-    const variants = [['v', false, 'wght.css']];
-    if (f.italic && hasItalic && fs.existsSync(path.join(pkgDir, 'wght-italic.css'))) variants.push(['vi', true, 'wght-italic.css']);
+    /* Families with an optical-size axis keep it (the "opsz" files: weight + optical size), as Google Fonts serves
+       them, so browsers size the design to the text as before; others ship the weight axis only. */
+    const ax = meta.variable.opsz && fs.existsSync(path.join(pkgDir, 'opsz.css')) ? 'opsz' : 'wght';
+    const variants = [['v', false, ax + '.css']];
+    if (f.italic && hasItalic && fs.existsSync(path.join(pkgDir, ax + '-italic.css'))) variants.push(['vi', true, ax + '-italic.css']);
     variants.forEach(function (v) {
       const css = parseCss(fs.readFileSync(path.join(pkgDir, v[2]), 'utf8'));
       const face = { key: v[0], weight: axis.min + ' ' + axis.max, italic: v[1], files: {}, ranges: {} };
       css.forEach(function (c) {
-        const m = /-([a-z0-9-]+|\[\d+\]|\d+)-wght-(normal|italic)\.woff2$/.exec(c.src);
-        const subset = c.src.replace(/^\.\/files\//, '').replace(f.id + '-', '').replace(/-wght-(normal|italic)\.woff2$/, '');
+        const m = new RegExp('-([a-z0-9-]+|\\[\\d+\\]|\\d+)-' + ax + '-(normal|italic)\\.woff2$').exec(c.src);
+        const subset = c.src.replace(/^\.\/files\//, '').replace(f.id + '-', '').replace(new RegExp('-' + ax + '-(normal|italic)\\.woff2$'), '');
         if (!m) return;
         face.files[subset] = path.join(pkgDir, c.src);
         face.ranges[subset] = c.range;

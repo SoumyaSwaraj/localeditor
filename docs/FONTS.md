@@ -55,7 +55,7 @@ Put `assets/fonts/originals/<slug>/meta.json` (`{ "family", "style", "kind", "fe
 
 ## Budget
 
-Before: 9.4 MB for 44 families (woff2 latin/latin-ext + one WOFF per face). Now: 29.5 MB of woff2 for 253 families (117 KB average; 123 are variable, so one file covers every weight), 1.2 MB of licence texts, 0.5 MB of previews, about 0.5 MB of manifest data; the 44 old WOFF files (5.9 MB) are removed. The repository stays under 300 MB; the largest single font file is 0.2 MB. The CJK families add 17.3 MB and are not in git (`--cjk`). Each person downloads only what they use: a typical Latin font is 50–120 KB.
+Before: 9.4 MB for 44 families (woff2 latin/latin-ext + one WOFF per face). Now: 31.5 MB of woff2 for 253 families (125 KB average; 123 are variable, so one file covers every weight; the 10 with an optical-size axis keep it, as Google Fonts serves them), 1.2 MB of licence texts, 0.5 MB of previews, about 0.5 MB of manifest data; the 44 old WOFF files (5.9 MB) are removed. The repository stays under 300 MB; the largest single font file is 0.2 MB. The CJK families add 17.3 MB and are not in git (`--cjk`). Each person downloads only what they use: a typical Latin font is 50–120 KB.
 
 ## Loading
 
