@@ -82,6 +82,10 @@ Input types and what `validate` accepts:
 
 Unknown keys, wrong types and over-long values are errors. Script-like text is valid: it is only ever drawn as text on a canvas or set as `.value`/`.textContent`, never as markup.
 
+### Form extras (`ui`)
+
+A definition may add `ui(form, api)`: studio-only extras for the form (a camera, paste and drop, sorting by capture date). It is called once when the form opens, after the fields are drawn, and may return a cleanup function, which runs when the form closes for any reason (Cancel, ×, Escape, the backdrop, or Make). `form` is the open form (`values`, `style`, `size`, `node`, `form`, `c` the studio). `api.refresh()` redraws the fields from `form.values` and the preview; `api.schedule()` redraws only the preview; `api.make()` makes the design (resolves to the first page, or null). Put your own elements before `form.form` (inside `.mk-body`) so `refresh()` keeps them. `build` never sees any of this: whatever `ui` decides must end up in `values`, so it is in `doc.maker` and an agent can write it.
+
 ## The `env` helpers
 
 Geometry: `env.W`, `env.H`, `env.k` (min side / 1080), `env.square`, `env.portrait`, `env.tall` (9:16), `env.style`, `env.size`, `env.today`, `env.type` (a scale: `display h1 h2 h3 body small caption`), `env.random()` (seeded by maker, style, size and values), `env.seed`.
@@ -231,3 +235,15 @@ A `table` input holds rows in fixed columns. In `doc.maker.values` it is stored 
 ### Print quality bar
 
 Everything in the main quality bar, plus: real sizes in mm (`env.print.mm`), body text at least about 2.5 mm, text 4.5:1 on paper, an ink-saving style with no filled areas, and a look at the exported PDF, not only the canvas.
+
+## Weekly-use set: screenshots, photobooth, recaps
+
+| Maker | id | What it makes | Studio extras (`ui`) |
+|---|---|---|---|
+| Screenshot beautifier (2.8) | `beautify` | A screenshot in a generic browser window, desktop window, phone or tablet (or no frame), or code in a plain window, on a gradient, soft glow, plain, dot-grid or "match the screenshot" backdrop. Sizes square, 4:5, 16:9, story. | Paste an image or code anywhere in the form (Ctrl+V), drop a file; **Hide something** makes the design and opens the Redact panel on the screenshot. CSS: `assets/css/makers-beautify.css`. |
+| Photobooth strip (2.10) | `photobooth` | A strip of 4 or 3 frames (2 × 6 in), a 2 × 2 print (4 × 6 in) or a wide strip (6 × 2 in), styles classic white, black, pastel, film edge; caption and date line; one look on every frame (`filter` from `LE.presets.filters`); mirror. **Print sheet** adds a 4 × 6 in page (6 × 4 in for wide) with two copies and a cut line. | **Use the camera**: front camera, mirrored preview, 3-2-1 countdown, flash, tap a frame to retake it, saved the right way round unless "Save mirrored" is ticked, frames ingested like any photo. The stream stops when the panel closes, the page is hidden or the maker closes. Without a camera or permission, the note says so and the photo picker works as usual. CSS: `assets/css/makers-photobooth.css`. |
+| Recap collage (2.10) | `recap` | My week / month / year / trip from 4–30 photos: title, date range, a stats line the person types. Styles: clean grid and big title (layouts from `LE.collage.layouts`, chosen for least cropping; fitted rows above 20 photos), fitted rows (justified, uncropped), prints, contact sheet. Square, 4:5, story. | Photos are put in the order they were taken (`order: 'taken'`; capture date read on the device with `LE.privacy.inspect`, falling back to `LE.exif`) and an empty date range is filled from them. The order lives in `values.photos`. |
+
+Code in `beautify` is drawn as one text layer per colour (grouped as "Code"), all on the same grid in JetBrains Mono, each row starting with a zero-width space so indentation survives text wrapping. The highlighter is `LE.makers.highlight(code, lang)` → `{ lang, lines: [[{ t, c }]] }` with classes `plain punct comment keyword string number func type`; languages: JS, TS, Python, HTML/XML, CSS, JSON, shell, SQL, Go, Rust, C/C++, Java/Kotlin, Swift, PHP, Ruby, plain, and detection. Other pure helpers for tests and agents: `LE.makers.recapRange(from, to, period)`, `LE.makers.photoboothFrames(sizeId)`.
+
+Not expressible as a maker today: an "original" aspect for the beautifier (a page always takes the chosen size id's fixed pixels), so the four fixed sizes are offered and the person can use Resize afterwards.

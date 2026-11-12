@@ -219,14 +219,36 @@
     var c = F.c;
     if (!c || !F.node || !LE.exif) return null;
     var dates = {}, last = '', alive = true, busy = false;
+    /* The capture date, read on the device: the privacy module's reader (DateTimeOriginal, XMP) when it loads,
+       else the engine's small EXIF reader (the date the file was last changed). Nothing leaves the device. */
+    var DRE = /(\d{4})[:\-](\d\d)[:\-](\d\d)(?:[ T](\d\d):(\d\d)(?::(\d\d))?)?/;
+    var privacy = null;
+    function reader() {
+      if (privacy) return privacy;
+      if (LE.privacy && LE.privacy.inspect) { privacy = Promise.resolve(LE.privacy); return privacy; }
+      var root = document.documentElement.getAttribute('data-root') || '';
+      if (root && root.charAt(root.length - 1) !== '/') root += '/';
+      privacy = (LE.lazy ? LE.lazy(root + 'assets/js/le-privacy.js') : Promise.reject(new Error('no loader'))).then(function () { return LE.privacy || null; }, function () { return null; });
+      return privacy;
+    }
+    function stamp(raw) {
+      var m = DRE.exec(String(raw || ''));
+      if (!m || m[1] === '0000') return '';
+      return m[1] + '-' + m[2] + '-' + m[3] + 'T' + (m[4] || '12') + ':' + (m[5] || '00') + ':' + (m[6] || '00');
+    }
     function dateOf(id) {
       if (Object.prototype.hasOwnProperty.call(dates, id)) return Promise.resolve(dates[id]);
       if (/^sample:/.test(id) || !LE.project || !LE.project.assetRecord) { dates[id] = ''; return Promise.resolve(''); }
-      return LE.project.assetRecord(id).then(function (rec) { return rec && rec.blob ? LE.exif(rec.blob) : null; }).then(function (info) {
-        var m = info && info.date && /^(\d{4}):(\d{2}):(\d{2})(?:[ T](\d{2}):(\d{2}):(\d{2}))?/.exec(info.date);
-        dates[id] = m ? m[1] + '-' + m[2] + '-' + m[3] + 'T' + (m[4] || '12') + ':' + (m[5] || '00') + ':' + (m[6] || '00') : '';
-        return dates[id];
-      }).catch(function () { dates[id] = ''; return ''; });
+      return LE.project.assetRecord(id).then(function (rec) {
+        if (!rec || !rec.blob) return '';
+        return reader().then(function (P) {
+          if (!P) return '';
+          return P.inspect(rec.blob, { name: rec.name, type: rec.type }).then(function (rep) {
+            var raw = rep && rep._raw ? rep._raw['exif.taken'] || rep._raw['xmp.taken'] || rep._raw['exif.digitized'] : '';
+            return stamp(raw);
+          });
+        }).then(function (d) { return d || LE.exif(rec.blob).then(function (info) { return stamp(info && info.date); }); });
+      }).then(function (d) { dates[id] = d || ''; return dates[id]; }, function () { dates[id] = ''; return ''; });
     }
     function check() {
       if (!alive || busy) return;
