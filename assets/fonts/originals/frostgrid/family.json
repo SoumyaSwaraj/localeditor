@@ -1,0 +1,78 @@
+{
+ "family": "Frostgrid",
+ "slug": "frostgrid",
+ "source": "localeditor",
+ "version": "1.000",
+ "intent": "tension",
+ "feel": [
+  "technical",
+  "tense"
+ ],
+ "description": "Square and cool. Machine-like and precise.",
+ "uses": [
+  "Tech launches",
+  "Sci-fi",
+  "Data and labels"
+ ],
+ "concept": "Cold technical square sans: superelliptic near-square curves, closed apertures, ink traps, square dots, wide tracking.",
+ "category": "sans",
+ "weights": [
+  400,
+  700
+ ],
+ "italic": false,
+ "license": "LocalEditor-Proprietary (pending owner decision)",
+ "files": {
+  "400": {
+   "woff2": "assets/fonts/originals/frostgrid/frostgrid-400.woff2",
+   "woff": "assets/fonts/originals/frostgrid/frostgrid-400.woff"
+  },
+  "700": {
+   "woff2": "assets/fonts/originals/frostgrid/frostgrid-700.woff2",
+   "woff": "assets/fonts/originals/frostgrid/frostgrid-700.woff"
+  }
+ },
+ "bytes": {
+  "400": {
+   "woff2": 18460,
+   "woff": 23196
+  },
+  "700": {
+   "woff2": 19204,
+   "woff": 24112
+  }
+ },
+ "metrics": {
+  "unitsPerEm": 1000,
+  "ascender": 950,
+  "descender": -250,
+  "lineGap": 0,
+  "capHeight": 700,
+  "xHeight": 545
+ },
+ "parameters": {
+  "regular": {
+   "st": 82,
+   "ratio": 0.92,
+   "sq": 0.84,
+   "aperture": 0.08,
+   "term": "h",
+   "inktrap": 0.8,
+   "dot": "square",
+   "xh": 545,
+   "wid": 1.02,
+   "spacing": 1.06,
+   "track": 12,
+   "join": 0.86,
+   "v": {
+    "zero": "slash"
+   }
+  },
+  "bold": {
+   "st": 124,
+   "ratio": 0.88,
+   "wid": 1.06,
+   "join": 0.76
+  }
+ }
+}

@@ -1,0 +1,7 @@
+# Build-time only. Never shipped to the site.
+fonttools==4.55.3
+brotli==1.1.0
+pyclipper==1.3.0.post6
+numpy==2.5.4
+pillow==13.0.0
+opentype-sanitizer==9.2.0

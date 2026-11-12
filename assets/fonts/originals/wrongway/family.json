@@ -1,0 +1,72 @@
+{
+ "family": "Wrongway",
+ "slug": "wrongway",
+ "source": "localeditor",
+ "version": "1.000",
+ "intent": "tension",
+ "feel": [
+  "tense",
+  "nostalgic"
+ ],
+ "description": "Upside-down contrast. Odd, edgy and attention-grabbing.",
+ "uses": [
+  "Western and circus",
+  "Protest posters",
+  "Music flyers"
+ ],
+ "concept": "Reverse contrast: horizontals heavier than verticals, condensed and squarish. The circus/western device that reads as off-kilter.",
+ "category": "sans",
+ "weights": [
+  400,
+  700
+ ],
+ "italic": false,
+ "license": "LocalEditor-Proprietary (pending owner decision)",
+ "files": {
+  "400": {
+   "woff2": "assets/fonts/originals/wrongway/wrongway-400.woff2",
+   "woff": "assets/fonts/originals/wrongway/wrongway-400.woff"
+  },
+  "700": {
+   "woff2": "assets/fonts/originals/wrongway/wrongway-700.woff2",
+   "woff": "assets/fonts/originals/wrongway/wrongway-700.woff"
+  }
+ },
+ "bytes": {
+  "400": {
+   "woff2": 17872,
+   "woff": 22564
+  },
+  "700": {
+   "woff2": 17748,
+   "woff": 22448
+  }
+ },
+ "metrics": {
+  "unitsPerEm": 1000,
+  "ascender": 950,
+  "descender": -250,
+  "lineGap": 0,
+  "capHeight": 700,
+  "xHeight": 520
+ },
+ "parameters": {
+  "regular": {
+   "st": 64,
+   "ratio": 2.15,
+   "wid": 0.84,
+   "xh": 520,
+   "sq": 0.7,
+   "aperture": 0.2,
+   "term": "h",
+   "spacing": 0.98,
+   "join": 0.92
+  },
+  "bold": {
+   "st": 86,
+   "ratio": 2.25,
+   "wid": 0.88,
+   "join": 0.88
+  }
+ }
+}
