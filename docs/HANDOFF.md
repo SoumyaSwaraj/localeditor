@@ -106,8 +106,9 @@ Convert to PDF: `convert-to-pdf/index.html`, `assets/js/le-convert-ui.js`, `asse
 Loaded in `studio/index.html` after `le-assets.js` and before `le-objects.js`.
 
 ```
-providers()
-keys() / setKeys(partial)          // localStorage le-stock-keys
+providers()                        // pixabay, pexels, openverse, unsplash; each { id, name, needsKey, hasKey, keyLabel, keyHelpUrl, keyHint, creditText, creditUrl, termsUrl, supports:{orientation,page}, status: ok|needs-key|rate-limited|error }
+quota(provider)                    // { limit, remaining, at } from X-Ratelimit-* headers, or null
+keys() / setKeys(partial)          // localStorage le-stock-keys (pixabay, pexels, unsplash strings; openverse object)
 search(q, { provider, page, perPage, orientation })
 registerOpenverse({ name, description, email })
 tokenOpenverse()                   // client_credentials, refresh within 5 min of expiry
@@ -124,7 +125,13 @@ Providers:
 - **Pexels** `GET https://api.pexels.com/v1/search` with header `Authorization: <raw key>` (not `Bearer`). Thumb `src.medium`. Import `src.large2x`. Never `src.original`. Credit “Photo by X on Pexels”.
 - **Openverse** `GET https://api.openverse.org/v1/images/?q=&page_size=20&mature=false`. Anonymous search works. Register `POST /v1/auth_tokens/register/`, then the user verifies email, then `POST /v1/auth_tokens/token/` as `application/x-www-form-urlencoded` `grant_type=client_credentials`. Use `Authorization: Bearer`. Standard tier is historically ~100 requests/minute. Anonymous `GET /v1/rate_limit/` returns **401**. Quota headers are not exposed to the page.
 
+- **Unsplash** `GET https://api.unsplash.com/search/photos?query=&page=&per_page=20&orientation=landscape|portrait|squarish&content_filter=high`, headers `Authorization: Client-ID <Access Key>` and `Accept-Version: v1`. `keys().unsplash` is the Access Key only, never the Secret key. Thumb `urls.small` (hotlinked). Import `urls.raw` + `&w=<maxEdge>&fit=max&q=80&fm=jpg` (`sizedImportUrl` rebuilds these params and drops `w/h/crop/dpr/q/fm/fit`); never the full original. `license` "Unsplash License", `attribution` "Photo by X on Unsplash". `pageUrl` (`links.html`) and `photographerUrl` (`user.links.html`) carry `?utm_source=localeditor&utm_medium=referral`. **Download ping:** `importHit` fires a GET to `hit.downloadLocation` (`links.download_location`, must start with `https://api.unsplash.com/`) with the same auth headers, once per successful import, fire-and-forget. Errors: 401, or 403 without rate-limit signals, clears the key (needs-key); 429, or 403 with `X-Ratelimit-Remaining: 0` or "Rate Limit Exceeded" in the body, starts a cool-down (`Retry-After`, else 1 hour) and `status` becomes `rate-limited`. Demo apps get 50 requests/hour. Credit line: "Photos from Unsplash" linked to `creditUrl`.
+
 Wikimedia originals (`upload.wikimedia.org` without `/thumb/` or `px-`, or `filesize > 4e6`) become `https://commons.wikimedia.org/wiki/Special:FilePath/<file>?width=<maxEdge>`.
+
+Provider `status`: `needs-key` when a key is required and missing (also after a 401 clears it), `rate-limited` while cooling down, `error` after the last search failed for another reason, else `ok`. Openverse never needs a key.
+
+Mocked tests: `node tests/run.js stock` (`tests/stock.test.js`, fixtures in `tests/fixtures/stock/`). The real provider APIs have not been called from the sandbox.
 
 Browser test (`scripts/test-stock.html`): 4000×3000 JPEG 126,496 bytes → 2400×1800 JPEG 63,682 bytes. Openverse search `cat` returned 20 hits, no CORS error. Imported photo 144,024 bytes.
 
