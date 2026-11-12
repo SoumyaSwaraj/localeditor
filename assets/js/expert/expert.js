@@ -155,6 +155,8 @@
     var now = Date.now();
     if (defCache.src === R && now - defCache.t < 500) return defCache.list;
     defCache.t = now;
+    /* The cache below only notices a change of count, so ask for the count first: describe() clones every registration. */
+    if (defCache.src === R && typeof R.list === 'function' && defCache.n === R.list().length) return defCache.list;
     var raw;
     try { raw = R.describe(); } catch (e) { console.error(e); raw = []; }
     if (raw && !Array.isArray(raw)) raw = Object.keys(raw).map(function (k) { var d = raw[k]; if (d && !d.id) d.id = k; return d; });
