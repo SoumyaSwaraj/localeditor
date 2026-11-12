@@ -59,15 +59,29 @@ function lumaStats(rgb, n) {
 }
 /* Reconstructed highlights keep the colour of their surroundings near the clip edge and fade to neutral the further the estimate goes
    above the clip level, and the more channels were clipped (colour propagation alone leaves mint or lilac casts in skies and suns). */
-function fadeClipped(cam, out, n, gains) {
-  var lo = Math.min(gains[0], gains[1], gains[2]);
+function fadeClipped(cam, out, n, gains, thr) {
+  var lo = Math.min(gains[0], gains[1], gains[2]) * thr;
   for (var i = 0; i < n; i++) {
-    var o = i * 3, nc = (cam[o] >= 0.995 ? 1 : 0) + (cam[o + 1] >= 0.995 ? 1 : 0) + (cam[o + 2] >= 0.995 ? 1 : 0);
+    var o = i * 3, nc = (cam[o] >= thr ? 1 : 0) + (cam[o + 1] >= thr ? 1 : 0) + (cam[o + 2] >= thr ? 1 : 0);
     if (!nc) continue;
-    var r = out[o], g = out[o + 1], b = out[o + 2], mx = Math.max(r, g, b), mean = (r + g + b) / 3;
-    var t = Math.min(1, (nc === 1 ? 0.35 : nc === 2 ? 0.7 : 1) * (0.4 + 0.6 * Math.min(1, Math.max(0, (mx / lo - 1) / 0.6))));
+    var r = out[o], g = out[o + 1], b = out[o + 2], mx = Math.max(r, g, b);
+    if (nc === 3) { out[o] = out[o + 1] = out[o + 2] = mx; continue; }   /* nothing is known of its colour: neutral, at least as bright as the clip */
+    var over = Math.min(1, Math.max(0, (mx / lo - 1) / 0.6)), t = nc === 1 ? 0.25 + 0.45 * over : 0.35 + 0.45 * over, mean = (r + g + b) / 3;
     out[o] = r + (mean - r) * t; out[o + 1] = g + (mean - g) * t; out[o + 2] = b + (mean - b) * t;
   }
+}
+/* Where the sensor really saturates. The decoders scale by the file's white level, but many cameras saturate a little below it
+   (a 12-bit file whose pixels pile up at 0.94, say), and a channel stuck there then looks unclipped and turns highlights magenta.
+   A channel whose largest values pile up (at least 0.02 % of the pixels within 0.4 % of its maximum) is taken to clip at that level. */
+function clipLevel(cam, n) {
+  var lvl = 0.995;
+  for (var c = 0; c < 3; c++) {
+    var mx = 0, i; for (i = c; i < n * 3; i += 3) if (cam[i] > mx) mx = cam[i];
+    if (mx >= 0.995 || mx < 0.5) continue;
+    var near = 0; for (i = c; i < n * 3; i += 3) if (cam[i] >= mx * 0.996) near++;
+    if (near > n * 0.0002) lvl = Math.min(lvl, mx * 0.996);
+  }
+  return lvl;
 }
 var RECOVERY = { reconstruct: 'ratio', clip: 'clip', off: 'none' };
 self.onmessage = function (ev) {
@@ -91,9 +105,12 @@ self.onmessage = function (ev) {
         try { var ca = LERawCore.cameraToSpace(color, { neutral: nAuto }, 'srgb'); result.auto = [Math.round(ca.temp), Math.round(ca.tint)]; } catch (e) { result.auto = result.asShot; }
       }
       var img = { width: w, height: h, data: cam };
+      var clipAt = clipLevel(cam, w * h);
+      result.clipLevel = clipAt;
+      if (clipAt < 0.995) { var ks = 1 / clipAt; for (var q = 0; q < cam.length; q++) cam[q] *= ks; }   /* the real saturation becomes sensor white */
       var rec = LERawDevelop.whiteBalanceAndHighlights(img, cm.gains, RECOVERY[o.recovery] || 'ratio');
       result.clipped = rec.clipped / (w * h);
-      if ((o.recovery || 'reconstruct') === 'reconstruct' && rec.clipped) fadeClipped(cam, rec.data, w * h, cm.gains);
+      if ((o.recovery || 'reconstruct') === 'reconstruct' && rec.clipped) fadeClipped(cam, rec.data, w * h, cm.gains, 0.995);
       self.postMessage({ id: id, progress: 0.6 });
       var sz = fitSize(w, h, o.cap), data = resample(rec.data, w, h, sz[0], sz[1]);
       var k = Math.pow(2, o.baseline || 0), M = cm.wbMatrix;
