@@ -1935,7 +1935,7 @@
     if (!st.baseId) S.baseId = null;
   }
   function markDirty() {
-    if (!S.project || S.preview) return;
+    if (!S.project || S.preview || S.noSave) return;
     S.dirty = true;
     setSave('dirty');
     clearTimeout(S.saveTimer);
@@ -1944,7 +1944,7 @@
   function saveNow(opts) {
     opts = opts || {};
     clearTimeout(S.saveTimer);
-    if (!S.project || S.preview) return Promise.resolve();
+    if (!S.project || S.preview || S.noSave) return Promise.resolve(); /* S.noSave: headless agent sessions (le-agent.js) */
     syncProject();
     var thumbCanvas = artboard(360);
     var tp = thumbCanvas ? LE.toBlob(thumbCanvas, 'image/jpeg', 0.8) : Promise.resolve(null);
@@ -2661,6 +2661,7 @@
         '<button type="button" data-cmd="saveDesignFile"' + (S.project ? '' : ' disabled') + '>' + ic('save') + 'Save as design file (.ledesign.json)</button>' +
         '<button type="button" data-cmd="shareTemplate"' + (S.project ? '' : ' disabled') + '>' + ic('share') + 'Share as template link</button>' : '') +
       '<button type="button" data-cmd="export"' + (S.project ? '' : ' disabled') + '>' + ic('download') + 'Download image…<kbd>Ctrl E</kbd></button><hr>' +
+      (window.LEAgent ? '<button type="button" data-cmd="agentMode">' + ic('sparkle') + 'Agent mode…</button>' : '') +
       '<button type="button" data-cmd="settings">' + ic('gauge') + 'Performance</button>' +
       '<button type="button" data-theme-toggle>' + ic('moon') + (document.documentElement.getAttribute('data-theme') === 'dark' ? 'Light mode' : 'Dark mode') + '</button>' +
       '<button type="button" data-cmd="shortcuts">' + ic('keyboard') + 'Shortcuts<kbd>?</kbd></button>' +

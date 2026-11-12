@@ -45,5 +45,14 @@ Kept by the lead architect. Things reported by the team that are not yet assigne
 - **Layers panel ARIA** (QA-018, QA-019), locked layers cannot be selected on the canvas (QA-003), Elements thumbnail (QA-017).
 - **On-screen keyboard** may cover text being typed; scrolling the text above the keyboard is not built. Safe-area insets on notched phones are unchecked.
 
+## Reported by agent mode (12 November 2026)
+- **First-run hints show during an agent session** and cover the activity panel; suppress them while agent mode is on.
+- **Consent is a screen gate only.** An agent that can click could press Allow itself; a browser cannot tell its click from a person's. The agent kit tells agents never to do this.
+- **Open format:** `notes` are not in `.ledesign.json` yet, so agent `state()` and `save()` do not carry them. A public `LE.design.parseLayer` would replace the agent module's round trip through a one-layer document.
+- **Undo:** batches that add, remove or switch pages clear the page's undo history; they can only be undone from the activity feed. "Undo this change" is selective only while the touched layers are unchanged, otherwise it offers "Undo back to here".
+- **Lint is blind to text over photos and gradients**, so contrast problems there are not reported to agents.
+- **One agent session at a time.**
+- **`llms.txt`** needs an agent mode section (text supplied in the agent mode report; the page generator owns the file).
+
 ## Never verified in this build environment
 Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen readers, the Android share sheet, real AWS (deploy, CloudFront function, headers policy), and every stock API (Pixabay, Pexels, Openverse, Unsplash are all tested against mocked responses).

@@ -1,1 +1,173 @@
-/* LocalEditor: agent mode styles. */
+/* LocalEditor: agent mode styles (banner, pointer, highlights, pins, activity panel, console). Phone first; light and dark. */
+:root { --sxa-agent: #2F6BFF; }
+
+.sxa-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- banner ---------- */
+.sxa-bar {
+  position: absolute; left: 8px; right: 8px; top: 8px; z-index: 9;
+  display: grid; gap: 8px; padding: 8px 8px 8px 12px;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--r-md, 14px);
+  box-shadow: var(--shadow-sm, 0 2px 10px rgba(23, 19, 31, .08));
+  font-size: var(--text-sm, 14px);
+}
+.sxa-bar[hidden] { display: none; }
+.sxa-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.sxa-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: var(--faint); }
+.sxa-bar.is-live .sxa-dot { background: var(--sxa-agent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sxa-agent) 22%, transparent); animation: sxa-breathe 1.8s var(--ease, ease) infinite; }
+.sxa-bar.is-wait .sxa-dot { background: var(--warn); }
+.sxa-bar.is-wait { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+@keyframes sxa-breathe { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--sxa-agent) 6%, transparent); } }
+.sxa-who { display: grid; gap: 1px; min-width: 0; flex: 1 1 auto; }
+.sxa-who strong { font-weight: 720; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sxa-who small { color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sxa-acts { display: flex; gap: 4px; flex: 0 0 auto; }
+.sxa-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 44px; min-width: 44px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--r-pill, 999px);
+  background: var(--surface); color: var(--ink); font: inherit; font-weight: 650; cursor: pointer; white-space: nowrap;
+  transition: background var(--dur-1, 120ms) var(--ease, ease), transform var(--dur-1, 120ms);
+}
+.sxa-btn:hover { background: var(--surface-2); }
+.sxa-btn:active { transform: scale(0.98); }
+.sxa-btn:focus-visible, .sxa-seg button:focus-visible, .sxa-tabs button:focus-visible, .sxa-pin:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.sxa-btn svg { width: 18px; height: 18px; flex: 0 0 auto; }
+.sxa-btn.is-primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.sxa-icon { padding: 0; position: relative; }
+.sxa-count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--amethyst); color: #fff; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sxa-icon .sxa-count { position: absolute; top: 2px; right: 0; }
+.sxa-row2 { display: none; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sxa-bar.is-more .sxa-row2 { display: flex; }
+.sxa-noteform { display: flex; gap: 6px; flex: 1 1 260px; min-width: 0; }
+.sxa-input {
+  flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--border); border-radius: var(--r-pill, 999px); background: var(--surface-2); color: var(--ink); font: inherit; font-size: 16px;
+}
+.sxa-input:focus { outline: none; border-color: var(--amethyst); box-shadow: 0 0 0 3px var(--accent-soft); }
+.sxa-seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: var(--r-pill, 999px); background: var(--surface-2); border: 1px solid var(--line); }
+.sxa-seg button { min-height: 38px; padding: 0 12px; border: 0; border-radius: var(--r-pill, 999px); background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.sxa-seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-xs, 0 1px 2px rgba(0,0,0,.08)); }
+
+@media (max-width: 767px) {
+  .sxa-btn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .sxa-btn { padding: 0; }
+  .sxa-row2 .sxa-btn { padding: 0 12px; }
+  .sxa-row2 .sxa-btn span { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .sxa-seg { width: 100%; }
+  .sxa-seg button { flex: 1 1 0; padding: 0 6px; }
+  .sxa-noteform { flex-basis: 100%; }
+}
+@media (min-width: 1100px) {
+  .sxa-bar { left: 50%; right: auto; transform: translateX(-50%); width: min(920px, calc(100% - 32px)); }
+}
+
+/* ---------- live view ---------- */
+.sxa-fx, .sxa-pins { position: absolute; inset: 0; pointer-events: none; z-index: 8; overflow: hidden; }
+.sxa-pins { z-index: 8; }
+.sxa-pointer {
+  position: absolute; left: 0; top: 0; display: none; align-items: flex-start; gap: 4px;
+  transform: translate(-100px, -100px); transition-property: transform; transition-timing-function: cubic-bezier(.22, .9, .3, 1);
+  will-change: transform; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .25));
+}
+.sxa-pointer.is-on { display: flex; }
+.sxa-pointer svg { width: 22px; height: 22px; fill: var(--sxa-agent); stroke: #fff; stroke-width: 1.4; stroke-linejoin: round; }
+.sxa-pointer-name { margin-top: 16px; padding: 3px 9px; border-radius: 999px; background: var(--sxa-agent); color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.sxa-pointer-say { position: absolute; left: 22px; top: 42px; max-width: 240px; padding: 6px 10px; border-radius: 10px; background: var(--side, #141318); color: #fff; font-size: 12.5px; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sxa-pointer-say[hidden] { display: none; }
+.sxa-pointer.is-rest { opacity: .4; transition-property: transform, opacity; }
+.sxa-ring {
+  position: absolute; border-radius: 6px; border: 2px solid var(--sxa-agent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--sxa-agent) 18%, transparent);
+  animation: sxa-ring var(--sxa-ms, 600ms) var(--ease-out, ease-out) both, sxa-fade 700ms ease-in calc(var(--sxa-ms, 600ms) + 150ms) both;
+}
+.sxa-ring.is-add { animation-name: sxa-grow, sxa-fade; }
+.sxa-ring.is-removed { border-style: dashed; border-color: var(--err); box-shadow: none; animation-name: sxa-shrink, sxa-fade; }
+.sxa-ring.is-move { border-style: solid; }
+@keyframes sxa-ring { 0% { opacity: 0; } 30% { opacity: 1; } 60% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--sxa-agent) 8%, transparent); } 100% { opacity: 1; } }
+@keyframes sxa-grow { 0% { opacity: 0; transform: scale(.85); } 100% { opacity: 1; transform: none; } }
+@keyframes sxa-shrink { 0% { opacity: 1; } 100% { opacity: .9; transform: scale(.94); } }
+@keyframes sxa-fade { to { opacity: 0; } }
+
+/* Hit boxes over the canvas in agent mode: transparent, so "click the title" works for accessibility-tree agents. */
+.sxa-hits { position: absolute; inset: 0; pointer-events: none; }
+.sxa-hits[hidden] { display: none; }
+.sxa-hit { position: absolute; pointer-events: auto; padding: 0; margin: 0; border: 0; background: transparent; touch-action: none; cursor: inherit; transform-origin: center; }
+.sxa-hit:focus { outline: none; }
+
+/* ---------- pins and notes ---------- */
+.sxa-pin {
+  position: absolute; left: 0; top: 0; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; pointer-events: auto; cursor: pointer;
+}
+.sxa-pin span {
+  display: grid; place-items: center; width: 30px; height: 30px; margin: 7px; border-radius: 50% 50% 50% 4px;
+  background: var(--warn); color: #fff; font-weight: 750; font-size: 13px; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); border: 2px solid #fff;
+}
+.sxa-pin.is-done span { background: var(--ok); }
+.sxa-pin span svg { width: 16px; height: 16px; }
+.sxa-notecover { position: absolute; inset: 0; z-index: 10; cursor: crosshair; background: color-mix(in srgb, var(--ink) 6%, transparent); touch-action: none; }
+.sxa-notehint { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; border-radius: 999px; background: var(--side, #141318); color: #fff; font-weight: 650; white-space: nowrap; max-width: calc(100% - 32px); }
+.sxa-notehint svg { width: 18px; height: 18px; }
+.sxa-notehint .sxa-btn { min-height: 36px; background: transparent; color: #fff; border-color: rgba(255, 255, 255, .3); }
+.sxa-notecard, .sxa-noteedit { display: grid; gap: 10px; }
+.sxa-noteedit label { font-size: 13px; font-weight: 640; }
+.sxa-note-text { margin: 0; font-size: 15px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sxa-note-meta { margin: 0; font-size: 12.5px; color: var(--faint); }
+.sxa-note-reply { margin: 0; font-size: 14px; color: var(--muted); }
+.sxa-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* ---------- sheets ---------- */
+.sxa-ask { display: grid; gap: 12px; }
+.sxa-lead { margin: 0; font-size: 16px; line-height: 1.5; }
+.sxa-task { margin: 0; padding: 10px 12px; border-radius: var(--r-sm, 10px); background: var(--surface-2); font-size: 14.5px; overflow-wrap: anywhere; }
+.sxa-points { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap: 4px; }
+.sxa-oplist { margin: 0; padding-left: 22px; display: grid; gap: 4px; max-height: 40vh; overflow: auto; font-size: 14.5px; overflow-wrap: anywhere; }
+.sxa-file { justify-self: start; }
+
+/* ---------- panel ---------- */
+.sxa-panel { display: grid; gap: 12px; }
+.sxa-tabs { display: flex; gap: 2px; padding: 3px; border-radius: var(--r-pill, 999px); background: var(--surface-2); border: 1px solid var(--line); }
+.sxa-tabs button { flex: 1 1 0; min-height: 40px; border: 0; border-radius: var(--r-pill, 999px); background: transparent; color: var(--muted); font: inherit; font-weight: 650; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.sxa-tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-xs, 0 1px 2px rgba(0,0,0,.08)); }
+.sxa-feedhead { display: grid; gap: 8px; }
+.sxa-feedhead .sx-note { margin: 0; }
+.sxa-feedhead .btn { justify-self: start; }
+.sxa-feedhead .btn svg, .sxa-entry-acts .btn svg { width: 16px; height: 16px; }
+.sxa-empty { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.sxa-feed, .sxa-notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sxa-entry, .sxa-noteitem { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-md, 14px); background: var(--surface); }
+.sxa-entry.is-undone { opacity: .6; }
+.sxa-entry.is-person { background: var(--surface-2); }
+.sxa-entry-main { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.sxa-thumb { flex: 0 0 auto; width: 52px; height: 52px; object-fit: contain; border-radius: var(--r-xs, 6px); background: var(--surface-2); border: 1px solid var(--line); }
+.sxa-entry-text { display: grid; gap: 2px; min-width: 0; }
+.sxa-entry-text strong { font-size: 14px; font-weight: 680; line-height: 1.35; overflow-wrap: anywhere; }
+.sxa-entry-text small { font-size: 12.5px; color: var(--faint); }
+.sxa-entry-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.sxa-ops { margin: 0; max-height: 220px; overflow: auto; padding: 8px 10px; border-radius: var(--r-sm, 10px); background: var(--surface-2); font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sxa-confirm { display: grid; gap: 6px; padding: 10px; border-radius: var(--r-sm, 10px); background: color-mix(in srgb, var(--warn) 10%, var(--surface)); font-size: 13.5px; }
+.sxa-confirm p { margin: 0; }
+.sxa-noteitem.is-done { opacity: .75; }
+.sxa-console { display: grid; gap: 8px; }
+.sxa-console label { font-size: 13px; font-weight: 640; }
+.sxa-console .sx-note { margin: 0; font-size: 12.5px; overflow-wrap: anywhere; }
+.sxa-cmd { font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; min-height: 110px; resize: vertical; width: 100%; box-sizing: border-box; }
+.sxa-log { display: grid; gap: 8px; max-height: 50vh; overflow: auto; }
+.sxa-logitem { display: grid; gap: 4px; }
+.sxa-logcmd { font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--faint); overflow-wrap: anywhere; }
+.sxa-logout { margin: 0; padding: 8px 10px; max-height: 320px; overflow: auto; border-radius: var(--r-sm, 10px); background: var(--surface-2); font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sxa-pointer { transition: none !important; }
+  .sxa-ring { animation: sxa-fade 400ms linear 1200ms both !important; }
+  .sxa-bar.is-live .sxa-dot { animation: none; }
+}
+
+/* The canvas starts below the banner so the page is never hidden under it. */
+.sx-stage.sxa-has-bar .sx-scene { top: var(--sxa-bar-h, 72px); height: calc(100% - var(--sxa-bar-h, 72px)) !important; }
+.sxa-phone-only { display: none; }
+@media (max-width: 767px) {
+  .sxa-wide-only { display: none; }
+  .sxa-phone-only { display: inline-flex; }
+}
