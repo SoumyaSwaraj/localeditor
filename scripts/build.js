@@ -405,7 +405,8 @@ function buildOffline() {
 
 /* ---------- Service worker ---------- */
 /* Never shipped to the precache: build tooling, docs, tests, infra. */
-const SKIP = ['scripts', 'node_modules', 'tests', 'docs', 'infra', 'sw.js', 'README.md', 'CLAUDE.md', 'llms.txt', 'robots.txt', 'sitemap.xml', 'og.png'];
+/* agent-kit, agent-demo (a Node script) and schema are for agents and editors, not for the offline app. */
+const SKIP = ['scripts', 'node_modules', 'tests', 'docs', 'infra', 'sw.js', 'README.md', 'CLAUDE.md', 'llms.txt', 'robots.txt', 'sitemap.xml', 'og.png', 'agent-kit', 'agent-demo', 'schema'];
 function walk(dir, out = []) {
   for (const f of fs.readdirSync(dir)) {
     if (f.startsWith('.') || SKIP.includes(f)) continue;

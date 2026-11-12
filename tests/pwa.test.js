@@ -77,7 +77,9 @@ cases['worker precaches the app shell and leaves on-demand downloads out'] = asy
   const banned = /^\.\/(labs|assets\/vendor\/ort[\w-]*|assets\/fonts\/library|assets\/data\/withicons|assets\/data\/collages|assets\/photos|assets\/models|assets\/screenshots|tests|docs|scripts|infra|node_modules)\/|^\.\/(CLAUDE|README)\.md$|^\.\/sw\.js$|lucide\.json$|phosphor\.json$|emoji\.json$/;
   const bad = list.filter((u) => banned.test(u));
   h.assert(!bad.length, 'must not precache: ' + bad.slice(0, 5).join(', '));
-  h.assert(list.length > 60 && list.length < 200, 'precache size looks wrong: ' + list.length);
+  /* About 200 files in November 2026 (69 modules, makers, PDF features); the bound catches a runaway, not growth. */
+  h.assert(list.length > 60 && list.length < 280, 'precache size looks wrong: ' + list.length);
+  h.assert(!list.some((u) => /^\.\/(agent-kit|schema)\/|agent-demo/.test(u)), 'agent kit, schema and the Node demo are not precached');
   ['./assets/vendor/ort/ort-wasm-simd-threaded.wasm', './assets/models/u2netp.onnx', './labs/bg-remove/'].forEach((u) => h.assert(!list.includes(u), 'AI runtime, models and labs stay out of the precache: ' + u));
   const fs2 = require('fs');
   const bytes = list.reduce((n, u) => { const f = require('path').join(ROOT, u.endsWith('/') ? u + 'index.html' : u); return n + (fs2.existsSync(f) ? fs2.statSync(f).size : 0); }, 0);
