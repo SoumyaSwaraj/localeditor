@@ -181,7 +181,6 @@ ${MARK}
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
-<link rel="preload" href="../assets/fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="LocalEditor">
 <meta property="og:type" content="website">
@@ -193,7 +192,7 @@ ${MARK}
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
-<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
 ${ld({ '@context': 'https://schema.org', '@graph': ldGraph })}
 </head>
 <body class="le-built pg-body">

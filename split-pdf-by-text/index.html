@@ -12,7 +12,6 @@
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
-<link rel="preload" href="../assets/fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="LocalEditor">
 <meta property="og:type" content="website">
@@ -24,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
-<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Split by text — LocalEditor","url":"https://localeditor.net/split-pdf-by-text/","description":"Split one long PDF into separate files wherever a name or ID changes, or every few pages, by bookmarks, at blank pages or by file size. Downloaded as a zip.","applicationCategory":"BusinessApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Split on a label in the page text, such as “Employee ID”; click the value on the page preview to fill the label in","Or split every few pages, by top-level bookmarks, at blank pages, or by file size","Name the files from the text found, the part number or the original name","See the list of parts before anything is saved","Download everything as one zip"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"PDF and documents","item":"https://localeditor.net/pdf/"},{"@type":"ListItem","position":3,"name":"Split by text","item":"https://localeditor.net/split-pdf-by-text/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does it work on scanned pages?","acceptedAnswer":{"@type":"Answer","text":"Only where the page contains text. A scan that is just a picture has no text to find, and the preview tells you so."}},{"@type":"Question","name":"Can I check before splitting?","acceptedAnswer":{"@type":"Answer","text":"Yes. The parts are listed first, and nothing is saved until you download."}},{"@type":"Question","name":"What if the PDF has a password?","acceptedAnswer":{"@type":"Answer","text":"Unlock it first with Password-protect or unlock."}}]}]}</script>
 </head>
 <body class="le-built pg-body">

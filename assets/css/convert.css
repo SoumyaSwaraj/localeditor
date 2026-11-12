@@ -123,8 +123,8 @@ body:not(.cv-has-files) .cv-only-files { display: none !important; }
     var(--bg);
 }
 .cv-start-inner { width: min(720px, 100%); text-align: center; }
-.cv-start h1 { font-family: var(--display); font-weight: 400; font-size: clamp(34px, 5vw, 56px); line-height: 1.02; letter-spacing: -0.02em; margin: 10px 0; }
-.cv-start h1 em { font-style: italic; background: var(--aurora); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 0.08em; }
+.cv-start h1 { font-family: var(--start-title-font); font-weight: var(--start-title-weight); font-size: clamp(34px, 5vw, 56px); line-height: 1.02; letter-spacing: var(--start-title-tracking); margin: 10px 0; }
+.cv-start h1 em { font-family: var(--accent-font); font-style: var(--accent-style); font-weight: var(--accent-weight); background: var(--aurora); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 0.08em; }
 .cv-sub { color: var(--muted); font-size: 15.5px; margin: 0 auto 22px; max-width: 520px; }
 .cv-drop {
   width: 100%;

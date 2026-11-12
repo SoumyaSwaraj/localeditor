@@ -12,7 +12,6 @@
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
-<link rel="preload" href="../assets/fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="LocalEditor">
 <meta property="og:type" content="website">
@@ -24,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
-<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Collage maker — LocalEditor","url":"https://localeditor.net/collage-maker/","description":"Make photo collages from layouts and styles. Every cell is its own photo you can swap, pan and zoom. In your browser, no upload, no watermark.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Layouts sorted by how many photos you have","Styles such as polaroid wall, film strip, scrapbook and magazine","Every cell is a separate photo: drag to swap, pan and zoom inside it","Spacing, corner radius, border and background colour","Empty cells you can fill later, from your photos or a stock search you start"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Photo and design","item":"https://localeditor.net/photo/"},{"@type":"ListItem","position":3,"name":"Collage maker","item":"https://localeditor.net/collage-maker/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How many photos can a collage have?","acceptedAnswer":{"@type":"Answer","text":"Layouts go from two photos to large grids. Pick one by photo count, or start from a style and add or remove cells."}},{"@type":"Question","name":"Can I change a photo after placing it?","acceptedAnswer":{"@type":"Answer","text":"Yes. Select a cell and replace its photo; the crop, shape and border of the cell stay the same."}},{"@type":"Question","name":"What size is the finished collage?","acceptedAnswer":{"@type":"Answer","text":"Any size the studio offers, including square, portrait and story sizes for social posts, and print sizes."}}]}]}</script>
 </head>
 <body class="le-built pg-body">

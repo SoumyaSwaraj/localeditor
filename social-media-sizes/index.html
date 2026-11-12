@@ -12,7 +12,6 @@
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
-<link rel="preload" href="../assets/fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="LocalEditor">
 <meta property="og:type" content="website">
@@ -24,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
-<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Sizes for every platform — LocalEditor","url":"https://localeditor.net/social-media-sizes/","description":"Start a design at the right size for Instagram, stories, YouTube, Facebook, LinkedIn, X or Pinterest, or switch sizes later without losing quality.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Instagram post, portrait and story or reel","YouTube thumbnail, Facebook post and cover, LinkedIn post and banner","X post and header, Pinterest pin","A4, US Letter, business card, slides and phone wallpaper","Your own width and height in pixels"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Photo and design","item":"https://localeditor.net/photo/"},{"@type":"ListItem","position":3,"name":"Sizes for every platform","item":"https://localeditor.net/social-media-sizes/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Will changing the size stretch my design?","acceptedAnswer":{"@type":"Answer","text":"No. The design is resized from the original layout, and you can reset it if you do not like the result."}},{"@type":"Question","name":"Can I resize a single photo instead?","acceptedAnswer":{"@type":"Answer","text":"Yes. The image resizer tool changes the pixel size of a photo in one step."}}]}]}</script>
 </head>
 <body class="le-built pg-body">

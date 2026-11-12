@@ -16,7 +16,7 @@
 .mk-card:hover { border-color: var(--border-hover); }
 .mk-card:active { transform: scale(0.98); }
 .mk-card:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-.mk-card b { padding: 0 10px; font: 700 13.5px/1.25 "Plus Jakarta Sans", var(--font); }
+.mk-card b { padding: 0 10px; font: 700 13.5px/1.25 var(--font); }
 .mk-card small { padding: 0 10px; font-size: 12px; line-height: 1.35; color: var(--muted); }
 .mk-thumb { display: block; aspect-ratio: 4 / 5; background: var(--surface-2); margin-bottom: 6px; position: relative; overflow: hidden; }
 .mk-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity var(--dur-2, 200ms); }
@@ -42,7 +42,7 @@
 }
 .mk-sheet.is-on .mk-card-sheet { transform: none; }
 .mk-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
-.mk-head h2 { margin: 0; font: 700 18px/1.2 "Plus Jakarta Sans", var(--font); letter-spacing: -0.015em; }
+.mk-head h2 { margin: 0; font: 700 18px/1.2 var(--font); letter-spacing: -0.015em; }
 .mk-eyebrow { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
 .mk-close { min-width: 44px; min-height: 44px; }
 .mk-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }

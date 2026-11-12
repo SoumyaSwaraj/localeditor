@@ -12,7 +12,6 @@
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
-<link rel="preload" href="../assets/fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="LocalEditor">
 <meta property="og:type" content="website">
@@ -24,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
-<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Photo backgrounds — LocalEditor","url":"https://localeditor.net/photo-backgrounds/","description":"Set a photo as the background of a design, then crop, pan, zoom, flip, blur, dim and colour-adjust it on the canvas. Free and private, in your browser.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Use any photo as the background, or detach it again","Crop, pan, zoom and flip directly on the canvas","Fill, fit, stretch or tile","Blur and dim so text on top stays readable","Solid colours, gradients, patterns and textures as well"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Photo and design","item":"https://localeditor.net/photo/"},{"@type":"ListItem","position":3,"name":"Photo backgrounds","item":"https://localeditor.net/photo-backgrounds/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does blurring change my original photo?","acceptedAnswer":{"@type":"Answer","text":"No. Blur, dim and crop are settings on the background, so you can undo or change them at any time."}},{"@type":"Question","name":"Can it remove the background behind a person?","acceptedAnswer":{"@type":"Answer","text":"This page is about the background layer of a design. To paint away a flat background by hand, use the studio's background tools."}}]}]}</script>
 </head>
 <body class="le-built pg-body">
