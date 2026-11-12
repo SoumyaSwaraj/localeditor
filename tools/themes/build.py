@@ -289,6 +289,15 @@ for _t in (CLEAR, PAPER): _t['shared']['--list-frame'] = 'transparent'
 for _t in (GRAPHITE, CONTRAST): _t['shared']['--list-frame'] = 'var(--border)'
 CLEAR['shared'].update({'--list-radius': '12px', '--card-radius-sm': '12px'}); PAPER['shared'].update({'--list-radius': '12px', '--card-radius-sm': '12px'})
 GRAPHITE['shared'].update({'--list-radius': '6px', '--card-radius-sm': '6px'}); CONTRAST['shared'].update({'--list-radius': '10px', '--card-radius-sm': '10px'})
+# Slider and tab-bar legibility (pass 4)
+for _t in (CLEAR, PAPER):
+    _t['shared'].update({'--thumb': '26px', '--thumb-shadow': '0 0 0 1px rgba(0, 0, 0, 0.4), 0 3px 8px rgba(0, 0, 0, 0.2)', '--tab-label': '11px'})
+GRAPHITE['shared'].update({'--tab-label': '11px'}); CONTRAST['shared'].update({'--tab-label': '12px'}); LAPIS['shared'].update({'--tab-label': '10.5px'})
+for _t, l, d in ((LAPIS, '#5884F8', '#5884F8'), (CLEAR, 'var(--primary)', '#3A85EA'), (GRAPHITE, '#EDEDED', '#EDEDED'), (PAPER, '#5C86B3', '#5C86B3'), (CONTRAST, '#8AB4FF', '#8AB4FF')):
+    _t['light']['--slider-fill-dark'] = l; _t['dark']['--slider-fill-dark'] = d
+for _t in (CLEAR, PAPER, GRAPHITE, CONTRAST):
+    for _m in ('light', 'dark'):
+        _t[_m].update({'--tb-primary-bg': 'var(--selected-bg)', '--tb-primary-ink': 'var(--accent)', '--tb-primary-shadow': 'none'})
 THEMES = [('clear', 'Clear', CLEAR), ('lapis', 'Lapis', LAPIS), ('graphite', 'Graphite', GRAPHITE), ('paper', 'Paper', PAPER), ('contrast', 'Contrast', CONTRAST)]
 
 def block(sel, d, extra=''):
