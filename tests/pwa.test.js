@@ -217,13 +217,15 @@ cases['install button drives a captured beforeinstallprompt, once, and hides aft
     window.dispatchEvent(e);
   });
   h.assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-le-install-state')), 'prompt', 'prompt state');
-  const btn = await page.$('.le-install');
-  h.assert(btn && await btn.isVisible(), 'the shell install control is visible');
-  await btn.click();
+  /* The shell's drawer row (or the old sidebar control before the redesign). */
+  const sel = await page.evaluate(() => document.querySelector('[data-le-install]') ? '[data-le-install]' : '.le-install');
+  const shown = () => page.$eval(sel, (el) => getComputedStyle(el).display !== 'none');
+  h.assert(await shown(), 'the shell install control is available');
+  await page.evaluate((s) => document.querySelector(s).click(), sel);
   await page.waitForTimeout(200);
   h.assert.equal(await page.evaluate(() => window.__prompts), 1, 'the browser prompt opened exactly once');
   await page.evaluate(() => window.dispatchEvent(new Event('appinstalled')));
-  h.assert(!(await btn.isVisible()), 'install control hidden once installed');
+  h.assert(!(await shown()), 'install control hidden once installed');
   /* Buttons the redesigned shell adds later are bound too. */
   await page.evaluate(() => { const b = document.createElement('button'); b.setAttribute('data-le-install', ''); b.textContent = 'Install'; b.id = 'later'; document.body.appendChild(b); });
   h.assert(!(await page.isVisible('#later')), 'late [data-le-install] hidden when installed');
@@ -258,6 +260,7 @@ cases['in-app browsers are told to open the real browser; Firefox desktop is not
   const ff = await h.open(browser, base, '/', 'desktop', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0' });
   await ff.waitForFunction(() => window.LEPwa);
   h.assert.equal(await ff.evaluate(() => window.LEPwa.canInstall()), false, 'Firefox desktop cannot install, so no nudge');
+  h.assert(await ff.evaluate(() => [...document.querySelectorAll('[data-le-install]')].every((e) => getComputedStyle(e).display === 'none')), 'install entry points hidden where installing is impossible');
 };
 
 cases['the install nudge only appears after real use, and backs off after "Not now"'] = async ({ browser, base, h }) => {

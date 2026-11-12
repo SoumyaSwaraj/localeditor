@@ -109,17 +109,12 @@ const head = ({ title, desc, url, rootRel, extra = '' }) => `<!doctype html>
 <meta property="og:image" content="${SITE}assets/icons/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="${rootRel}assets/css/app.css">
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 ${extra}
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="site-header"><div class="container">
-  <a class="logo" href="${rootRel}"><span class="logo-mark">${svg('star').replace(I.star, '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>').replace('stroke-width="2"', 'stroke-width="2.4"')}</span>LocalEditor</a>
-  <span class="nav-spacer"></span>
-  <button class="btn btn-sm install-btn" type="button">✨ Install app</button>
-  <a class="btn btn-sm" href="${rootRel}#all-tools">All tools</a>
-  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-</div></header>`;
+`;
 
 const foot = (rootRel) => `<footer class="site-footer"><div class="container">
   <span>© ${new Date().getFullYear()} LocalEditor · Files stay on this device.</span>
@@ -175,11 +170,9 @@ function buildIndex() {
 .search input{padding-left:52px;min-height:58px;border-radius:20px;font-size:1.06rem;box-shadow:var(--shadow),0 0 0 1px var(--brand-glow);border-color:var(--border)}
 .search input:focus{border-color:var(--brand);box-shadow:var(--shadow-lg),0 0 0 4px var(--brand-glow)}
 .chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
-.chips a{padding:8px 16px;border-radius:999px;background:var(--surface-glass);backdrop-filter:blur(10px);border:1.5px solid var(--border);color:var(--text);font-weight:650;font-size:.88rem;transition:all .25s cubic-bezier(.34,1.56,.64,1)}
-.chips a:hover{text-decoration:none;border-color:var(--brand);background:var(--brand-soft);color:var(--brand);transform:translateY(-2px);box-shadow:var(--shadow-xs)}
 .why{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:48px 0}
-.why .card{padding:24px;transition:all .35s cubic-bezier(.34,1.56,.64,1)}
-.why .card:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg);border-color:var(--border-hover)}
+.why .card{padding:24px;transition:border-color .2s ease,box-shadow .2s ease}
+.why .card:hover{box-shadow:var(--shadow-sm);border-color:var(--border-hover)}
 .why h3{margin-bottom:6px;font-size:1.1rem}
 .why p{margin:0;color:var(--muted);font-size:.94rem;line-height:1.55}
 .why .wi{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;display:grid;place-items:center;margin-bottom:14px;box-shadow:0 4px 14px var(--brand-glow);transition:transform .3s}
@@ -202,7 +195,7 @@ function buildIndex() {
     <p class="lead">LocalEditor is a free, awwwards-worthy collection of 30 browser-based utilities for photos, PDFs, text, and developers. Files are processed locally on your device — never uploaded — and the app installs on any phone to work anywhere, anytime.</p>
     <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <label for="q" class="skip">Search tools</label><input id="q" class="input" type="search" placeholder="Search tools — compress, pdf, qr code, diff…" autocomplete="off"></div>
-    <nav class="chips" aria-label="Categories">${CATS.map((c) => `<a href="#${c.id}">${c.emoji} ${c.name.replace(' & everyday utilities', '')}</a>`).join('')}</nav>
+    <nav class="chips" aria-label="Categories">${CATS.map((c) => `<a class="chip" href="#${c.id}">${c.emoji} ${c.name.replace(' & everyday utilities', '')}</a>`).join('')}</nav>
     <div class="trust">
       <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>🆓 Free forever</span>
       <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>🔒 No sign-up</span>
@@ -218,7 +211,7 @@ function buildIndex() {
 
   <section class="card install-cta" aria-labelledby="h-install">
     <div><h2 id="h-install" style="margin-bottom:6px">🚀 Install it. Use it offline.</h2><p class="muted" style="margin:0;font-size:1.02rem">Add LocalEditor to your home screen — all 30 tools work on a flight, in the subway, anywhere without Wi-Fi.</p></div>
-    <div class="row"><button class="btn btn-primary install-btn" type="button">✨ Install app</button><a class="btn" href="about/#install">How to install</a></div>
+    <div class="row"><button class="btn btn-primary" type="button" data-le-install>Install app</button><a class="btn" href="about/#install">How to install</a></div>
   </section>
 
   <section class="why" aria-label="Why LocalEditor">

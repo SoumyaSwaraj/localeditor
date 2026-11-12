@@ -6,24 +6,30 @@
   --lp-ink: var(--ink, #1B1722);
   --lp-muted: var(--muted, #6F6A78);
   --lp-line: var(--border, #E4E0E8);
-  --lp-soft: var(--bg, #F1EFF4);
+  --lp-soft: var(--surface-2, #F3F1ED);
   --lp-gold: var(--gold, #E2B15A);
+  --lp-foil: var(--foil, linear-gradient(180deg, #F3CC7C 0%, #E2B15A 100%));
+  --lp-on: var(--amethyst, #7457F0);
+  --lp-accent: var(--accent, #5B3FD9);
+  --lp-focus: var(--focus-ring, #6A4FE8);
   --lp-gold-ink: #2A1F0A;
   --lp-ok: var(--ok, #1F8A5B);
   --lp-warn: var(--warn, #9A6408);
   --lp-err: var(--err, #B42318);
-  --lp-radius: 20px;
+  --lp-radius: var(--r-lg, 20px);
   --lp-ease: cubic-bezier(0.23, 1, 0.32, 1);
   --lp-font: var(--font, system-ui, -apple-system, "Segoe UI", sans-serif);
 }
 :root[data-theme="dark"] {
-  --lp-soft: #15131B;
-  --lp-err: #F97066;
-  --lp-ok: #47CD89;
-  --lp-warn: #F2C063;
+  --lp-soft: var(--surface-2, #211F27);
+  --lp-err: var(--err, #F07A6E);
+  --lp-ok: var(--ok, #4CC08D);
+  --lp-warn: var(--warn, #E2B15A);
 }
 
 /* Install controls hide once the app is installed; the old header button shows when installing is possible. */
+.le-pwa-no-install [data-le-install],
+.le-pwa-no-install .le-install,
 .le-pwa-installed [data-le-install],
 .le-pwa-installed .le-install,
 .le-pwa-installed .install-btn { display: none !important; }
@@ -100,9 +106,9 @@ dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fa
 .lp-btn:hover { border-color: var(--border-hover, #CFC9D6); }
 .lp-btn:active { transform: scale(0.98); }
 .lp-btn:disabled { opacity: 0.6; cursor: default; }
-.lp-btn:focus-visible, .lp-link:focus-visible, .lp-x:focus-visible, .lp-cat summary:focus-visible, .lp-sheet select:focus-visible, .lp-switch:focus-visible { outline: 2px solid var(--indigo, #4C46C4); outline-offset: 2px; }
-.lp-btn.lp-primary { background: var(--lp-gold); border-color: var(--lp-gold); color: var(--lp-gold-ink); }
-.lp-btn.lp-primary:hover { background: #E8BD6E; }
+.lp-btn:focus-visible, .lp-link:focus-visible, .lp-x:focus-visible, .lp-cat summary:focus-visible, .lp-sheet select:focus-visible, .lp-switch:focus-visible, .lp-type input:focus-visible { outline: 2px solid var(--lp-focus); outline-offset: 2px; }
+.lp-btn.lp-primary { background: var(--lp-foil); border-color: var(--foil-edge, #C9963F); color: var(--lp-gold-ink); }
+.lp-btn.lp-primary:hover { background: var(--foil-hover, #E8BD6E); }
 .lp-btn.lp-danger { background: var(--lp-err); border-color: var(--lp-err); color: #fff; }
 :root[data-theme="dark"] .lp-btn.lp-danger { color: #1B0907; }
 .lp-btn.lp-danger-ghost { color: var(--lp-err); }
@@ -110,9 +116,8 @@ dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fa
 .lp-wide { width: 100%; min-height: 50px; font-size: 15.5px; }
 .lp-link {
   min-height: 40px; min-width: 44px; padding: 0 6px;
-  border: 0; background: none; color: var(--indigo, #4C46C4); font: 600 13.5px var(--lp-font); cursor: pointer;
+  border: 0; background: none; color: var(--lp-accent); font: 600 13.5px var(--lp-font); cursor: pointer;
 }
-:root[data-theme="dark"] .lp-link { color: #A7A3FF; }
 .lp-danger-tx { color: var(--lp-err) !important; }
 .lp-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
 .lp-actions .lp-btn { flex: 1 1 0; }
@@ -126,9 +131,8 @@ dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fa
 .lp-steps > li { display: flex; gap: 12px; align-items: flex-start; }
 .lp-steps > li > div { flex: 1; min-width: 0; }
 .lp-steps p { margin: 8px 0 0; }
-.lp-steps p svg { display: inline-block; vertical-align: -4px; width: 18px; height: 18px; color: var(--indigo, #4C46C4); }
-:root[data-theme="dark"] .lp-steps p svg { color: #A7A3FF; }
-.lp-num { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--lp-gold); color: var(--lp-gold-ink); font-weight: 700; font-size: 14px; flex: none; }
+.lp-steps p svg { display: inline-block; vertical-align: -4px; width: 18px; height: 18px; color: var(--lp-ink); }
+.lp-num { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--lp-soft); color: var(--lp-ink); box-shadow: inset 0 0 0 1px var(--lp-line); font-weight: 700; font-size: 14px; flex: none; }
 .lp-art {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px; border-radius: 14px; background: var(--lp-soft); border: 1px solid var(--lp-line);
@@ -147,15 +151,15 @@ dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fa
 .lp-hot {
   color: var(--lp-ink); font-weight: 650; background: var(--lp-bg);
   border-radius: 10px; padding: 6px 10px;
-  box-shadow: 0 0 0 2px var(--lp-gold), 0 0 0 6px rgba(226, 177, 90, 0.25);
+  box-shadow: 0 0 0 2px var(--lp-on), 0 0 0 6px var(--accent-soft, rgba(116, 87, 240, 0.14));
   animation: lp-pulse 1.8s ease-in-out infinite;
 }
-@keyframes lp-pulse { 50% { box-shadow: 0 0 0 2px var(--lp-gold), 0 0 0 10px rgba(226, 177, 90, 0.08); } }
+@keyframes lp-pulse { 50% { box-shadow: 0 0 0 2px var(--lp-on), 0 0 0 10px rgba(116, 87, 240, 0.04); } }
 @media (prefers-reduced-motion: reduce) { .lp-hot { animation: none; } }
 .lp-note, .lp-sub { color: var(--lp-muted); font-size: 13.5px; margin: 10px 0 0; }
-.lp-why { list-style: none; margin: 16px 0 0; padding: 14px; display: grid; gap: 8px; border-radius: 14px; background: var(--lp-soft); font-size: 14px; }
+.lp-why { list-style: none; margin: 16px 0 0; padding: 14px 0 0; display: grid; gap: 8px; border-top: 1px solid var(--lp-line); font-size: 14px; color: var(--lp-muted); }
 .lp-why li { display: flex; gap: 10px; align-items: center; }
-.lp-why svg { color: var(--lp-ok); }
+.lp-why svg { color: var(--lp-ink); }
 
 /* ---------- Confirm ---------- */
 .lp-confirm .lp-sheet-in { padding-top: 22px; }
@@ -178,8 +182,7 @@ dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fa
 .lp-legend i, .lp-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
 .lp-free { margin-top: 16px; }
 .lp-free p { margin: 8px 0 0; text-align: center; color: var(--lp-muted); font-size: 13px; }
-.lp-plan { margin: 14px 0 4px; padding: 14px; border-radius: 16px; background: var(--brand-soft, #F8F1DE); border: 1px solid rgba(226, 177, 90, 0.45); }
-:root[data-theme="dark"] .lp-plan { background: #2A2418; }
+.lp-plan { margin: 14px 0 4px; padding: 14px; border-radius: var(--r-md, 14px); background: var(--lp-soft); border: 1px solid var(--lp-line); }
 .lp-plan > p { margin: 0; }
 .lp-sec { margin-top: 22px; }
 .lp-sec h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--lp-muted); font-weight: 700; }
@@ -206,7 +209,7 @@ dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fa
 .lp-items b { font-weight: 550; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lp-items small { color: var(--lp-muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; }
 .lp-items .lp-size { color: var(--lp-muted); font-size: 13px; }
-.lp-plan .lp-items li { border-color: rgba(226, 177, 90, 0.35); }
+
 .lp-limits { display: grid; border: 1px solid var(--lp-line); border-radius: 16px; overflow: hidden; }
 .lp-limit { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 14px; }
 .lp-limit + .lp-limit { border-top: 1px solid var(--lp-line); }
@@ -222,13 +225,13 @@ dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fa
   width: 48px; height: 28px; margin: 8px 0; border-radius: 999px; background: var(--lp-line); cursor: pointer; transition: background 0.2s;
 }
 .lp-switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: transform 0.2s var(--lp-ease); }
-.lp-switch:checked { background: var(--lp-ok); }
+.lp-switch:checked { background: var(--lp-on); }
 .lp-switch:checked::after { transform: translateX(20px); }
-.lp-persist { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; background: var(--lp-soft); }
+.lp-persist { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px; border-radius: var(--r-md, 14px); border: 1px solid var(--lp-line); }
 .lp-persist > div { flex: 1 1 200px; display: flex; flex-direction: column; }
 .lp-persist small { color: var(--lp-muted); font-size: 13px; }
 .lp-persist .lp-full { flex-basis: 100%; margin: 0; }
-.lp-badge { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--lp-bg); color: var(--lp-muted); flex: none; }
+.lp-badge { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--r-sm, 10px); background: var(--lp-soft); color: var(--lp-muted); flex: none; }
 .lp-badge.lp-ok { color: var(--lp-ok); }
 .lp-badge.lp-warn { color: var(--lp-warn); }
 .lp-dl { margin: 0; display: grid; border: 1px solid var(--lp-line); border-radius: 16px; overflow: hidden; }
@@ -246,7 +249,7 @@ dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fa
   left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px;
   padding: 12px 8px 12px 14px; border-radius: 18px;
-  background: #16141C; color: #F6F3EC; font-family: var(--lp-font); font-size: 14px; line-height: 1.4;
+  background: var(--side, #141318); color: #F6F3EC; font-family: var(--lp-font); font-size: 14px; line-height: 1.4;
   box-shadow: 0 16px 40px rgba(10, 8, 16, 0.32);
   opacity: 0; transform: translateY(12px); transition: opacity 0.22s var(--lp-ease), transform 0.22s var(--lp-ease);
 }
@@ -264,7 +267,7 @@ body.sx-body .lp-notice { bottom: calc(76px + env(safe-area-inset-bottom)); }
 .lp-notice-ac { display: flex; gap: 8px; flex: 1 1 100%; justify-content: flex-end; }
 .lp-notice-ac:empty { display: none; }
 .lp-notice .lp-btn { background: transparent; color: #F6F3EC; border-color: rgba(255, 255, 255, 0.22); }
-.lp-notice .lp-btn.lp-primary { background: var(--lp-gold); border-color: var(--lp-gold); color: var(--lp-gold-ink); }
+.lp-notice .lp-btn.lp-primary { background: var(--lp-foil); border-color: var(--foil-edge, #C9963F); color: var(--lp-gold-ink); }
 .lp-notice .lp-x { position: absolute; top: 6px; right: 6px; margin: 0; color: #CFCAD8; }
 .lp-notice .lp-x:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
 

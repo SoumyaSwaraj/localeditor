@@ -117,6 +117,7 @@
     var k = installKind();
     root.classList.toggle('le-pwa-installed', k === 'installed');
     root.classList.toggle('le-pwa-can-install', canInstall());
+    root.classList.toggle('le-pwa-no-install', !canInstall());
     root.setAttribute('data-le-install-state', k === 'installed' ? 'installed' : k === 'prompt' ? 'prompt' : 'help');
     [].forEach.call(document.querySelectorAll('.install-btn'), function (b) { b.classList.toggle('show', canInstall()); });
   }
@@ -404,10 +405,11 @@
   window.addEventListener('click', function (e) {
     var t = e.target && e.target.closest ? e.target : null;
     if (!t) return;
+    /* The shell no longer handles these; let the click bubble so a drawer can close itself. */
     var inst = t.closest('[data-le-install], .le-install, .install-btn');
-    if (inst) { e.preventDefault(); e.stopPropagation(); install(); return; }
+    if (inst) { e.preventDefault(); install(); return; }
     var st = t.closest('[data-le-storage]');
-    if (st) { e.preventDefault(); e.stopPropagation(); openStorage(); }
+    if (st) { e.preventDefault(); openStorage(); }
   }, true);
 
   /* ---------- Theme colour for the browser bar, light and dark ---------- */
@@ -1355,7 +1357,7 @@
   function persistHTML(p) {
     if (p === null || p === undefined) return '<span class="lp-badge">' + ICON.shield + '</span><div><b>Protection is not available in this browser</b><small>Back up now and then to be safe.</small></div>';
     if (p) return '<span class="lp-badge lp-ok">' + ICON.shield + '</span><div><b>Your work is protected</b><small>This browser will not clear your designs on its own, even when the device runs low on space.</small></div>';
-    return '<span class="lp-badge lp-warn">' + ICON.shield + '</span><div><b>Not protected yet</b><small>If this device runs low on space, the browser may clear LocalEditor’s data, including your designs. Ask it to keep them.</small></div><button type="button" class="lp-btn lp-btn-sm lp-primary" data-lp-persist-ask>Protect my work</button>';
+    return '<span class="lp-badge lp-warn">' + ICON.shield + '</span><div><b>Not protected yet</b><small>If this device runs low on space, the browser may clear LocalEditor’s data, including your designs. Ask it to keep them.</small></div><button type="button" class="lp-btn lp-btn-sm" data-lp-persist-ask>Protect my work</button>';
   }
   function memoryHTML(m, r) {
     var rows = [];
@@ -1457,17 +1459,19 @@
     if (old) old.remove();
     var summary = body.querySelector('.lp-free');
     if (summary) summary.after(host); else body.prepend(host);
+    var top = body.querySelector('[data-lp-free]');
+    if (top) top.classList.remove('lp-primary');
     host.scrollIntoView({ block: 'nearest' });
     plan().then(function (p) {
       if (!p.items.length) {
         host.innerHTML = '<p><b>Nothing to clean up.</b> Everything stored is in use. To free more, remove fonts, icon packs or designs below.</p><div class="lp-row-btns"><button type="button" class="lp-btn lp-btn-sm" data-x>OK</button></div>';
-        host.querySelector('[data-x]').onclick = function () { host.remove(); };
+        host.querySelector('[data-x]').onclick = function () { host.remove(); if (top) top.classList.add('lp-primary'); };
         return;
       }
       host.innerHTML = '<p><b>Free about ' + fmt(p.bytes) + '</b> by removing:</p><ul class="lp-items">' + p.items.map(function (it) {
         return '<li><div><b>' + esc(it.label) + '</b></div><span class="lp-size">' + fmt(it.bytes) + '</span></li>';
       }).join('') + '</ul><p class="lp-sub">Your designs, named versions and AI models stay.</p><div class="lp-row-btns"><button type="button" class="lp-btn lp-btn-sm" data-x>Cancel</button><button type="button" class="lp-btn lp-btn-sm lp-primary" data-go>Free ' + fmt(p.bytes) + '</button></div>';
-      host.querySelector('[data-x]').onclick = function () { host.remove(); };
+      host.querySelector('[data-x]').onclick = function () { host.remove(); if (top) top.classList.add('lp-primary'); };
       host.querySelector('[data-go]').onclick = function (e) {
         busyBtn(e.currentTarget, 'Freeing…');
         d._busy = true;
@@ -1561,6 +1565,8 @@
     window.addEventListener('hashchange', function () { if (location.hash === '#storage') openStorage(); });
     if (/[?&]erased=1/.test(location.search)) {
       history.replaceState(null, '', location.pathname);
+      /* A delete blocked by a tab that still held a database open is dropped on unload; finish it now. */
+      if (window.indexedDB) DATABASES.forEach(function (n) { try { indexedDB.deleteDatabase(n); } catch (e) {} });
       toast('Everything was erased from this device.');
     }
     idle(function () {
