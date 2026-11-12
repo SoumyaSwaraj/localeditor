@@ -177,6 +177,7 @@ The open format itself is now implemented: see `docs/FORMAT-DESIGN.md`, `schema/
 | `redact` | shape layer | `{ mode: "solid" \| "pixelate" \| "blur", amount: 0–500 (0 = automatic), color }`; affects everything drawn beneath it | `le-studio-privacy.js` |
 | `cutout` | image layer | `{ asset, enabled, model, feather: 0–50, refine, version: 1, outline: { color, width } \| null }`; `asset` is a mask image (alpha, or white = keep) | `le-studio-cutout.js` |
 | `variables` | document (`meta.studio.variables`) | `[{ key, label, type: "text" \| "image", default }]`; `{{key}}` in text | `le-design.js` (bulk create not built yet) |
+| `notes` | document (`meta.studio.notes`) | `[{ id, page, layer?, x, y, text, status: "open" \| "done", reply?, at }]`; in the file a top-level `notes` list, `page` by id or index | `le-agent.js` |
 | `remix` | document (`meta.studio.remix`) | `{ name, by }` plain text credit that travels with a template link | `le-design.js` |
 | `id` | page | Stable page id stored on the page; follows the page through delete, reorder and duplicate (the copy has none). `meta.studio.pageIds` (by position) is only read for older projects | `le-design.js`, `le-project.js` |
 

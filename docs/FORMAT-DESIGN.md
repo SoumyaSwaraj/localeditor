@@ -50,6 +50,7 @@ One design as one plain JSON file. Every page and layer opens as editable in the
 | `name` | string ≤ 160 | no | Default "Imported design". |
 | `variables` | array ≤ 50 | no | Template variables, see below. |
 | `remix` | `{ name, by }` | no | Credit for a shared template; plain text (≤ 160 / ≤ 80), `<` and `>` removed. |
+| `notes` | array ≤ 200 | no | Notes pinned for an assistant (agent mode): `{ id, page, layer?, x, y, text, status: "open" \| "done", reply?, at }`. `page` is a page index or a page id (the studio writes the id when the page has one); `x`, `y` are page pixels; `text` and `reply` are plain text ≤ 1000. Stored in `meta.studio.notes`. |
 | `pages` | array, 1–50 | yes | |
 
 Any other top-level key is ignored with a warning.
@@ -312,7 +313,7 @@ Warnings (the file still opens): `unknown-key`, `default-size`, `unknown-shape`,
 | `off-page` | A layer is completely outside the page. |
 | `missing-image` | A photo's asset is not available. |
 | `unknown-font` | A font family that does not ship with LocalEditor. |
-| `low-contrast` | Text colour against a solid page colour, a text highlight, or a solid rectangle fully behind it, under 3:1 (size ≥ 24) or 4.5:1. Photos and gradients behind text are not judged. |
+| `low-contrast` | Text colour against a solid page colour, a text highlight, or a solid rectangle fully behind it, under 3:1 (size ≥ 24) or 4.5:1. Over photos and gradients only with a renderer: `LE.design.lintRendered` (in the studio it uses the studio's renderer) draws each page once at low resolution without its text and judges the contrast reached over 80 % of the text box (20th percentile); plain `lint` accepts the same as an `opts.sample(pageIndex, box, layer) → [[r, g, b], …]` hook and otherwise skips them. |
 
 ## Fonts that ship
 
@@ -338,6 +339,10 @@ Measured on the examples (link length, characters, Chromium deflate): hello-worl
 ## API
 
 ```js
+LE.design.parseLayer(shorthandLayer, { width, height, background?, assets? }, { resolve?, link? })
+  → Promise<parse result + { layer }>   // one layer; every path is relative to the layer ("/x", "/src")
+LE.design.layerToLong(layer, { width, height, assets, studio })   → the long form of one studio layer (images by id)
+LE.design.lintRendered(project, { render?(page, scale) → Promise<canvas> }) → Promise<warnings[]>   // lint + contrast over photos and gradients
 LE.design.parse(textOrObject, { resolve?(path) → Blob|Promise<Blob>, link?: boolean, assets?: { id: meta } })
   → Promise<{ ok, project, assets: { id: Blob }, remote: [{ url, host, refs }], regenerate: [pageIndex], errors: [{ path, message }], warnings: [{ path, layer?, kind, message }] }>
 LE.design.stringify(project, { images: 'embed' | 'paths' | 'ids' | 'none', dataUris?, minify?, remix? })

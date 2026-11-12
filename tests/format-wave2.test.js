@@ -186,4 +186,72 @@ cases['schema/design-1.json lists every page and layer key the studio writes for
   h.assert.noErrors(page);
 };
 
+cases['notes: document-level list, page by id or index, round-trips through meta.studio.notes, schema lists every key'] = async ({ browser, base, h }) => {
+  const schema = require('../schema/design-1.json');
+  const page = await studio(browser, base, h);
+  const r = await page.evaluate(async () => {
+    const text = JSON.stringify({ format: 'localeditor-design', version: 1, name: 'N', pages: [{ id: 'cover', width: 600, height: 600, layers: [{ id: 'title', type: 'text', text: 'Hi', x: 10, y: 10, w: 400 }] }, { width: 600, height: 600, layers: [] }],
+      notes: [
+        { id: 'n1', page: 'cover', layer: 'title', x: 40, y: 50, text: 'Make this warmer', status: 'open', at: 1794480000000 },
+        { id: 'n2', page: 1, x: 5, y: 6, text: 'Done here', status: 'done', reply: 'Changed the colour.' }
+      ] });
+    const a = await LE.design.parse(text);
+    if (!a.ok) return { errors: a.errors };
+    const stored = a.project.meta.studio.notes;
+    const t1 = LE.design.stringify(a.project).text;
+    const b = await LE.design.parse(t1);
+    const bad = await LE.design.parse(JSON.stringify({ format: 'localeditor-design', version: 1, pages: [{ width: 100, height: 100, layers: [] }], notes: [{ id: 'x', page: 'nope', text: 't' }, { id: 'y', text: '' }] }));
+    const html = await LE.design.parse(JSON.stringify({ format: 'localeditor-design', version: 1, pages: [{ width: 100, height: 100, layers: [] }], notes: [{ id: 'z', page: 0, text: '<script>x</script>' }] }));
+    return { stored, written: JSON.parse(t1).notes, stable: b.ok && LE.design.stringify(b.project).text === t1, bad: bad.errors.map((e) => e.path).concat(html.errors.map((e) => e.path)) };
+  });
+  h.assert(!r.errors, 'parse failed: ' + JSON.stringify(r.errors));
+  h.assert.equal(JSON.stringify(r.stored.map((n) => [n.id, n.page, n.layer || '', n.status, n.reply || ''])), JSON.stringify([['n1', 0, 'title', 'open', ''], ['n2', 1, '', 'done', 'Changed the colour.']]), 'stored with page indexes');
+  h.assert.equal(r.written[0].page, 'cover', 'written with the page id when the page has one');
+  h.assert.equal(r.written[1].page, 1, 'or the index');
+  h.assert(r.stable, 'byte-stable');
+  h.assert(r.bad.includes('/notes/0/page') && r.bad.includes('/notes/1/text') && r.bad.includes('/notes/0/text'), 'bad notes refused with pointers: ' + r.bad);
+  const keys = Object.keys(schema.properties.notes.items.properties);
+  r.written.forEach((n) => Object.keys(n).forEach((k) => h.assert(keys.includes(k), 'schema lists note key ' + k)));
+  h.assert.noErrors(page);
+};
+
+cases['parseLayer and layerToLong: one layer in, one layer out, paths relative to the layer'] = async ({ browser, base, h }) => {
+  const page = await studio(browser, base, h);
+  const r = await page.evaluate(async () => {
+    const ok = await LE.design.parseLayer({ id: 'title', type: 'text', text: 'Hello', x: 'center', y: 'bottom', w: '50%', size: 60 }, { width: 1000, height: 800 });
+    const bad = await LE.design.parseLayer({ id: 'b', type: 'shape', x: 'left-ish', y: 0, w: 10, h: 10 }, { width: 100, height: 100 });
+    const remote = await LE.design.parseLayer({ id: 'p', type: 'image', src: 'https://example.com/a.jpg', x: 0, y: 0, w: 10, h: 10 }, { width: 100, height: 100 });
+    const long = LE.design.layerToLong(ok.layer, { width: 1000, height: 800, assets: {} });
+    const again = await LE.design.parseLayer(long, { width: 1000, height: 800 });
+    return { layer: ok.layer, badPaths: bad.errors.map((e) => e.path), remotePath: remote.remote[0] && remote.remote[0].refs[0].path, long, same: JSON.stringify(again.layer) === JSON.stringify(ok.layer) };
+  });
+  h.assert(r.layer && r.layer.id === 'title' && r.layer.x === 250 && r.layer.w === 500 && r.layer.y + r.layer.h === 800, 'shorthand resolved against the page: ' + JSON.stringify(r.layer));
+  h.assert.equal(r.badPaths[0], '/x', 'error path is relative to the layer');
+  h.assert.equal(r.remotePath, '/src', 'remote image path is relative to the layer');
+  h.assert(r.long.id === 'title' && r.long.type === 'text' && r.long.x === 250 && !('font' in r.long), 'long form, defaults left out: ' + JSON.stringify(r.long));
+  h.assert(r.same, 'long form reads back to the same layer');
+  h.assert.noErrors(page);
+};
+
+cases['lintRendered judges contrast over photos and gradients; plain lint does not'] = async ({ browser, base, h }) => {
+  const page = await studio(browser, base, h);
+  const r = await page.evaluate(async () => {
+    const mk = (fill) => JSON.stringify({ format: 'localeditor-design', version: 1, name: 'C', pages: [{ width: 600, height: 400,
+      background: { type: 'gradient', kind: 'linear', colors: fill, angle: 0 },
+      layers: [{ id: 'title', type: 'text', text: 'Hard to read', color: '#ffffff', size: 60, x: 20, y: 150, w: 560 }] }] });
+    const light = await LE.design.parse(mk(['#ffffff', '#f4f1ea']));
+    const dark = await LE.design.parse(mk(['#101020', '#202040']));
+    const kinds = (ws) => ws.filter((w) => w.kind === 'low-contrast').length;
+    return {
+      plain: kinds(LE.design.lint(light.project)),
+      rendered: kinds(await LE.design.lintRendered(light.project)),
+      darkRendered: kinds(await LE.design.lintRendered(dark.project))
+    };
+  });
+  h.assert.equal(r.plain, 0, 'plain lint cannot judge a gradient');
+  h.assert.equal(r.rendered, 1, 'white text on a near-white gradient is flagged');
+  h.assert.equal(r.darkRendered, 0, 'white text on a dark gradient is fine');
+  h.assert.noErrors(page);
+};
+
 module.exports = cases;

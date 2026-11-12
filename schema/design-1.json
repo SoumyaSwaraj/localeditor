@@ -32,6 +32,27 @@
         "additionalProperties": false
       }
     },
+    "notes": {
+      "description": "Notes pinned for an assistant (agent mode). Plain text.",
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "required": ["id", "text"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "page": { "description": "Page index or page id.", "oneOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "#/$defs/id" }], "default": 0 },
+          "layer": { "$ref": "#/$defs/id" },
+          "x": { "type": "number" },
+          "y": { "type": "number" },
+          "text": { "type": "string", "maxLength": 1000 },
+          "status": { "enum": ["open", "done"], "default": "open" },
+          "reply": { "type": "string", "maxLength": 1000 },
+          "at": { "description": "Time in milliseconds since 1970.", "type": "number" }
+        },
+        "additionalProperties": false
+      }
+    },
     "pages": { "type": "array", "minItems": 1, "maxItems": 50, "items": { "$ref": "#/$defs/page" } }
   },
   "$defs": {
