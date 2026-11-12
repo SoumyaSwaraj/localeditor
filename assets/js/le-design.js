@@ -1474,9 +1474,9 @@
       if (!isObj(v)) return v;
       var r = {}, gone = false;
       Object.keys(v).sort().forEach(function (k) {
-        if (k !== 'asset' || typeof v[k] !== 'string') r[k] = out(v[k]);
-        else if (ctx.images === 'none') lost = gone = true;
-        else r[k] = ctx.ref(v[k], l.id + '-asset') || v[k];
+        if (k === 'asset' && typeof v[k] === 'string') { if (ctx.images === 'none') lost = gone = true; else r[k] = ctx.ref(v[k], l.id + '-asset') || v[k]; }
+        else if (ctx.data && typeof v[k] === 'string' && ctx.data[v[k]]) r[k] = ctx.data[v[k]];   /* a data asset (LUT text), embedded */
+        else r[k] = out(v[k]);
       });
       return gone ? undefined : r;
     }
@@ -1670,7 +1670,7 @@
     var assetList = [];
     var missing = [];
     var ctx = {
-      images: images, studio: st, assets: project.assets || {}, dropped: [],
+      images: images, studio: st, assets: project.assets || {}, dropped: [], data: opts.dataAssets || null,
       ref: function (id, hint) {
         if (!id) return '';
         if (images === 'ids') return id;
@@ -1775,15 +1775,24 @@
     var st = (project.meta && project.meta.studio) || {};
     Object.keys(st.fx || {}).forEach(function (k) { if (st.fx[k] && st.fx[k].src) fxIds.push(st.fx[k].src); });
     ids = ids.concat(fxIds.filter(function (id) { return ids.indexOf(id) < 0; }));
+    /* Data assets that expert effects refer to (LUT text): embedded as data: URIs of up to 4 MB each, not as images. */
+    var dataIds = LE.project.assetIds(project).filter(function (id) { return !(project.assets && project.assets[id]) && ids.indexOf(id) < 0; }).slice(0, 32), dataUris = {};
+    var dataJobs = dataIds.map(function (id) {
+      return LE.project.getAsset(id).then(function (blob) {
+        if (!blob || /^image\//.test(blob.type || '') || blob.size > 4 * 1048576) return;
+        return blobToDataUri(new Blob([blob], { type: blob.type === 'application/octet-stream' ? blob.type : 'text/plain' })).then(function (u) { dataUris[id] = u; });
+      }).catch(function () {});
+    });
+    opts = Object.assign({}, opts, { dataAssets: dataUris });
     var uris = {};
-    return Promise.all(ids.map(function (id) {
+    return Promise.all(dataJobs.concat(ids.map(function (id) {
       var b = opts.blobs && opts.blobs[id];
       return (b ? Promise.resolve(b) : LE.project.getAsset(id).catch(function () { return null; })).then(function (blob) {
         if (!blob) return;
         if (!blob.type && project.assets[id]) blob = new Blob([blob], { type: project.assets[id].type });
         return blobToDataUri(blob).then(function (u) { uris[id] = u; });
       });
-    })).then(function () {
+    }))).then(function () {
       opts.dataUris = uris;
       var r = stringify(project, opts);
       r.bytes = new Blob([r.text]).size;

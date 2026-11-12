@@ -12,6 +12,7 @@
     history: 200, assetBytes: 80 * 1024 * 1024, totalBytes: 600 * 1024 * 1024, json: 12 * 1024 * 1024, entries: 1200
   };
   var BAD_KEYS = { __proto__: 1, constructor: 1, prototype: 1 };
+  var DATA_BYTES = 16 * 1048576;   /* one data asset (LUT text) */
   var IMAGE_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif', 'image/avif': 'avif', 'image/bmp': 'bmp' };
   var BLENDS = ['source-over', 'normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'];
   var ADJUST_KEYS = ['brightness', 'contrast', 'saturation', 'warmth', 'temperature', 'tint', 'exposure', 'highlights', 'shadows', 'vibrance', 'sharpness', 'blur', 'vignette', 'grain', 'hue',
@@ -830,6 +831,13 @@
       pages: [], activePage: 0, assets: assetsOut, sizeHistory: [],
       meta: { app: str(raw.meta && raw.meta.app, 24, APP), tier: oneOf(raw.meta && raw.meta.tier, ['older', 'modern', 'desktop'], tier()), studio: studioMeta(raw.meta && raw.meta.studio, errors) }
     };
+    /* Data assets (LUT text and other non-image files that expert effects refer to): id → { type, name, bytes }. Up to 32. */
+    var dataIn = raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : {};
+    Object.keys(dataIn).slice(0, 32).forEach(function (k) {
+      var a = dataIn[k];
+      if (!/^[a-f0-9]{64}$/.test(k) || !a || typeof a !== 'object') return;
+      (out.data = out.data || {})[k] = { id: k, type: a.type === 'application/octet-stream' ? a.type : 'text/plain', name: str(a.name, LIMITS.name, 'data'), bytes: clamp(Math.round(num(a.bytes, 0)), 0, DATA_BYTES) };
+    });
     pages.slice(0, LIMITS.pages).forEach(function (p) { var d = sanitizeDoc(p, errors); if (d) out.pages.push(d); });
     if (!out.pages.length) return { ok: false, errors: ['No page in this project could be read.'] };
     var seenPage = {};
@@ -850,7 +858,17 @@
     if (!check.ok) return Promise.reject(new Error(check.errors[0]));
     var clean = check.project;
     var ids = Object.keys(clean.assets);
-    return Promise.all(ids.map(function (id) {
+    /* Non-image assets the expert data points at (LUT text): found in the store, listed in project.data, written to data/. */
+    var extra = assetIds(clean).filter(function (id) { return !clean.assets[id]; }).slice(0, 32), dataFiles = [];
+    return Promise.all(extra.map(function (id) {
+      return get('assets', id).then(function (rec) {
+        if (!rec || !rec.blob || /^image\//.test(rec.type || rec.blob.type || '') || rec.blob.size > DATA_BYTES) return;
+        return rec.blob.arrayBuffer().then(function (buf) {
+          (clean.data = clean.data || {})[id] = { id: id, type: rec.type === 'application/octet-stream' ? rec.type : 'text/plain', name: String(rec.name || 'data').slice(0, LIMITS.name), bytes: rec.blob.size };
+          dataFiles.push({ name: 'data/' + id + '.bin', data: new Uint8Array(buf) });
+        });
+      }, function () {});
+    })).then(function () { return Promise.all(ids.map(function (id) {
       var inline = opts.blobs && opts.blobs[id];
       return (inline ? Promise.resolve(inline) : getAsset(id)).then(function (blob) {
         if (!blob) throw new Error('A photo in this design is missing from this device.');
@@ -858,7 +876,8 @@
           return { name: 'assets/' + id + '.' + (IMAGE_TYPES[clean.assets[id].type] || 'bin'), data: new Uint8Array(buf) };
         });
       });
-    })).then(function (files) {
+    })); }).then(function (files) {
+      files = files.concat(dataFiles);
       files.unshift({ name: 'project.json', data: u8(JSON.stringify(clean, null, 1)) });
       files.unshift({ name: 'mimetype', data: u8('application/vnd.localeditor.project+zip') });
       var thumb = opts.thumb ? opts.thumb.arrayBuffer().then(function (b) { files.push({ name: 'thumbnail.png', data: new Uint8Array(b) }); }) : Promise.resolve();
@@ -964,7 +983,7 @@
         var m = /^assets\/([a-f0-9]{64})\.[a-z0-9]{2,5}$/.exec(n);
         if (m) byId[m[1]] = files[n];
       });
-      var blobs = {};
+      var blobs = {}, dataBlobs = {};
       return Promise.all(Object.keys(project.assets).map(function (id) {
         var data = byId[id];
         if (!data) throw new Error('A photo is missing from this project file.');
@@ -981,7 +1000,14 @@
           throw new Error('A photo in this project file could not be read as an image.');
         });
       })).then(function () {
-        return { project: project, blobs: blobs, warnings: check.errors, thumb: files['thumbnail.png'] ? new Blob([files['thumbnail.png']], { type: 'image/png' }) : null };
+        return Promise.all(Object.keys(project.data || {}).map(function (id) {
+          var raw = files['data/' + id + '.bin'], meta = project.data[id];
+          if (!raw || raw.length > DATA_BYTES) { delete project.data[id]; return null; }
+          var blob = new Blob([raw], { type: meta.type });
+          return hash(blob).then(function (hh) { if (hh === id) { meta.bytes = blob.size; dataBlobs[id] = blob; } else delete project.data[id]; });
+        }));
+      }).then(function () {
+        return { project: project, blobs: blobs, data: dataBlobs, warnings: check.errors, thumb: files['thumbnail.png'] ? new Blob([files['thumbnail.png']], { type: 'image/png' }) : null };
       });
     });
   }
@@ -992,7 +1018,9 @@
       return Promise.all(Object.keys(res.blobs).map(function (id) {
         var a = project.assets[id];
         return putAsset({ blob: res.blobs[id], name: a.name, type: a.type, width: a.width, height: a.height, source: a.source });
-      })).then(function () { return get('projects', project.id); }).then(function (exists) {
+      }).concat(Object.keys(res.data || {}).map(function (id) {
+        return putAsset({ blob: res.data[id], name: project.data[id].name, type: project.data[id].type });
+      }))).then(function () { return get('projects', project.id); }).then(function (exists) {
         if (exists && !opts.replace) {
           project.id = uid('d');
           project.name = project.name + ' (imported)';

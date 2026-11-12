@@ -1581,6 +1581,7 @@
     l.w = r3(l.w * s); l.h = r3(l.h * s);
     l.x = r3(cx - l.w / 2); l.y = r3(cy - l.h / 2);
     if (l.shadow) { l.shadow.blur = r3(l.shadow.blur * s); l.shadow.x = r3(l.shadow.x * s); l.shadow.y = r3(l.shadow.y * s); }
+    if (window.LE && window.LE.fxBoot) window.LE.fxBoot.rescale(l, s);   /* expert effects: lengths in document pixels follow the content */
     if (l.type === 'text') {
       l.size = r3(l.size * s);
       l.letterSpacing = r3((l.letterSpacing || 0) * s);

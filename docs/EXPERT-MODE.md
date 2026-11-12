@@ -47,7 +47,7 @@ layer.mask = {                    // also usable per fx entry
   kind 'face'    { part: 'skin'|'eyes'|'lips'|'teeth'|'brows'|'under-eyes' }   from layer.maps.face
 
 layer.transform = { quad: [[x,y],[x,y],[x,y],[x,y]] }        // perspective and distort, in page units
-layer.retouch   = { asset, version }                         // RGBA overlay at source resolution (heal, clone, dodge, burn)
+layer.retouch   = { asset, version }                         // reserved for a baked-overlay cache only; see the note below
 layer.maps      = { depth: { asset, model, version }, normals: {…}, face: { landmarks, parts: { asset }, model, version } }
 layer.raw       = { profile, wb: { temp, tint }, exposure, … }  // develop settings when the source is a RAW or HDR set
 ```
@@ -56,7 +56,9 @@ Coordinates inside masks and effects are fractions of the layer box (0–1) unle
 
 ## Render order
 
-For each layer: source → RAW develop → retouch overlay → geometry (lens, liquify, perspective) → `fx` stack → cut-out and layer mask → silhouette effects that need the layer's alpha and the scene behind it (shadows, reflections, glow, light wrap) → blend onto the page. Then adjustment layers in order. Then the output transform to the display or export colour space, with dithering to 8 bits.
+Retouching data (heal and clone spots, dodge and burn strokes, liquify meshes, face anchors) lives in effect parameters of type `data`, bounded number lists validated like every other parameter (`docs/FX-AUTHORING.md`, "Parameter types"). It is part of the `fx` stack, so it is ordered, masked, undone and exported like any effect. `layer.retouch` stays reserved for a cache of a baked result and is never the source of truth.
+
+For each layer: source → RAW develop → cut-out → geometry (lens, liquify, perspective) → `fx` stack (retouching included) → layer mask → silhouette effects that need the layer's alpha and the scene behind it (shadows, reflections, glow, light wrap) → blend onto the page. Then adjustment layers in order. Then the output transform to the display or export colour space, with dithering to 8 bits.
 
 Effects declare `space: 'linear' | 'display'`; the renderer converts between them once per run of same-space effects.
 

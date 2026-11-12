@@ -1,7 +1,7 @@
 # Effect reference
 
-Every registered effect, its parameters and a paste-ready `fx` entry. The live, authoritative version is `LE.fx.describe()` (and
-`LEAgent.catalog('fx')`); this file explains the models and the editor conventions behind the numbers. Each feature pack has its own
+Every registered effect, its parameters and a paste-ready `fx` entry. The live, authoritative version is `LE.fx.describe()` for the index and `LE.fx.describe(id)` for one effect (`LEAgent.catalog('fx')`,
+`LEAgent.catalog('fx', id)`, `localeditor catalog fx [id]`); this file explains the models and the editor conventions behind the numbers. Each feature pack has its own
 section.
 
 ## Colour grading pack (`grade`, step X1)

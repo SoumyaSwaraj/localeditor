@@ -11,27 +11,47 @@ const STARTER = ['exposure', 'contrast', 'highlights-shadows', 'levels', 'curves
 cases['registry: the starter set is registered, described and declared to LE.support'] = async ({ browser, base, h }) => {
   const page = await fx.page(browser, base);
   const r = await page.evaluate(() => {
-    const FX = window.LE.fx, d = { effects: FX.describe(), schema: FX.schema() };
+    const FX = window.LE.fx, index = FX.describe(), full = FX.defs(), v0 = FX.version();
+    const sameObjects = FX.describe('exposure') === FX.describe('exposure') && FX.defs() === full && FX.describe() === index;
+    let frozen = false; try { 'use strict'; full[0].params.x = 1; frozen = !('x' in full[0].params); } catch (e) { frozen = true; }
+    FX.register({ id: 'test-late', version: 1, params: {}, passes: function () {} });
     return {
-      list: FX.list(), describe: d, isArray: Array.isArray(FX.describe()), defaults: FX.defaults('levels'), unknown: FX.get('nope'),
+      list: FX.list(), index, full, schema: FX.schema(), UI: FX.UI, defaults: FX.defaults('levels'), unknown: FX.get('nope'), none: FX.describe('nope'),
+      one: FX.describe('gaussian-blur'), group: FX.describe({ group: 'light' }).map((e) => e.id), section: FX.describe({ section: 'Optics' }).map((e) => e.id), ids: FX.describe({ ids: ['grain', 'levels'] }).map((e) => e.id),
+      sameObjects, frozen, moved: FX.version() > v0 && FX.describe().length === index.length + 1 && FX.defs() !== full,
       support: FX.list().filter((id) => (window.LE.support && window.LE.support.get ? !!window.LE.support.get('fx.' + id) : (window.LE_SUPPORT_DEFS || []).some((x) => x.id === 'fx.' + id))).map((id) => 'fx.' + id),
-      json: JSON.stringify(d).length, hasFns: JSON.stringify(d).indexOf('function') >= 0
+      sizes: { index: JSON.stringify(index).length, schema: JSON.stringify(FX.schema()).length, largest: full.map((e) => [JSON.stringify(e).length, e.id]).sort((a, b) => b[0] - a[0])[0] },
+      hasFns: JSON.stringify(full).indexOf('function (') >= 0
     };
   });
   STARTER.forEach((id) => h.assert(r.list.indexOf(id) >= 0, 'missing effect ' + id));
-  h.assert(r.unknown === null && r.defaults.gamma === 1 && r.defaults.inWhite === 1, 'defaults');
-  r.describe.effects.forEach((e) => {
-    h.assert(e.name && e.group && e.version >= 1 && (e.space === 'linear' || e.space === 'display'), e.id + ' basics');
+  h.assert(r.unknown === null && r.none === null && r.defaults.gamma === 1 && r.defaults.inWhite === 1, 'defaults');
+  /* The words of the ui grammar come from one exported constant, LE.fx.UI. */
+  const UI = r.UI;
+  r.full.forEach((e) => {
+    h.assert(e.name && e.group && e.version >= 1 && UI.spaces.indexOf(e.space) >= 0, e.id + ' basics');
     h.assert(e.ui && e.ui.section && e.agent && e.agent.summary && e.agent.example && e.agent.example.type === e.id, e.id + ' needs ui and agent descriptors');
     h.assert(e.support.needs.indexOf('webgl2') >= 0, e.id + ' declares what a device needs');
-    Object.keys(e.params).forEach((k) => h.assert(r.describe.schema.paramTypes.indexOf(e.params[k].type) >= 0 && e.params[k].label, e.id + '.' + k));
-    h.assert(['Light', 'Colour', 'Curves', 'Colour mixer', 'Colour grading', 'Detail', 'Optics', 'Geometry', 'Effects', 'Shadows & reflections', 'Compositing', 'Retouch'].indexOf(e.ui.section) >= 0, e.id + ' uses a workspace section name: ' + e.ui.section);
-    (e.ui.controls || []).forEach((c) => h.assert(typeof c === 'string' ? !!e.params[c] : (c.heading || (c.control === 'mixer' ? Object.keys(c.rows || {}).every((r) => c.rows[r].every((k) => !!e.params[k])) : (c.control === 'wheels' || c.control === 'line') ? (c.params || []).length > 0 && c.params.every((k) => !!e.params[k]) : !!e.params[c.param])), e.id + ' ui.controls follows docs/EXPERT-UI.md: ' + JSON.stringify(c)));
+    Object.keys(e.params).forEach((k) => h.assert(r.schema.paramTypes.indexOf(e.params[k].type) >= 0 && e.params[k].label, e.id + '.' + k));
+    h.assert(UI.sections.indexOf(e.ui.section) >= 0, e.id + ' uses a workspace section name: ' + e.ui.section);
+    (e.ui.controls || []).forEach((c) => {
+      const has = (k) => !!e.params[k];
+      const ok = typeof c === 'string' ? has(c) : c.heading ? true : c.action ? r.schema.actions.some((a) => a.id === c.action) : c.row ? c.row.every((k) => has(typeof k === 'string' ? k : k.param)) :
+        c.control === 'mixer' ? Object.keys(c.rows || {}).every((row) => c.rows[row].every(has)) : UI.composite.indexOf(c.control) >= 0 ? (c.params || []).length > 0 && c.params.every(has) :
+        has(c.param) && (!c.control || UI.controls.indexOf(c.control) >= 0);
+      h.assert(ok, e.id + ' ui.controls follows docs/EXPERT-UI.md: ' + JSON.stringify(c));
+    });
   });
-  h.assert(r.describe.effects.find((e) => e.id === 'gaussian-blur').spatial === true && r.describe.effects.find((e) => e.id === 'exposure').spatial === false, 'spatial flag');
-  h.assert(r.isArray, 'describe() is an array of registrations');
-  h.assert(r.describe.schema.maskKinds.length === 8 && r.describe.schema.blends.indexOf('soft-light') >= 0 && r.describe.schema.mask.parts[0].feather === 0.25, 'schema() describes mask kinds and blends');
-  h.assert(!r.hasFns && r.json < 400000 /* temporary: the catalogue becomes an index plus per-effect detail in renderer hardening pass 1 */, 'describe() is plain data');
+  h.assert(r.one.spatial === true && r.full.find((e) => e.id === 'exposure').spatial === false, 'spatial flag');
+  /* describe() is a compact index; detail is asked for by id, group or section. The caps are on the index and on any one effect. */
+  h.assert(Array.isArray(r.index) && r.index.length === r.full.length && r.index.every((e) => e.id && e.name && e.group && e.section && e.summary && Object.keys(e).length === 5 && e.summary.length <= 140), 'describe() is an index of { id, name, group, section, summary }');
+  h.assert(r.one.id === 'gaussian-blur' && r.one.params.radius.unit === 'px' && r.group.indexOf('exposure') >= 0 && r.group.indexOf('grain') < 0 && r.section.indexOf('gaussian-blur') >= 0 && r.section.indexOf('exposure') < 0 && r.ids.sort().join() === 'grain,levels', 'describe(id), describe({ group }), describe({ section }), describe({ ids })');
+  h.assert(r.sizes.index < 60000 && r.sizes.index / r.index.length < 260, 'the index stays small: ' + r.sizes.index + ' characters for ' + r.index.length + ' effects');
+  h.assert(r.sizes.largest[0] < 12000, 'no single effect description is over 12,000 characters: ' + r.sizes.largest);
+  h.assert(r.sizes.schema < 6000, 'schema() stays small: ' + r.sizes.schema);
+  h.assert(r.sameObjects && r.frozen && r.moved, 'descriptions are shared and frozen, and LE.fx.version() moves when the registry changes: ' + JSON.stringify([r.sameObjects, r.frozen, r.moved]));
+  h.assert(r.schema.maskKinds.length === 9 && r.schema.blends.indexOf('soft-light') >= 0 && r.schema.mask.parts[0].feather === 0.25 && r.schema.limits.params === 48, 'schema() describes mask kinds, blends and limits');
+  h.assert(!r.hasFns, 'descriptions are plain data');
   STARTER.forEach((id) => h.assert(r.support.indexOf('fx.' + id) >= 0, 'LE.support definition for ' + id));
   h.assert.noErrors(page);
 };
@@ -48,7 +68,7 @@ cases['validate: schema clamps, drops and reports; unknown types never run'] = a
     FX.register({ id: 'test-shapes', version: 1, params: { w: { type: 'wheel' }, b: { type: 'bands' }, pt: { type: 'point' }, n: { type: 'number', min: 0, max: 1, ui: { gradient: 'hue' } } }, passes: function () {} });
     const sh = FX.validate({ type: 'test-shapes', p: { w: { h: 400, amount: 2, l: -3 }, b: [1, 2, 3, 4, 5, 6, 7, 800], pt: [0.25, 5] } });
     const sh2 = FX.validate({ type: 'test-shapes', p: { w: { h: 90, a: 0.5, l: 0.25 }, b: new Array(8).fill({ h: -10, s: 20, l: 300 }), pt: { x: 0.1, y: 0.2 } } });
-    const shDef = [FX.defaults('test-shapes'), FX.describe().find((e) => e.id === 'test-shapes').params.n.ui];
+    const shDef = [FX.defaults('test-shapes'), FX.describe('test-shapes').params.n.ui];
     const d = FX.validate({ type: 'drop-shadow', p: { color: 'javascript:alert(1)', x: Infinity, blur: NaN, opacity: '1' }, mask: { on: 'yes', invert: 1, parts: [{ kind: 'radial', rx: -5, feather: 9 }, { kind: 'evil' }, { kind: 'asset', asset: '../../etc' }] } });
     const res = FX.resolve([{ type: 'exposure', p: { ev: 1 } }, { type: 'not-registered', p: { a: 1 } }, { type: 'contrast', on: false }, { type: 'grain', amount: 0 }]);
     return { a, b, c, c2, c3, sh, sh2, shDef, d, resolved: res.entries.map((e) => e.type), skipped: res.skipped };

@@ -151,7 +151,7 @@
     },
     cpu: function (img, p) { cpuTable(img, function (v) { return Math.pow(M.clamp((v - p.inBlack) / Math.max(p.inWhite - p.inBlack, 1e-4), 0, 1), 1 / p.gamma) * (p.outWhite - p.outBlack) + p.outBlack; }); },
     support: GPU,
-    ui: { section: 'Light', order: 40, controls: ['inBlack', 'inWhite', 'gamma', { heading: 'Output' }, 'outBlack', 'outWhite'] },
+    ui: { section: 'Light', order: 40, controls: ['inBlack', 'inWhite', 'gamma', { heading: 'Output' }, 'outBlack', 'outWhite', { action: 'grade.auto', label: 'Auto tone and balance' }] },
     agent: {
       summary: 'Sets the black point, white point and mid-tone gamma, then the output range.',
       tips: ['Read percentiles from LE.fx.analyze: inBlack = luma p1, inWhite = luma p99 stretches a flat picture to the full range.', 'gamma above 1 brightens mid-tones.'],

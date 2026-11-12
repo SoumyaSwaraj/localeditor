@@ -410,7 +410,7 @@
       "properties": { "src": { "$ref": "#/$defs/imageSrc" }, "kind": { "enum": ["duotone", "outline", "blurbg"] } }
     },
     "fxStack": {
-      "description": "Effects, first runs first. Types and parameters come from the effect registry: LE.fx.describe() in the studio, docs/FX-AUTHORING.md for the contract.",
+      "description": "Effects, first runs first. Types and parameters come from the effect registry: LE.fx.describe() lists them and LE.fx.describe(id) gives one in full, in the studio; docs/FX-AUTHORING.md has the contract.",
       "type": "array",
       "maxItems": 32,
       "items": { "$ref": "#/$defs/fxEntry" }
@@ -425,7 +425,7 @@
         "amount": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 },
         "blend": { "enum": ["normal", "multiply", "screen", "overlay", "soft-light", "hard-light", "darken", "lighten", "difference", "color", "luminosity"], "default": "normal" },
         "mask": { "oneOf": [{ "$ref": "#/$defs/layerMask" }, { "type": "null" }] },
-        "p": { "description": "The effect's parameters. Unknown keys are dropped and out-of-range values clamped, with a warning.", "type": "object", "maxProperties": 24 }
+        "p": { "description": "The effect's parameters. Unknown keys are dropped and out-of-range values clamped, with a warning. A value may be a flat list of up to 4096 numbers (strokes, spots, mesh points). A LUT parameter holds an asset id, or in a file with embedded images a data:text/plain;base64 URI of up to 4 MB.", "type": "object", "maxProperties": 48 }
       },
       "additionalProperties": false
     },
@@ -440,7 +440,7 @@
       "type": "object",
       "required": ["kind"],
       "properties": {
-        "kind": { "enum": ["asset", "linear", "radial", "luma", "color", "subject", "depth", "face"] },
+        "kind": { "enum": ["asset", "linear", "radial", "luma", "color", "subject", "depth", "face", "segment"] },
         "mode": { "enum": ["add", "subtract", "intersect"], "default": "add" },
         "invert": { "type": "boolean", "default": false },
         "feather": { "description": "0–1. radial: the soft part of the radius. linear: 0 is a straight ramp, 1 an eased one. Other kinds ignore it.", "type": "number", "minimum": 0, "maximum": 1, "default": 0.25 },
@@ -452,7 +452,8 @@
         "min": { "type": "number", "minimum": 0, "maximum": 1 }, "max": { "type": "number", "minimum": 0, "maximum": 1 }, "soft": { "type": "number", "minimum": 0, "maximum": 1 },
         "h": { "type": "number", "minimum": 0, "maximum": 360 }, "s": { "type": "number", "minimum": 0, "maximum": 1 }, "l": { "type": "number", "minimum": 0, "maximum": 1 }, "range": { "type": "number", "minimum": 0, "maximum": 1 },
         "near": { "type": "number", "minimum": 0, "maximum": 1 }, "far": { "type": "number", "minimum": 0, "maximum": 1 },
-        "part": { "enum": ["skin", "eyes", "lips", "teeth", "brows", "under-eyes"] }
+        "part": { "enum": ["skin", "eyes", "lips", "teeth", "brows", "under-eyes", "inner-mouth"] },
+        "class": { "description": "For kind segment: which class of layer.maps.segments.", "enum": ["person", "hair", "skin", "clothes", "background"] }
       },
       "additionalProperties": false
     }

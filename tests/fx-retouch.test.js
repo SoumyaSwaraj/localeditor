@@ -36,7 +36,7 @@ const P07 = { photo: 'people-07', crop: [0.32, 0.18, 0.4, 0.48], size: 256, face
 cases['registry: every retouch effect is registered with a complete schema, a valid section and an agent description'] = async ({ browser, base, h }) => {
   const page = await open(browser, base);
   const r = await page.evaluate((ids) => {
-    const FX = window.LE.fx, d = FX.describe(), sections = ['Retouch', 'Geometry'];
+    const FX = window.LE.fx, d = FX.defs(), sections = ['Retouch', 'Geometry'];
     return ids.map((id) => {
       const e = d.find((x) => x.id === id);
       if (!e) return { id, missing: true };

@@ -68,7 +68,7 @@ function depthCanvas(w, h, fn) {
 cases['registry: every creative effect has a complete schema, workspace descriptor and agent description'] = async ({ browser, base, h }) => {
   const page = await fx.page(browser, base);
   const r = await page.evaluate(() => {
-    const FX = window.LE.fx, CR = FX.creative, d = FX.describe().filter((e) => CR.ids.indexOf(e.id) >= 0);
+    const FX = window.LE.fx, CR = FX.creative, d = FX.defs().filter((e) => CR.ids.indexOf(e.id) >= 0);
     const ex = d.map((e) => ({ id: e.id, v: FX.validate(e.agent.example) }));
     const presets = Object.keys(CR.presets).map((k) => ({ k, name: CR.presets[k].name, summary: CR.presets[k].summary, v: CR.look(k).map((en) => FX.validate(en)) }));
     return { d, ex, presets, ids: CR.ids, support: CR.ids.filter((id) => window.LE.support && window.LE.support.get ? !!window.LE.support.get('fx.' + id) : true), json: JSON.stringify(d).length };

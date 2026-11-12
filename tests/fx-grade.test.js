@@ -70,19 +70,19 @@ const cases = {};
 cases['registry: every grading effect is registered, described for agents, within the limits, and declared to LE.support'] = async ({ browser, base, h }) => {
   const page = await fx.page(browser, base);
   const r = await page.evaluate((ids) => {
-    const FX = window.LE.fx, d = FX.describe();
+    const FX = window.LE.fx, d = FX.defs();
     return ids.map((id) => {
       const e = d.find((x) => x.id === id);
       if (!e) return { id, missing: true };
       const ex = FX.validate(e.agent.example);
       return { id, params: Object.keys(e.params).length, section: e.ui.section, spatial: e.spatial, summary: (e.agent.summary || '').length, tips: (e.agent.tips || []).length, exOk: ex.ok && ex.warnings.length === 0, warn: ex.warnings, support: !!(window.LE.support && window.LE.support.get && window.LE.support.get('fx.' + id)), json: JSON.stringify(e).length, ref: typeof FX.grade.ref[id] === 'function',
-        controls: (e.ui.controls || []).every((c) => typeof c === 'string' ? !!e.params[c] : (c.heading || c.control === 'wheels' || c.control === 'mixer' || !!e.params[c.param])) };
+        controls: (e.ui.controls || []).every((c) => typeof c === 'string' ? !!e.params[c] : (c.heading || c.action || c.control === 'wheels' || c.control === 'mixer' || !!e.params[c.param])) };
     }).concat([{ total: JSON.stringify(d).length, grade: JSON.stringify(d.filter((x) => ids.indexOf(x.id) >= 0)).length }]);
   }, GRADE);
   const total = r.pop();
   r.forEach((e) => {
     h.assert(!e.missing, e.id + ' is registered');
-    h.assert(e.params <= 24, e.id + ' has at most 24 parameters (the document sanitiser keeps 24 keys): ' + e.params);
+    h.assert(e.params <= 48, e.id + ' has at most 48 parameters (the document sanitiser keeps 48 keys): ' + e.params);
     h.assert(['Light', 'Colour', 'Curves', 'Colour mixer', 'Colour grading'].indexOf(e.section) >= 0, e.id + ' section ' + e.section);
     h.assert(e.spatial === false, e.id + ' is a colour operation, not spatial');
     h.assert(e.summary > 60 && e.tips >= 3, e.id + ' has an agent summary and recipes');
@@ -91,7 +91,7 @@ cases['registry: every grading effect is registered, described for agents, withi
     h.assert(e.ref, e.id + ' has a CPU reference');
     h.assert(e.controls, e.id + ' ui.controls names real params');
   });
-  h.assert(total.grade < 46000, 'the pack\'s part of describe() stays compact: ' + total.grade);
+  h.assert(total.grade < 60000, 'the pack\'s full registrations stay reasonable: ' + total.grade);
   h.assert.noErrors(page);
 };
 
@@ -189,7 +189,7 @@ cases['ops: grading entries round-trip through fx.add, fx.update, fx.reorder and
     const FX = window.LE.fx, O = FX.ops, out = [];
     let doc = { v: 1, width: 800, height: 600, layers: [{ id: 'a', type: 'image', x: 0, y: 0, w: 400, h: 300 }] };
     const made = [];
-    ids.forEach((id) => { const s = O.apply(doc, { op: 'fx.add', layer: 'a', entry: FX.describe().find((d) => d.id === id).agent.example }); out.push([id, s.ok, s.warnings.length]); doc = s.doc; made.push(s.id); });
+    ids.forEach((id) => { const s = O.apply(doc, { op: 'fx.add', layer: 'a', entry: FX.defs().find((d) => d.id === id).agent.example }); out.push([id, s.ok, s.warnings.length]); doc = s.doc; made.push(s.id); });
     let s = O.apply(doc, { op: 'fx.update', layer: 'a', id: made[0], p: { lights: 999 } });
     const clamped = s.doc.layers[0].fx[0].p.lights; doc = s.doc;
     s = O.apply(doc, { op: 'fx.update', layer: 'a', id: made[7], p: { shadows: { h: 10, a: 5, l: 0 } } });
@@ -357,7 +357,7 @@ cases['sliders: every grading slider changes the picture smoothly and in one dir
     /* For each number slider: walk it from default to max, measure how a probe colour moves. Steps must be small (smooth) and,
        projected on the first step's direction, never go back (monotone). */
     const skip = { 'gradient-map': 1, lut: 1, 'bw-mix': 1 };
-    FX.describe().filter((d) => G.ref[d.id] && d.id.indexOf('-') !== 0 && !skip[d.id] && ['exposure', 'contrast', 'highlights-shadows', 'levels', 'curves', 'white-balance', 'saturation'].indexOf(d.id) < 0).forEach((d) => {
+    FX.defs().filter((d) => G.ref[d.id] && d.id.indexOf('-') !== 0 && !skip[d.id] && ['exposure', 'contrast', 'highlights-shadows', 'levels', 'curves', 'white-balance', 'saturation'].indexOf(d.id) < 0).forEach((d) => {
       Object.keys(d.params).filter((k) => d.params[k].type === 'number' && !/^(split|center|width|chroma|pos|count)/.test(k)).forEach((k) => {
         const s = d.params[k], steps = 24, base = FX.defaults(d.id);
         if (d.id === 'gradient-map') base.strength = 100;
@@ -399,11 +399,11 @@ cases['workspace: the develop panel builds every grading effect from its registr
   const r = await page.evaluate((ids) => {
     const X = window.LE.expert, FX = window.LE.fx, sc = window.LEStudio.scene, layer = sc.layers()[0].id, out = {};
     ids.forEach((id) => {
-      const def = FX.describe().find((d) => d.id === id), B = X.panel.bindFirst(def, () => layer), pn = X.panel.build(def, B);
+      const def = FX.defs().find((d) => d.id === id), B = X.panel.bindFirst(def, () => layer), pn = X.panel.build(def, B);
       out[id] = { controls: pn.items.length, notes: pn.el.querySelectorAll('.xp-note').length };
       pn.destroy();
     });
-    const cg = FX.describe().find((d) => d.id === 'color-grading'), B = X.panel.bindFirst(cg, () => layer);
+    const cg = FX.defs().find((d) => d.id === 'color-grading'), B = X.panel.bindFirst(cg, () => layer);
     B.write('shadows', { h: 200, a: 0.3, l: 0 }, 'k1', false);
     out.written = (sc.layer(layer).fx || []).map((e) => e.type + ':' + JSON.stringify(e.p.shadows));
     return out;

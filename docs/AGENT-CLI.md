@@ -31,7 +31,7 @@ le apply poster.ledesign.json fix.json           # fix what check or your eyes f
 3. **Read the problems.** `apply` prints *new* problems; `check` prints all of them with JSON pointers:
    `overflow` (text taller or wider than its box), `clipped` (text past the page edge), `off-page`, `low-contrast`, `missing-image`, `remote-image`, `unknown-font`, `unknown-icon`, `unknown-shape`, `shrink-needs-height`, `refused-path`.
 4. **Look.** `le render` (MCP `design_render` returns the picture to you directly). Check hierarchy, spacing and alignment — lint does not see taste.
-5. **Use only what exists.** `le catalog fonts|icons|shapes|recipes|makers|layouts|sizes [query]`.
+5. **Use only what exists.** `le catalog fonts|icons|shapes|recipes|makers|layouts|sizes|fx [query]`. `le catalog fx` lists the expert effects, `le catalog fx <id>` prints one in full (parameters, ranges, an example entry), `le catalog fx schema` the blends, mask kinds and limits.
 
 ## Operations
 
@@ -58,6 +58,11 @@ A batch is a JSON list. Pages are counted from 0 or named by page id; without `p
 | `recipe` | `id`, `recipe`, `strength` | `recipe: null` removes the look. |
 | `collage` | `layout` / `template` / `count`, `spacing`, `margin`, `radius`, `border`, `aspect` | Lays out the page's photo slots. |
 | `make` | `maker`, `values`, `style`, `size`, `newPage` | Replaces the current page with a quick maker's design. |
+| `fx.add` | `layer`, `entry: { type, p }`, `index` | Adds an expert effect to the layer's stack (non-destructive; `render` shows it). Types and parameters: `le catalog fx`. |
+| `fx.update` / `fx.remove` / `fx.reorder` | `layer`, `id` (+ `p`, `on`, `amount`, `blend`, `mask` / `index`) | `id` is the entry id, or its type when the layer has one of that kind. `p` is merged. |
+| `mask.set` | `layer`, `mask`, `fx` | Limits one effect (`fx`: entry id or type) or, without `fx`, the layer to an area. `mask: null` clears. |
+| `adjust.add` | `fx: [ … ]`, `above`, `name`, `clip`, `x y w h` | An adjustment layer over everything beneath it. |
+| `transform.set` | `layer`, `quad` | Perspective: four corners in page units. `quad: null` clears. |
 | `note.add` / `note.resolve` | `text`, `layer` / `id`, `reply`, `status` | Notes live in the file under `notes`. |
 | `doc.update` | `set` | `name variables remix notes`. |
 

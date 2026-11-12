@@ -23,7 +23,8 @@ Read and check
   check <file>               Problems: overflowing text, off-page layers, low contrast, missing images, unknown fonts
                              (exit 1 if any)  [--max-warnings n]
   render <file>              Draw a page  [--page n|id|all] [-o out.png] [--scale 1] [--format png|jpg|webp|pdf]
-  catalog <kind> [query]     fonts | icons | shapes | recipes | makers | layouts | sizes
+  catalog <kind> [query]     fonts | icons | shapes | recipes | makers | layouts | sizes | fx
+                             (fx: expert effects; the query is a word, an effect id, "schema" or "actions")
 
 Work with a person
   link <file>                Open the design in your browser, live: file changes appear in the tab, tab edits go to the file
@@ -54,7 +55,9 @@ Examples:
   le apply post.ledesign.json '[{"op":"update","id":"title","set":{"color":"#E0B354"}}]'
   le apply post.ledesign.json '[{"op":"remove","id":"title"}]'
 Operations: add update remove reorder group ungroup align distribute page.add page.remove page.resize page.background
-  page.update page.move replace rename text.replace image.fill recipe collage make note.add note.resolve doc.update`,
+  page.update page.move replace rename text.replace image.fill recipe collage make note.add note.resolve doc.update
+  fx.add fx.update fx.remove fx.reorder mask.set adjust.add transform.set   (expert effects: localeditor catalog fx)
+  le apply photo.ledesign.json '[{"op":"fx.add","layer":"hero","entry":{"type":"exposure","p":{"ev":0.4}}}]'`,
   render: `localeditor render <file> [--page 0|<page id>|all] [-o out.png] [--scale 1] [--format png|jpg|webp|pdf] [--transparent]
 Pages are counted from 0. Several pages with -o out.png write out-0.png, out-1.png, … (PDF: one file).
 Without -o the image goes to stdout when it is not a terminal, else to <design>.png.`,
@@ -64,7 +67,7 @@ with JSON pointers and layer ids. Exit 1 when there are more than --max-warnings
   validate: 'localeditor validate <file…>   (- reads stdin)\nRefuses unsafe or malformed files with { path, message } errors.',
   show: 'localeditor show <file> [--full]\nAn outline of pages and layers; --full prints the normalised file.',
   find: 'localeditor find <file> <query>\nLayers whose id, name, type, text, font or image path contains the query.',
-  catalog: 'localeditor catalog fonts|icons|shapes|recipes|makers|layouts|sizes [query]',
+  catalog: 'localeditor catalog fonts|icons|shapes|recipes|makers|layouts|sizes|fx [query]\nfx lists the expert effects; "catalog fx <effect id>" prints one in full (parameters, ranges, an example entry), "catalog fx schema" the blends, mask kinds and limits.',
   make: `localeditor make <maker-id> -o <file> --values '<json>' [--style <id>] [--size <id>] [--force]
 See the makers and their inputs: localeditor catalog makers`,
   convert: 'localeditor convert <in> <out> [--images embed|assets] [--force]\n.ledesign.json -> .leproject, .leproject -> .ledesign.json, or embedded images <-> an assets/ folder.',
@@ -239,15 +242,17 @@ const COMMANDS = {
   },
   async catalog(args) {
     const [kind, ...q] = args._;
-    if (!kind) throw usage('localeditor catalog fonts|icons|shapes|recipes|makers|layouts|sizes [query]');
+    if (!kind) throw usage('localeditor catalog fonts|icons|shapes|recipes|makers|layouts|sizes|fx [query]');
     return withService(args, async (svc) => {
       const r = await svc.catalog(kind, q.join(' '), { limit: args.limit ? Number(args.limit) : 60 });
       out(args, r, (x) => {
+        if (x.effect || x.schema || x.actions) return JSON.stringify(x.effect || x.schema || x.actions, null, 1);
         const items = x.items || [];
         const line = (i) => kind === 'fonts' ? i.family + '  (' + i.category + '; ' + i.weights.join(', ') + ')'
           : kind === 'sizes' ? i.preset.padEnd(28) + ' ' + i.width + '×' + i.height + '  ' + i.group
           : kind === 'makers' ? i.id.padEnd(20) + ' ' + i.name + ' — ' + i.summary + '\n      inputs: ' + i.inputs.map((n) => n.key + ':' + n.type + (n.required ? '*' : '')).join(', ') + '\n      styles: ' + i.styles.join(', ') + '; sizes: ' + i.sizes.join(', ')
           : kind === 'recipes' ? i.id.padEnd(22) + ' ' + i.name
+          : kind === 'fx' || kind === 'effects' ? i.id.padEnd(24) + ' ' + i.section.padEnd(16) + ' ' + i.summary
           : kind === 'layouts' ? i.id.padEnd(10) + ' ' + i.cells + ' photos'
           : (i.id || i.name) + (i.name && i.id ? '  ' + i.name : '') + (i.count ? '  (' + i.count + ')' : '');
         return items.map(line).join('\n') + (x.hint ? '\n' + x.hint : '') + (x.templates && x.templates.length ? '\ncollage styles: ' + x.templates.slice(0, 30).map((t) => t.template).join(', ') + (x.templates.length > 30 ? ' …' : '') : '');

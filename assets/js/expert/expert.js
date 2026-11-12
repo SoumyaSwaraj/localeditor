@@ -155,13 +155,16 @@
     var now = Date.now();
     if (defCache.src === R && now - defCache.t < 500) return defCache.list;
     defCache.t = now;
-    /* The cache below only notices a change of count, so ask for the count first: describe() clones every registration. */
-    if (defCache.src === R && typeof R.list === 'function' && defCache.n === R.list().length) return defCache.list;
+    /* The real registry counts its changes (LE.fx.version()) and hands out shared, frozen registrations (LE.fx.defs()): nothing is
+       cloned here, and a late registration or a replaced one is noticed at once. The mock has neither. */
+    var ver = typeof R.version === 'function' ? R.version() : null;
+    if (ver != null && defCache.src === R && defCache.ver === ver) { defCache.t = now; return defCache.list; }
+    if (ver == null && defCache.src === R && typeof R.list === 'function' && defCache.n === R.list().length) return defCache.list;
     var raw;
-    try { raw = R.describe(); } catch (e) { console.error(e); raw = []; }
+    try { raw = typeof R.defs === 'function' ? R.defs() : R.describe(); } catch (e) { console.error(e); raw = []; }
     if (raw && !Array.isArray(raw)) raw = Object.keys(raw).map(function (k) { var d = raw[k]; if (d && !d.id) d.id = k; return d; });
     raw = (raw || []).filter(function (d) { return d && d.id; });
-    if (defCache.src === R && defCache.n === raw.length) return defCache.list;
+    if (ver == null && defCache.src === R && defCache.n === raw.length) return defCache.list;
     var byId = {};
     var list = raw.map(function (d, i) {
       var o = Object.assign({}, d);
@@ -174,7 +177,7 @@
     }).sort(function (a, b) { return a.rank - b.rank || a.order - b.order; });
     var bySec = {};
     list.forEach(function (d) { (bySec[d.section] = bySec[d.section] || []).push(d.id); });
-    defCache = { src: R, n: raw.length, list: list, byId: byId, bySec: bySec, t: now };
+    defCache = { src: R, n: raw.length, ver: ver, list: list, byId: byId, bySec: bySec, t: now };
     return list;
   }
   function def(id) { defs(); return defCache.byId[id] || null; }

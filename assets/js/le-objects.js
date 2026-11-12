@@ -15,7 +15,7 @@
         for (var i = 0; i < nodes.length; i++) {
           if (nodes[i].getAttribute('data-le-src') === src || nodes[i].src === src) { found = nodes[i]; break; }
         }
-        function fail() { reject(new Error('Could not load ' + src)); }
+        function fail() { delete lazyLoads[src]; if (script && script.parentNode) script.parentNode.removeChild(script); reject(new Error('Could not load ' + src)); }   /* forgotten, so the next call tries again */
         if (found && found.getAttribute('data-le-loaded') === '1') { resolve(); return; }
         var script = found || document.createElement('script');
         script.async = true;
@@ -396,9 +396,11 @@
     if (typeof v === 'boolean') return v;
     if (typeof v === 'string') return v.replace(/[^\w #:.,()%\/+=-]/g, '').slice(0, cap || 120);
     if (!v || typeof v !== 'object' || d > 4) return null;
+    /* A parameter may be a long flat list of numbers (type `data`: strokes, spots, mesh points): up to 4096, numbers only. */
+    if (Array.isArray(v) && d === 2 && !inList && !cap && v.length > 512 && typeof v[0] === 'number') return v.slice(0, 4096).map(function (x) { return typeof x === 'number' && isFinite(x) ? x : 0; });
     if (Array.isArray(v)) return v.slice(0, inList && !cap ? 4 : 512).map(function (x) { return fxVal(x, d + 1, true, cap); });
     var o = {};
-    Object.keys(v).slice(0, 24).forEach(function (k) { if (/^[a-zA-Z][\w-]{0,31}$/.test(k) && k !== 'constructor' && k !== 'prototype') o[k] = fxVal(v[k], d + 1, inList, cap); });
+    Object.keys(v).slice(0, 48).forEach(function (k) { if (/^[a-zA-Z][\w-]{0,31}$/.test(k) && k !== 'constructor' && k !== 'prototype') o[k] = fxVal(v[k], d + 1, inList, cap); });
     return o;
   }
   function fxObj(v, d, cap) { v = fxVal(v, d, false, cap); return v && !Array.isArray(v) && Object.keys(v).length ? v : null; }
@@ -413,6 +415,9 @@
         blend: typeof e.blend === 'string' && /^[a-z-]{1,20}$/.test(e.blend) ? e.blend : 'normal', mask: layerMaskOf(e.mask), p: fxObj(e.p, 1) || {}
       } : null;
     }).filter(Boolean);
+    /* Long lists count against one allowance per layer (16384 numbers); a list that does not fit is left out whole. */
+    var room = 16384;
+    fx.forEach(function (e) { Object.keys(e.p).forEach(function (k) { var a = e.p[k]; if (Array.isArray(a) && a.length > 512) { if (a.length > room) e.p[k] = []; else room -= a.length; } }); });
     var mask = layerMaskOf(src.layerMask || (typeof src.mask === 'object' ? src.mask : null));
     var q = src.transform && src.transform.quad, rt = src.retouch, maps = fxObj(src.maps, 0, 12000), raw = fxObj(src.raw, 2);   /* maps hold packed face landmarks (about 4 KB of base64 per face) */
     ['fx', 'layerMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { delete layer[k]; });
@@ -1720,6 +1725,9 @@
         value.onload = function () { res(rec); };
         value.onerror = function () { rej(new Error('Could not read that image.')); };
       });
+    } else if (typeof Blob !== 'undefined' && value instanceof Blob && value.type && !/^image\//.test(value.type)) {
+      rec.blob = value;   /* a data asset (LUT text and the like): kept as it is, never decoded as a picture */
+      rec.ready = Promise.resolve(rec);
     } else if (typeof Blob !== 'undefined' && value instanceof Blob) {
       rec.url = URL.createObjectURL(value);
       rec.ready = new Promise(function (res, rej) {
@@ -2063,7 +2071,8 @@
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      self._drawLayer(ctx, layer, { preview: false, bitmaps: bitmaps, local: true });
+      var lo = { preview: false, bitmaps: bitmaps, local: true };
+      if (!(LE.fxBoot && LE.fxBoot.local(self, ctx, layer, lo))) self._drawLayer(ctx, layer, lo);   /* draw-time effects of a non-photo layer */
       return c;
     });
   };

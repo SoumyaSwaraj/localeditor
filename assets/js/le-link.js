@@ -474,6 +474,23 @@
       return { note: n.id };
     }
   };
+  /* Expert effects: LE.fx.ops on the open-format page, so the command line, MCP and the live link take the operations
+     agent mode takes. The renderer must be loaded by the caller first (LE.fxBoot.load()); "layer" is a layer id. */
+  ['fx.add', 'fx.update', 'fx.remove', 'fx.reorder', 'mask.set', 'transform.set', 'adjust.add'].forEach(function (name) {
+    OPS[name] = function (doc, op, path, ctx) {
+      var W = typeof window !== 'undefined' ? window : null, fx = W && W.LE && W.LE.fx && W.LE.fx.ops;
+      if (!fx) throw new OpError('unsupported', 'Expert effects need the app page (they are not loaded here).', path + '/op');
+      var key = name === 'adjust.add' ? 'above' : 'layer', o = clone(op), p;
+      delete o.page;
+      if (o[key] != null) p = layerIn(doc, String(o[key]), op, path + '/' + key, ctx).page;
+      else if (name === 'adjust.add') p = pageOf(doc, op, path, ctx);
+      else throw new OpError('invalid', '"' + name + '" needs "layer": a layer id.', path + '/layer');
+      var r = fx.apply(doc.pages[p], o);
+      if (!r.ok) throw new OpError('invalid', r.errors[0].message, path + (r.errors[0].path || ''));
+      doc.pages[p] = r.doc;
+      return { id: r.id, page: p };
+    };
+  });
   var ALIASES = { 'add-layer': 'add', set: 'update', patch: 'update', delete: 'remove', move: 'reorder', order: 'reorder', background: 'page.background',
     'replace-text': 'text.replace', fill: 'image.fill', 'add-page': 'page.add', 'update-page': 'page.update', 'remove-page': 'page.remove', 'resolve-note': 'note.resolve' };
 

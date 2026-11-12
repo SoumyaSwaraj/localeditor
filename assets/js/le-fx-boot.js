@@ -17,7 +17,7 @@
   LE.fxBoot = {
     needs: needs, load: load,
     /* For LE.Scene's bitmap cache key: the expert fields, what clip and scale depend on, the renderer's state. */
-    key: function (l) { return has(l) ? JSON.stringify([l.fx, l.layerMask, l.transform, l.retouch, l.maps, l.mask, l.maskPath, l.radius, l.w, l.h, l.raw]) + (LE.fx && LE.fx.stamp ? LE.fx.stamp() : '') : 0; },
+    key: function (l) { return has(l) ? (LE.fx && LE.fx.keyOf || JSON.stringify)([l.fx, l.layerMask, l.transform, l.retouch, l.maps, l.mask, l.maskPath, l.radius, l.w, l.h, l.raw]) + (LE.fx && LE.fx.stamp ? LE.fx.stamp() : '') : 0; },
     layer: function (scene, layer, target, preview) {
       return load(scene).then(function (fx) { return fx.layer(scene, layer, target, preview); }, function () {
         var raw = {};
@@ -33,6 +33,8 @@
       load(scene).catch(function () {});
       return layer.type === 'adjust';
     },
+    local: function (scene, ctx, layer, opts) { return !!(LE.fx && LE.fx.local && has(layer) && LE.fx.local(scene, ctx, layer, opts)); },
+    rescale: function (layer, k) { return !!(LE.fx && LE.fx.rescale && has(layer) && LE.fx.rescale(layer, k)); },
     prepare: function (scene) { return needs(scene._doc) ? load(scene).then(function (fx) { return fx.prepare(scene); }, function () {}) : null; }
   };
 })();

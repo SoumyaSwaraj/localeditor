@@ -19,7 +19,12 @@ const OPS_DOC = 'A list of operations, applied atomically (all or nothing). Laye
   '{"op":"page.resize","width":1080,"height":1920}; {"op":"text.replace","find":"2025","replace":"2026","page":"all"}; {"op":"image.fill","id":"hero","src":"assets/beach.jpg"}; ' +
   '{"op":"align","ids":["title"],"edge":"center"}; {"op":"note.resolve","id":"note-1","reply":"Made it warmer"}. ' +
   'Positions accept numbers (px), "50%", or left/center/right (x) and top/center/bottom (y). Text without "h" is measured; "fit":"shrink" needs "h". ' +
-  'Fonts, icons, shapes and recipes must come from catalog_search.';
+  'Expert effects (non-destructive, on any layer; types and parameters from catalog_search kind "fx"): ' +
+  '{"op":"fx.add","layer":"hero","entry":{"type":"exposure","p":{"ev":0.4}}}; {"op":"fx.update","layer":"hero","id":"exposure","p":{"ev":0.2},"amount":0.8} (id: the entry id, or its type when the layer has one of that kind); ' +
+  '{"op":"fx.remove","layer":"hero","id":"exposure"}; {"op":"fx.reorder","layer":"hero","id":"grain","index":0}; ' +
+  '{"op":"mask.set","layer":"hero","fx":"gaussian-blur","mask":{"parts":[{"kind":"radial","cx":0.5,"cy":0.4,"rx":0.3,"ry":0.3,"feather":0.5,"invert":true}]}} (without fx: the layer mask); ' +
+  '{"op":"adjust.add","fx":[{"type":"contrast","p":{"amount":15}}],"above":"hero"}; {"op":"transform.set","layer":"hero","quad":[[0,40],[1000,0],[1000,800],[0,760]]}. ' +
+  'Fonts, icons, shapes, recipes and effects must come from catalog_search.';
 
 const TOOLS = [
   {
@@ -81,9 +86,9 @@ const TOOLS = [
   },
   {
     name: 'catalog_search', title: 'Search the catalogues',
-    description: 'What exists offline: fonts (families and weights), icons (ids like "lucide:sun"; needs a query), shapes, recipes (photo looks), makers (guided designs and their inputs), layouts (collage layouts; query = photo count) and sizes (page presets). Use only names from here.',
+    description: 'What exists offline: fonts (families and weights), icons (ids like "lucide:sun"; needs a query), shapes, recipes (photo looks), makers (guided designs and their inputs), layouts (collage layouts; query = photo count) sizes (page presets) and fx (expert effects: query a word for the index, an effect id for its parameters and an example entry, "schema" for blends, mask kinds and limits). Use only names from here.',
     inputSchema: { type: 'object', properties: {
-      kind: { type: 'string', enum: ['fonts', 'icons', 'shapes', 'recipes', 'makers', 'layouts', 'sizes'] },
+      kind: { type: 'string', enum: ['fonts', 'icons', 'shapes', 'recipes', 'makers', 'layouts', 'sizes', 'fx'] },
       query: { type: 'string', description: 'Optional words to filter by (required for icons).' },
       limit: { type: 'integer', minimum: 1, maximum: 200, default: 40 }
     }, required: ['kind'], additionalProperties: false },
