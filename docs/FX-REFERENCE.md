@@ -45,7 +45,7 @@ about 10–16. Draft (while dragging, or quality Draft): skips the edge-aware de
 | softness | 0…1, 0.4 | size of the light: wrap and shadow penumbra |
 | falloff | 0…1, 1 | 1 = inverse square, 0 = constant (bulb and spot) |
 | specular, roughness | 0…1 (0.2), 0.05…1 (0.45) | shine |
-| shadows, shadowLength | 0…1 (0.7), 0…400 px (120) | shadow strength and the longest shadow (also the tile overlap) |
+| shadows, shadowLength | 0…1 (0.7), 0…240 px (120) | shadow strength and the longest shadow (also the tile overlap) |
 | relief | 0…4, 1.2 | how deep the scene is taken to be |
 | existing | 0…2, 1 | multiplier on the light already in the photo |
 | soften | 0…1, 0 | flatten the existing light |
@@ -89,7 +89,7 @@ the source (a screen-space light-scattering march). Passes: 3 (depth) + 1 emissi
 |---|---|---|
 | source | point, (0.75, 0.08) | the light source, may lie outside the box |
 | intensity | 0…3, **0** | strength |
-| length | 10…600 px, 240 | longest ray (the tile overlap) |
+| length | 10…360 px, 240 | longest ray (the tile overlap) |
 | decay | 0…1, 0.5 | how fast rays fade |
 | threshold | 0…0.98, 0.6 | only brighter areas emit |
 | depth | 0…1, 0.7 | 1 = only the far background emits and near objects block |

@@ -17,7 +17,7 @@
  *     z = (D - 1) * relief * 0.5 * boxWidth (document pixels), so the nearest surface sits at z = 0 and lights with a positive
  *     height are in front of it. Normals are its gradient after a small blur, with the slope softly capped (tanh) so depth cliffs
  *     at silhouettes do not become sideways walls. Normals are derived here and never stored.
- *   - Edge-aware depth: the ~518 px depth grid is sampled bilinearly, then refined with a joint bilateral filter (Kopf et al. 2007,
+ *   - Edge-aware depth: the ~518 px depth grid is sampled bilinearly, then refined with a 3 x 3 joint bilateral filter (Kopf et al. 2007,
  *     "Joint bilateral upsampling") whose range kernel is the photo's colour and, where the layer has a cut-out, the cut-out's alpha,
  *     so light and shadow do not halo past subject edges. Draft skips it.
  *   - Albedo: an intrinsic-image approximation, not a decomposition. The existing illumination is estimated as the luminance of a
@@ -30,7 +30,7 @@
  *   - Shading: Lambert with wrap (softness) + GGX specular (F0 0.04, roughness), orthographic viewer. Point and spot lights fall off
  *     with the inverse square, normalised to 1 at the aim point. Shadows: a screen-space ray march along the light direction through
  *     the height field, with a penumbra that widens with distance (soft-shadow height-field marching), reach given by "Shadow length"
- *     (declared in radius(), so tiles agree). AO: horizon-based, 8 directions x 3 radii.
+ *     (declared in radius(), so tiles agree). AO: horizon-based (relative to the tangent plane), 6 directions x 2 radii.
  *
  * Renderer seam (see the report): the renderer has no handle for the raw depth map yet, so depthRaw() reads it through two depth
  * mask parts (near 1, far 1, soft 1 gives smoothstep(0, 1, farness); the inverted part keeps precision at the far end) and inverts
@@ -41,9 +41,11 @@
 
   var LE = global.LE, FX = LE && LE.fx;
   if (!FX || !FX.register) return;
-  var M = FX.math;
+
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function num(v, d) { return typeof v === 'number' && isFinite(v) ? v : d; }
+  /* Read at call time: the renderer adds blurReach to LE.fx.math when it loads, which on some pages is after this pack. */
+  function blurReach(s) { var f = FX.math && FX.math.blurReach; return f ? f(s) : Math.ceil(3 * s) + 8; }
 
   /* LE.maps (assets/js/le-maps.js) draws face masks for the renderer and makes the maps; load it with the pack. It fetches
      nothing by itself: no model, worker or engine starts until a map is asked for. */
@@ -86,7 +88,7 @@
     var st = null;
     try { st = g.stats ? g.stats() : null; } catch (e) { st = null; }
     var m = st && st.mean && typeof st.mean.luma === 'number' ? st.mean.luma : 0.45;
-    return Math.max(0.02, M.srgbToLinear(clamp(m, 0, 1)));
+    return Math.max(0.02, FX.math.srgbToLinear(clamp(m, 0, 1)));
   }
 
   /* ---------- Depth: read, decode, refine ---------- */
@@ -103,19 +105,19 @@
     g.release(a); g.release(b);
     return d;
   }
-  /* Joint bilateral refinement: 5 x 5 taps one depth texel apart; range weights from the photo (display colour) and the cut-out. */
+  /* Joint bilateral refinement: 3 x 3 taps 1.6 depth texels apart; range weights from the photo (display colour) and the cut-out. */
   var JBU = 'uniform sampler2D u_d, u_sub; uniform float u_step, u_sigR, u_useSub;\n' + CLAMP_IMG +
     'vec3 guideAt(vec2 uv){ return clamp(toDisplay(unpremul(texture(u_src, uv))), 0.0, 1.0); }\n' +
     'vec4 fx(){ vec2 c = clampImg(v_uv); vec3 c0 = guideAt(c); float s0 = texture(u_sub, c).r; float ws = 0.0, ds = 0.0;\n' +
-    '  for (int j = -2; j <= 2; j++) for (int i = -2; i <= 2; i++) {\n' +
-    '    vec2 o = vec2(float(i), float(j)); vec2 uv = clampImg(v_uv + docToUV(o * u_step));\n' +
+    '  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {\n' +
+    '    vec2 o = vec2(float(i), float(j)) * 1.6; vec2 uv = clampImg(v_uv + docToUV(o * u_step));\n' +
     '    vec3 dc = guideAt(uv) - c0; float sb = (texture(u_sub, uv).r - s0) * u_useSub;\n' +
     '    float w = exp(-dot(o, o) * 0.35 - dot(dc, dc) * u_sigR - sb * sb * 40.0) + 1e-6;\n' +
     '    ws += w; ds += w * texture(u_d, uv).r; }\n' +
     '  return vec4(ds / ws, 0.0, 0.0, 1.0); }';
   function boxMax(g) { return Math.max(g.box.w, g.box.h, 1); }
   /* Sizes in document pixels that follow the layer, capped so radius() (which cannot see the box) can declare the maximum. */
-  var CAP = { step: 8, smooth: 16, albedo: 40, ao: 60 };
+  var CAP = { step: 8, smooth: 16, albedo: 24, ao: 60 };
   function sizes(g) {
     var B = boxMax(g);
     return { step: clamp(B / 518, 1, CAP.step), smooth: clamp(B * 0.01, 2, CAP.smooth), albedo: clamp(B * 0.02, 4, CAP.albedo), ao: clamp(B * 0.03, 4, CAP.ao) };
@@ -138,7 +140,7 @@
     'float zAt(vec2 uv){ return (depthAt(uv) - 1.0) * u_zs; }',
     /* Normal in document space: x right, y DOWN, z toward the viewer.
        u_md 1 (relight): an edge-aware plane fit. A first gradient from minimum-difference derivatives of the refined depth (at a cliff
-       it takes the side that continues this surface), then a weighted least-squares fit over 16 taps at u_h and 2·u_h whose weights
+       it takes the side that continues this surface), then a weighted least-squares fit over 8 taps alternating u_h and 2·u_h whose weights
        fall with each tap's residual from that first plane: smooth on a surface, never across a depth edge, so the background next to
        a subject is not shaded as a slope (a halo). u_md 0 (rim light): central differences of the Gaussian-smoothed depth, which
        deliberately bend at silhouettes. */
@@ -148,7 +150,7 @@
     '    float r0 = texture(u_dr, clampImg(uv)).r, xf = texture(u_dr, clampImg(uv + ex)).r - r0, xb = r0 - texture(u_dr, clampImg(uv - ex)).r, yf = texture(u_dr, clampImg(uv + ey)).r - r0, yb = r0 - texture(u_dr, clampImg(uv - ey)).r;',
     '    vec2 g0 = vec2(abs(xf) < abs(xb) ? xf : xb, abs(yf) < abs(yb) ? yf : yb) / u_h;',
     '    float axx = 1e-6, axy = 0.0, ayy = 1e-6; vec2 b = vec2(0.0);',
-    '    for (int k = 0; k < 16; k++) { float an = float(k) * 0.785398 + (k < 8 ? 0.0 : 0.3927); vec2 o = vec2(cos(an), sin(an)) * u_h * (k < 8 ? 1.0 : 2.0);',
+    '    for (int k = 0; k < 8; k++) { float an = float(k) * 0.785398; vec2 o = vec2(cos(an), sin(an)) * u_h * (k % 2 == 0 ? 1.0 : 2.0);',
     '      float d = texture(u_dr, clampImg(uv + docToUV(o))).r - r0, res = d - dot(g0, o), w = exp(-res * res * 4000.0);',
     '      axx += w * o.x * o.x; axy += w * o.x * o.y; ayy += w * o.y * o.y; b += w * o * d; }',
     '    float det = axx * ayy - axy * axy; gr = det > 1e-9 ? vec2(ayy * b.x - axy * b.y, axx * b.y - axy * b.x) / det : g0;',
@@ -174,9 +176,9 @@
     '  vec4 s = src(v_uv); float a = s.a; if (a <= 0.0) return vec4(0.0);',
     '  vec3 c = s.rgb / a; vec2 uv0 = v_uv; vec2 P = docPos();',
     '  float D0 = depthAt(uv0), zP = (D0 - 1.0) * u_zs;',
-    /* Existing illumination: blurred luminance from 17 taps (1 and 2.2 sigma), weighted by depth and by log-luminance similarity (a cross-bilateral on a blurred copy) so it does not leak across subject edges. */
+    /* Existing illumination: blurred luminance from 9 taps (centre and a ring at 1.6 sigma), weighted by depth and by log-luminance similarity (a cross-bilateral on a blurred copy) so it does not leak across subject edges. */
     '  float lw = 0.0, ls = 0.0, lc = log(max(luma(c), 1e-4));',
-    '  for (int k = 0; k < 17; k++) { float rk = k == 0 ? 0.0 : (k < 9 ? 1.0 : 2.2); vec2 o = vec2(cos(float(k) * 0.785398 + (k < 9 ? 0.0 : 0.3927)), sin(float(k) * 0.785398 + (k < 9 ? 0.0 : 0.3927))) * u_sigB * rk;',
+    '  for (int k = 0; k < 9; k++) { vec2 o = k == 0 ? vec2(0.0) : vec2(cos(float(k) * 0.785398), sin(float(k) * 0.785398)) * u_sigB * 1.6;',
     '    vec2 uv = clampImg(uv0 + docToUV(o)); float dd = depthAt(uv) - D0; float lt = max(luma(unpremul(texture(u_b, uv))), 1e-4); float dl = log(lt) - lc; float w = (k == 0 ? 1.0 : 0.7) * exp(-dd * dd * 300.0 - dl * dl * 1.5);',
     '    lw += w; ls += w * lt; }',
     '  float Lb = max(ls / lw, u_lmean * 0.03);',
@@ -185,10 +187,10 @@
     /* Ambient occlusion from the height field (horizon based). */
     '  vec3 N = normalAt(uv0);',
     '  if (u_ao > 0.0) { float occ = 0.0; float j = ign() * 0.785398; vec2 tgs = -N.xy / max(N.z, 0.2);',
-    '    for (int k = 0; k < 8; k++) { vec2 dir = vec2(cos(float(k) * 0.785398 + j), sin(float(k) * 0.785398 + j)); float m = 0.0;',
-    '      for (int r = 1; r <= 3; r++) { float rr = u_aor * float(r) / 3.0; float dz = zAt(uv0 + docToUV(dir * rr)) - zP; m = max(m, clamp(dz / rr - dot(tgs, dir) - 0.05, 0.0, 1.0) * (1.0 - smoothstep(rr * 1.5, rr * 3.0, dz))); }',
+    '    for (int k = 0; k < 6; k++) { vec2 dir = vec2(cos(float(k) * 1.047198 + j), sin(float(k) * 1.047198 + j)); float m = 0.0;',
+    '      for (int r = 1; r <= 2; r++) { float rr = u_aor * float(r) / 2.0; float dz = zAt(uv0 + docToUV(dir * rr)) - zP; m = max(m, clamp(dz / rr - dot(tgs, dir) - 0.05, 0.0, 1.0) * (1.0 - smoothstep(rr * 1.5, rr * 3.0, dz))); }',
     '      occ += m; }',
-    '    outc *= mix(1.0, clamp(1.0 - occ / 8.0 * 1.6, 0.0, 1.0), u_ao); }',
+    '    outc *= mix(1.0, clamp(1.0 - occ / 6.0 * 1.6, 0.0, 1.0), u_ao); }',
     '  if (max(u_col.r, max(u_col.g, u_col.b)) <= 0.0) return vec4(outc * a, a);',
     '  vec3 P3 = vec3(P, zP), L, Lv; float att = 1.0, dist2 = 1e9;',
     '  if (u_type < 0.5) { Lv = vec3(u_lpos - u_center, u_lz + 1e-3); L = normalize(Lv); }',
@@ -238,7 +240,7 @@
       specular: { type: 'number', min: 0, max: 1, default: 0.2, step: 0.01, label: 'Shine' },
       roughness: { type: 'number', min: 0.05, max: 1, default: 0.45, step: 0.01, label: 'Roughness' },
       shadows: { type: 'number', min: 0, max: 1, default: 0.7, step: 0.01, label: 'Shadows' },
-      shadowLength: { type: 'number', min: 0, max: 400, default: 120, step: 1, unit: 'px', label: 'Shadow length' },
+      shadowLength: { type: 'number', min: 0, max: 240, default: 120, step: 1, unit: 'px', label: 'Shadow length' },
       relief: { type: 'number', min: 0, max: 4, default: 1.2, step: 0.01, label: 'Depth', help: 'How deep the scene is taken to be; more makes forms rounder and shadows longer.' },
       existing: { type: 'number', min: 0, max: 2, default: 1, step: 0.01, label: 'Existing light' },
       soften: { type: 'number', min: 0, max: 1, default: 0, step: 0.01, label: 'Soften existing light' },
@@ -248,7 +250,7 @@
     },
     radius: function (p, s) {
       if (relightNeutral(p)) return 0;
-      return depthReach(s) + Math.ceil(s * (Math.max(p.shadowLength, CAP.ao, CAP.albedo * 2.2) + CAP.smooth * 2)) + M.blurReach(CAP.albedo * s) + 4;
+      return depthReach(s) + Math.ceil(s * (Math.max(p.shadowLength, CAP.ao, CAP.albedo * 1.6) + CAP.smooth * 2)) + blurReach(CAP.albedo * s) + 4;
     },
     draft: function (p) { var q = Object.assign({}, p); q.quality = 'draft'; return q; },
     passes: function (g, p) {
@@ -319,7 +321,7 @@
       color: { type: 'color', default: '#ffffff', label: 'Gel' },
       relief: { type: 'number', min: 0, max: 4, default: 1.2, step: 0.01, label: 'Depth' }
     },
-    radius: function (p, s) { return p.intensity > 0 ? depthReach(s) + M.blurReach(CAP.smooth * s * 2) + Math.ceil(CAP.smooth * 2 * s) + M.blurReach(12 * s) + 16 : 0; },
+    radius: function (p, s) { return p.intensity > 0 ? depthReach(s) + blurReach(CAP.smooth * s * 2) + Math.ceil(CAP.smooth * 2 * s) + blurReach(12 * s) + 16 : 0; },
     passes: function (g, p) {
       if (!(p.intensity > 0)) return;
       var sz = sizes(g), lmean = meanLight(g), a = p.angle * Math.PI / 180;
@@ -358,7 +360,7 @@
     params: {
       source: { type: 'point', default: { x: 0.75, y: 0.08 }, label: 'Light source' },
       intensity: { type: 'number', min: 0, max: 3, default: 0, step: 0.01, label: 'Intensity' },
-      length: { type: 'number', min: 10, max: 600, default: 240, step: 1, unit: 'px', label: 'Length' },
+      length: { type: 'number', min: 10, max: 360, default: 240, step: 1, unit: 'px', label: 'Length' },
       decay: { type: 'number', min: 0, max: 1, default: 0.5, step: 0.01, label: 'Falloff' },
       threshold: { type: 'number', min: 0, max: 0.98, default: 0.6, step: 0.01, label: 'Threshold', help: 'Only areas brighter than this send out rays.' },
       depth: { type: 'number', min: 0, max: 1, default: 0.7, step: 0.01, label: 'Use depth', help: 'At 1 only the far background glows and near objects block the rays.' },
@@ -656,7 +658,7 @@
     var im = canvasOf(image, o.maxSide || 160), w = im.w, h = im.h, n = w * h, i, x, y;
     var lum = new Float32Array(n), lin = new Float32Array(n * 3), wgt = new Float32Array(n);
     for (i = 0; i < n; i++) {
-      var r = M.srgbToLinear(im.d[i * 4] / 255), g = M.srgbToLinear(im.d[i * 4 + 1] / 255), b = M.srgbToLinear(im.d[i * 4 + 2] / 255);
+      var r = FX.math.srgbToLinear(im.d[i * 4] / 255), g = FX.math.srgbToLinear(im.d[i * 4 + 1] / 255), b = FX.math.srgbToLinear(im.d[i * 4 + 2] / 255);
       lin[i * 3] = r; lin[i * 3 + 1] = g; lin[i * 3 + 2] = b; lum[i] = 0.2126 * r + 0.7152 * g + 0.0722 * b;
       var mx = Math.max(im.d[i * 4], im.d[i * 4 + 1], im.d[i * 4 + 2]);
       wgt[i] = im.d[i * 4 + 3] / 255 * (mx > 250 || mx < 4 ? 0.05 : 1);
@@ -720,7 +722,7 @@
     var ratio = litL / Math.max(shadowL, 1e-4);   /* lighting ratio, as photographers count it (2:1 soft, 8:1 hard) */
     var softness = clamp(1 - Math.log(Math.max(ratio, 1)) / Math.log(10), 0, 1);
     var temp = cct(keyRGB), mxk = Math.max(keyRGB[0], keyRGB[1], keyRGB[2]);
-    var hex = '#' + keyRGB.map(function (v) { var s = Math.round(clamp(M.linearToSrgb(v / mxk), 0, 1) * 255).toString(16); return s.length < 2 ? '0' + s : s; }).join('');
+    var hex = '#' + keyRGB.map(function (v) { var s = Math.round(clamp(FX.math.linearToSrgb(v / mxk), 0, 1) * 255).toString(16); return s.length < 2 ? '0' + s : s; }).join('');
     var conf = clamp(contrast * 1.6, 0, 1) * (source === 'depth' ? 1 : source === 'mask' ? 0.8 : 0.4);
     var back = dir.z < -0.15;
     void lumSorted; void ambient;
