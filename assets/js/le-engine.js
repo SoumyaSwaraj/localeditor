@@ -316,6 +316,9 @@
     var black = num(p.black, 0), white = p.white == null ? 255 : num(p.white, 255), gamma = p.gamma == null ? 1 : num(p.gamma, 1);
     var rOff = num(p.red, 0), gOff = num(p.green, 0), bOff = num(p.blue, 0);
     var points = p.points;
+    var fade = clamp(num(p.fade, 0), 0, 100) / 100;
+    var fadeLo = fade * 70, fadeK = (255 - fade * 18 - fadeLo) / 255;
+    var split = splitTone(p);
     var cx = w / 2, cy = h / 2, maxd = Math.sqrt(cx * cx + cy * cy) || 1;
     var doLevels = black || white !== 255 || gamma !== 1;
     function level(v) {
@@ -360,6 +363,14 @@
         }
         if (rOff || gOff || bOff) { r += rOff; g += gOff; b += bOff; }
         if (points && points.length > 1) { r = curveMap(r, points); g = curveMap(g, points); b = curveMap(b, points); }
+        if (split) {
+          var sl = clamp((0.299 * r + 0.587 * g + 0.114 * b) / 255, 0, 1);
+          var ws = (1 - sl) * (1 - sl) * Math.min(1, sl * 4 + 0.1) * split.ws, wh = sl * sl * Math.min(1, (1 - sl) * 4 + 0.1) * split.wh;
+          r += split.s[0] * ws + split.h[0] * wh;
+          g += split.s[1] * ws + split.h[1] * wh;
+          b += split.s[2] * ws + split.h[2] * wh;
+        }
+        if (fade) { r = fadeLo + r * fadeK; g = fadeLo + g * fadeK; b = fadeLo + b * fadeK; }
         if (vignette) {
           var dx = x - cx, dy = y - cy;
           var f = 1 - vignette * Math.pow(Math.sqrt(dx * dx + dy * dy) / maxd, 1.6);
@@ -373,9 +384,65 @@
         d[i] = clamp8(r); d[i + 1] = clamp8(g); d[i + 2] = clamp8(b);
       }
     }
+    var clarity = clamp(num(p.clarity, 0), -100, 100);
+    if (clarity) localContrast(d, w, h, clarity / 100);
     ctx.putImageData(img, 0, 0);
     if (p.sharpness) sharpen(canvas, clamp(p.sharpness, 0, 100) / 100);
     return canvas;
+  }
+
+  /* Split toning: a colour pushed into the shadows and another into the highlights.
+     Hues are degrees, amounts 0-100, balance -100 (favour shadows) to 100 (favour highlights). */
+  function splitTone(p) {
+    var sa = clamp(num(p.splitShadowAmount, 0), 0, 100) / 100;
+    var ha = clamp(num(p.splitHighlightAmount, 0), 0, 100) / 100;
+    if (!sa && !ha) return null;
+    var bal = clamp(num(p.splitBalance, 0), -100, 100) / 100;
+    function chroma(deg) {
+      var c = hslToRgb(((num(deg, 0) % 360) + 360) % 360 / 360, 1, 0.5);
+      var m = (c[0] + c[1] + c[2]) / 3;
+      return [(c[0] - m) * 0.55, (c[1] - m) * 0.55, (c[2] - m) * 0.55];
+    }
+    var s = chroma(p.splitShadowHue == null ? 210 : p.splitShadowHue);
+    var hh = chroma(p.splitHighlightHue == null ? 40 : p.splitHighlightHue);
+    return { s: s, h: hh, ws: sa * 2 * (1 - Math.max(0, bal)), wh: ha * 2 * (1 + Math.min(0, bal)) };
+  }
+
+  /* Clarity: midtone local contrast from a wide, fast box blur of luminance. */
+  function lumaBlur(src, w, h, r) {
+    var tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+    var x, y, acc, i, n = 2 * r + 1;
+    for (y = 0; y < h; y++) {
+      var row = y * w;
+      acc = 0;
+      for (i = -r; i <= r; i++) acc += src[row + clamp(i, 0, w - 1)];
+      for (x = 0; x < w; x++) {
+        tmp[row + x] = acc / n;
+        acc += src[row + Math.min(w - 1, x + r + 1)] - src[row + Math.max(0, x - r)];
+      }
+    }
+    for (x = 0; x < w; x++) {
+      acc = 0;
+      for (i = -r; i <= r; i++) acc += tmp[clamp(i, 0, h - 1) * w + x];
+      for (y = 0; y < h; y++) {
+        out[y * w + x] = acc / n;
+        acc += tmp[Math.min(h - 1, y + r + 1) * w + x] - tmp[Math.max(0, y - r) * w + x];
+      }
+    }
+    return out;
+  }
+  function localContrast(d, w, h, amount) {
+    var lum = new Float32Array(w * h), i, j;
+    for (i = 0, j = 0; j < lum.length; i += 4, j++) lum[j] = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    var r = Math.max(2, Math.round(Math.max(w, h) / 70));
+    var blur = lumaBlur(lumaBlur(lum, w, h, r), w, h, r);
+    var k = amount * 1.6;
+    for (i = 0, j = 0; j < lum.length; i += 4, j++) {
+      var l = lum[j] / 255;
+      var mask = 4 * l * (1 - l);
+      var delta = (lum[j] - blur[j]) * k * mask;
+      d[i] = clamp8(d[i] + delta); d[i + 1] = clamp8(d[i + 1] + delta); d[i + 2] = clamp8(d[i + 2] + delta);
+    }
   }
 
   function border(canvas, p) {
@@ -890,6 +957,14 @@
     if (op === 'shadows') return Promise.resolve({ canvas: adjust(canvas, { shadows: p.value }) });
     if (op === 'vignette') return Promise.resolve({ canvas: adjust(canvas, { vignette: p.amount != null ? p.amount : p.value }) });
     if (op === 'grain') return Promise.resolve({ canvas: adjust(canvas, { grain: p.amount != null ? p.amount : p.value }) });
+    if (op === 'fade') return Promise.resolve({ canvas: adjust(canvas, { fade: p.amount }) });
+    if (op === 'clarity') return Promise.resolve({ canvas: adjust(canvas, { clarity: p.value }) });
+    if (op === 'split-tone') {
+      return Promise.resolve({ canvas: adjust(canvas, {
+        splitShadowHue: p.shadowHue, splitShadowAmount: p.shadowAmount,
+        splitHighlightHue: p.highlightHue, splitHighlightAmount: p.highlightAmount, splitBalance: p.balance
+      }) });
+    }
     if (op === 'sharpness' || op === 'sharpen') {
       var amount = clamp(num(p.amount != null ? p.amount : p.value, 20), 0, 100) / 100;
       if (tier === 'older') amount = Math.min(amount, 0.45);
@@ -974,50 +1049,70 @@
     return chain.then(function (out) { return { canvas: out, notices: notices }; });
   };
 
-  function rule(min, max, identity) { return { num: true, min: min, max: max, identity: identity }; }
+  /* ---------- Recipes (.leworkflow) ----------
+     A recipe is data: a list of named operations with numeric, enum, colour or short text parameters.
+     Everything an importer accepts is listed in FIELD, ENUMS, STRINGS and BOOLS below and documented in
+     docs/FORMAT-WORKFLOW.md. Anything else is rejected or dropped; nothing is ever evaluated. */
+  var WF_FORMAT = 'localeditor-workflow';
+  var WF_LIMITS = { bytes: 2000000, steps: 40, tags: 8, depth: 12, linkChars: 6000, linkBytes: 65536 };
+
+  function rule(min, max, identity, step) { return { num: true, min: min, max: max, identity: identity, step: step || 1 }; }
   var FIELD = {
-    exposure: { value: rule(-2, 2, 0) },
+    exposure: { value: rule(-2, 2, 0, 0.01) },
     brightness: { value: rule(-100, 100, 0) },
     contrast: { value: rule(-100, 100, 0) },
     saturation: { value: rule(-100, 100, 0) },
     vibrance: { value: rule(-100, 100, 0) },
-    temperature: { value: rule(-50, 50, 0) },
-    tint: { value: rule(-50, 50, 0) },
+    temperature: { value: rule(-100, 100, 0) },
+    tint: { value: rule(-100, 100, 0) },
     hue: { value: rule(-180, 180, 0) },
     highlights: { value: rule(-100, 100, 0) },
     shadows: { value: rule(-100, 100, 0) },
     sharpness: { value: rule(0, 100, 0), amount: rule(0, 100, 0) },
     sharpen: { value: rule(0, 100, 0), amount: rule(0, 100, 0) },
-    vignette: { value: rule(0, 1, 0), amount: rule(0, 1, 0) },
-    grain: { value: rule(0, 40, 0), amount: rule(0, 40, 0) },
-    adjust: {
-      exposure: rule(-2, 2, 0), brightness: rule(-100, 100, 0), contrast: rule(-100, 100, 0),
-      saturation: rule(-100, 100, 0), vibrance: rule(-100, 100, 0), temperature: rule(-50, 50, 0),
-      tint: rule(-50, 50, 0), hue: rule(-180, 180, 0), highlights: rule(-100, 100, 0), shadows: rule(-100, 100, 0),
-      sharpness: rule(0, 100, 0), vignette: rule(0, 1, 0), grain: rule(0, 40, 0),
-      black: rule(0, 255, 0), white: rule(0, 255, 255), gamma: rule(0.2, 3, 1),
-      red: rule(-100, 100, 0), green: rule(-100, 100, 0), blue: rule(-100, 100, 0)
+    vignette: { value: rule(0, 1, 0, 0.01), amount: rule(0, 1, 0, 0.01) },
+    grain: { value: rule(0, 100, 0), amount: rule(0, 100, 0) },
+    fade: { amount: rule(0, 100, 0) },
+    clarity: { value: rule(-100, 100, 0) },
+    'split-tone': {
+      shadowHue: rule(0, 360, null), shadowAmount: rule(0, 100, 0),
+      highlightHue: rule(0, 360, null), highlightAmount: rule(0, 100, 0), balance: rule(-100, 100, 0)
     },
-    levels: { black: rule(0, 255, 0), white: rule(0, 255, 255), gamma: rule(0.2, 3, 1) },
+    adjust: {
+      exposure: rule(-2, 2, 0, 0.01), brightness: rule(-100, 100, 0), contrast: rule(-100, 100, 0),
+      saturation: rule(-100, 100, 0), vibrance: rule(-100, 100, 0), temperature: rule(-100, 100, 0),
+      tint: rule(-100, 100, 0), hue: rule(-180, 180, 0), highlights: rule(-100, 100, 0), shadows: rule(-100, 100, 0),
+      sharpness: rule(0, 100, 0), vignette: rule(0, 1, 0, 0.01), grain: rule(0, 100, 0),
+      black: rule(0, 255, 0), white: rule(0, 255, 255), gamma: rule(0.2, 3, 1, 0.01),
+      red: rule(-100, 100, 0), green: rule(-100, 100, 0), blue: rule(-100, 100, 0),
+      fade: rule(0, 100, 0), clarity: rule(-100, 100, 0),
+      splitShadowHue: rule(0, 360, null), splitShadowAmount: rule(0, 100, 0),
+      splitHighlightHue: rule(0, 360, null), splitHighlightAmount: rule(0, 100, 0), splitBalance: rule(-100, 100, 0)
+    },
+    levels: { black: rule(0, 255, 0), white: rule(0, 255, 255), gamma: rule(0.2, 3, 1, 0.01) },
     curves: {},
     filter: { intensity: rule(0, 100, 0) },
-    crop: { x: rule(0, 1), y: rule(0, 1), w: rule(0.01, 1), h: rule(0.01, 1) },
+    crop: { x: rule(0, 1, null, 0.01), y: rule(0, 1, null, 0.01), w: rule(0.01, 1, null, 0.01), h: rule(0.01, 1, null, 0.01) },
     resize: { width: rule(1, 16000), height: rule(1, 16000), percent: rule(1, 400), maxWidth: rule(1, 16000) },
     rotate: { degrees: rule(-360, 360, 0) },
     flip: {},
-    blur: { radius: rule(0, 80, 0), angle: rule(0, 360, 0), cx: rule(0, 1), cy: rule(0, 1), rx: rule(0.05, 1), ry: rule(0.05, 1) },
+    blur: { radius: rule(0, 80, 0), angle: rule(0, 360, null), cx: rule(0, 1, null, 0.01), cy: rule(0, 1, null, 0.01), rx: rule(0.05, 1, null, 0.01), ry: rule(0.05, 1, null, 0.01) },
     border: { padding: rule(0, 800, 0), size: rule(0, 400, 0), radius: rule(0, 800, 0) },
     frame: { padding: rule(0, 800, 0), size: rule(0, 400, 0), radius: rule(0, 800, 0) },
-    text: { size: rule(0.01, 0.4), x: rule(0, 1), y: rule(0, 1), rotate: rule(-180, 180, 0), weight: rule(100, 900) },
-    watermark: { opacity: rule(0, 1), scale: rule(0.02, 1), x: rule(0, 1), y: rule(0, 1) },
-    shape: { x: rule(-1, 2), y: rule(-1, 2), w: rule(-2, 2), h: rule(-2, 2), opacity: rule(0, 1), strokeWidth: rule(1, 40) },
-    background: { tolerance: rule(0, 100) },
-    upscale: { factor: rule(1, 4) },
-    social: { width: rule(1, 8000), height: rule(1, 8000) },
-    meme: { scale: rule(0.04, 0.16) },
+    text: { size: rule(0.01, 0.4, null, 0.01), x: rule(0, 1, null, 0.01), y: rule(0, 1, null, 0.01), rotate: rule(-180, 180, null), weight: rule(100, 900, null, 100) },
+    watermark: { opacity: rule(0, 1, null, 0.01), scale: rule(0.02, 1, null, 0.01), x: rule(0, 1, null, 0.01), y: rule(0, 1, null, 0.01) },
+    shape: { x: rule(-1, 2, null, 0.01), y: rule(-1, 2, null, 0.01), w: rule(-2, 2, null, 0.01), h: rule(-2, 2, null, 0.01), opacity: rule(0, 1, null, 0.01), strokeWidth: rule(1, 40, null) },
+    background: { tolerance: rule(0, 100, null) },
+    mask: {},
+    upscale: { factor: rule(1, 4, null) },
+    social: { width: rule(1, 8000, null), height: rule(1, 8000, null) },
+    meme: { scale: rule(0.04, 0.16, null, 0.01) },
     'background-ai': {},
     'upscale-ai': {}
   };
+  /* Operations added in format 1.1. A file that uses one is written as version 1.1. */
+  var V11_OPS = { fade: 1, clarity: 1, 'split-tone': 1 };
+  var V11_ADJUST = ['fade', 'clarity', 'splitShadowHue', 'splitShadowAmount', 'splitHighlightHue', 'splitHighlightAmount', 'splitBalance'];
 
   var FILTER_NAMES = Object.keys(PRESETS);
   var ENUMS = {
@@ -1029,207 +1124,743 @@
     text: { align: ['left', 'center', 'right'] },
     social: { fit: ['cover', 'contain'] }
   };
+  /* Text parameters: [kind, max length]. Kinds: text (plain words), color (CSS colour), font (family list). */
+  var STRINGS = {
+    text: { text: ['text', 240], font: ['font', 80], color: ['color', 40], outline: ['color', 40], background: ['color', 40] },
+    watermark: { text: ['text', 240], font: ['font', 80], color: ['color', 40] },
+    shape: { fill: ['color', 40], stroke: ['color', 40], text: ['text', 16] },
+    border: { color: ['color', 40], background: ['color', 40] },
+    frame: { color: ['color', 40], background: ['color', 40] },
+    background: { color: ['color', 40], replace: ['color', 40] },
+    social: { background: ['color', 40] },
+    meme: { top: ['text', 240], bottom: ['text', 240], font: ['font', 80] },
+    mask: { maskId: ['id', 40] }
+  };
+  var BOOLS = { border: ['shadow'], frame: ['shadow'], watermark: ['tile'], resize: ['lock'] };
+  var COLOR_RE = /^(#[0-9a-f]{3,4}|#[0-9a-f]{6}|#[0-9a-f]{8}|rgba?\(\s*[\d.]+%?\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?\s*(,\s*[\d.]+%?\s*)?\)|[a-z]{3,20})$/i;
+  var FONT_RE = /^[A-Za-z0-9 ,'"\-]{1,80}$/;
+  var ID_RE = /^[\w-]{1,40}$/;
+  var IMAGE_RE = /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+\/=]+$/i;
+  var SCRIPTY = /<\s*\/?\s*(script|iframe|object|embed|svg|img|style|link|meta|html|body|form|a)\b|javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|\bon[a-z]{3,}\s*=/i;
+  var BAD_KEYS = Object.create(null);
+  BAD_KEYS.__proto__ = 1; BAD_KEYS.constructor = 1; BAD_KEYS.prototype = 1;
+
+  var CATEGORIES = [
+    ['portrait', 'Portrait'], ['product', 'Product'], ['food', 'Food'], ['landscape', 'Landscape'],
+    ['film', 'Film & vintage'], ['bw', 'Black & white'], ['social', 'Social'], ['document', 'Documents']
+  ];
+
+  /* Human labels and the default values offered when a step is added in the recipe editor. */
+  var CATALOG = [
+    ['exposure', 'Exposure', 'light', { value: 0.1 }, true],
+    ['brightness', 'Brightness', 'light', { value: 10 }, true],
+    ['contrast', 'Contrast', 'light', { value: 12 }, true],
+    ['highlights', 'Highlights', 'light', { value: -12 }, true],
+    ['shadows', 'Shadows', 'light', { value: 12 }, true],
+    ['levels', 'Levels', 'light', { black: 12, white: 245, gamma: 1 }, true],
+    ['temperature', 'Warmth', 'color', { value: 12 }, true],
+    ['tint', 'Tint', 'color', { value: 6 }, true],
+    ['saturation', 'Saturation', 'color', { value: -12 }, true],
+    ['vibrance', 'Vibrance', 'color', { value: 18 }, true],
+    ['hue', 'Hue shift', 'color', { value: 8 }, true],
+    ['split-tone', 'Split tone', 'color', { shadowHue: 200, shadowAmount: 20, highlightHue: 40, highlightAmount: 20, balance: 0 }, true],
+    ['filter', 'Filter', 'effect', { name: 'film', intensity: 80 }, true],
+    ['fade', 'Fade', 'effect', { amount: 18 }, true],
+    ['vignette', 'Vignette', 'effect', { amount: 0.3 }, true],
+    ['grain', 'Grain', 'effect', { amount: 12 }, true],
+    ['clarity', 'Clarity', 'detail', { value: 15 }, true],
+    ['sharpen', 'Sharpen', 'detail', { amount: 20 }, true],
+    ['blur', 'Soften', 'detail', { radius: 2, type: 'gaussian' }, true],
+    ['resize', 'Fit size', 'output', { maxWidth: 2000, mode: 'high' }, false],
+    ['border', 'Border', 'output', { padding: 24, size: 0, radius: 0, color: '#ffffff' }, false]
+  ];
+  var OP_LABEL = {};
+  CATALOG.forEach(function (c) { OP_LABEL[c[0]] = c[1]; });
+  OP_LABEL.sharpness = 'Sharpen';
+  OP_LABEL.adjust = 'Adjust';
+  OP_LABEL.curves = 'Curves';
+  OP_LABEL.crop = 'Crop';
+  OP_LABEL.rotate = 'Rotate';
+  OP_LABEL.flip = 'Flip';
+  OP_LABEL.frame = 'Frame';
+
+  function isObj(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
+  function slug(s, max) {
+    var out = String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, max || 60).replace(/-+$/, '');
+    return out;
+  }
+  function round(v, step) {
+    var dp = step < 1 ? Math.min(4, String(step).split('.')[1].length + 1) : 2;
+    var f = Math.pow(10, dp);
+    return Math.round(v * f) / f;
+  }
+  /* Walk a parsed file once: forbidden keys, nesting depth and script-like text anywhere. */
+  function scan(v, depth, path) {
+    if (depth > WF_LIMITS.depth) return 'This file is nested too deeply.';
+    if (typeof v === 'string') {
+      if (/\.parameters\.image$/.test(path)) return null;
+      return SCRIPTY.test(v) ? 'This file contains markup or script, which recipes cannot carry.' : null;
+    }
+    if (!v || typeof v !== 'object') return null;
+    var keys = Object.keys(v);
+    for (var i = 0; i < keys.length; i++) {
+      if (BAD_KEYS[keys[i]]) return 'This file contains a forbidden key (' + keys[i] + ').';
+      var bad = scan(v[keys[i]], depth + 1, path + '.' + keys[i]);
+      if (bad) return bad;
+    }
+    return null;
+  }
+  function stepUses11(op, params) {
+    if (V11_OPS[op]) return true;
+    if (op === 'adjust') return V11_ADJUST.some(function (k) { return params[k] != null; });
+    return false;
+  }
 
   function scaleParams(op, params, intensity) {
     var spec = FIELD[op] || {};
     var t = clamp(intensity, 0, 100) / 100;
     var out = {};
     Object.keys(params || {}).forEach(function (k) {
-      var rule = spec[k];
+      var r = spec[k];
       var v = params[k];
-      if (rule && rule.num && typeof v === 'number' && isFinite(v)) {
-        v = clamp(v, rule.min, rule.max);
-        out[k] = rule.identity != null ? rule.identity + (v - rule.identity) * t : v;
-      }
+      if (r && r.num) {
+        if (typeof v !== 'number' || !isFinite(v)) return;
+        v = clamp(v, r.min, r.max);
+        out[k] = r.identity != null ? r.identity + (v - r.identity) * t : v;
+      } else out[k] = v;
     });
-    var enums = ENUMS[op] || {};
-    Object.keys(enums).forEach(function (k) {
-      if (params[k] != null) out[k] = enums[k].indexOf(params[k]) >= 0 ? params[k] : enums[k][0];
-    });
-    ['text', 'font', 'color', 'outline', 'background', 'fill', 'stroke', 'replace', 'image'].forEach(function (k) {
-      if (params[k] != null) out[k] = params[k];
-    });
-    if (op === 'curves' && Array.isArray(params.points)) out.points = params.points;
-    if (typeof params.shadow === 'boolean') out.shadow = params.shadow;
-    if (typeof params.tile === 'boolean') out.tile = params.tile;
-    if (typeof params.lock === 'boolean') out.lock = params.lock;
     return out;
   }
 
-  function stepTone(op, value, label, description) {
-    return { id: label.toLowerCase().replace(/\s+/g, '-'), operation: op, label: label, description: description || '', enabled: true, parameters: { value: value } };
+  function validateStep(step, index, errors, warnings, usedIds) {
+    var where = 'Step ' + (index + 1);
+    if (!isObj(step)) { errors.push(where + ' is not readable.'); return null; }
+    var op = step.operation;
+    if (typeof op !== 'string' || !Object.prototype.hasOwnProperty.call(FIELD, op)) {
+      errors.push(where + ': “' + cleanStr(op, 40) + '” is not a LocalEditor edit.');
+      return null;
+    }
+    var label = cleanStr(step.label || OP_LABEL[op] || op, 60) || op;
+    where = where + ' (' + label + ')';
+    var raw = step.parameters == null ? {} : step.parameters;
+    if (!isObj(raw)) { errors.push(where + ': parameters must be an object.'); return null; }
+    var params = {};
+    var nums = FIELD[op], enums = ENUMS[op] || {}, strs = STRINGS[op] || {}, bools = BOOLS[op] || [];
+    Object.keys(raw).forEach(function (k) {
+      var v = raw[k];
+      if (Object.prototype.hasOwnProperty.call(nums, k)) {
+        var r = nums[k];
+        if (typeof v !== 'number' || !isFinite(v)) { errors.push(where + ': ' + k + ' must be a number.'); return; }
+        if (v < r.min || v > r.max) { errors.push(where + ': ' + k + ' ' + v + ' is outside ' + r.min + ' to ' + r.max + '.'); return; }
+        params[k] = v;
+      } else if (Object.prototype.hasOwnProperty.call(enums, k)) {
+        if (enums[k].indexOf(v) < 0) { errors.push(where + ': ' + k + ' must be one of ' + enums[k].join(', ') + '.'); return; }
+        params[k] = v;
+      } else if (Object.prototype.hasOwnProperty.call(strs, k)) {
+        var kind = strs[k][0], max = strs[k][1];
+        if (typeof v !== 'string') { errors.push(where + ': ' + k + ' must be text.'); return; }
+        if (v.length > max) { errors.push(where + ': ' + k + ' is longer than ' + max + ' characters.'); return; }
+        if (kind === 'color' && !COLOR_RE.test(v.trim())) { errors.push(where + ': ' + k + ' is not a colour.'); return; }
+        if (kind === 'font' && !FONT_RE.test(v)) { errors.push(where + ': ' + k + ' is not a font name.'); return; }
+        if (kind === 'id' && !ID_RE.test(v)) { errors.push(where + ': ' + k + ' is not a valid id.'); return; }
+        params[k] = kind === 'text' ? cleanStr(v, max) : v.trim();
+      } else if (bools.indexOf(k) >= 0) {
+        if (typeof v !== 'boolean') { errors.push(where + ': ' + k + ' must be true or false.'); return; }
+        params[k] = v;
+      } else if (op === 'curves' && k === 'points') {
+        var ok = Array.isArray(v) && v.length >= 2 && v.length <= 6 && v.every(function (pt, i) {
+          return Array.isArray(pt) && pt.length === 2 && typeof pt[0] === 'number' && typeof pt[1] === 'number' &&
+            pt[0] >= 0 && pt[0] <= 1 && pt[1] >= 0 && pt[1] <= 1 && (i === 0 || pt[0] >= v[i - 1][0]);
+        });
+        if (!ok) { errors.push(where + ': curves need 2 to 6 [x, y] points between 0 and 1, x ascending.'); return; }
+        params.points = v.map(function (pt) { return [pt[0], pt[1]]; });
+      } else if (op === 'watermark' && k === 'image') {
+        if (typeof v !== 'string' || !IMAGE_RE.test(v) || v.length > 1500000) { errors.push(where + ': a recipe image must be a small PNG, JPEG, or WebP data URL.'); return; }
+        params.image = v;
+      } else {
+        warnings.push(where + ': unknown parameter “' + cleanStr(k, 30) + '” was left out.');
+      }
+    });
+    if (op === 'curves' && !params.points) errors.push(where + ': curves need points.');
+    if (op === 'filter' && !params.name) errors.push(where + ': a filter needs a name.');
+    var id = typeof step.id === 'string' && ID_RE.test(step.id) ? step.id : slug(label, 30) || 'step';
+    var base = id, n = 2;
+    while (usedIds[id]) id = base.slice(0, 36) + '-' + (n++);
+    usedIds[id] = 1;
+    if (step.enabled != null && typeof step.enabled !== 'boolean') errors.push(where + ': enabled must be true or false.');
+    return {
+      id: id,
+      operation: op,
+      label: label,
+      description: cleanStr(step.description || '', 180),
+      enabled: step.enabled !== false,
+      parameters: params
+    };
   }
 
-  LE.recipes = {
-    builtins: [
-      {
-        format: 'localeditor-workflow', version: '1.0',
-        metadata: { id: 'cinematic-portrait', name: 'Cinematic Portrait', description: 'A warm, gently contrasted portrait with a soft vignette.', author: 'LocalEditor', category: 'portrait', difficulty: 'beginner', tags: ['portrait', 'cinematic', 'warm'], license: 'Free to use and share' },
-        compatibility: { minimumEditorVersion: '1.0', mobileSupported: true },
-        parameters: [{ id: 'intensity', label: 'Effect intensity', type: 'slider', min: 0, max: 100, default: 75 }],
-        steps: [
-          stepTone('exposure', 0.16, 'Exposure', 'Brighten the face a little.'),
-          stepTone('temperature', 14, 'Warmth', 'Shift the light toward gold.'),
-          stepTone('contrast', 16, 'Contrast', 'Separate light and shadow.'),
-          { id: 'vignette', operation: 'vignette', label: 'Vignette', description: 'Darken the corners slightly.', enabled: true, parameters: { amount: 0.32 } },
-          stepTone('sharpness', 22, 'Sharpen', 'Bring eyes and hair into focus.')
-        ],
-        export: { format: 'jpeg', quality: 90 }
-      },
-      {
-        format: 'localeditor-workflow', version: '1.0',
-        metadata: { id: 'clean-product', name: 'Clean Product', description: 'Even light and crisp detail for a product photo.', author: 'LocalEditor', category: 'product', difficulty: 'beginner', tags: ['product', 'ecommerce'], license: 'Free to use and share' },
-        compatibility: { minimumEditorVersion: '1.0', mobileSupported: true },
-        parameters: [{ id: 'intensity', label: 'Effect intensity', type: 'slider', min: 0, max: 100, default: 80 }],
-        steps: [
-          stepTone('exposure', 0.1, 'Exposure', 'Lift a dark product shot.'),
-          stepTone('contrast', 12, 'Contrast', 'Keep edges readable.'),
-          stepTone('saturation', -8, 'Color', 'Keep colors honest, not neon.'),
-          stepTone('sharpness', 26, 'Sharpen', 'Make labels and edges clearer.')
-        ],
-        export: { format: 'jpeg', quality: 86 }
-      },
-      {
-        format: 'localeditor-workflow', version: '1.0',
-        metadata: { id: 'vintage-film', name: 'Vintage Film', description: 'Faded color, warm shadows, and a light vignette.', author: 'LocalEditor', category: 'creative', difficulty: 'beginner', tags: ['film', 'vintage'], license: 'Free to use and share' },
-        compatibility: { minimumEditorVersion: '1.0', mobileSupported: true },
-        parameters: [{ id: 'intensity', label: 'Effect intensity', type: 'slider', min: 0, max: 100, default: 80 }],
-        steps: [
-          { id: 'film', operation: 'filter', label: 'Film look', description: 'Apply the vintage film grades.', enabled: true, parameters: { name: 'vintage', intensity: 100 } }
-        ],
-        export: { format: 'jpeg', quality: 90 }
-      },
-      {
-        format: 'localeditor-workflow', version: '1.0',
-        metadata: { id: 'ecommerce-export', name: 'Shop Export', description: 'Limit the long edge to 2000 pixels, sharpen, and save a smaller JPEG.', author: 'LocalEditor', category: 'product', difficulty: 'beginner', tags: ['export', 'shop', 'resize'], license: 'Free to use and share' },
-        compatibility: { minimumEditorVersion: '1.0', mobileSupported: true },
-        parameters: [{ id: 'intensity', label: 'Sharpen amount', type: 'slider', min: 0, max: 100, default: 100 }],
-        steps: [
-          { id: 'fit', operation: 'resize', label: 'Fit 2000px', description: 'Shrink only if the photo is larger than 2000 pixels wide.', enabled: true, parameters: { maxWidth: 2000, mode: 'high' } },
-          stepTone('sharpness', 18, 'Sharpen', 'Recover a little detail after resizing.')
-        ],
-        export: { format: 'jpeg', quality: 82 }
-      },
-      {
-        format: 'localeditor-workflow', version: '1.0',
-        metadata: { id: 'golden-hour', name: 'Golden Hour', description: 'Warm light, held highlights, and a quiet vignette.', author: 'LocalEditor', category: 'portrait', difficulty: 'beginner', tags: ['warm', 'golden'], license: 'Free to use and share' },
-        compatibility: { minimumEditorVersion: '1.0', mobileSupported: true },
-        parameters: [{ id: 'intensity', label: 'Effect intensity', type: 'slider', min: 0, max: 100, default: 78 }],
-        steps: [
-          stepTone('temperature', 22, 'Warmth', 'Push the light toward sunset.'),
-          stepTone('exposure', 0.08, 'Exposure', 'Open the shadows a touch.'),
-          stepTone('highlights', -12, 'Highlights', 'Hold bright skin and sky.'),
-          { id: 'vignette', operation: 'vignette', label: 'Vignette', enabled: true, parameters: { amount: 0.2 } }
-        ],
-        export: { format: 'jpeg', quality: 90 }
-      },
-      {
-        format: 'localeditor-workflow', version: '1.0',
-        metadata: { id: 'soft-wedding', name: 'Soft Wedding', description: 'Airy skin tones and lower contrast for ceremony photos.', author: 'LocalEditor', category: 'portrait', difficulty: 'beginner', tags: ['wedding', 'soft'], license: 'Free to use and share' },
-        compatibility: { minimumEditorVersion: '1.0', mobileSupported: true },
-        parameters: [{ id: 'intensity', label: 'Effect intensity', type: 'slider', min: 0, max: 100, default: 70 }],
-        steps: [
-          stepTone('exposure', 0.12, 'Exposure', 'Brighten the room.'),
-          stepTone('temperature', 8, 'Warmth', 'Keep the light flattering.'),
-          stepTone('contrast', -8, 'Contrast', 'Soften harsh light.'),
-          stepTone('highlights', -10, 'Highlights', 'Protect dresses and windows.')
-        ],
-        export: { format: 'jpeg', quality: 92 }
-      }
-    ],
-
-    validate: function (input) {
-      var errors = [];
-      var data = input;
-      if (typeof input === 'string') {
-        if (input.length > 2000000) return { ok: false, errors: ['This recipe file is too large.'] };
-        try { data = JSON.parse(input); } catch (e) { return { ok: false, errors: ['This file is not valid JSON.'] }; }
-      }
-      if (!data || typeof data !== 'object' || Array.isArray(data)) return { ok: false, errors: ['This file is not a LocalEditor recipe.'] };
-      if (data.format !== 'localeditor-workflow') errors.push('This file is not a LocalEditor recipe.');
-      if (!/^1\./.test(String(data.version || ''))) errors.push('This recipe needs a newer LocalEditor.');
-      var meta = data.metadata || {};
-      var stepsIn = Array.isArray(data.steps) ? data.steps : null;
-      if (!stepsIn) errors.push('This recipe has no steps.');
-      if (stepsIn && stepsIn.length > 40) errors.push('This recipe has too many steps.');
-      var steps = [];
-      (stepsIn || []).forEach(function (step, index) {
-        if (!step || typeof step !== 'object') { errors.push('Step ' + (index + 1) + ' is not readable.'); return; }
-        var op = step.operation;
-        if (!FIELD[op]) { errors.push('“' + cleanStr(op, 40) + '” is not a LocalEditor edit.'); return; }
-        var params = {};
-        var raw = step.parameters || {};
-        if (raw && typeof raw === 'object') {
-          var spec = FIELD[op];
-          Object.keys(spec).forEach(function (k) {
-            if (raw[k] == null || raw[k] === '') return;
-            var n = Number(raw[k]);
-            if (!isFinite(n)) { errors.push(step.label || op + ' has a value that is not a number.'); return; }
-            params[k] = clamp(n, spec[k].min, spec[k].max);
-          });
-          var enums = ENUMS[op] || {};
-          Object.keys(enums).forEach(function (k) {
-            if (raw[k] == null) return;
-            if (enums[k].indexOf(raw[k]) < 0) errors.push((step.label || op) + ' uses an unknown ' + k + '.');
-            else params[k] = raw[k];
-          });
-          if (op === 'curves') {
-            if (!Array.isArray(raw.points) || raw.points.length < 2 || raw.points.length > 6) errors.push('Curves need between 2 and 6 points.');
-            else {
-              params.points = raw.points.map(function (pt) {
-                return [clamp(Number(pt[0]) || 0, 0, 1), clamp(Number(pt[1]) || 0, 0, 1)];
-              });
-            }
-          }
-          ['text', 'font', 'color', 'outline', 'background', 'fill', 'stroke', 'replace'].forEach(function (k) {
-            if (raw[k] != null) params[k] = cleanStr(raw[k], k === 'text' ? 240 : 80);
-          });
-          if (raw.image != null) {
-            if (typeof raw.image !== 'string' || !/^data:image\/(png|jpeg|jpg|webp);base64,/i.test(raw.image) || raw.image.length > 1500000) {
-              errors.push('A recipe image must be a small PNG, JPEG, or WebP.');
-            } else params.image = raw.image;
-          }
-          if (typeof raw.shadow === 'boolean') params.shadow = raw.shadow;
-          if (typeof raw.tile === 'boolean') params.tile = raw.tile;
-        }
-        steps.push({
-          id: cleanStr(step.id || ('step-' + (index + 1)), 40),
-          operation: op,
-          label: cleanStr(step.label || op, 60),
-          description: cleanStr(step.description || '', 180),
-          enabled: step.enabled !== false,
-          parameters: params
-        });
+  function validate(input) {
+    var errors = [], warnings = [];
+    var data = input;
+    function fail(msg) { return { ok: false, errors: [msg], warnings: [] }; }
+    if (typeof input === 'string') {
+      if (input.length > WF_LIMITS.bytes) return fail('This recipe file is too large.');
+      try { data = JSON.parse(input); } catch (e) { return fail('This file is not valid JSON.'); }
+    } else {
+      var size = 0;
+      try { size = JSON.stringify(input).length; } catch (e2) { return fail('This recipe could not be read.'); }
+      if (size > WF_LIMITS.bytes) return fail('This recipe file is too large.');
+    }
+    if (!isObj(data)) return fail('This file is not a LocalEditor recipe.');
+    var bad = scan(data, 0, '');
+    if (bad) return fail(bad);
+    if (data.format !== WF_FORMAT) return fail('This file is not a LocalEditor recipe.');
+    var ver = typeof data.version === 'number' ? (data.version % 1 ? String(data.version) : data.version + '.0') : String(data.version || '');
+    var major = /^(\d+)\.\d+$/.exec(ver);
+    if (!major) return fail('This recipe has no readable version.');
+    if (Number(major[1]) > 1) return fail('This recipe needs a newer LocalEditor.');
+    if (Number(major[1]) < 1) return fail('This recipe has no readable version.');
+    if (data.metadata != null && !isObj(data.metadata)) errors.push('metadata must be an object.');
+    var meta = isObj(data.metadata) ? data.metadata : {};
+    var stepsIn = Array.isArray(data.steps) ? data.steps : null;
+    if (!stepsIn || !stepsIn.length) errors.push('This recipe has no steps.');
+    else if (stepsIn.length > WF_LIMITS.steps) errors.push('This recipe has more than ' + WF_LIMITS.steps + ' steps.');
+    var steps = [], used = {}, v11 = false;
+    if (stepsIn && stepsIn.length <= WF_LIMITS.steps) {
+      stepsIn.forEach(function (step, i) {
+        var s = validateStep(step, i, errors, warnings, used);
+        if (s) { steps.push(s); if (stepUses11(s.operation, s.parameters)) v11 = true; }
       });
-      var intensity = 75;
-      if (Array.isArray(data.parameters) && data.parameters[0] && isFinite(Number(data.parameters[0].default))) {
-        intensity = clamp(Number(data.parameters[0].default), 0, 100);
+    }
+    var strength = 75;
+    if (data.parameters != null) {
+      var p0 = Array.isArray(data.parameters) ? data.parameters[0] : null;
+      if (!isObj(p0)) errors.push('parameters must be a list with one strength slider.');
+      else if (p0.default != null) {
+        if (typeof p0.default !== 'number' || p0.default < 0 || p0.default > 100) errors.push('The default strength must be a number from 0 to 100.');
+        else strength = p0.default;
       }
-      var exp = data.export || {};
-      var format = ['jpeg', 'png', 'webp'].indexOf(exp.format) >= 0 ? exp.format : 'jpeg';
-      var workflow = {
-        format: 'localeditor-workflow',
-        version: '1.0',
-        metadata: {
-          id: cleanStr(meta.id || ('recipe-' + Date.now()), 60),
-          name: cleanStr(meta.name || 'Untitled recipe', 80),
-          description: cleanStr(meta.description || '', 400),
-          author: cleanStr(meta.author || 'Anonymous', 80),
-          category: cleanStr(meta.category || 'general', 40),
-          difficulty: ['beginner', 'intermediate', 'expert'].indexOf(meta.difficulty) >= 0 ? meta.difficulty : 'beginner',
-          tags: Array.isArray(meta.tags) ? meta.tags.slice(0, 8).map(function (t) { return cleanStr(t, 24); }) : [],
-          license: cleanStr(meta.license || 'Free to use and share', 80)
-        },
-        compatibility: {
-          minimumEditorVersion: '1.0',
-          mobileSupported: !data.compatibility || data.compatibility.mobileSupported !== false
-        },
-        parameters: [{ id: 'intensity', label: 'Effect intensity', type: 'slider', min: 0, max: 100, default: intensity }],
-        steps: steps,
-        export: { format: format, quality: clamp(num(exp.quality, 90), 40, 100) }
-      };
-      return { ok: errors.length === 0, errors: errors, workflow: workflow };
+    }
+    var exp = data.export == null ? {} : data.export;
+    if (!isObj(exp)) { errors.push('export must be an object.'); exp = {}; }
+    var format = 'jpeg', quality = 90;
+    if (exp.format != null) {
+      if (['jpeg', 'png', 'webp'].indexOf(exp.format) < 0) errors.push('export.format must be jpeg, png or webp.');
+      else format = exp.format;
+    }
+    if (exp.quality != null) {
+      if (typeof exp.quality !== 'number' || exp.quality < 40 || exp.quality > 100) errors.push('export.quality must be a number from 40 to 100.');
+      else quality = exp.quality;
+    }
+    var name = cleanStr(typeof meta.name === 'string' ? meta.name.trim() : '', 80) || 'Untitled recipe';
+    var id = slug(meta.id, 60) || slug(name, 48) || 'recipe';
+    var cover = typeof meta.cover === 'string' && /^([a-z]+-\d{2}|sample-portrait|sample-scene)$/.test(meta.cover) ? meta.cover : null;
+    if (meta.cover != null && !cover) warnings.push('The cover photo was not recognised and was left out.');
+    var tags = Array.isArray(meta.tags) ? meta.tags.filter(function (t) { return typeof t === 'string' && t.trim(); }).slice(0, WF_LIMITS.tags).map(function (t) { return cleanStr(t.trim().toLowerCase(), 24); }) : [];
+    var metaOut = {
+      id: id,
+      name: name,
+      description: cleanStr(typeof meta.description === 'string' ? meta.description.trim() : '', 400),
+      author: cleanStr(typeof meta.author === 'string' && meta.author.trim() ? meta.author.trim() : 'Anonymous', 80),
+      category: slug(meta.category, 24) || 'general',
+      difficulty: ['beginner', 'intermediate', 'expert'].indexOf(meta.difficulty) >= 0 ? meta.difficulty : 'beginner',
+      tags: tags,
+      license: cleanStr(typeof meta.license === 'string' && meta.license.trim() ? meta.license.trim() : 'Free to use and share', 80)
+    };
+    if (cover) metaOut.cover = cover;
+    if (typeof meta.created === 'string' && /^\d{4}-\d{2}-\d{2}([T ][\d:.]+Z?)?$/.test(meta.created)) metaOut.created = meta.created;
+    var workflow = {
+      format: WF_FORMAT,
+      version: v11 ? '1.1' : '1.0',
+      metadata: metaOut,
+      compatibility: {
+        minimumEditorVersion: v11 ? '1.1' : '1.0',
+        mobileSupported: !isObj(data.compatibility) || data.compatibility.mobileSupported !== false
+      },
+      parameters: [{ id: 'intensity', label: 'Strength', type: 'slider', min: 0, max: 100, default: strength }],
+      steps: steps,
+      export: { format: format, quality: quality }
+    };
+    return { ok: errors.length === 0, errors: errors, warnings: warnings, workflow: workflow };
+  }
+
+  /* ---------- Studio looks: recipe steps <-> a photo layer's adjust + filter fields ---------- */
+  var STUDIO_KEYS = ['exposure', 'brightness', 'contrast', 'highlights', 'shadows', 'warmth', 'tint', 'saturation', 'vibrance', 'hue', 'vignette', 'grain', 'sharpness', 'blur'];
+  var EXT_KEYS = ['fade', 'clarity', 'splitShadowHue', 'splitShadowAmount', 'splitHighlightHue', 'splitHighlightAmount', 'splitBalance', 'black', 'white', 'gamma'];
+  var LOOK_RANGE = {
+    exposure: [-1, 1], brightness: [-100, 100], contrast: [-100, 100], highlights: [-100, 100], shadows: [-100, 100],
+    warmth: [-100, 100], tint: [-100, 100], saturation: [-100, 100], vibrance: [-100, 100], hue: [-180, 180],
+    vignette: [0, 1], grain: [0, 100], sharpness: [0, 100], blur: [0, 40], fade: [0, 100], clarity: [-100, 100],
+    splitShadowHue: [0, 360], splitShadowAmount: [0, 100], splitHighlightHue: [0, 360], splitHighlightAmount: [0, 100],
+    splitBalance: [-100, 100], black: [0, 255], white: [0, 255], gamma: [0.2, 3]
+  };
+  var SET_KEYS = { vignette: 1, grain: 1, blur: 1, splitShadowHue: 1, splitHighlightHue: 1, splitShadowAmount: 1, splitHighlightAmount: 1, splitBalance: 1, black: 1, white: 1, gamma: 1, fade: 1 };
+
+  /* Collapses prepared recipe steps into the studio's live fields. Steps that change size or draw
+     (resize, border, text...) cannot be live and are listed in `skipped`. */
+  function look(steps) {
+    var adjust = {}, filter = null, skipped = [];
+    function put(k, v) {
+      if (typeof v !== 'number' || !isFinite(v)) return;
+      if (SET_KEYS[k]) adjust[k] = v; else adjust[k] = (adjust[k] || 0) + v;
+    }
+    var single = { exposure: 'exposure', brightness: 'brightness', contrast: 'contrast', saturation: 'saturation', vibrance: 'vibrance', temperature: 'warmth', tint: 'tint', hue: 'hue', highlights: 'highlights', shadows: 'shadows' };
+    (steps || []).forEach(function (s) {
+      if (!s || s.enabled === false) return;
+      var p = s.parameters || {};
+      var op = s.operation;
+      if (single[op]) put(single[op], p.value);
+      else if (op === 'vignette' || op === 'grain') put(op, p.amount != null ? p.amount : p.value);
+      else if (op === 'sharpness' || op === 'sharpen') put('sharpness', p.amount != null ? p.amount : p.value);
+      else if (op === 'blur' && (!p.type || p.type === 'gaussian')) put('blur', p.radius);
+      else if (op === 'fade') put('fade', p.amount);
+      else if (op === 'clarity') put('clarity', p.value);
+      else if (op === 'split-tone') {
+        put('splitShadowHue', p.shadowHue == null ? 210 : p.shadowHue); put('splitShadowAmount', p.shadowAmount || 0);
+        put('splitHighlightHue', p.highlightHue == null ? 40 : p.highlightHue); put('splitHighlightAmount', p.highlightAmount || 0);
+        put('splitBalance', p.balance || 0);
+      } else if (op === 'levels') { put('black', p.black); put('white', p.white); put('gamma', p.gamma); }
+      else if (op === 'filter') {
+        if (!filter) filter = { name: p.name, intensity: p.intensity == null ? 100 : p.intensity };
+        else {
+          var pre = PRESETS[p.name] || {}, t = (p.intensity == null ? 100 : p.intensity) / 100;
+          Object.keys(pre).forEach(function (k) { put(k === 'temperature' ? 'warmth' : k, pre[k] * t); });
+        }
+      } else if (op === 'adjust') {
+        Object.keys(p).forEach(function (k) {
+          var dest = k === 'temperature' ? 'warmth' : k;
+          if (LOOK_RANGE[dest]) put(dest, p[k]);
+        });
+      } else skipped.push(s.label || OP_LABEL[op] || op);
+    });
+    Object.keys(adjust).forEach(function (k) {
+      var r = LOOK_RANGE[k];
+      adjust[k] = Math.round(clamp(adjust[k], r[0], r[1]) * 10000) / 10000;
+      if (adjust[k] === 0 && !SET_KEYS[k]) delete adjust[k];
+    });
+    if (!adjust.splitShadowAmount && !adjust.splitHighlightAmount) {
+      ['splitShadowHue', 'splitShadowAmount', 'splitHighlightHue', 'splitHighlightAmount', 'splitBalance'].forEach(function (k) { delete adjust[k]; });
+    }
+    if (adjust.black === 0) delete adjust.black;
+    if (adjust.white === 255) delete adjust.white;
+    if (adjust.gamma === 1) delete adjust.gamma;
+    if (adjust.fade === 0) delete adjust.fade;
+    ['vignette', 'grain', 'blur'].forEach(function (k) { if (adjust[k] === 0) delete adjust[k]; });
+    return { adjust: adjust, filter: filter, skipped: skipped };
+  }
+
+  /* The engine steps that draw a studio photo layer's look: the same order the layered editor uses,
+     with the 1.1 keys (fade, clarity, split tone, levels) as one final pass. */
+  function lookSteps(adjust, filter) {
+    var a = adjust || {};
+    var steps = [], pack = {};
+    ['brightness', 'contrast', 'saturation', 'tint', 'exposure', 'highlights', 'shadows', 'vibrance', 'vignette', 'grain', 'hue'].forEach(function (k) {
+      if (typeof a[k] === 'number' && a[k]) pack[k] = a[k];
+    });
+    var warm = a.temperature || a.warmth;
+    if (typeof warm === 'number' && warm) pack.temperature = warm;
+    if (Object.keys(pack).length) steps.push({ operation: 'adjust', parameters: pack });
+    if (filter && filter.name) steps.push({ operation: 'filter', parameters: { name: filter.name, intensity: filter.intensity == null ? 100 : filter.intensity } });
+    if (typeof a.sharpness === 'number' && a.sharpness) steps.push({ operation: 'sharpen', parameters: { amount: a.sharpness } });
+    if (typeof a.blur === 'number' && a.blur) steps.push({ operation: 'blur', parameters: { radius: a.blur, type: 'gaussian' } });
+    var e = extPack(a);
+    if (e) steps.push({ operation: 'adjust', parameters: e });
+    return steps;
+  }
+  function extPack(a) {
+    var ext = {}, any = false;
+    EXT_KEYS.forEach(function (k) { if (typeof (a || {})[k] === 'number') { ext[k] = a[k]; any = true; } });
+    if (!any) return null;
+    if (!ext.fade && !ext.clarity && !ext.splitShadowAmount && !ext.splitHighlightAmount && !ext.black && (ext.white == null || ext.white === 255) && (ext.gamma == null || ext.gamma === 1)) return null;
+    return ext;
+  }
+
+  /* Turns a photo layer's live look into readable, separately editable recipe steps. */
+  function fromLook(adjust, filter) {
+    var a = adjust || {};
+    var steps = [];
+    function add(op, params, label) {
+      steps.push({ id: slug(label, 30), operation: op, label: label, description: '', enabled: true, parameters: params });
+    }
+    function val(k, op, label, field) {
+      var v = k === 'warmth' ? (a.warmth || a.temperature) : a[k];
+      if (typeof v !== 'number' || !v) return;
+      var r = FIELD[op][field || 'value'];
+      var p = {};
+      p[field || 'value'] = round(clamp(v, r.min, r.max), r.step);
+      if (p[field || 'value']) add(op, p, label);
+    }
+    val('exposure', 'exposure', 'Exposure');
+    val('brightness', 'brightness', 'Brightness');
+    val('contrast', 'contrast', 'Contrast');
+    val('highlights', 'highlights', 'Highlights');
+    val('shadows', 'shadows', 'Shadows');
+    if ((typeof a.black === 'number' && a.black) || (typeof a.white === 'number' && a.white !== 255) || (typeof a.gamma === 'number' && a.gamma !== 1)) {
+      add('levels', {
+        black: round(clamp(num(a.black, 0), 0, 255), 1), white: round(clamp(num(a.white, 255), 0, 255), 1), gamma: round(clamp(num(a.gamma, 1), 0.2, 3), 0.01)
+      }, 'Levels');
+    }
+    val('warmth', 'temperature', 'Warmth');
+    val('tint', 'tint', 'Tint');
+    val('saturation', 'saturation', 'Saturation');
+    val('vibrance', 'vibrance', 'Vibrance');
+    val('hue', 'hue', 'Hue shift');
+    if (num(a.splitShadowAmount, 0) || num(a.splitHighlightAmount, 0)) {
+      add('split-tone', {
+        shadowHue: round(clamp(num(a.splitShadowHue, 210), 0, 360), 1), shadowAmount: round(clamp(num(a.splitShadowAmount, 0), 0, 100), 1),
+        highlightHue: round(clamp(num(a.splitHighlightHue, 40), 0, 360), 1), highlightAmount: round(clamp(num(a.splitHighlightAmount, 0), 0, 100), 1),
+        balance: round(clamp(num(a.splitBalance, 0), -100, 100), 1)
+      }, 'Split tone');
+    }
+    if (filter && filter.name && PRESETS[filter.name]) add('filter', { name: filter.name, intensity: round(clamp(num(filter.intensity, 100), 0, 100), 1) }, 'Filter');
+    val('fade', 'fade', 'Fade', 'amount');
+    val('clarity', 'clarity', 'Clarity');
+    val('vignette', 'vignette', 'Vignette', 'amount');
+    val('grain', 'grain', 'Grain', 'amount');
+    val('sharpness', 'sharpen', 'Sharpen', 'amount');
+    if (typeof a.blur === 'number' && a.blur > 0) add('blur', { radius: round(clamp(a.blur, 0, 80), 1), type: 'gaussian' }, 'Soften');
+    return steps;
+  }
+
+  /* ---------- Share links: the recipe travels in the URL fragment, which browsers never send to a server ---------- */
+  function b64url(bytes) {
+    var bin = '';
+    for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function unb64url(str) {
+    var s = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s);
+    var out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function canDeflate() {
+    if (typeof CompressionStream === 'undefined' || typeof DecompressionStream === 'undefined') return false;
+    try { new CompressionStream('deflate-raw'); return true; } catch (e) { return false; }
+  }
+  function pump(bytes, transform, cap) {
+    var reader = new Blob([bytes]).stream().pipeThrough(transform).getReader();
+    var chunks = [], total = 0;
+    function next() {
+      return reader.read().then(function (r) {
+        if (r.done) {
+          var out = new Uint8Array(total), at = 0;
+          chunks.forEach(function (c) { out.set(c, at); at += c.length; });
+          return out;
+        }
+        total += r.value.length;
+        if (cap && total > cap) { reader.cancel().catch(function () {}); throw new Error('This recipe link is too large.'); }
+        chunks.push(r.value);
+        return next();
+      });
+    }
+    return next();
+  }
+  function siteRoot() {
+    var root = (document.documentElement && document.documentElement.getAttribute('data-root')) || './';
+    try { return new URL(root, location.href).href; } catch (e) { return location.origin + '/'; }
+  }
+  function encodeLink(workflow, opts) {
+    opts = opts || {};
+    var v = validate(workflow);
+    if (!v.ok) return Promise.reject(new Error(v.errors[0]));
+    var bytes = new TextEncoder().encode(JSON.stringify(v.workflow));
+    var make = (canDeflate() && opts.compress !== false)
+      ? pump(bytes, new CompressionStream('deflate-raw')).then(function (z) { return 'z' + b64url(z); })
+      : Promise.resolve('j' + b64url(bytes));
+    return make.then(function (payload) {
+      if (payload.length > WF_LIMITS.linkChars) throw new Error('This recipe is too large for a link. Share the .leworkflow file instead.');
+      var base = opts.base || (siteRoot() + 'recipes/');
+      return { payload: payload, fragment: 'r=' + payload, url: base + '#r=' + payload, compressed: payload.charAt(0) === 'z' };
+    });
+  }
+  function linkPayload(text) {
+    var s = String(text == null ? '' : text).trim();
+    var m = /(?:^|[#&?])r=([A-Za-z0-9_-]+)/.exec(s);
+    if (m) return m[1];
+    return /^[zj][A-Za-z0-9_-]+$/.test(s) ? s : null;
+  }
+  function decodeLink(text) {
+    var payload = linkPayload(text);
+    if (!payload) return Promise.resolve({ ok: false, errors: ['That is not a recipe link.'], warnings: [] });
+    if (payload.length > WF_LIMITS.linkChars) return Promise.resolve({ ok: false, errors: ['This recipe link is too large.'], warnings: [] });
+    var tag = payload.charAt(0);
+    var bytes;
+    try { bytes = unb64url(payload.slice(1)); } catch (e) { return Promise.resolve({ ok: false, errors: ['This recipe link is damaged.'], warnings: [] }); }
+    var raw;
+    if (tag === 'j') raw = Promise.resolve(bytes);
+    else if (tag === 'z') {
+      if (!canDeflate()) return Promise.resolve({ ok: false, errors: ['This browser cannot open compressed recipe links. Ask for the .leworkflow file instead.'], warnings: [] });
+      raw = pump(bytes, new DecompressionStream('deflate-raw'), WF_LIMITS.linkBytes);
+    } else return Promise.resolve({ ok: false, errors: ['This recipe link uses a newer format.'], warnings: [] });
+    return raw.then(function (out) {
+      var json;
+      try { json = new TextDecoder('utf-8', { fatal: true }).decode(out); } catch (e) { return { ok: false, errors: ['This recipe link is damaged.'], warnings: [] }; }
+      return validate(json);
+    }, function (err) {
+      return { ok: false, errors: [/too large/.test(err && err.message) ? err.message : 'This recipe link is damaged.'], warnings: [] };
+    });
+  }
+
+  /* ---------- Built-in recipes ---------- */
+  function st(op, params, label, description) {
+    return { id: slug(label, 30), operation: op, label: label, description: description || '', enabled: true, parameters: params };
+  }
+  function recipe(id, name, category, cover, strength, description, tags, steps, exp) {
+    var used = {};
+    steps.forEach(function (s) { var base = s.id, n = 2; while (used[s.id]) s.id = base + '-' + (n++); used[s.id] = 1; });
+    var v11 = steps.some(function (s) { return stepUses11(s.operation, s.parameters); });
+    return {
+      format: WF_FORMAT, version: v11 ? '1.1' : '1.0',
+      metadata: { id: id, name: name, description: description, author: 'LocalEditor', category: category, difficulty: 'beginner', tags: tags, license: 'Free to use and share', cover: cover },
+      compatibility: { minimumEditorVersion: v11 ? '1.1' : '1.0', mobileSupported: true },
+      parameters: [{ id: 'intensity', label: 'Strength', type: 'slider', min: 0, max: 100, default: strength }],
+      steps: steps,
+      export: exp || { format: 'jpeg', quality: 90 }
+    };
+  }
+  var BUILTINS = [
+    recipe('cinematic-portrait', 'Cinematic Portrait', 'portrait', 'people-08', 75, 'Warm skin, cool shadows and a soft vignette, like a film still.', ['portrait', 'cinematic', 'warm'], [
+      st('exposure', { value: 0.1 }, 'Exposure', 'Lift the face a little.'),
+      st('temperature', { value: 10 }, 'Warmth', 'Shift the light toward gold.'),
+      st('contrast', { value: 14 }, 'Contrast', 'Separate light and shadow.'),
+      st('split-tone', { shadowHue: 195, shadowAmount: 18, highlightHue: 32, highlightAmount: 12, balance: 0 }, 'Split tone', 'Teal in the shadows, amber in the light.'),
+      st('vignette', { amount: 0.3 }, 'Vignette', 'Darken the corners slightly.'),
+      st('sharpen', { amount: 18 }, 'Sharpen', 'Bring eyes and hair into focus.')
+    ]),
+    recipe('soft-wedding', 'Soft Wedding', 'portrait', 'people-01', 70, 'Airy, bright and gentle, with soft skin and held whites.', ['wedding', 'soft', 'bright'], [
+      st('exposure', { value: 0.14 }, 'Exposure', 'Brighten the room.'),
+      st('temperature', { value: 6 }, 'Warmth', 'Keep the light flattering.'),
+      st('contrast', { value: -10 }, 'Contrast', 'Soften harsh light.'),
+      st('highlights', { value: -14 }, 'Highlights', 'Protect dresses and windows.'),
+      st('clarity', { value: -14 }, 'Clarity', 'Smooth skin texture a little.'),
+      st('fade', { amount: 10 }, 'Fade', 'A whisper of matte in the blacks.')
+    ]),
+    recipe('golden-hour', 'Golden Hour', 'portrait', 'people-07', 78, 'Sunset warmth, held highlights and a quiet vignette.', ['warm', 'golden', 'sunset'], [
+      st('temperature', { value: 20 }, 'Warmth', 'Push the light toward sunset.'),
+      st('exposure', { value: 0.06 }, 'Exposure', 'Open the shadows a touch.'),
+      st('highlights', { value: -16 }, 'Highlights', 'Hold bright skin and sky.'),
+      st('split-tone', { shadowHue: 25, shadowAmount: 10, highlightHue: 42, highlightAmount: 22, balance: 20 }, 'Golden tone', 'Honey in the highlights.'),
+      st('vignette', { amount: 0.2 }, 'Vignette', 'Lead the eye inward.')
+    ]),
+    recipe('soft-skin', 'Soft Skin', 'portrait', 'travel-05', 70, 'Flattering, bright and smooth, without the plastic look.', ['portrait', 'beauty', 'soft'], [
+      st('exposure', { value: 0.08 }, 'Exposure', 'A brighter face.'),
+      st('clarity', { value: -22 }, 'Clarity', 'Soften fine texture, keep edges.'),
+      st('highlights', { value: -10 }, 'Highlights', 'Calm shiny spots.'),
+      st('vibrance', { value: 8 }, 'Vibrance', 'Healthy colour, not orange.'),
+      st('temperature', { value: 4 }, 'Warmth', 'A touch of warmth.')
+    ]),
+    recipe('crisp-headshot', 'Crisp Headshot', 'portrait', 'people-06', 75, 'Clean, confident and sharp for profiles and team pages.', ['portrait', 'linkedin', 'profile'], [
+      st('contrast', { value: 10 }, 'Contrast', 'A confident base.'),
+      st('shadows', { value: 12 }, 'Shadows', 'See into dark hair and jackets.'),
+      st('clarity', { value: 14 }, 'Clarity', 'Defined features.'),
+      st('saturation', { value: -6 }, 'Saturation', 'Natural skin.'),
+      st('sharpen', { amount: 22 }, 'Sharpen', 'Crisp eyes.')
+    ]),
+    recipe('clean-product', 'Clean Product', 'product', 'still-01', 80, 'Even light and crisp detail for a product photo.', ['product', 'ecommerce', 'clean'], [
+      st('exposure', { value: 0.1 }, 'Exposure', 'Lift a dark product shot.'),
+      st('contrast', { value: 12 }, 'Contrast', 'Keep edges readable.'),
+      st('saturation', { value: -6 }, 'Colour', 'Keep colours honest, not neon.'),
+      st('clarity', { value: 16 }, 'Clarity', 'Show texture and material.'),
+      st('sharpen', { amount: 26 }, 'Sharpen', 'Make labels and edges clearer.')
+    ]),
+    recipe('white-sweep', 'Bright White Background', 'product', 'arch-01', 85, 'Pushes a light backdrop to clean white for listings.', ['product', 'white', 'listing'], [
+      st('levels', { black: 6, white: 228, gamma: 1.08 }, 'Levels', 'Set a clean white point.'),
+      st('exposure', { value: 0.08 }, 'Exposure', 'A brighter scene.'),
+      st('saturation', { value: -8 }, 'Saturation', 'Remove colour casts from the backdrop.'),
+      st('sharpen', { amount: 20 }, 'Sharpen', 'Crisp product edges.')
+    ]),
+    recipe('ecommerce-export', 'Shop Export', 'product', 'books-02', 100, 'Limit the long edge to 2000 pixels, sharpen, and save a smaller JPEG.', ['export', 'shop', 'resize'], [
+      st('resize', { maxWidth: 2000, mode: 'high' }, 'Fit 2000px', 'Shrink only if the photo is larger than 2000 pixels wide.'),
+      st('sharpen', { amount: 18 }, 'Sharpen', 'Recover a little detail after resizing.')
+    ], { format: 'jpeg', quality: 82 }),
+    recipe('fresh-food', 'Fresh & Tasty', 'food', 'arch-03', 75, 'Juicy colour and bright, appetising light.', ['food', 'bright', 'colour'], [
+      st('exposure', { value: 0.08 }, 'Exposure', 'Bright, daylight feel.'),
+      st('vibrance', { value: 26 }, 'Vibrance', 'Greens and reds that look fresh.'),
+      st('temperature', { value: 6 }, 'Warmth', 'Appetising warmth.'),
+      st('shadows', { value: 12 }, 'Shadows', 'Open up the plate.'),
+      st('clarity', { value: 14 }, 'Clarity', 'Texture you can almost taste.'),
+      st('sharpen', { amount: 14 }, 'Sharpen', 'Crisp crumbs and leaves.')
+    ]),
+    recipe('moody-table', 'Moody Table', 'food', 'still-02', 75, 'Dark, rich and calm, for coffee, bread and dinner.', ['food', 'dark', 'moody'], [
+      st('exposure', { value: -0.12 }, 'Exposure', 'Lower the light.'),
+      st('contrast', { value: 16 }, 'Contrast', 'Deeper shadows.'),
+      st('highlights', { value: -22 }, 'Highlights', 'Calm bright windows and plates.'),
+      st('saturation', { value: -14 }, 'Saturation', 'Muted, earthy colour.'),
+      st('temperature', { value: 8 }, 'Warmth', 'Candle-light warmth.'),
+      st('vignette', { amount: 0.4 }, 'Vignette', 'Focus on the plate.')
+    ]),
+    recipe('vivid-landscape', 'Vivid Landscape', 'landscape', 'garden-05', 75, 'Deep skies, rich greens and crisp detail.', ['landscape', 'travel', 'vivid'], [
+      st('highlights', { value: -22 }, 'Highlights', 'Bring back the sky.'),
+      st('shadows', { value: 16 }, 'Shadows', 'Open the foreground.'),
+      st('vibrance', { value: 28 }, 'Vibrance', 'Richer colour, careful with skin.'),
+      st('contrast', { value: 10 }, 'Contrast', 'A little punch.'),
+      st('clarity', { value: 22 }, 'Clarity', 'Texture in clouds and rocks.'),
+      st('sharpen', { amount: 14 }, 'Sharpen', 'Crisp edges.')
+    ]),
+    recipe('blue-hour', 'Blue Hour', 'landscape', 'street-03', 75, 'Cool dusk tones with a glow in the lights.', ['city', 'night', 'cool'], [
+      st('temperature', { value: -16 }, 'Warmth', 'Cool the evening air.'),
+      st('contrast', { value: 10 }, 'Contrast', 'Define the shapes.'),
+      st('split-tone', { shadowHue: 222, shadowAmount: 26, highlightHue: 38, highlightAmount: 18, balance: 0 }, 'Split tone', 'Blue shadows, warm lamps.'),
+      st('vibrance', { value: 12 }, 'Vibrance', 'Glowing colour.'),
+      st('vignette', { amount: 0.25 }, 'Vignette', 'A darker frame.')
+    ]),
+    recipe('misty-morning', 'Misty Morning', 'landscape', 'nature-02', 75, 'Soft, cool and quiet, like early fog.', ['landscape', 'soft', 'fog'], [
+      st('exposure', { value: 0.1 }, 'Exposure', 'Morning brightness.'),
+      st('contrast', { value: -16 }, 'Contrast', 'Soft, foggy light.'),
+      st('fade', { amount: 22 }, 'Fade', 'Milky blacks.'),
+      st('saturation', { value: -18 }, 'Saturation', 'Quiet colour.'),
+      st('temperature', { value: -8 }, 'Warmth', 'Cool dawn air.'),
+      st('clarity', { value: -12 }, 'Clarity', 'Diffuse the haze.')
+    ]),
+    recipe('vintage-film', 'Vintage Film', 'film', 'travel-03', 80, 'Faded colour, warm highlights, cool shadows and fine grain.', ['film', 'vintage', 'retro'], [
+      st('contrast', { value: -6 }, 'Contrast', 'Gentle, printed contrast.'),
+      st('saturation', { value: -18 }, 'Saturation', 'Aged colour.'),
+      st('temperature', { value: 12 }, 'Warmth', 'Warm paper tone.'),
+      st('split-tone', { shadowHue: 190, shadowAmount: 14, highlightHue: 42, highlightAmount: 18, balance: 0 }, 'Split tone', 'Cyan shadows, cream highlights.'),
+      st('fade', { amount: 20 }, 'Fade', 'Lifted, matte blacks.'),
+      st('grain', { amount: 16 }, 'Grain', 'Fine film grain.'),
+      st('vignette', { amount: 0.22 }, 'Vignette', 'Soft lens fall-off.')
+    ]),
+    recipe('warm-negative', 'Warm Negative', 'film', 'travel-06', 75, 'Creamy colour-negative film: soft contrast, warm skin, gentle grain.', ['film', 'warm', 'analog'], [
+      st('exposure', { value: 0.06 }, 'Exposure', 'Slightly over, like a well-fed negative.'),
+      st('highlights', { value: -12 }, 'Highlights', 'Soft roll-off.'),
+      st('temperature', { value: 9 }, 'Warmth', 'Warm skin.'),
+      st('saturation', { value: -8 }, 'Saturation', 'Pastel-leaning colour.'),
+      st('split-tone', { shadowHue: 185, shadowAmount: 10, highlightHue: 35, highlightAmount: 14, balance: 0 }, 'Split tone', 'Film colour separation.'),
+      st('fade', { amount: 8 }, 'Fade', 'Slightly lifted blacks.'),
+      st('grain', { amount: 10 }, 'Grain', 'Gentle grain.')
+    ]),
+    recipe('teal-orange', 'Teal & Orange', 'film', 'travel-02', 70, 'The blockbuster grade: teal shadows, orange highlights.', ['cinematic', 'night', 'bold'], [
+      st('contrast', { value: 16 }, 'Contrast', 'Bold separation.'),
+      st('split-tone', { shadowHue: 188, shadowAmount: 36, highlightHue: 28, highlightAmount: 30, balance: 0 }, 'Split tone', 'Complementary teal and orange.'),
+      st('saturation', { value: -6 }, 'Saturation', 'Keep it from going neon.'),
+      st('clarity', { value: 10 }, 'Clarity', 'A little bite.'),
+      st('vignette', { amount: 0.3 }, 'Vignette', 'Cinema framing.')
+    ]),
+    recipe('instant-fade', 'Instant Fade', 'film', 'sky-02', 80, 'A sun-bleached instant print: faded, warm and dreamy.', ['instant', 'retro', 'faded'], [
+      st('fade', { amount: 30 }, 'Fade', 'Washed-out blacks.'),
+      st('contrast', { value: -10 }, 'Contrast', 'Soft print contrast.'),
+      st('saturation', { value: -22 }, 'Saturation', 'Bleached colour.'),
+      st('temperature', { value: 14 }, 'Warmth', 'Warm, yellowed print.'),
+      st('split-tone', { shadowHue: 165, shadowAmount: 14, highlightHue: 48, highlightAmount: 20, balance: 10 }, 'Split tone', 'Green-cyan shadows, yellow highlights.'),
+      st('vignette', { amount: 0.3 }, 'Vignette', 'Darker print edges.')
+    ]),
+    recipe('classic-bw', 'Classic Black & White', 'bw', 'sky-03', 100, 'Rich, balanced monochrome with real blacks.', ['black and white', 'mono', 'classic'], [
+      st('saturation', { value: -100 }, 'Black & white', 'Remove colour.'),
+      st('contrast', { value: 18 }, 'Contrast', 'Rich tones.'),
+      st('clarity', { value: 12 }, 'Clarity', 'Texture and depth.'),
+      st('sharpen', { amount: 12 }, 'Sharpen', 'Crisp detail.')
+    ]),
+    recipe('noir', 'Noir', 'bw', 'street-01', 100, 'Hard light, deep blacks and grain for drama.', ['black and white', 'noir', 'dramatic'], [
+      st('saturation', { value: -100 }, 'Black & white', 'Remove colour.'),
+      st('contrast', { value: 34 }, 'Contrast', 'Hard, dramatic light.'),
+      st('exposure', { value: -0.1 }, 'Exposure', 'Darker mood.'),
+      st('clarity', { value: 20 }, 'Clarity', 'Gritty texture.'),
+      st('grain', { amount: 18 }, 'Grain', 'Fast-film grain.'),
+      st('vignette', { amount: 0.5 }, 'Vignette', 'Heavy frame.')
+    ]),
+    recipe('silver-matte', 'Silver Matte', 'bw', 'travel-04', 100, 'Soft, airy monochrome with matte blacks and a cool silver tone.', ['black and white', 'matte', 'soft'], [
+      st('saturation', { value: -100 }, 'Black & white', 'Remove colour.'),
+      st('fade', { amount: 24 }, 'Fade', 'Matte blacks.'),
+      st('contrast', { value: -4 }, 'Contrast', 'Gentle tones.'),
+      st('split-tone', { shadowHue: 215, shadowAmount: 10, highlightHue: 215, highlightAmount: 4, balance: -20 }, 'Silver tone', 'A cool, silvery cast.'),
+      st('grain', { amount: 8 }, 'Grain', 'A little tooth.')
+    ]),
+    recipe('sepia-print', 'Sepia Print', 'bw', 'garden-06', 100, 'Warm brown-toned print, like an old photograph.', ['sepia', 'vintage', 'warm'], [
+      st('saturation', { value: -100 }, 'Black & white', 'Start from monochrome.'),
+      st('split-tone', { shadowHue: 28, shadowAmount: 34, highlightHue: 40, highlightAmount: 26, balance: 0 }, 'Sepia tone', 'Brown shadows, cream highlights.'),
+      st('fade', { amount: 14 }, 'Fade', 'An aged print.'),
+      st('contrast', { value: 6 }, 'Contrast', 'Keep the print lively.'),
+      st('vignette', { amount: 0.25 }, 'Vignette', 'Darkened edges.')
+    ]),
+    recipe('feed-pop', 'Feed Pop', 'social', 'people-05', 75, 'Bright, punchy and clean, made to stand out in a feed.', ['social', 'instagram', 'bright'], [
+      st('exposure', { value: 0.06 }, 'Exposure', 'Bright and airy.'),
+      st('contrast', { value: 14 }, 'Contrast', 'Punch.'),
+      st('vibrance', { value: 26 }, 'Vibrance', 'Colour that pops.'),
+      st('clarity', { value: 10 }, 'Clarity', 'Crisp on small screens.'),
+      st('sharpen', { amount: 14 }, 'Sharpen', 'Survives compression.')
+    ]),
+    recipe('pastel-dream', 'Pastel Dream', 'social', 'travel-07', 75, 'Light, soft and pink-tinted, for an airy feed.', ['pastel', 'soft', 'pink'], [
+      st('exposure', { value: 0.14 }, 'Exposure', 'Light and bright.'),
+      st('contrast', { value: -14 }, 'Contrast', 'Soft.'),
+      st('saturation', { value: -10 }, 'Saturation', 'Pastel colour.'),
+      st('fade', { amount: 16 }, 'Fade', 'Powdery blacks.'),
+      st('split-tone', { shadowHue: 205, shadowAmount: 12, highlightHue: 335, highlightAmount: 16, balance: 10 }, 'Split tone', 'Blue shadows, pink light.')
+    ]),
+    recipe('clean-scan', 'Clean Scan', 'document', 'books-03', 100, 'Turns a phone photo of a page into a clean, readable scan.', ['document', 'scan', 'paper'], [
+      st('levels', { black: 40, white: 200, gamma: 1.1 }, 'Levels', 'White paper, dark ink.'),
+      st('saturation', { value: -60 }, 'Saturation', 'Remove paper colour casts.'),
+      st('contrast', { value: 10 }, 'Contrast', 'Crisp letters.'),
+      st('sharpen', { amount: 34 }, 'Sharpen', 'Readable small print.')
+    ], { format: 'jpeg', quality: 88 }),
+    recipe('whiteboard', 'Whiteboard', 'document', 'paper-02', 100, 'Clears glare and grey from whiteboard and notebook photos, keeps marker colours.', ['document', 'whiteboard', 'notes'], [
+      st('levels', { black: 50, white: 190, gamma: 1.05 }, 'Levels', 'A white board, not a grey one.'),
+      st('vibrance', { value: 30 }, 'Vibrance', 'Bright marker colours.'),
+      st('sharpen', { amount: 30 }, 'Sharpen', 'Readable writing.')
+    ], { format: 'png', quality: 90 }),
+    recipe('crisp-receipt', 'Crisp Receipt', 'document', 'paper-01', 100, 'High-contrast black and white for receipts and forms.', ['document', 'receipt', 'black and white'], [
+      st('saturation', { value: -100 }, 'Black & white', 'Ink only.'),
+      st('levels', { black: 70, white: 185, gamma: 1 }, 'Levels', 'Pure white paper.'),
+      st('contrast', { value: 18 }, 'Contrast', 'Bold text.'),
+      st('sharpen', { amount: 40 }, 'Sharpen', 'Sharp small print.')
+    ], { format: 'png', quality: 90 })
+  ];
+
+  BUILTINS = BUILTINS.map(function (r) { return validate(r).workflow; });
+  LE.recipes = {
+    builtins: BUILTINS,
+    categories: CATEGORIES,
+    limits: WF_LIMITS,
+    validate: validate,
+    look: look,
+    lookSteps: lookSteps,
+    lookExtSteps: function (adjust) { var e = extPack(adjust); return e ? [{ operation: 'adjust', parameters: e }] : []; },
+    fromLook: fromLook,
+    extKeys: EXT_KEYS.slice(),
+    lookMeta: { set: SET_KEYS, range: LOOK_RANGE },
+    encodeLink: encodeLink,
+    decodeLink: decodeLink,
+    linkPayload: linkPayload,
+    canCompressLinks: canDeflate,
+    slug: slug,
+    opLabel: function (op) { return OP_LABEL[op] || op; },
+    categoryLabel: function (id) {
+      for (var i = 0; i < CATEGORIES.length; i++) if (CATEGORIES[i][0] === id) return CATEGORIES[i][1];
+      return id === 'personal' || id === 'general' ? 'Yours' : (id ? id.charAt(0).toUpperCase() + id.slice(1) : 'Other');
     },
+    /* The operation list the recipe editor offers, with parameter specs for building controls. */
+    operations: function () {
+      return CATALOG.map(function (c) {
+        var op = c[0], params = [];
+        Object.keys(c[3]).forEach(function (k) {
+          var r = FIELD[op][k];
+          if (r) params.push({ key: k, type: 'number', min: r.min, max: r.max, step: r.step, identity: r.identity, default: c[3][k] });
+          else if (ENUMS[op] && ENUMS[op][k]) params.push({ key: k, type: 'enum', options: ENUMS[op][k].slice(), default: c[3][k] });
+          else if (STRINGS[op] && STRINGS[op][k]) params.push({ key: k, type: STRINGS[op][k][0], default: c[3][k] });
+        });
+        return { operation: op, label: c[1], group: c[2], live: c[4], params: params };
+      });
+    },
+    paramSpec: function (op, key) {
+      var r = FIELD[op] && FIELD[op][key];
+      if (r) return { key: key, type: 'number', min: r.min, max: r.max, step: r.step, identity: r.identity };
+      if (ENUMS[op] && ENUMS[op][key]) return { key: key, type: 'enum', options: ENUMS[op][key].slice() };
+      if (STRINGS[op] && STRINGS[op][key]) return { key: key, type: STRINGS[op][key][0], max: STRINGS[op][key][1] };
+      if (BOOLS[op] && BOOLS[op].indexOf(key) >= 0) return { key: key, type: 'boolean' };
+      return null;
+    },
+    isLive: function (op, params) {
+      if (op === 'blur') return !params || !params.type || params.type === 'gaussian';
+      return /^(exposure|brightness|contrast|saturation|vibrance|temperature|tint|hue|highlights|shadows|sharpness|sharpen|vignette|grain|fade|clarity|split-tone|levels|filter|adjust)$/.test(op);
+    },
+    find: function (id) {
+      var all = BUILTINS.concat(LE.userRecipes ? LE.userRecipes.all() : []);
+      for (var i = 0; i < all.length; i++) if (all[i].metadata.id === id) return all[i];
+      return null;
+    },
+    isBuiltin: function (id) { return BUILTINS.some(function (r) { return r.metadata.id === id; }); },
 
     prepare: function (workflow, opts) {
       opts = opts || {};
@@ -1255,15 +1886,24 @@
       return { steps: blocked ? [] : steps, notices: notices, blocked: blocked, export: workflow.export };
     },
 
+    /* Applies a recipe to a canvas at a strength (0-100). Resolves { canvas, notices }. */
+    apply: function (canvas, workflow, opts) {
+      opts = opts || {};
+      var prep = LE.recipes.prepare(workflow, { intensity: opts.strength, allowSkip: true, tier: opts.tier });
+      return LE.applySteps(canvas, prep.steps, { tier: opts.tier }).then(function (res) {
+        return { canvas: res.canvas, notices: prep.notices.concat(res.notices) };
+      });
+    },
+
     stringify: function (workflow) {
       return JSON.stringify(workflow, null, 2);
     }
   };
 
   LE.recipes.selfCheck = function () {
-    return LE.recipes.builtins.map(function (recipe) {
-      var result = LE.recipes.validate(recipe);
-      return { name: recipe.metadata.name, ok: result.ok, errors: result.errors };
+    return LE.recipes.builtins.map(function (r) {
+      var result = validate(r);
+      return { name: r.metadata.name, ok: result.ok, errors: result.errors };
     });
   };
 
@@ -1545,15 +2185,64 @@
     });
   };
 
+  /* Recipes saved on this device (localStorage). Every read and write goes through the validator. */
   LE.userRecipes = {
     key: 'le-user-recipes',
-    all: function () {
-      try { return JSON.parse(localStorage.getItem(this.key) || '[]'); } catch (e) { return []; }
+    max: 60,
+    raw: function () {
+      try {
+        var list = JSON.parse(localStorage.getItem(this.key) || '[]');
+        return Array.isArray(list) ? list : [];
+      } catch (e) { return []; }
     },
+    all: function () {
+      var seen = {};
+      return this.raw().map(function (r) { var v = LE.recipes.validate(r); return v.ok ? v.workflow : null; }).filter(function (r) {
+        if (!r || seen[r.metadata.id]) return false;
+        seen[r.metadata.id] = 1;
+        return true;
+      });
+    },
+    get: function (id) {
+      var all = this.all();
+      for (var i = 0; i < all.length; i++) if (all[i].metadata.id === id) return all[i];
+      return null;
+    },
+    write: function (list) {
+      try { localStorage.setItem(this.key, JSON.stringify(list.slice(0, this.max))); }
+      catch (e) { throw new Error('This device has no room left for more recipes. Delete one and try again.'); }
+    },
+    /* Validates, stores (newest first, replacing the same id) and returns the stored recipe. Throws on invalid input. */
     save: function (workflow) {
-      var all = this.all().filter(function (r) { return r.metadata.id !== workflow.metadata.id; });
-      all.unshift(workflow);
-      localStorage.setItem(this.key, JSON.stringify(all.slice(0, 40)));
+      var v = LE.recipes.validate(workflow);
+      if (!v.ok) throw new Error(v.errors[0] || 'That is not a valid recipe.');
+      var wf = v.workflow;
+      var all = this.all().filter(function (r) { return r.metadata.id !== wf.metadata.id; });
+      all.unshift(wf);
+      this.write(all);
+      return wf;
+    },
+    remove: function (id) {
+      var all = this.all();
+      var next = all.filter(function (r) { return r.metadata.id !== id; });
+      this.write(next);
+      return next.length !== all.length;
+    },
+    /* A free id: the slug of the name, or name-2, name-3... when taken by a built-in or a saved recipe. */
+    freeId: function (name) {
+      var base = LE.recipes.slug(name, 48) || 'my-recipe';
+      var taken = {};
+      LE.recipes.builtins.concat(this.all()).forEach(function (r) { taken[r.metadata.id] = 1; });
+      var id = base, n = 2;
+      while (taken[id]) id = base + '-' + (n++);
+      return id;
+    },
+    duplicate: function (workflow) {
+      var copy = JSON.parse(JSON.stringify(workflow));
+      copy.metadata.name = String(copy.metadata.name || 'Recipe').slice(0, 74) + ' copy';
+      copy.metadata.id = this.freeId(copy.metadata.name);
+      if (copy.metadata.author === 'LocalEditor') copy.metadata.author = 'You';
+      return this.save(copy);
     },
     votes: function () {
       try { return JSON.parse(localStorage.getItem('le-recipe-votes') || '{}'); } catch (e) { return {}; }
