@@ -1,0 +1,52 @@
+/* LocalEditor originals specimen page (/fonts/). Tokens from assets/css/app.css. */
+.fo-hero { padding: var(--s-6) 0 var(--s-4); max-width: 720px; }
+.fo-hero h1 { font-size: var(--text-3xl); line-height: 1.08; letter-spacing: -0.035em; margin: var(--s-2) 0 var(--s-3); text-wrap: balance; }
+.fo-links { margin: var(--s-3) 0 0; }
+.fo-links a { color: var(--accent); font-weight: 650; }
+
+.fo-try { background: var(--bg); padding: var(--s-3) 0 var(--s-3); border-bottom: 1px solid var(--line); }
+.fo-try-label { display: block; font-size: 13px; font-weight: 640; margin: 0 0 6px; }
+.fo-try-row { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
+.fo-try-row .input { flex: 1 1 220px; min-width: 0; font-size: 16px; }
+.fo-weight { flex: none; }
+.fo-jump { display: flex; gap: var(--s-2); margin-top: var(--s-3); overflow-x: auto; scrollbar-width: none; }
+.fo-jump::-webkit-scrollbar { display: none; }
+.fo-jump .chip { flex: none; text-decoration: none; }
+
+.fo-group { padding: var(--s-10) 0 var(--s-2); scroll-margin-top: 150px; }
+.fo-group-head { max-width: 680px; margin-bottom: var(--s-5); }
+.fo-group-head h2 { font-size: var(--text-2xl); letter-spacing: -0.025em; margin: var(--s-1) 0 var(--s-2); }
+.fo-group-head p { color: var(--muted); margin: 0; text-wrap: pretty; }
+
+.fo-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); list-style: none; margin: 0; padding: 0; }
+@media (min-width: 720px) { .fo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.fo-card { display: flex; flex-direction: column; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+.fo-spec { display: flex; align-items: center; min-height: 168px; padding: var(--s-6) var(--s-5); background: var(--surface-2); color: var(--ink); }
+.fo-card[data-tone="ink"] .fo-spec { background: var(--side); color: #F7F3EA; }
+.fo .fo-spec .fo-sample { color: inherit; }
+.fo-sample { margin: 0; width: 100%; font-size: clamp(28px, 7.4vw, 44px); line-height: 1.12; overflow-wrap: anywhere; text-wrap: balance; transition: opacity var(--dur-2) var(--ease); }
+.fo-card:not(.is-ready) .fo-sample { opacity: 0.35; }
+.fo-card[data-long] .fo-sample { font-size: clamp(22px, 5.6vw, 30px); }
+.fo-meta { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-4) var(--s-5) var(--s-5); flex: 1; }
+.fo-meta h3 { margin: 0; font-size: var(--text-xl); letter-spacing: -0.015em; }
+.fo-meta p { margin: 0; color: var(--muted); text-wrap: pretty; }
+.fo-feel { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.fo-feel li { font-size: 12px; font-weight: 650; letter-spacing: 0.04em; padding: 3px 10px; border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted); }
+.fo-uses { font-size: var(--text-sm); }
+.fo-actions { margin-top: auto; padding-top: var(--s-2); display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+.fo-why, .fo-about { padding: var(--s-12) 0 var(--s-4); max-width: 760px; }
+.fo-why h2, .fo-about h2 { font-size: var(--text-2xl); letter-spacing: -0.025em; margin: var(--s-1) 0 var(--s-4); }
+.fo-why-list { margin: 0; padding-left: 1.1em; display: grid; gap: var(--s-3); }
+.fo-why-list li { line-height: 1.55; text-wrap: pretty; }
+.fo-note { color: var(--muted); margin: var(--s-4) 0 var(--s-3); }
+.fo-sources summary { cursor: pointer; font-weight: 650; min-height: 44px; display: flex; align-items: center; }
+.fo-sources p { font-size: var(--text-sm); color: var(--muted); line-height: 1.6; }
+.fo-about p { line-height: 1.6; text-wrap: pretty; }
+
+@media (min-width: 720px) {
+  .fo-hero h1 { font-size: var(--text-4xl); }
+  .fo-group-head h2 { font-size: var(--text-3xl); }
+}
+@media (prefers-reduced-motion: reduce) { .fo-sample { transition: none; } }
