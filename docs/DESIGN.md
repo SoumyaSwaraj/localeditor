@@ -52,6 +52,7 @@ Primitives are generated in OKLCH (`docs/research/interface-psychology.md` expla
 | `--focus-ring` | `#3F67D9` | `#81A6FE` | `:focus-visible` outline (≥ 4.6:1) |
 | `--selection-bg` / `--selection-ink` | `#CEDDFF` / ink | `#2E51B6` / white | `::selection` |
 | `--warm` | `#EF8C57` | `#EF8C57` | Apricot fill: the dot, completion ring (never text) |
+| `--agent` | `#B3510B` | `#B3510B` | An assistant at work (agent mode): pointer, name label, change rings, banner dot. Apricot 600, white text 5.1:1, never the blue of selection |
 | `--warm-ink` / `--warm-soft` | `#913F04` / `#FFF4EF` | `#FEB38C` / `#3F2314` | Apricot as text, "New" badge |
 | `--private` / `--ok` | `#016D3C` | `#65BF88` | Private, on this device, done (6.5:1 / 8:1) |
 | `--private-soft` / `--add-bg` | `#EEFBF1` | `#12301E` | Its background |
@@ -77,7 +78,7 @@ Everything around a canvas (studio header, rail, panels, toolbar, footer, PDF st
 | mid | `#737373` (the fairest for judging colour) | `#FFFFFF` |
 | dark | `#1A1A1A` | `#A3A3A3` |
 
-"Theme" (auto) uses light in the light theme and dark in the dark theme. Any editor stage reads `var(--stage)`; the PDF studio and Convert map their `--stage-bg` to it.
+"Auto" (no attribute) uses light in the light theme and dark in the dark theme in the Simple studio, and **mid grey in Expert**, where colour judgement matters most (`:root:not([data-surround]) .sx.is-expert`). Any editor stage reads `var(--stage)`; the PDF studio and Convert map their `--stage-bg` to it, and the scene canvas paints no surround of its own (`scene._workspace` is transparent when `--stage` exists), so a change of theme, surround or mode shows at once.
 
 ### Expert workspace colour and surface guidance
 
@@ -89,6 +90,7 @@ For the engineers building `assets/js/expert/**` and `assets/js/fx/**`:
 - Scopes and histograms: neutral grey for luminance, pure R/G/B channels for colour; no brand colour in data.
 - Text on chrome: `--side-text` and `--side-dim` only; numbers `font-variant-numeric: tabular-nums`.
 - Do not add literal colours; if you need a new one, add a token to `app.css` (or ask the design lead).
+- Applied in pass 2 (November 2026): the tool strip's active tool is Lapis with white glyph, toggles, fills, section dots and drop lines use `--primary`, the scope plot is neutral `#111111`, on-canvas ring handles are Lapis 500, and the surround defaults to mid grey.
 
 ## Type
 
@@ -181,6 +183,8 @@ older extension points (`window.LEStudioPanels` specs, `_hooks`, `_cmds`, `fire(
 - The shell lowers the sheet to `peek` when the person works on the canvas (any pointer gesture that ends on the stage) and after anything is added to the page, so a new heading is visible and selected above the sheet. A panel that must stay up sets `spec.keepSheet: true`.
 - Dragging a range input inside the sheet "scrubs": the sheet shrinks to that slider (it stays under the finger, everything else in the sheet hides) and the canvas takes the room; it returns on release.
 - The grip: drag to any snap, drag below the peek to close, tap to step up (peek → half → full → half).
+
+**One primary while exporting.** While the Export panel is open (`.sx[data-panel="export"]`, `body[data-panel="export"]`), the panel's button is the primary action and the header's Download / Save PDF becomes a secondary button (rules in `app.css`). Same in both studios.
 
 **Sticky primary action.** A panel's main button never sits below the fold. Either put it in `ctx.ui.actions([button, ...])` (a `.sx-sheet-actions` footer, sticky at the bottom of the side panel or sheet, the primary button gets two thirds of the width), or make it a direct child `.btn-primary.sx-block` (old name `.btn-gold.sx-block`) of the panel body (it sticks the same way). Only one primary button per view.
 
