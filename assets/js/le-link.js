@@ -880,7 +880,7 @@
     var done = function () { self.applying--; };
     if (A && typeof A.applyExternal === 'function') {
       /* Agent mode applies the whole new version as one batch (replace), animated and listed in the activity feed. */
-      return Promise.resolve(A.applyExternal(stripNotes(next), { source: 'link', name: self.name, label: 'Changed ' + self.name + ' (' + ops.length + ' change' + (ops.length > 1 ? 's' : '') + ')' }))
+      return Promise.resolve(A.applyExternal(stripNotes(next), { source: 'le-link', name: self.name, label: 'Changed ' + self.name + ' (' + ops.length + ' change' + (ops.length > 1 ? 's' : '') + ')' }))
         .then(function (r) {
           if (r && r.ok === false) self.show('warn', r.code === 'paused' ? 'Paused: the change from the file waits until you resume' : 'Agent mode did not apply the change: ' + (r.message || r.code));
           else self.show('ok', 'Updated from the file');

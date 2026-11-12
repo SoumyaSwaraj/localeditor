@@ -196,7 +196,7 @@
       if (!A) return summary(cur);
       /* Agent mode: hand the same text to LEAgent.load, so its state matches ours. */
       return agentSession(A).then(function () {
-        return A.load(cur.text, { resolve: function (p) { return input.files && input.files[p] ? b64ToBlob(input.files[p], typeOf(p)) : null; }, headless: true });
+        return A.load(JSON.parse(cur.text), { resolve: function (p) { return input.files && input.files[p] ? b64ToBlob(input.files[p], typeOf(p)) : null; }, headless: true });
       }).then(function (res) { return res && res.ok === false ? agentError(res) : summary(cur); }, function (e) { return agentError(e); });
     });
   }
