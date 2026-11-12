@@ -93,23 +93,24 @@ BiRefNet lite run in PyTorch 2.15 with weights **and activations** in half preci
 
 ## The chooser (what people see)
 
-- The panel still asks one question with one gold button, pre-selected to the option recommended for this device (unchanged logic: an option already downloaded, otherwise *Quick*).
-- *Other quality options* now shows a three-step ladder, **Quick · Better · Best**, each step being the best option this device can run for that quality: on a computer with a capable graphics card Better = BiRefNet lite and Best = BiRefNet; elsewhere Better = *More detail* and there is no Best. Each card shows a small before/after crop, what it is best for, speed, "Works well on this computer" / "May be slow", and one download line ("Large one-time download (about 116 MB). Best on Wi-Fi. Stays on this device and works offline.").
-- Below: *More choices* (the other options that run here, e.g. People and portraits, Best for people), *Needs a more powerful device* ("Needs a computer with a recent graphics card", with "Try anyway" only when the answer is uncertain), *Not available on this copy of the app* (HEAD request to the same origin found no file).
-- Model names, licence, exact size, memory and source are only under *About this option*.
-- A download of 50 MB or more asks first, after checking free space (`navigator.storage.estimate`; refusal calls `LEPwa.reportQuotaError`). The file streams into Cache Storage; `Cache.put` commits only a complete body, so cancel leaves nothing (clean restart next time). "Remove from this device" appears once it is stored, and the storage manager lists it by its plain name.
-- Screenshots: `…/pro-models/out/1-desktop-gpu.png` … `6-old-gpu.png` and the `-panel.png` crops.
+Follows the owner's download policy (`docs/DOWNLOADS.md`): no download talk in the main flow, quality first, one question only when the policy calls for it.
+
+- **Main flow.** "Remove the background?" with one gold *Remove background* button (the toolbar's *Remove BG* does the same in one tap). No size, no download question. If a download is needed and the policy allows it, it happens with a quiet progress line ("Getting ready · 40%") and the result appears.
+- **Automatic pick: quality first, then speed.** Among options this device runs well (`LE.support` status `ok`), general subjects only, that are already on the device or within the automatic limit (60 MB; 5 MB on a metered or data-saver connection), the best quality wins, then the faster. If that best one is not on the device but a lesser one is, the lesser one is used now and the better one is fetched in the background; when it arrives, the done panel shows *Improve this cut-out* once. The large options are never fetched silently; they are used automatically only once they are on the device. With `LE.downloads` on the page, the options go to `LE.downloads.pick({ id, quality, speed, bytes, supportId, cached })`, every download goes through `LE.downloads.request({ id, name, bytes, kind: 'model', reason })` and `LE.downloads.track`; without it, the fallback in the policy applies (no question at 60 MB or less, ask once above, remembered).
+- **Other quality options** (unchanged role, the place for sizes): a three-step ladder, **Quick · Better · Best**. Each step shows the option in use for that quality if there is one (the person's choice or the automatic pick, so by default Better = *More detail*), otherwise the best option this device can run (on a computer with a capable graphics card Best = BiRefNet; without one there is no Best). BiRefNet lite ("Fine detail") is then under *More choices*, and takes the Better step once chosen. Each card: a small before/after crop, what it is best for, speed, "Works well on this computer" / "May be slow", and the download line ("Large one-time download (about 116 MB). Best on Wi-Fi. Stays on this device and works offline."). Below: *More choices*, *Needs a more powerful device* ("Needs a computer with a recent graphics card", "Try anyway" only when uncertain), *Not available on this copy of the app* (HEAD request found no file). Model name, licence, exact size, memory and source only under *About this option*.
+- **The one question** (an option over the limit, chosen there): "Download Best quality? Large one-time download (about 488 MB). Best on Wi-Fi…", after a free-space check (`navigator.storage.estimate`; a refusal calls `LEPwa.reportQuotaError`). Answer remembered. The file streams into Cache Storage; `Cache.put` commits only a complete body, so cancel leaves nothing (clean restart next time). The storage manager lists it by its plain name.
+- Screenshots: `/tmp/claude-0/-home-user-localeditor/8967b802-9271-5685-b2c3-5bd639496365/scratchpad/pro-models/out/` `1-desktop-gpu.png` … `6-old-gpu.png` and their `-panel.png` crops.
 
 ## Recommended defaults per device class
 
 | Device | What the ladder offers | Default (pre-selected) |
 |---|---|---|
-| Phone, or any browser without WebGPU | Quick, Better (= More detail); People under More choices; large options folded | Quick |
-| Phone with WebGPU and fp16 | Same; large options folded with "Try anyway" (unverified on phones) | Quick |
-| Laptop / desktop with WebGPU fp16, reports < 8 GB | Quick, Better (= BiRefNet lite); Best folded or "May be slow" | Quick (suggest Better on a fail case) |
-| Desktop / laptop with WebGPU fp16, 8 GB or more | Quick, Better (BiRefNet lite), Best (BiRefNet); BEN2 under More choices | Quick until a large one is downloaded; then that one |
+| Phone, or any browser without WebGPU | Quick, Better (= More detail); People under More choices; large options folded | More detail where it runs well (status ok), otherwise Quick |
+| Phone with WebGPU and fp16 | Same; large options folded with "Try anyway" (unverified on phones) | Same |
+| Laptop / desktop with WebGPU fp16, reports < 8 GB | Quick, Better (= BiRefNet lite); Best folded or "May be slow" | More detail; BiRefNet lite once the person has downloaded it |
+| Desktop / laptop with WebGPU fp16, 8 GB or more | Quick, Better (BiRefNet lite), Best (BiRefNet); BEN2 under More choices | More detail until a large one is on the device; then the best one that is |
 
-Suggested later step (not done): pre-select *Better* on capable computers once real-GPU timings confirm a few seconds per photo.
+The large options stay out of automatic downloads because they are over the policy's 60 MB limit. If the owner wants BiRefNet lite (109 MB + 7 MB engine) to be the automatic *Better* on capable computers, that is a one-number change to the limit or a `packs()` entry in `LE.downloads`, after real-GPU timings confirm a few seconds per photo.
 
 ## Risks
 

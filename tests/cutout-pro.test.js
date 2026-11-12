@@ -79,11 +79,16 @@ cases['pro options load only when the options are opened, and speak plainly'] = 
   const list = await cards(page);
   h.assert.equal(list.length, 6, 'All six options reachable: ' + list.map((c) => c.id).join(','));
   list.forEach((c) => h.assert(!JARGON.test(c.text), 'Jargon on a card: ' + c.text));
-  h.assert.equal(byGroup(list, 'ladder').join(','), 'u2netp,birefnet-lite,birefnet', 'Desktop ladder');
+  const ladder = byGroup(list, 'ladder');
+  h.assert(ladder.length === 3 && ladder[0] === 'u2netp' && ladder[2] === 'birefnet' && ['u2net-int8', 'birefnet-lite'].indexOf(ladder[1]) >= 0, 'Desktop ladder: ' + ladder);
   h.assert.equal(list.filter((c) => c.group === 'ladder').map((c) => c.name).join(','), 'Quick,Better,Best');
-  h.assert.equal(byGroup(list, 'more').sort().join(','), 'ben2,u2net-int8,u2net_human_seg-int8');
+  h.assert.equal(byGroup(list, 'more').concat(ladder).sort().join(','), 'ben2,birefnet,birefnet-lite,u2net-int8,u2net_human_seg-int8,u2netp', 'Every option reachable');
   h.assert.equal(list.filter((c) => /Recommended for this device/.test(c.text)).length, 1, 'One recommendation');
-  h.assert.equal(list.filter((c) => c.on === 'true').map((c) => c.id).join(','), 'u2netp', 'Recommended option pre-selected');
+  const rec = await page.evaluate(() => LEStudioCutout.state().recommended);
+  h.assert(['u2netp', 'u2net-int8'].indexOf(rec) >= 0, 'Never pre-select a large option that is not on the device: ' + rec);
+  h.assert(ladder.indexOf(rec) >= 0, 'The option in use stands for its step on the ladder');
+  h.assert.equal(list.filter((c) => c.on === 'true').map((c) => c.id).join(','), rec, 'Recommended option pre-selected');
+  h.assert(list.find((c) => c.id === rec).text.includes('Recommended for this device'), 'Badge on the pick');
   const lite = list.find((c) => c.id === 'birefnet-lite');
   h.assert(/Large one-time download \(about \d+ MB\)\. Best on Wi-Fi\. Stays on this device and works offline\./.test(lite.text), 'Download line: ' + lite.text);
   h.assert(/hair and fine edges/.test(lite.text), 'Purpose line: ' + lite.text);
@@ -125,7 +130,7 @@ cases['device classes: ladder, folds and "Try anyway" follow what the device can
   const weak = list.filter((c) => c.group === 'weak');
   h.assert(weak.some((c) => c.id === 'birefnet'), 'Best detail should be folded on a 4 GB phone: ' + JSON.stringify(list.map((c) => [c.id, c.group])));
   weak.forEach((c) => h.assert(c.tryAnyway && /May be too much for this phone/.test(c.text), 'Weak on phone: ' + c.text));
-  h.assert.equal(await page.evaluate(() => LEStudioCutout.state().recommended), 'u2netp');
+  h.assert(PRO.indexOf(await page.evaluate(() => LEStudioCutout.state().recommended)) < 0, 'A large option recommended on a phone');
   h.assert(await h.noOverflow(page), 'Sideways scroll at 360 px');
   const small = await page.evaluate(() => [...document.querySelectorAll('.sxc-pick[role="radio"], .sxc-fold > summary, .sxc-other > summary, .sxc-link')]
     .filter((x) => x.offsetParent).map((x) => Math.round(x.getBoundingClientRect().height)).filter((hh) => hh < 44));
@@ -149,7 +154,7 @@ cases['a copy of the app without the large files says so instead of failing'] = 
 cases['large download: asks first, refuses without space, cancel keeps nothing, a failed run recovers'] = async ({ browser, base, h }) => {
   const page = await studio(browser, base, h);
   await openOptions(page);
-  const BYTES = 60000000;
+  const BYTES = 70000000;   /* over the 60 MB automatic limit (docs/DOWNLOADS.md) */
   await page.evaluate((bytes) => {
     LE.bgRemove.register({ id: 'fake-pro', label: 'Test large', bestFor: 'Best for testing', level: 'best', rank: 99, quality: 3, speed: 'slow', tier: 'pro', runtime: 'wasm',
       supportId: 'cutout.fake-pro', path: 'assets/models/pro/fake.onnx', bytes: bytes, memoryMB: 800, warmup: false, about: { model: 'Test' } });
@@ -171,7 +176,7 @@ cases['large download: asks first, refuses without space, cancel keeps nothing, 
   await page.evaluate(() => LEStudioCutout.run(null, { model: 'fake-pro' }));
   await page.waitForSelector('.sxc-confirm');
   const ask = await page.textContent('.sxc-confirm');
-  h.assert(/Large one-time download \(about 6\d MB\)/.test(ask) && /Best on Wi-Fi/.test(ask) && /nothing half-finished is kept/.test(ask), 'Confirm text: ' + ask);
+  h.assert(/Large one-time download \(about 7\d MB\)/.test(ask) && /Best on Wi-Fi/.test(ask) && /nothing half-finished is kept/.test(ask), 'Confirm text: ' + ask);
   h.assert(!JARGON.test(ask), 'Jargon in the question: ' + ask);
   h.assert(!page.proHits.some((x) => /^GET fake/.test(x)), 'Fetched before consent');
   await page.click('.sxc-confirm-no');
@@ -205,7 +210,7 @@ cases['large download: asks first, refuses without space, cancel keeps nothing, 
   h.assert(['engine', 'memory'].indexOf(r.st.error && r.st.error.code) >= 0, 'Error code: ' + JSON.stringify(r.st.error));
   h.assert.equal(r.loaded, null, 'The engine should be unloaded after a failure');
   h.assert(r.hist && r.hist.fail, 'Failure not recorded: ' + JSON.stringify(r.hist));
-  h.assert(r.stages.some((s) => /Downloading · \d+ of 60 MB/.test(s)), 'No download progress: ' + [...new Set(r.stages)].join(' | '));
+  h.assert(r.stages.some((s) => /Getting ready · \d+%/.test(s)), 'No download progress: ' + [...new Set(r.stages)].join(' | '));
   h.assert.equal(await hasEntry(), true, 'A complete download should stay on the device');
   h.assert.equal(await page.evaluate(async (u) => +(await (await caches.open('le-models-v1')).match(u)).headers.get('content-length'), url), BYTES);
   await page.waitForSelector('.sxc-alert');
@@ -213,6 +218,49 @@ cases['large download: asks first, refuses without space, cancel keeps nothing, 
   /* After a failure the device check says so; "Remove from this device" frees the space. */
   h.assert(await page.evaluate(() => LE.bgRemove.remove('fake-pro')), 'Remove');
   h.assert.equal(await hasEntry(), false);
+  h.assert.noErrors(page);
+};
+
+cases['download policy: quality first, quiet small downloads, better one fetched for next time, shared manager used'] = async ({ browser, base, h }) => {
+  const page = await studio(browser, base, h);
+  /* Quick is already on the device; More detail (better, 44 MB, within the automatic limit) is not. */
+  await page.evaluate(() => LEStudioCutout.run(null, { quiet: true, model: 'u2netp' }));
+  await page.waitForFunction(() => LEStudio.scene.layers().some((x) => x.cutout));
+  await page.evaluate(() => { LEStudioCutout.setModel(null); LEStudio.patch(LEStudio.one().id, { cutout: null }); });
+  const st = await page.evaluate(() => LE.support.checkAsync('cutout.detailed').then((r) => r.status));
+  h.assert.equal(st, 'ok', 'Test setup: the detailed option should run well on the emulated computer');
+  /* Automatic run: uses what is here now, no question, then fetches the better one quietly and offers it once. */
+  await page.evaluate(() => LEStudio.openPanel('cutout'));
+  await page.evaluate(() => LEStudioCutout.run(null, { quiet: true }));
+  h.assert(!(await page.$('.sxc-confirm')), 'No question for a download within the limit');
+  h.assert.equal((await page.evaluate(() => LEStudio.one().cutout || {})).model, 'u2netp', 'Use the best option already on the device now');
+  await page.waitForFunction(async () => !!(await (await caches.open('le-models-v1')).match(LE.bgRemove.model('u2net-int8').url)), null, { timeout: 60000 });
+  await page.waitForSelector('.sxc-improve', { timeout: 10000 });
+  await page.click('.sxc-improve');
+  await page.waitForFunction(() => (LEStudio.one().cutout || {}).model === 'u2net-int8', null, { timeout: 60000 });
+  h.assert(!(await page.$('.sxc-improve')), 'Improve is offered once');
+  /* With the shared download manager on the page: options go through pick(), downloads through request()/track(). */
+  const seen = await page.evaluate(async () => {
+    const log = { pick: null, request: [], track: [] };
+    LE.downloads = {
+      mode: () => 'auto',
+      pick: (o) => { log.pick = o; return { now: 'u2netp', next: null }; },
+      request: (r) => { log.request.push(r); return Promise.resolve({ ok: false, why: 'declined' }); },
+      track: (id) => { log.track.push(id); return { progress() {}, done() {}, fail() {} }; }
+    };
+    await LE.bgRemove.remove('u2net_human_seg-int8');
+    LEStudio.patch(LEStudio.one().id, { cutout: null });
+    await LEStudioCutout.run(null, { quiet: true });
+    const picked = (LEStudio.one().cutout || {}).model;
+    await LEStudioCutout.run(null, { quiet: true, model: 'u2net_human_seg-int8' });
+    const after = (LEStudio.one().cutout || {}).model;
+    delete LE.downloads;
+    return { log, picked, after, cached: !!(await (await caches.open('le-models-v1')).match(LE.bgRemove.model('u2net_human_seg-int8').url)) };
+  });
+  h.assert(seen.log.pick && seen.log.pick.length && seen.log.pick.every((o) => o.id && typeof o.quality === 'number' && typeof o.speed === 'number' && o.bytes > 0 && o.supportId && typeof o.cached === 'boolean'), 'pick() options: ' + JSON.stringify(seen.log.pick));
+  h.assert.equal(seen.picked, 'u2netp', 'pick() decides the automatic option');
+  h.assert(seen.log.request.some((r) => r.id === 'u2net_human_seg-int8' && r.kind === 'model' && r.bytes === 44212602 && r.name && !/u2net|onnx/i.test(r.name)), 'request(): ' + JSON.stringify(seen.log.request));
+  h.assert(seen.after === 'u2netp' && !seen.cached, 'A declined request must not download: ' + JSON.stringify(seen));
   h.assert.noErrors(page);
 };
 

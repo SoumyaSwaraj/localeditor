@@ -19,6 +19,9 @@
  *   LE.bgRemove.applyMask(src, mask, w?, h?)     -> canvas
  *   LE.bgRemove.isLoaded() / unload()
  *   LE.bgRemove.isCached(id) / remove(id) / cachedModels() / clearCache()
+ *   LE.bgRemove.prefetch(id, onProgress, signal)  -> Promise<{ cached, bytes }>  into Cache Storage only (fetch for next time)
+ *   LE.bgRemove.space(id)                        -> Promise<{ ok, need, free }>  free-space check before a download
+ * Downloads of LARGE (50 MB) or more stream straight into Cache Storage; a cancelled one leaves no entry.
  */
 (function (global) {
   'use strict';
@@ -351,6 +354,12 @@
     isAvailable: async function (id) {
       var m = find(id); if (!m) return false;
       try { var r = await fetch(abs(m.path), { method: 'HEAD' }); return r.ok && /octet|onnx/.test(r.headers.get('content-type') || 'octet'); } catch (e) { return false; }
+    },
+    /* Download a model into Cache Storage without starting the engine (background fetch for next time). */
+    prefetch: async function (id, onProgress, signal) {
+      var m = find(id); if (!m) throw new Error('Unknown model: ' + id);
+      var got = await modelBytes(m, onProgress, true, signal);
+      return { cached: got.cached, bytes: got.buf.byteLength };
     },
     isLoaded: function () { return current ? current.id : null; },
     isCached: async function (id) {

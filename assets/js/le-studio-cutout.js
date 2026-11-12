@@ -40,7 +40,7 @@
     thumb: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M10 9.5v5l4.5-2.5z"/>'
   };
 
-  var ST = { model: lsGet(MODEL_KEY, null), rec: null, engineMissing: true, run: null, error: null, last: null, checks: {}, cached: {}, avail: {}, gpuEngine: false, confirm: null, proP: null, unloadT: 0 };
+  var ST = { model: lsGet(MODEL_KEY, null), rec: null, engineMissing: true, run: null, error: null, last: null, checks: {}, cached: {}, avail: {}, gpuEngine: false, confirm: null, proP: null, next: null, improve: null, prefetching: null, unloadT: 0 };
   var BR = null;
 
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
@@ -115,7 +115,7 @@
     if (!p) return 'Getting ready…';
     if (p.stage === 'running') return 'Finding the subject…';
     if (p.stage === 'starting' || p.cached) return 'Getting ready…';
-    if (p.total) return 'Downloading · ' + Math.max(0, Math.round((p.loaded || 0) / 1e6)) + ' of ' + Math.max(1, Math.round(p.total / 1e6)) + ' MB';
+    if (p.total) return 'Getting ready · ' + Math.min(99, Math.max(0, Math.round(100 * (p.loaded || 0) / p.total))) + '%';
     return 'Getting ready…';
   }
   function run(c, layerId, opts) {
@@ -127,27 +127,39 @@
     if (!mem || !mem.canvas) { c.toast('This photo is still loading.'); return Promise.resolve(null); }
     if (ST.run) return Promise.resolve(null);
     if (BR) endRefine(c, true);
-    var model = opts.model || chosen();
-    /* A large option that is not on this device yet: check free space, then ask once before downloading. */
+    var model = opts.model || ST.model || null;
+    /* Download policy (docs/DOWNLOADS.md): pick quality first, download quietly when the policy allows, ask once otherwise.
+       Without an explicit choice, the automatic pick is the best option this device runs well that is on the device or
+       within the automatic limit; a better one that is not here yet is fetched in the background for next time. */
     if (!opts.confirmed) {
       return remover().then(function (bg) {
-        var m = bg.model(model);
-        var go = function () { return run(c, l.id, Object.assign({}, opts, { model: model, confirmed: true })); };
-        if (!m || (m.bytes || 0) < bg.LARGE) return go();
-        return bg.isCached(model).then(function (have) {
-          if (have) return go();
-          return bg.space(model).then(function (room) {
-            if (!room.ok) {
-              var qe = new Error('There is not enough free space on this device for this download.'); qe.name = 'QuotaExceededError';
-              if (window.LEPwa && LEPwa.reportQuotaError) { try { LEPwa.reportQuotaError(qe); } catch (x) { /* ignore */ } }
-              ST.confirm = null;
-              ST.error = { layerId: l.id, model: model, code: 'quota', message: qe.message };
-            } else {
-              ST.error = null;
-              ST.confirm = { layerId: l.id, model: model, force: opts.force };
-            }
-            if (c.S.panel !== 'cutout') c.openPanel('cutout'); else refresh(c);
-            return null;
+        return survey(function () {}).then(function () {   /* fresh device checks and what is on the device now */
+          var pk = model ? { now: model, next: null } : autoPick(bg);
+          model = pk.now;
+          var m = bg.model(model);
+          var go = function () { return run(c, l.id, Object.assign({}, opts, { model: model, confirmed: true, auto: !!opts.auto || (!opts.model && !ST.model), next: pk.next })); };
+          if (!m) return go();
+          return bg.isCached(model).then(function (have) {
+            if (have) return go();
+            return bg.space(model).then(function (room) {
+              if (!room.ok) {
+                var qe = new Error('There is not enough free space on this device for this download.'); qe.name = 'QuotaExceededError';
+                if (window.LEPwa && LEPwa.reportQuotaError) { try { LEPwa.reportQuotaError(qe); } catch (x) { /* ignore */ } }
+                ST.confirm = null;
+                ST.error = { layerId: l.id, model: model, code: 'quota', message: qe.message };
+                if (c.S.panel !== 'cutout') c.openPanel('cutout'); else refresh(c);
+                return null;
+              }
+              return allowDownload(m, 'Remove a photo background').then(function (d) {
+                if (d === 'go') return go();
+                if (d === 'ask') {
+                  ST.error = null;
+                  ST.confirm = { layerId: l.id, model: model, force: opts.force };
+                  if (c.S.panel !== 'cutout') c.openPanel('cutout'); else refresh(c);
+                } else if (!opts.quiet) c.toast('Not downloaded. Nothing changed.');
+                return null;
+              });
+            });
           });
         });
       });
@@ -171,6 +183,7 @@
             model: model, signal: ac.signal,
             onProgress: function (p) {
               job.stage = stageText(p, info);
+              if (p.total && !p.cached && !p.stage) { job.tracker = job.tracker || track(info); if (job.tracker) job.tracker.progress(p.loaded || 0); }
               job.indeterminate = p.stage === 'running' || p.stage === 'starting' || p.cached;
               job.fraction = p.fraction || 0;
               if (p.stage === 'running' && info && info.speed === 'slow') job.stage += ' This can take a minute.';
@@ -185,6 +198,7 @@
         }
       });
     }).then(function (res) {
+      if (job.tracker) { if (res && res.failed) job.tracker.fail(res.failed); else job.tracker.done(); job.tracker = null; }
       if (res && res.failed) throw res.failed;
       if (ran && res && res.mask && LE.support && LE.support.reportSuccess && LE.bgRemove) {
         var sm = LE.bgRemove.model(model);
@@ -199,7 +213,8 @@
         if (!now) { refresh(c); return null; }
         c.patch(job.layerId, { cutout: cutoutSpec({ outline: (now.cutout && now.cutout.outline) || null, feather: (now.cutout && now.cutout.feather) || 0 }, { asset: assetId, enabled: true, model: model, refine: 'guided' }) });
         ST.last = { model: model, coverage: res.coverage, wallMs: Math.round(performance.now() - job.t0), inferMs: Math.round(res.timings.inferMs || 0), maxSide: res.maxSide, size: [res.width, res.height], retried: res.retried };
-        if (opts.model) { ST.model = model; lsSet(MODEL_KEY, model); }
+        if (opts.model && !opts.auto) { ST.model = model; lsSet(MODEL_KEY, model); }
+        if (opts.next && opts.next !== model) prefetch(c, opts.next, job.layerId);
         scheduleUnload(90000);
         refresh(c);
         if (!opts.quiet) c.toast('Background removed', { action: { label: 'Undo', fn: function () { c.scene.undo(); } } });
@@ -207,6 +222,7 @@
       });
     }).catch(function (err) {
       ST.run = null;
+      if (job.tracker) { job.tracker.fail(err); job.tracker = null; }
       scheduleUnload(30000);
       if (err && (err.name === 'AbortError' || err.code === 'cancelled')) {
         if (!opts.quiet) c.toast('Cancelled. Nothing changed.');
@@ -262,6 +278,81 @@
   }
 
   /* ---------- panel ---------- */
+
+  /* ---------- download policy (docs/DOWNLOADS.md), through LE.downloads when it is on the page ---------- */
+  var AUTO_LIMIT = 60e6, METERED_LIMIT = 5e6, ASKED_KEY = 'le-cutout-asked';
+  function dl() { return LE.downloads && typeof LE.downloads.request === 'function' ? LE.downloads : null; }
+  function metered() {
+    var cn = navigator.connection;
+    return !!(cn && (cn.saveData || cn.type === 'cellular' || /(^|-)2g$|^3g$/.test(cn.effectiveType || '')));
+  }
+  function remember(id) { var a = lsGet(ASKED_KEY, {}); a[id] = true; lsSet(ASKED_KEY, a); }
+  function bytesOf(m) { return m.bytes || (m.downloadMB || 0) * 1e6; }
+  /* 'go' (download now, quietly), 'ask' (show the one question), or 'no' (the shared manager said no). */
+  function allowDownload(m, reason) {
+    var d = dl();
+    if (d) {
+      return Promise.resolve(d.request({ id: m.id, name: plainName(m), bytes: bytesOf(m), kind: 'model', reason: reason }))
+        .then(function (r) { return r && r.ok ? 'go' : 'no'; }, function () { return 'no'; });
+    }
+    if (lsGet(ASKED_KEY, {})[m.id]) return Promise.resolve('go');
+    return Promise.resolve(bytesOf(m) <= (metered() ? METERED_LIMIT : AUTO_LIMIT) ? 'go' : 'ask');
+  }
+  /* Background fetches for next time happen only when no question would be needed. */
+  function silentOk(m) {
+    var d = dl();
+    if (d && typeof d.mode === 'function' && d.mode() !== 'auto') return false;
+    return bytesOf(m) <= (metered() ? METERED_LIMIT : AUTO_LIMIT);
+  }
+  function track(m) {
+    var d = dl();
+    if (!d || typeof d.track !== 'function' || !m) return null;
+    try { return d.track(m.id, { name: plainName(m), bytes: bytesOf(m) }); } catch (e) { return null; }
+  }
+  function plainName(m) { return 'Background remover: ' + (m.tier === 'pro' || m.id === 'u2netp' ? displayName(m) : m.label).toLowerCase(); }
+  function speedRank(m) { return m.speed === 'fast' ? 3 : m.speed === 'medium' ? 2 : 1; }
+  /* Quality first, then speed: { now, next }. Options this device runs well (LE.support "ok"), general subjects only;
+     above the automatic limit only when already on the device (never fetched silently). */
+  function autoPick(bg) {
+    var list = bg.models().filter(function (m) {
+      var r = ST.checks[m.id];
+      return m.listed && m.subject !== 'people' && r && r.status === 'ok' && ST.avail[m.id] !== false && (ST.cached[m.id] || silentOk(m));
+    });
+    var opts = list.map(function (m) { return { id: m.id, quality: levelRank(m) * 100 + (m.rank || 0), speed: speedRank(m), bytes: bytesOf(m), supportId: m.supportId, cached: !!ST.cached[m.id] }; });
+    var d = LE.downloads && typeof LE.downloads.pick === 'function' ? LE.downloads : null;
+    if (d) {
+      try {
+        var r = d.pick(opts);
+        var now = r && (typeof r === 'string' ? r : r.now || r.use || r.id), next = r && typeof r === 'object' ? (r.next || r.fetch || null) : null;
+        if (now && typeof now === 'object') now = now.id;
+        if (next && typeof next === 'object') next = next.id;
+        if (now && bg.model(now)) return { now: now, next: next && bg.model(next) ? next : null };
+      } catch (e) { /* fall back to the local rule */ }
+    }
+    opts.sort(function (a, b) { return b.quality - a.quality || b.speed - a.speed; });
+    if (!opts.length) return { now: 'u2netp', next: null };
+    var best = opts[0], have = opts.filter(function (o) { return o.cached; })[0];
+    if (best.cached || !have) return { now: best.id, next: null };
+    return { now: have.id, next: best.id };
+  }
+  /* Fetch a better option in the background for next time; when it is here, offer "Improve this cut-out" once. */
+  function prefetch(c, id, layerId) {
+    if (ST.prefetching) return;
+    remover().then(function (bg) {
+      var m = bg.model(id);
+      if (!m || !silentOk(m) || typeof bg.prefetch !== 'function') return null;
+      ST.prefetching = id;
+      var t = track(m);
+      return bg.prefetch(id, function (p) { if (t && p.total && !p.cached) t.progress(p.loaded || 0); }).then(function () {
+        if (t) t.done();
+        ST.cached[id] = true;
+        ST.improve = { layerId: layerId, model: id };
+        ST.prefetching = null;
+        refresh(c);
+      }, function (e) { if (t) t.fail(e); ST.prefetching = null; });
+    }).catch(function () { ST.prefetching = null; });
+  }
+
   /* ---------- the option chooser (plain words; built from the LE.bgRemove registry only) ----------
    * One decision at most. The panel pre-selects the option recommended for this device; "Other quality options" shows a
    * three-step ladder (Quick, Better, Best) where each step is the best option this device can run for that quality,
@@ -293,7 +384,7 @@
     return Math.max(1, Math.round(((m.bytes || (m.downloadMB || 0) * 1e6) + engine) / 1e6));
   }
   function engineMissing(m) { return m.runtime === 'webgpu' ? !ST.gpuEngine : ST.engineMissing; }
-  function isLarge(m) { return (m.bytes || (m.downloadMB || 0) * 1e6) >= 50e6; }
+  function isLarge(m) { return (m.bytes || (m.downloadMB || 0) * 1e6) > 60e6; }
   /* One friendly line: what will be downloaded, and why it is fine. */
   function dlLine(m, ready) {
     if (ready) return 'Ready · on this device, works offline';
@@ -319,7 +410,11 @@
     var used = {}, ladder = [];
     LEVELS.forEach(function (L) {
       var c = list.filter(function (m) { return levelOf(m) === L[0] && m.subject !== 'people' && runsHere(m); })
-        .sort(function (a, b) { return (b.rank || 0) - (a.rank || 0) || a.downloadMB - b.downloadMB; });
+        .sort(function (a, b) {
+          /* The option in use (chosen or automatic) stands for its step; then the best one this device can run. */
+          var pa = a.id === chosen() ? 2 : a.id === ST.rec ? 1 : 0, pb = b.id === chosen() ? 2 : b.id === ST.rec ? 1 : 0;
+          return pb - pa || (b.rank || 0) - (a.rank || 0) || a.downloadMB - b.downloadMB;
+        });
       if (c.length) { ladder.push({ level: L[0], name: L[1], m: c[0] }); used[c[0].id] = 1; }
     });
     return {
@@ -334,7 +429,10 @@
     return remover().then(function (bg) {
       /* A large option chosen in an earlier visit: its definitions are needed again (no model bytes are fetched here). */
       if (ST.model && !bg.model(ST.model)) withPro = true;
-      return (withPro ? loadPro() : Promise.resolve(false)).then(function () {
+      return (withPro ? Promise.resolve([]) : bg.cachedModels().catch(function () { return []; })).then(function (have) {
+        if (have.some(function (x) { return x.id && !bg.model(x.id); })) withPro = true;
+        return withPro ? loadPro() : false;
+      }).then(function () {
         var list = bg.models().filter(function (m) { return m.listed && (withPro || m.tier !== 'pro'); });
         return Promise.all(list.map(function (m) {
           var chk = m.tier === 'pro' && LE.bgRemovePro ? LE.bgRemovePro.check(m.id) : bg.support(m.id);
@@ -348,7 +446,8 @@
         }).then(function (sizes) {
           var st = {};
           list.forEach(function (m) { st[m.id] = ST.checks[m.id] && ST.checks[m.id].status; });
-          ST.rec = bg.recommend({ checks: st, cached: ST.cached, people: false });
+          var pk = autoPick(bg);
+          ST.rec = pk.now; ST.next = pk.next;
           ST.engineMissing = !!sizes[0].engine;
           ST.gpuEngine = sizes[1] ? !sizes[1].engine : ST.gpuEngine;
           if (ST.model && !bg.model(ST.model)) ST.model = null;
@@ -433,12 +532,8 @@
     if (isLarge(m)) return 'Large one-time download (about ' + n + ' MB). Best on Wi-Fi. It stays on this device and then works offline. Your photo is never uploaded.';
     return 'Downloads ' + (n < 15 ? 'a small helper' : 'a helper') + ' once (about ' + n + ' MB). It stays on this device and works offline. Your photo is never uploaded.';
   }
-  function firstUseNote(c, node, id) {
-    survey(function (list, bg) {
-      if (!node.isConnected) return;
-      var m = bg.model(id || chosen()) || list[0];
-      node.textContent = askCopy(c, m, !!ST.cached[m.id]);
-    }, !!(LE.bgRemovePro)).catch(function () {});
+  function firstUseNote(c, node) {
+    node.textContent = 'Runs on this device; your photo is never uploaded.';
   }
   /* Before a large download: ask once, with the plain size line, and check free space first. */
   function renderConfirm(c, body, img) {
@@ -448,7 +543,7 @@
     var box = el(c, '<div class="sxc-ask sxc-confirm" role="group" aria-label="Download"><h3>Download ' + c.esc(name) + '?</h3><p class="sxc-ask-p">' + c.esc(askCopy(c, m, false)) + '</p>' +
       '<p class="sx-note">You can cancel at any time; nothing half-finished is kept. Remove it later from this panel or from Storage.</p></div>');
     box.appendChild(btn(c, 'Download and remove', 'cutout', 'btn btn-gold sx-block sxc-go sxc-confirm-go', function () {
-      ST.confirm = null; run(c, img.id, { model: m.id, confirmed: true, force: cf.force });
+      ST.confirm = null; remember(m.id); run(c, img.id, { model: m.id, confirmed: true, force: cf.force });
     }));
     box.appendChild(btn(c, 'Not now', null, 'btn btn-ghost btn-sm sxc-confirm-no', function () { ST.confirm = null; c.renderPanel(true); }));
     body.appendChild(box);
@@ -496,9 +591,7 @@
     var host = other.querySelector('.sxc-models');
     var p = ask.querySelector('.sxc-ask-p');
     function paint(m) {
-      var ready = !!ST.cached[m.id];
-      p.textContent = askCopy(c, m, ready);
-      go.querySelector('span').textContent = ready ? 'Remove background' : 'Download and remove';
+      p.textContent = 'Works best with one clear subject. It runs on this device; your photo is never uploaded.';
       var v = ST.checks[m.id];
       go.disabled = !!(v && v.status === 'unsupported' && !v.canForce);
     }
@@ -553,6 +646,11 @@
     var tools = el(c, '<div class="sxc-tools"></div>');
     tools.appendChild(btn(c, 'Refine edges', 'brush', 'btn sxc-refine', function () { beginRefine(c, id); }));
     body.appendChild(tools);
+    /* A better option arrived in the background (download policy): offer it once, quietly. */
+    var imp = ST.improve;
+    if (imp && imp.layerId === id && imp.model !== cut.model && ST.cached[imp.model]) {
+      body.appendChild(btn(c, 'Improve this cut-out', 'sparkle', 'btn btn-ghost btn-sm sxc-improve', function () { ST.improve = null; run(c, id, { model: imp.model, auto: true }); }));
+    }
     var others = el(c, '<div class="sxc-retry"></div>');
     body.appendChild(others);
     remover().then(function (bg) {
@@ -679,10 +777,7 @@
     if (l.cutout || ST.run) { c.openPanel('cutout'); return Promise.resolve(null); }
     c.scene.select([layerId]);
     c.openPanel('cutout');
-    return remover().then(function (bg) { return survey(function () {}).then(function () { return bg.isCached(chosen()); }); }).then(function (have) {
-      if (have) return run(c, layerId);
-      return null;
-    }).catch(function () { return null; });
+    return run(c, layerId).catch(function () { return null; });
   }
 
   CMDS.cutout = function (c) { var l = c.one(); if (l && l.type === 'image') quick(c, l.id); else c.openPanel('cutout'); };
@@ -1247,8 +1342,13 @@
     var ac = new AbortController();
     TK.abort = ac;
     TK.stage = 'Preparing…';
-    return remover().then(function (bg) {
-      var mid = chosen(), info = bg.model(mid);
+    var mid = null;
+    return remover().then(function (bg) { return survey(function () {}).then(function () { return bg; }); }).then(function (bg) {
+      /* Same policy as the panel, but never a question here: the chosen option if it is on the device or small enough,
+         otherwise the automatic pick. */
+      var own = ST.model && bg.model(ST.model);
+      mid = own && (ST.cached[own.id] || silentOk(own)) ? own.id : autoPick(bg).now;
+      var info = bg.model(mid);
       return bg.gate(mid, { title: 'Cut out the subject', run: function () {
         return bg.cutout(mem.canvas, { model: mid, signal: ac.signal, onProgress: function (p) {
           TK.stage = stageText(p, info);
@@ -1258,7 +1358,7 @@
       } });
     }).then(function (res) {
       if (!res || !res.mask) return null;
-      return storeMask(c, res.mask).then(function (id) { TK.mask = id; TK.model = chosen(); return id; });
+      return storeMask(c, res.mask).then(function (id) { TK.mask = id; TK.model = mid; return id; });
     }).then(function (id) { TK.busy = false; TK.error = null; scheduleUnload(90000); return id; }, function (err) {
       TK.busy = false;
       TK.error = err && (err.name === 'AbortError' || err.code === 'cancelled') ? null : { code: (err && err.code) || 'engine', message: err && err.message };
