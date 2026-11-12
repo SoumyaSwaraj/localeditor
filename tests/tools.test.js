@@ -313,7 +313,7 @@ cases['noOverflow also flags a layout viewport wider than the device (a 455 px p
     };
   }
 })();
-cases['KNOWN-BUG: converted DOCX / Markdown PDFs keep selectable text, not just page pictures (QA-010)'] = async ({ browser, base, h }) => {
+cases['converted DOCX / Markdown PDFs keep selectable text, not just page pictures (QA-010)'] = async ({ browser, base, h }) => {
   for (const f of ['sample.md', 'sample.docx']) {
     const page = await tool(browser, base, h, '/convert-to-pdf/');
     const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: /Choose files/ }).click()]);

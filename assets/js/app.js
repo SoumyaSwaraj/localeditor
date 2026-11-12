@@ -177,6 +177,7 @@
     ['Lorem ipsum', 'lorem-ipsum-generator/', 'Placeholder text'],
     ['Image to Base64', 'image-to-base64/', 'Data URLs'],
     ['Device check', 'device-check/', 'What works on this device and browser'],
+    ['Verify a file', 'verify/', 'Check that a file matches its fingerprint'],
     ['Privacy and install', 'about/', 'How LocalEditor keeps files on this device']
   ];
 

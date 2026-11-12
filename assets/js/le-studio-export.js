@@ -838,7 +838,7 @@
     function save() { c.lsSet('le-studio-export', o); }
     var s1 = c.ui.section('File type');
     s1.querySelector('.sx-sec-body').appendChild(c.ui.seg([['png', 'PNG'], ['jpeg', 'JPG'], ['webp', 'WebP'], ['pdf', 'PDF']], o.format, function (v) { o.format = v; save(); c.renderPanel(true); }));
-    s1.querySelector('.sx-sec-body').appendChild(note(c, o.format === 'png' ? 'Best for graphics and text. Supports transparency.' : o.format === 'jpeg' ? 'Smallest for photos. No transparency — the design is flattened.' : o.format === 'pdf' ? 'One PDF page per design page, sized to your design. Great for printing and sharing.' : 'Modern and small. Supports transparency.'));
+    s1.querySelector('.sx-sec-body').appendChild(note(c, o.format === 'png' ? 'Best for graphics and text. Supports transparency.' : o.format === 'jpeg' ? 'Smallest for photos. No transparency — the design is flattened.' : o.format === 'pdf' ? (paperLabel(c) ? 'Print-ready: ' + paperLabel(c) + ', at 100% scale. One PDF page per design page.' : 'One PDF page per design page, sized to your design. Great for printing and sharing.') : 'Modern and small. Supports transparency.'));
     body.appendChild(s1);
     var s2 = c.ui.section('Size');
     var chips = c.h('<div class="sx-chips sxe-scales"></div>');
@@ -900,6 +900,12 @@
       var tl = btn(c, 'Share as template link', 'share', 'sxe-row', function () { LE.design.openShare(c); });
       tl.appendChild(c.h('<small>Layout and text in a link; photos stay on this device</small>'));
       more.appendChild(tl);
+    }
+    if (hasPrint(c)) {
+      var pr = btn(c, 'Print', 'file', 'sxe-row', function () { busy(pr, true, 'Preparing…'); printNow(c).then(function () { busy(pr, false); }, function (err) { busy(pr, false); c.toast((err && err.message) || 'Printing did not start.'); }); });
+      pr.setAttribute('data-act', 'print');
+      pr.appendChild(c.h('<small>Opens the print dialog with every page at its paper size. Choose 100% or Actual size.</small>'));
+      more.appendChild(pr);
     }
     var pj = btn(c, 'Save as .leproject', 'file', 'sxe-row', function () { c.exportProject(); });
     pj.appendChild(c.h('<small>The editable design, to open again later</small>'));
@@ -1228,6 +1234,103 @@
     host.appendChild(c.h('<p class="sx-note">' + r.ext.toUpperCase() + ' · ' + r.width + ' × ' + r.height + ' · ' + Math.round(r.duration) + ' s · ' + c.fmtBytes(r.blob.size) + '</p>'));
   }
 
+  /* ---------- Print: PDF pages at the paper size a page was made for (doc.print), and the Print action ---------- */
+  /* PDF page size in points for a design page: doc.print's paper when the page still has that shape; the same print
+     resolution (doc.print.dpi) when it was resized since; 0.75 pt a pixel (96 dpi, as before) for pages with no print meta. */
+  function pdfPageSize(d) {
+    var p = d && d.print;
+    if (p && p.w > 0 && p.h > 0) {
+      if (Math.abs((d.width / d.height) / (p.w / p.h) - 1) < 0.01) return { w: p.w / 25.4 * 72, h: p.h / 25.4 * 72, print: true };
+      return { w: d.width / (p.dpi || 300) * 72, h: d.height / (p.dpi || 300) * 72, print: true };
+    }
+    return { w: d.width * 0.75, h: d.height * 0.75, print: false };
+  }
+  function hasPrint(c) { return !!(c.S.project && c.S.project.pages.some(function (pg, i) { return !!(i === c.S.project.activePage ? c.doc() : pg).print; })); }
+  function rootUrl() { var r = document.documentElement.getAttribute('data-root') || ''; if (r && r.charAt(r.length - 1) !== '/') r += '/'; return r; }
+  /* One page at a time: render, encode to JPEG, drop the canvas (a 26-page A4 catalogue never holds 26 canvases). */
+  function printPdf(c, o) {
+    var p = c.S.project;
+    c.syncProject();
+    var idx = o.pages === 'all' ? p.pages.map(function (x, i) { return i; }) : [p.activePage];
+    var ready = LE.pdf && LE.pdf.ready ? LE.pdf.ready() : LE.lazy(rootUrl() + 'assets/js/le-pdf.js').then(function () { return LE.pdf.ready(); });
+    var parts = [];
+    var chain = ready;
+    idx.forEach(function (i) {
+      chain = chain.then(function () {
+        var d = p.pages[i], sz = pdfPageSize(d);
+        var scale = Math.min(sz.print ? 1 : (o.scale || 1), c.maxScale());
+        return c.hiddenRender(d, scale, { includeBackground: true }).then(function (cv) {
+          return LE.exportImage(cv, { format: 'jpeg', quality: 0.92 }).then(function (b) { cv.width = 1; cv.height = 1; return b.arrayBuffer(); });
+        }).then(function (buf) { parts.push({ bytes: buf, size: sz }); });
+      });
+    });
+    return chain.then(function () {
+      var PL = window.PDFLib;
+      return PL.PDFDocument.create().then(function (pdf) {
+        var jobs = Promise.resolve();
+        parts.forEach(function (pt) {
+          jobs = jobs.then(function () { return pdf.embedJpg(pt.bytes); }).then(function (img) {
+            var pg = pdf.addPage([pt.size.w, pt.size.h]);
+            pg.drawImage(img, { x: 0, y: 0, width: pt.size.w, height: pt.size.h });
+          });
+        });
+        return jobs.then(function () {
+          pdf.setTitle(String(p.name || 'Design').slice(0, 120));
+          pdf.setCreator('LocalEditor');
+          pdf.setProducer('LocalEditor');
+          return pdf.save();
+        });
+      });
+    }).then(function (bytes) { return new Blob([bytes], { type: 'application/pdf' }); });
+  }
+  function wrapPrintPdf(c) {
+    if (c._lePrintPdf) return;
+    c._lePrintPdf = true;
+    var orig = c.exportImage;
+    c.exportImage = function (o) {
+      var oo = Object.assign({}, c.S.exportOpts, o || {});
+      if (oo.format !== 'pdf' || oo.clipboard || !c.S.project) return orig.apply(this, arguments);
+      var p = c.S.project, cur = c.doc();
+      var pick = oo.pages === 'all' ? p.pages.map(function (pg, i) { return i === p.activePage ? cur : pg; }) : [cur];
+      if (!pick.some(function (d) { return d.print; })) return orig.apply(this, arguments);
+      var base = c.safeName(oo.name || p.name);
+      return printPdf(c, oo).then(function (blob) {
+        if (!oo.dryRun) {
+          c.download(blob, base + '.pdf');
+          LE.project.log('exported', p.id, { format: 'pdf', pages: pick.length, bytes: blob.size, print: true });
+        }
+        return blob;
+      }).catch(function (err) { c.toast((err && err.message) || 'PDF export failed.'); return null; });
+    };
+  }
+  /* Opens the browser's print dialog for the PDF of every page (a hidden frame; a new tab where frames cannot print). */
+  function printNow(c) {
+    return printPdf(c, Object.assign({}, c.S.exportOpts, { pages: 'all' })).then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      var old = document.getElementById('sxe-print-frame');
+      if (old) old.remove();
+      var f = document.createElement('iframe');
+      f.id = 'sxe-print-frame';
+      f.title = 'Print';
+      f.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;';
+      f.onload = function () {
+        try { f.contentWindow.focus(); f.contentWindow.print(); }
+        catch (e) { window.open(url, '_blank', 'noopener'); }
+      };
+      f.src = url;
+      document.body.appendChild(f);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 120000);
+      return blob;
+    });
+  }
+  function paperLabel(c) {
+    var d = c.doc(), sz = pdfPageSize(d), p = d.print;
+    if (!sz.print) return '';
+    var mmW = Math.round(sz.w / 72 * 25.4), mmH = Math.round(sz.h / 72 * 25.4);
+    var name = p.paper && LE.makers && LE.makers.PAPER && LE.makers.PAPER[p.paper] ? LE.makers.PAPER[p.paper].name + ', ' : '';
+    return name + mmW + ' × ' + mmH + ' mm';
+  }
+
   P.export = {
     title: 'Download', eyebrow: 'Export & share',
     render: function (c, body, opts) {
@@ -1274,6 +1377,7 @@
     if (c.I && !c.I.play) c.I.play = '<path d="M8 5.5v13l10.5-6.5z"/>';
     wrapDesign();
     wrapCarouselSnap(c);
+    wrapPrintPdf(c);
   });
   hook('page', function (c) { tlRecord(c, true); paintStrip(c); });
   hook('history', function (c) { tlRecord(c); });
@@ -1316,6 +1420,7 @@
       split: function (c, opts) { return carousel.split(c || window.LEStudio, opts); },
       goTo: function (c, i) { goSlide(c || window.LEStudio, i); }
     },
-    support: { check: check, defs: DEFS }
+    support: { check: check, defs: DEFS },
+    print: { pageSize: pdfPageSize, pdf: function (c, opts) { c = c || window.LEStudio; return printPdf(c, Object.assign({}, c.S.exportOpts, opts || {})); }, open: function (c) { return printNow(c || window.LEStudio); } }
   };
 })();

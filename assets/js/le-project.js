@@ -679,6 +679,8 @@
     if (carousel) out.carousel = carousel;
     var maker = LE.Scene && LE.Scene.makerOf ? LE.Scene.makerOf(doc.maker) : null;
     if (maker) out.maker = maker;
+    var print = LE.Scene && LE.Scene.printOf ? LE.Scene.printOf(doc.print) : null;
+    if (print) out.print = print;
     return out;
   }
   function sizeEntry(e, errors) {

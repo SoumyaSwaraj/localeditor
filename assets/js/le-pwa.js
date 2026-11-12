@@ -871,6 +871,8 @@
     [/^le-theme$|^it-theme$/, 'Light or dark theme'],
     [/^le-stock-keys$/, 'Stock photo keys', 'Keys you pasted for Pixabay, Pexels or Openverse. Clearing them signs those searches out.'],
     [/^le-perf$/, 'Speed and quality mode'],
+    [/^le-pdf-details/, 'Your saved details (PDF forms)', 'Names, addresses and other details you saved to fill PDF forms, and which form field each one goes in. Clearing them cannot be undone.'],
+    [/^le-pdf-workflows$/, 'Your saved PDF workflows', 'Step lists you saved in the PDF studio. Export them first if you want to keep them.'],
     [/^le-user-recipes$/, 'Your saved recipes', 'Recipes you saved or imported. Back them up first if you want to keep them.'],
     [/^le-recipe-/, 'Recipe bookmarks and ratings'],
     [/^le-studio-last$/, 'Last open design'],
