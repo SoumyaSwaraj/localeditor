@@ -58,7 +58,7 @@ const cases = {};
 cases['registry: every effect is registered with a complete schema, ui and agent descriptor, and the helpers exist'] = async ({ browser, base, h }) => {
   const pg = await page(browser, base);
   const r = await pg.evaluate((ids) => {
-    const FX = window.LE.fx, C = FX.composite, d = FX.describe().filter((e) => ids.indexOf(e.id) >= 0);
+    const FX = window.LE.fx, C = FX.composite, d = FX.defs().filter((e) => ids.indexOf(e.id) >= 0);
     const ex = d.map((e) => { const v = FX.validate(e.agent.example); return { id: e.id, ok: v.ok, clamped: v.warnings.filter((w) => w.code !== 'unknown-key').map((w) => w.path + ' ' + w.code) }; });
     return { list: C.list(), d, ex, api: ['contact', 'match', 'matchNoise', 'quadFromPlane', 'shadowFromVanishing', 'stage', 'presets', 'blendModes', 'blend', 'blendIf', 'transfer', 'meshIdentity', 'meshCylinder', 'planeAspect'].filter((k) => !C[k]), json: JSON.stringify(d).length, sch: FX.schema().paramTypes };
   }, IDS);

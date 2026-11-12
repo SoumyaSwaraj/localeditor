@@ -58,7 +58,7 @@ function png(url) { return Buffer.from(url.split(',')[1], 'base64'); }
 cases['registry: five effects with schema, ui, agent text and LE.support entries; ops round trip'] = async ({ browser, base, h }) => {
   const pg = await page(browser, base);
   const r = await pg.evaluate((ids) => {
-    const FX = LE.fx, d = FX.describe().filter((e) => ids.indexOf(e.id) >= 0);
+    const FX = LE.fx, d = FX.defs().filter((e) => ids.indexOf(e.id) >= 0);
     const doc = { layers: [{ id: 'p', type: 'image', src: 'a', x: 0, y: 0, w: 100, h: 80 }] };
     let s = FX.ops.apply(doc, { op: 'fx.add', layer: 'p', entry: { type: 'relight', p: { intensity: 9, position: { x: 0.2, y: 0.3 } } } });
     const added = s.ok, clamped = s.doc.layers[0].fx[0].p.intensity, id = s.id, warn = s.warnings.length;

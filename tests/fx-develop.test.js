@@ -51,7 +51,7 @@ const png = (url) => Buffer.from(url.split(',')[1], 'base64');
 cases['registry: four develop effects, described for agents and the workspace, declared to LE.support'] = async ({ browser, base, h }) => {
   const pg = await page(browser, base);
   const r = await pg.evaluate((T) => {
-    const FX = window.LE.fx, d = FX.describe().filter((e) => T.indexOf(e.id) >= 0);
+    const FX = window.LE.fx, d = FX.defs().filter((e) => T.indexOf(e.id) >= 0);
     return { ids: d.map((e) => e.id), d, support: T.map((id) => (window.LE.support && window.LE.support.get ? !!window.LE.support.get('fx.' + id) : (window.LE_SUPPORT_DEFS || []).some((x) => x.id === 'fx.' + id))), json: JSON.stringify(d).length, fns: JSON.stringify(d).indexOf('function') >= 0, packs: FX.list().length };
   }, TYPES);
   h.assert.equal(r.ids.join(), TYPES.join(), 'registered');

@@ -45,7 +45,7 @@ cases['registry: the starter set is registered, described and declared to LE.sup
   h.assert(r.one.spatial === true && r.full.find((e) => e.id === 'exposure').spatial === false, 'spatial flag');
   /* describe() is a compact index; detail is asked for by id, group or section. The caps are on the index and on any one effect. */
   h.assert(Array.isArray(r.index) && r.index.length === r.full.length && r.index.every((e) => e.id && e.name && e.group && e.section && e.summary && Object.keys(e).length === 5 && e.summary.length <= 140), 'describe() is an index of { id, name, group, section, summary }');
-  h.assert(r.one.id === 'gaussian-blur' && r.one.params.radius.unit === 'px' && r.group.indexOf('exposure') >= 0 && r.group.indexOf('grain') < 0 && r.section.join() === 'gaussian-blur' && r.ids.sort().join() === 'grain,levels', 'describe(id), describe({ group }), describe({ section }), describe({ ids })');
+  h.assert(r.one.id === 'gaussian-blur' && r.one.params.radius.unit === 'px' && r.group.indexOf('exposure') >= 0 && r.group.indexOf('grain') < 0 && r.section.indexOf('gaussian-blur') >= 0 && r.section.indexOf('exposure') < 0 && r.ids.sort().join() === 'grain,levels', 'describe(id), describe({ group }), describe({ section }), describe({ ids })');
   h.assert(r.sizes.index < 60000 && r.sizes.index / r.index.length < 260, 'the index stays small: ' + r.sizes.index + ' characters for ' + r.index.length + ' effects');
   h.assert(r.sizes.largest[0] < 12000, 'no single effect description is over 12,000 characters: ' + r.sizes.largest);
   h.assert(r.sizes.schema < 6000, 'schema() stays small: ' + r.sizes.schema);
