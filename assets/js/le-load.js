@@ -1,12 +1,4 @@
-/* LocalEditor: deferred modules (LE.modules). See docs/LOADING.md.
-   A module that is only needed after a tap does not block the first paint. A page's loader map declares it:
-     LE.modules.defer({ id: 'export', src: '../assets/js/le-studio-export.js', css: '../assets/css/studio-export.css',
-                        panels: { export: 'Download' }, idle: 1 });
-   It then loads when one of its triggers happens (its panel opens, a command, a hook, a deep link, a document that uses it)
-   or, for modules with an `idle` rank, when the device is idle after the first interaction (online, not metered, not short
-   of memory). Everything it registers keeps working: panel specs get a placeholder (a skeleton, then the real panel); 'init'
-   and 'ready' hooks it adds after the studio fired them run once; the rail and toolbar are redrawn.
-   Pages other than the photo studio (the PDF studio) use the same loader with their own `after` callbacks. */
+/* LocalEditor: deferred modules (LE.modules). What loads when, the options and how to add a module: docs/LOADING.md. */
 (function () {
   'use strict';
   var LE = window.LE = window.LE || {};
@@ -297,12 +289,8 @@
   }
 
   LE.modules = {
-    /* defer({ id, src, css, deps: [ids], label,
-               panels: { panelId: title }, wrap: { panelId: fn(opts, ctx) -> bool }, rerender: [panelId], queue: 'S key',
-               cmds: [data-cmd names], on: [hook names that trigger the load], replay: [hook names replayed after load],
-               retool: true (redraw the toolbar after load), doc: fn(pages, project) -> bool (documents that need it),
-               param: [url params that load it at once], hash: RegExp, when: fn() -> bool (load at once),
-               idle: rank (warm when idle; omitted = only when asked), features: [usage ids], after: fn(ctx) }) */
+    /* defer({ id, src, css, deps, label, panels, wrap, rerender, queue, cmds, on, replay, retool, doc, param, hash, when, idle,
+               features, after }): docs/LOADING.md, "Options". */
     defer: function (m) {
       m = Object.assign({ panels: {}, wrap: {}, rerender: [], deps: [] }, m || {});
       if (!m.id || !m.src || byId[m.id]) return;

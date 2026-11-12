@@ -3,6 +3,7 @@
 
 async function secPage(h, browser, base, viewport, opts) {
   const page = await h.open(browser, base, '/pdf-studio/', viewport || 'desktop', opts);
+  await h.need(page, 'security');
   await page.addScriptTag({ url: base + '/tests/fixtures/pdf-security/fixtures.js' });
   await page.evaluate(() => LE.pdf.ready());
   return page;
@@ -369,6 +370,7 @@ module.exports = {
 
   'no cross-origin requests during the whole suite': async ({ browser, base, h }) => {
     const page = await h.open(browser, base, '/pdf-studio/');
+    await h.need(page, 'security');
     const outside = [];
     page.on('request', (r) => { const u = r.url(); if (!u.startsWith(base) && !/^(data|blob):/.test(u)) outside.push(u); });
     await page.addScriptTag({ url: base + '/tests/fixtures/pdf-security/fixtures.js' });

@@ -1,8 +1,5 @@
-/* LocalEditor photo studio: the loader map (docs/LOADING.md). Loaded after le-studio-panels.js and before le-studio.js.
-   Everything here is data plus tiny stubs: what each deferred module is, what loads it (a panel, a command, the first
-   selection, a deep link, a document that uses it, idle warm-up), and the few globals other code checks synchronously.
-   The modules themselves are unchanged; when one arrives it replaces its stubs. scripts/build.js reads the paths below
-   to keep every file in the design studio's offline part. */
+/* LocalEditor photo studio: the loader map (docs/LOADING.md). After le-studio-panels.js, before le-studio.js. Data and tiny
+   stubs only: what each deferred module is and what loads it. scripts/build.js follows the paths below (offline parts). */
 (function () {
   'use strict';
   var LE = window.LE;
@@ -20,13 +17,23 @@
   function ss(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
 
   /* ---------- The map. `idle` ranks the warm-up (lower first; usage signals from LE.downloads reorder it). ---------- */
+  /* Libraries the first paint does not need. Text and graphics in a document load them before it is drawn; the first edit
+     or selection loads them too (the scene is redrawn so text picks up its font). */
+  var redraw = function (c) { if (c && c.scene && c.scene._mark) c.scene._mark(); };
+  var BASIC_SHAPES = { rect: 1, ellipse: 1, line: 1, 'dashed-line': 1 };
+  M.defer({ id: 'fontlib', src: JS + 'le-fonts.js', label: 'fonts', on: ['change', 'select'], wrap: { text: function () { return true; } },
+    doc: function (pages) { return anyLayer(pages, function (l) { return l.type === 'text'; }); }, after: redraw, idle: 0 });
+  M.defer({ id: 'fontorig', src: JS + 'le-fonts-originals.js', label: 'fonts', deps: ['fontlib'], on: ['change', 'select'], wrap: { text: function () { return true; } },
+    doc: function (pages) { return anyLayer(pages, function (l) { return l.type === 'text'; }); }, after: redraw, idle: 0 });
+  M.defer({ id: 'assets', src: JS + 'le-assets.js', label: 'graphics', on: ['change', 'select'], wrap: { elements: function () { return true; } },
+    doc: function (pages) { return anyLayer(pages, function (l) { return l.type === 'svg' || l.assetId || (l.type === 'shape' && l.shape && !BASIC_SHAPES[l.shape]); }); }, after: redraw, idle: 0 });
   M.defer({ id: 'stock', src: JS + 'le-stock.js', label: 'stock photos', rerender: ['apps', 'uploads', 'elements'], wrap: { uploads: function (o) { return o.tab === 'stock'; } }, idle: 9, features: ['studio.uploads'] });
-  M.defer({ id: 'color', src: JS + 'le-studio-color.js', label: 'colour tools', panels: { replace: 'Replace', brand: 'Brand kit' }, doc: function (pages) { return anyPage(pages, function (p) { return p.background && p.background.spec; }); }, idle: 2 });
-  M.defer({ id: 'tools', src: JS + 'le-studio-tools.js', label: 'studio tools', deps: ['color'], panels: { pages: 'Pages' }, cmds: ['addQr', 'copyStyle', 'editQr', 'guidesMenu', 'pasteStyle'], on: ['select'], replay: ['key'], retool: true,
+  M.defer({ id: 'color', src: JS + 'le-studio-color.js', css: CSS + 'studio-color.css', label: 'colour tools', deps: ['assets'], panels: { replace: 'Replace', brand: 'Brand kit' }, doc: function (pages) { return anyPage(pages, function (p) { return p.background && p.background.spec; }); }, idle: 2 });
+  M.defer({ id: 'tools', src: JS + 'le-studio-tools.js', css: CSS + 'studio-tools.css', label: 'studio tools', deps: ['color'], panels: { pages: 'Pages' }, cmds: ['addQr', 'copyStyle', 'editQr', 'guidesMenu', 'pasteStyle'], on: ['select'], replay: ['key'], retool: true,
     when: function () { try { var o = JSON.parse(localStorage.getItem('le-studio-ov') || 'null'); return !!(o && (o.rulers || o.grid)); } catch (e) { return false; } },
     doc: function (pages) { return anyLayer(pages, function (l) { return (l.mask && l.mask !== 'none') || /cell/i.test(l.name || ''); }); }, idle: 1 });
-  M.defer({ id: 'icons', src: JS + 'le-studio-icons.js', label: 'icon styles', deps: ['color'], cmds: ['iconColors', 'swapStyle', 'tintSticker'], idle: 6, features: ['studio.elements'] });
-  M.defer({ id: 'collagelib', src: JS + 'le-collage.js', label: 'collages' });
+  M.defer({ id: 'icons', src: JS + 'le-studio-icons.js', css: CSS + 'studio-icons.css', label: 'icon styles', deps: ['color', 'assets'], cmds: ['iconColors', 'swapStyle', 'tintSticker'], idle: 6, features: ['studio.elements'] });
+  M.defer({ id: 'collagelib', src: JS + 'le-collage.js', label: 'collages', deps: ['fontorig', 'assets'] });
   M.defer({ id: 'collage', src: JS + 'le-studio-collage.js', css: CSS + 'studio-collage.css', label: 'collages', deps: ['collagelib'], cmds: ['cellZoom', 'collageCredits'], on: ['select'], retool: true,
     wrap: { design: designTab, uploads: function (o) { return o.tab === 'stock'; }, apps: function (o) { return o.app === 'collage'; } },
     doc: function (pages) { return anyPage(pages, function (p) { return p.collage; }) || anyLayer(pages, function (l) { return l.slot; }); }, idle: 5, features: ['studio.design', 'studio.collage'] });
@@ -42,12 +49,12 @@
   M.defer({ id: 'cutout', src: JS + 'le-studio-cutout.js', css: CSS + 'studio-cutout.css', label: 'background remover', panels: { cutout: 'Remove background' }, cmds: ['cutBrush', 'cutCancel', 'cutDone', 'cutRedo', 'cutSoft', 'cutUndo', 'cutout'], on: ['select'], retool: true,
     wrap: { apps: function (o) { return o.app === 'thumbnail'; } },
     doc: function (pages) { return anyLayer(pages, function (l) { return l.cutout; }); }, idle: 6 });
-  M.defer({ id: 'makerslib', src: JS + 'le-makers.js', label: 'quick makers' });
+  M.defer({ id: 'makerslib', src: JS + 'le-makers.js', label: 'quick makers', deps: ['fontorig', 'assets'] });
   M.defer({ id: 'makers', src: JS + 'le-studio-makers.js', css: CSS + 'studio-makers.css', label: 'quick makers', deps: ['makerslib'], param: ['make'],
     wrap: { apps: function (o) { return o.app === 'make'; } },
     doc: function (pages) { return anyPage(pages, function (p) { return p.maker; }); }, idle: 8, features: ['studio.make', 'studio.makers'] });
-  M.defer({ id: 'fonts', src: JS + 'le-studio-fonts.js', css: CSS + 'studio-fonts.css', label: 'fonts', panels: { fonts: 'Fonts' }, idle: 1, features: ['studio.text'] });
-  M.defer({ id: 'design', src: JS + 'le-design.js', css: CSS + 'studio-design.css', label: 'design files', deps: ['collagelib', 'makerslib'], hash: /(?:^#|[#&])d=[A-Za-z0-9_-]/, idle: 10 });
+  M.defer({ id: 'fonts', src: JS + 'le-studio-fonts.js', css: CSS + 'studio-fonts.css', label: 'fonts', deps: ['fontorig'], panels: { fonts: 'Fonts' }, idle: 1, features: ['studio.text'] });
+  M.defer({ id: 'design', src: JS + 'le-design.js', css: CSS + 'studio-design.css', label: 'design files', deps: ['fontorig', 'assets', 'collagelib', 'makerslib'], hash: /(?:^#|[#&])d=[A-Za-z0-9_-]/, idle: 10 });
   /* Agent mode and live links: never warmed; ?agent, #ops=, ?link=, a session to resume, headless mode, the File menu entry
      or a call on window.LEAgent loads them. */
   var agentNow = function () { if (window.LE_AGENT_HEADLESS === true) return true; try { var s = JSON.parse(ss('le-agent') || 'null'); return !!(s && s.session); } catch (e) { return false; } };

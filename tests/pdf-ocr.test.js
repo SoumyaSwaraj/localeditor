@@ -98,6 +98,7 @@ cases['cancel mid-run leaves the document unchanged and frees the engine'] = asy
 
 cases['Find sensitive data reads scanned pages when asked, and leaves those matches unticked'] = async ({ browser, base, h }) => {
   const page = await studioWithScan(h, browser, base, 'desktop');
+  await h.need(page, 'security');
   await page.evaluate(() => { PS.openPanel('security'); PS.security.findOpen = true; PS.security.go('redact'); });
   await page.waitForSelector('.sec-findbox [data-sec-search]');
   await page.click('.sec-findbox [data-sec-search]');

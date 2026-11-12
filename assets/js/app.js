@@ -663,6 +663,20 @@
   document.querySelectorAll('.check > input[type="checkbox"]:not([role])').forEach(function (i) { i.setAttribute('role', 'switch'); });
 })();
 
+/* Light first load (docs/LOADING.md): the install, device-support and download code below is not needed for the first
+   paint, so it loads after the load event when the main thread is idle, or at once when the address asks for it.
+   window.__leLate(fn, urgent) runs fn then. */
+(function () {
+  'use strict';
+  if (window.__leLate) return;
+  var queue = [], ran = false;
+  function run() { if (ran) return; ran = true; queue.splice(0).forEach(function (fn) { try { fn(); } catch (e) {} }); }
+  function go() { if (window.requestIdleCallback) requestIdleCallback(run, { timeout: 400 }); else setTimeout(run, 150); }
+  if (document.readyState === 'complete') go(); else window.addEventListener('load', go);
+  window.__leLate = function (fn, urgent) { if (urgent || ran) fn(); else queue.push(fn); };
+  window.__leLate.now = run;
+})();
+
 /* Install, updates and storage manager: loads le-pwa.js and le-pwa.css on every page.
    The install prompt can fire before le-pwa.js arrives, so it is kept here until then. */
 (function () {
@@ -673,14 +687,31 @@
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); early.prompt = e; });
   window.addEventListener('appinstalled', function () { early.installed = true; early.prompt = null; });
   var base = document.documentElement.getAttribute('data-root') || '';
-  var css = document.createElement('link');
-  css.rel = 'stylesheet';
-  css.href = base + 'assets/css/le-pwa.css';
-  document.head.appendChild(css);
-  var js = document.createElement('script');
-  js.src = base + 'assets/js/le-pwa.js';
-  js.async = true;
-  document.head.appendChild(js);
+  var loaded = false;
+  function load() {
+    if (loaded) return;
+    loaded = true;
+    var css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = base + 'assets/css/le-pwa.css';
+    document.head.appendChild(css);
+    var js = document.createElement('script');
+    js.src = base + 'assets/js/le-pwa.js';
+    js.async = true;
+    document.head.appendChild(js);
+  }
+  /* Addresses that need it at once: ?install=, ?storage=1, #storage, a shared file. */
+  var urgent = /[?&](install|storage|share-target|shared)=/.test(location.search) || location.hash === '#storage';
+  window.__leLate(load, urgent);
+  /* Install app or Storage tapped before it arrived: load it now and do what was asked. */
+  window.addEventListener('click', function (e) {
+    if (window.LEPwa || !e.target || !e.target.closest) return;
+    var inst = e.target.closest('[data-le-install], .le-install, .install-btn'), st = !inst && e.target.closest('[data-le-storage]');
+    if (!inst && !st) return;
+    e.preventDefault();
+    load();
+    window.addEventListener('le-pwa-ready', function () { if (inst) window.LEPwa.install(); else window.LEPwa.openStorage(); }, { once: true });
+  }, true);
 })();
 
 /* Device support checks (LE.support): loads le-support.js and le-support.css on every page. Features may push
@@ -691,14 +722,16 @@
   window.__leSupportLoader = true;
   window.LE_SUPPORT_DEFS = window.LE_SUPPORT_DEFS || [];
   var base = document.documentElement.getAttribute('data-root') || '';
-  var css = document.createElement('link');
-  css.rel = 'stylesheet';
-  css.href = base + 'assets/css/le-support.css';
-  document.head.appendChild(css);
-  var js = document.createElement('script');
-  js.src = base + 'assets/js/le-support.js';
-  js.async = true;
-  document.head.appendChild(js);
+  window.__leLate(function () {
+    var css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = base + 'assets/css/le-support.css';
+    document.head.appendChild(css);
+    var js = document.createElement('script');
+    js.src = base + 'assets/js/le-support.js';
+    js.async = true;
+    document.head.appendChild(js);
+  });
 })();
 
 /* Download policy and packs (LE.downloads): loads le-downloads.js and le-downloads.css on every page. See docs/DOWNLOADS.md. */
@@ -707,12 +740,14 @@
   if (window.__leDownloadsLoader) return;
   window.__leDownloadsLoader = true;
   var base = document.documentElement.getAttribute('data-root') || '';
-  var css = document.createElement('link');
-  css.rel = 'stylesheet';
-  css.href = base + 'assets/css/le-downloads.css';
-  document.head.appendChild(css);
-  var js = document.createElement('script');
-  js.src = base + 'assets/js/le-downloads.js';
-  js.async = true;
-  document.head.appendChild(js);
+  window.__leLate(function () {
+    var css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = base + 'assets/css/le-downloads.css';
+    document.head.appendChild(css);
+    var js = document.createElement('script');
+    js.src = base + 'assets/js/le-downloads.js';
+    js.async = true;
+    document.head.appendChild(js);
+  });
 })();

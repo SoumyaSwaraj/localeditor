@@ -288,8 +288,15 @@ async function inkContrast(page, selector) {
 /* Compare two scene docs ignoring nothing but ids order: returns true when identical JSON. */
 const sameDoc = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+/* Deferred studio modules (docs/LOADING.md): a test that drives a module's API straight away asks for it first, the way
+   its panel, command or deep link would. ids: 'design', 'export', ['collage', 'cutout'], … */
+async function need(page, ids) {
+  ids = [].concat(ids);
+  await page.waitForFunction(() => window.LE && window.LE.modules);
+  await page.evaluate((list) => window.LE.modules.needAll(list), ids);
+}
 module.exports = {
   ROOT, serve, chromium, VIEWPORTS, open, studioWithSample, openPanel, doc, noOverflow, assert,
   FIXTURE, PHOTO, sleep, makeJpeg, openTheme, newDesign, openPhotoDesign, addPhoto, layers, selection, select, click, addLayers, rect, centerOf, handleBox,
-  drag, touchDrag, capture, imageInfo, pdfInfo, pdfRead, key, savedProjects, sameDoc, inkContrast, waitForAsync
+  drag, touchDrag, capture, imageInfo, pdfInfo, pdfRead, key, savedProjects, sameDoc, inkContrast, waitForAsync, need
 };
