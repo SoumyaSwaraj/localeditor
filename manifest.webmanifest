@@ -119,13 +119,13 @@
       ]
     },
     {
-      "name": "Compress a photo",
-      "short_name": "Compress",
-      "description": "Shrink a photo for the web or email",
-      "url": "./image-compressor/",
+      "name": "Protect a PDF",
+      "short_name": "Protect",
+      "description": "Lock a PDF with a password, on this device",
+      "url": "./pdf-studio/?panel=bulk&job=protect",
       "icons": [
         {
-          "src": "assets/icons/shortcuts/compress-96.png",
+          "src": "assets/icons/shortcuts/protect-96.png",
           "sizes": "96x96",
           "type": "image/png"
         }

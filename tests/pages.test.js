@@ -47,6 +47,38 @@ cases['no soon feature is mentioned on a generated page, the homepage or in sear
   soon.forEach((e) => h.assert(!index.includes('"' + e.title + '"'), 'Search index lists soon entry ' + e.title));
 };
 
+cases['every live feature, tool page and hub is registered: llms.txt, header search, homepage, tools hub; no soon feature anywhere'] = async ({ h }) => {
+  const llms = fs.readFileSync(path.join(ROOT, 'llms.txt'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'assets/js/app.js'), 'utf8');
+  const home = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const tools = read('tools');
+  const index = app.slice(app.indexOf('/* BEGIN site index */'), app.indexOf('/* END site index */'));
+  ['photo-privacy/', 'device-check/'].forEach((u) => {
+    h.assert(llms.includes('https://localeditor.net/' + u), 'llms.txt lists ' + u);
+    h.assert(app.includes("'" + u + "'"), 'header search tools list has ' + u);
+    h.assert(home.includes('href="' + u + '"'), 'homepage directory links ' + u);
+    h.assert(tools.includes('href="../' + u + '"'), 'tools hub lists ' + u);
+  });
+  site.features.concat(site.hubs).forEach((e) => {
+    h.assert(llms.includes('https://localeditor.net/' + e.url), 'llms.txt lists ' + e.url);
+    if (e.kind === 'feature') h.assert(index.includes('"' + e.url + '"'), 'search index has ' + e.url);
+  });
+  const dir = home.match(/id="dir-dev">Utilities <span>(\d+)<\/span>/);
+  h.assert(dir && Number(dir[1]) === build.TOOLS.filter((t) => t.cat === 'dev').length, 'homepage Utilities count matches the tool list');
+  const img = home.match(/id="dir-image">Image <span>(\d+)<\/span>/);
+  h.assert(img && Number(img[1]) === build.TOOLS.filter((t) => t.cat === 'image').length, 'homepage Image count matches the tool list');
+  const n = (llms.match(/ plus (\d+) browser tools/) || [])[1];
+  h.assert.equal(Number(n), build.TOOLS.length, 'llms.txt tool count');
+  soon.forEach((e) => h.assert(!llms.includes(e.title) && !(e.url && llms.includes(e.url)) && !(e.url && index.includes('"' + e.url + '"')), 'a soon entry leaked into llms.txt or search: ' + e.title));
+  const bad = [];
+  for (const m of llms.matchAll(/\(https:\/\/localeditor\.net\/([^)]*)\)/g)) {
+    const p = m[1] || '';
+    if (!p || p === 'sitemap.xml') continue;
+    if (!fs.existsSync(path.join(ROOT, p.endsWith('/') ? p + 'index.html' : p))) bad.push(p);
+  }
+  h.assert(!bad.length, 'llms.txt links that do not resolve: ' + bad.join(', '));
+};
+
 cases['each page has one h1, a unique title and description, and valid JSON-LD'] = async ({ h }) => {
   const titles = new Set(), descs = new Set();
   for (const e of site.pages) {
@@ -107,6 +139,54 @@ for (const [url, e] of launches) {
     const got = await page.evaluate(() => ({ panel: window.LEStudio.S.panel, opts: window.LEStudio.S.panelOpts || {} }));
     h.assert.equal(got.panel, e.panel, url + ' panel');
     Object.keys(e.panelOpts || {}).forEach((k) => h.assert.equal(got.opts[k], e.panelOpts[k], url + ' ' + k));
+    h.assert.noErrors(page);
+  };
+}
+
+/* Quick makers open their form: /studio/?make=<id>. */
+site.entries.filter(site.visible).filter((e) => e.maker).forEach((e) => {
+  cases['launch ' + e.launch + ' opens the ' + e.maker + ' maker form'] = async ({ browser, base, h }) => {
+    h.assert.equal(e.launch, 'studio/?make=' + e.maker, e.id + ' launch matches its maker');
+    const page = await h.open(browser, base, '/' + e.launch, 'desktop');
+    await page.waitForFunction(() => window.LEStudioMakers && window.LEStudioMakers.form(), null, { timeout: 15000 });
+    h.assert.equal(await page.evaluate(() => window.LEStudioMakers.form().m.id), e.maker, e.launch + ' maker');
+    h.assert(await page.isVisible('.mk-make'), e.launch + ' shows the Make it button');
+    h.assert.noErrors(page);
+  };
+});
+
+/* PDF studio launches: ?panel=<id>&job=<job>. The URL, the entry's panel and job agree, and the panel (and job) opens.
+   Panels that need a document wait for a file: the open-file prompt stays, and choosing a file continues to the panel. */
+const SEC_VIEW = { send: 'send', reveal: 'reveal', safety: 'safety', redact: 'redact', find: 'redact' };
+const pdfLaunches = new Map();
+site.entries.filter(site.visible).filter((e) => e.panel && /^pdf-studio\//.test(e.launch)).forEach((e) => pdfLaunches.set(e.launch, e));
+for (const [url, e] of pdfLaunches) {
+  cases['launch ' + url + ' opens ' + e.panel + ' ' + e.job] = async ({ browser, base, h }) => {
+    const q = new URL('http://x/' + url).searchParams;
+    h.assert.equal(q.get('panel'), e.panel, url + ' panel in the URL');
+    h.assert.equal(q.get('job'), e.job, url + ' job in the URL');
+    const page = await h.open(browser, base, '/' + url, 'desktop');
+    await page.waitForFunction(() => window.PS && document.body.classList.contains('ps-ready'), null, { timeout: 15000 });
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300);
+    const noDoc = await page.evaluate((p) => !!PS.panels[p].noDoc, e.panel);
+    if (!noDoc) {
+      const wait = await page.evaluate(() => ({ panel: PS.S.panel, pending: PS.pendingPanel, pages: PS.S.pages.length }));
+      h.assert.equal(wait.panel, '', url + ' waits for a file');
+      h.assert.equal(wait.pending, e.panel, url + ' remembers the panel');
+      const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-act="intent"][data-intent="merge"]')]);
+      await chooser.setFiles(path.join(ROOT, 'tests/fixtures/pdf-bulk/payslips-30.pdf'));
+      await page.waitForFunction((p) => PS.S.panel === p, e.panel, { timeout: 20000 });
+    } else {
+      await page.waitForFunction((p) => PS.S.panel === p, e.panel, { timeout: 10000 });
+    }
+    if (e.panel === 'security') {
+      h.assert.equal(await page.evaluate(() => PS.security.view), SEC_VIEW[e.job], url + ' security view');
+      if (e.job === 'find') h.assert.equal(await page.evaluate(() => !!PS.security.findOpen), true, url + ' find box open');
+    } else if (e.panel === 'bulk') {
+      await page.waitForSelector('.pb-work:not([hidden])[data-job="' + e.job + '"]', { timeout: 10000 });
+    }
+    h.assert.noErrors(page);
   };
 }
 
