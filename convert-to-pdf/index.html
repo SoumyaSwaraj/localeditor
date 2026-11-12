@@ -67,6 +67,21 @@
 
     <section class="cv-card cv-opts" id="cv-opts" aria-label="Page options">
       <header class="cv-card-head"><h2>Page setup</h2><button class="cv-reset" type="button" data-cv="reset">Reset</button></header>
+      <div class="cv-field" data-kinds="docx odt html markdown epub">
+        <span class="cv-label" id="cv-out-l">Save as</span>
+        <div class="seg cv-seg cv-out" role="group" aria-labelledby="cv-out-l" aria-describedby="cv-out-hint" data-opt="output">
+          <button type="button" data-v="text" aria-pressed="true"><strong>Searchable text</strong><small>Smaller file</small></button>
+          <button type="button" data-v="picture" aria-pressed="false"><strong>Exact picture of each page</strong><small>Looks like the original</small></button>
+        </div>
+        <p class="cv-hint cv-out-hint" id="cv-out-hint" aria-live="polite">Text can be selected, searched and read aloud. The layout is a clean reflow, not an exact copy.</p>
+      </div>
+      <div class="cv-field" data-kinds="docx odt html markdown epub xlsx csv" data-output="text">
+        <span class="cv-label" id="cv-font-l">Text style</span>
+        <div class="seg cv-seg" role="group" aria-labelledby="cv-font-l" data-opt="font">
+          <button type="button" data-v="sans" aria-pressed="true">Sans serif</button>
+          <button type="button" data-v="serif" aria-pressed="false" class="cv-serif">Serif</button>
+        </div>
+      </div>
       <div class="cv-field">
         <label for="cv-size">Page size</label>
         <select class="input" id="cv-size" data-opt="pageSize">
