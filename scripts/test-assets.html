@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LE assets test</title>
+<style>
+  body { margin: 0; padding: 16px; background: #E7E5EB; color: #110F17; font-family: "Plus Jakarta Sans", sans-serif; }
+  h1, h2 { font-weight: 650; }
+  h2 { margin: 28px 0 10px; font-size: 18px; }
+  #status { padding: 10px 12px; background: #fff; border-radius: 10px; }
+  #status.bad { background: #F8D5DE; }
+  #status.ok { background: #D9F3E8; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .font, .hit, .shape { background: #fff; border-radius: 10px; padding: 8px; }
+  .font { width: 168px; }
+  .font b { display: block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: #5c5866; }
+  .font span { display: block; font-size: 28px; line-height: 1.2; }
+  .hit { width: 92px; text-align: center; font-size: 11px; }
+  .hit svg { width: 40px; height: 40px; }
+  .shape { width: 96px; text-align: center; font-size: 11px; }
+  .shape svg { width: 80px; height: 56px; }
+  canvas { background: #fff; border-radius: 12px; max-width: 100%; }
+  code { font-size: 12px; }
+  .wi { background: #fff; border-radius: 12px; padding: 8px 10px; margin: 0 0 8px; }
+  .wi b { display: block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: #5c5866; margin-bottom: 6px; }
+  .wi svg { width: 36px; height: 36px; }
+  .swatch { width: 22px; height: 22px; border-radius: 6px; }
+  .grad, .pat { width: 72px; height: 48px; border-radius: 8px; background: #fff; }
+  .pat svg { width: 72px; height: 48px; }
+</style>
+</head>
+<body>
+<h1>LocalEditor assets</h1>
+<div id="status">Running…</div>
+<h2>Fonts</h2>
+<div id="fonts" class="row"></div>
+<h2>Search</h2>
+<div id="search"></div>
+<h2>Shapes</h2>
+<div id="shapes" class="row"></div>
+<h2>Canvas</h2>
+<canvas id="c" width="720" height="280"></canvas>
+<h2>Withicons</h2>
+<div id="withicons"></div>
+<h2>Colour</h2>
+<div id="colors"></div>
+<h2>Gradients</h2>
+<div id="gradients" class="row"></div>
+<h2>Patterns</h2>
+<div id="patterns" class="row"></div>
+<pre id="log"></pre>
+<script src="../assets/js/le-fonts.js?v=5"></script>
+<script src="../assets/js/le-assets.js?v=5"></script>
+<script>
+(function () {
+  var status = document.getElementById('status');
+  var log = document.getElementById('log');
+  var errors = [];
+  window.addEventListener('error', function (e) { errors.push(e.message); });
+  function fail(msg) { errors.push(msg); console.error(msg); }
+
+  function run() {
+    var families = LE.fonts.list();
+    if (families.length < 40) fail('font list short');
+    var fonts = document.getElementById('fonts');
+    var cssNode = document.createElement('style');
+    cssNode.textContent = LE.fonts.previewCSS();
+    document.head.appendChild(cssNode);
+    families.forEach(function (f) {
+      var card = document.createElement('div');
+      card.className = 'font';
+      card.innerHTML = '<b></b><span>Aa</span>';
+      card.querySelector('b').textContent = f.family + ' ' + f.category;
+      card.querySelector('span').style.fontFamily = LE.fonts.css(f.family);
+      fonts.appendChild(card);
+    });
+
+    var sets = LE.assets.sets();
+    return Promise.all(families.map(function (f) { return LE.fonts.ensurePreview(f.family); })).then(function () {
+      return Promise.all(['lucide', 'phosphor', 'emoji', 'stickers'].map(function (id) { return LE.assets.load(id); }));
+    }).then(function () {
+      var queries = ['camera', 'heart', 'party'];
+      var host = document.getElementById('search');
+      queries.forEach(function (q) {
+        var hits = LE.assets.search(q, { limit: 8 });
+        if (!hits.length) fail('no hits for ' + q);
+        var block = document.createElement('div');
+        block.innerHTML = '<h3></h3><div class="row"></div>';
+        block.querySelector('h3').textContent = q + ' (' + hits.length + ')';
+        var row = block.querySelector('.row');
+        hits.forEach(function (hit) {
+          var cell = document.createElement('div');
+          cell.className = 'hit';
+          cell.innerHTML = LE.assets.svg(hit.id, hit.set === 'lucide' ? { color: '#7457F0', strokeWidth: 1.75 } : { color: '#110F17' });
+          var name = document.createElement('div');
+          name.textContent = hit.name;
+          cell.appendChild(name);
+          row.appendChild(cell);
+        });
+        host.appendChild(block);
+      });
+      var shapeHost = document.getElementById('shapes');
+      LE.assets.shapes().forEach(function (shape) {
+        var d = shape.path(80, 56);
+        if (!d || d.indexOf('NaN') >= 0) fail('bad shape ' + shape.id);
+        var open = shape.closed === false;
+        var cell = document.createElement('div');
+        cell.className = 'shape';
+        var path = '<path d="' + d + '" ' + (open
+          ? 'fill="none" stroke="#110F17" stroke-width="2" stroke-linecap="round"' + (shape.dash ? ' stroke-dasharray="' + shape.dash.join(' ') + '"' : '')
+          : 'fill="#7457F0" stroke="#110F17" stroke-width="1"' + (shape.fillRule ? ' fill-rule="' + shape.fillRule + '"' : '')) + '/>';
+        cell.innerHTML = '<svg viewBox="0 0 80 56" width="80" height="56">' + path + '</svg><div></div>';
+        cell.querySelector('div').textContent = shape.name;
+        shapeHost.appendChild(cell);
+      });
+      return Promise.all([
+        LE.fonts.load('Great Vibes', 400, false),
+        LE.fonts.load('Playfair Display', 400, true),
+        LE.fonts.bytes('Inter', 400, false),
+        LE.assets.image('lucide:camera', 72, { color: '#7457F0', strokeWidth: 1.75 }),
+        LE.assets.image('emoji:party-popper', 72),
+        LE.assets.image('stickers:stamp-approved', 84)
+      ]);
+    }).then(function (results) {
+      var bytes = results[2];
+      if (!bytes || bytes.byteLength < 1000) fail('embed bytes missing');
+      if (!document.fonts.check('64px "Great Vibes"')) fail('Great Vibes is not active');
+      if (!document.fonts.check('italic 400 28px "Playfair Display"')) fail('Playfair italic is not active');
+      var canvas = document.getElementById('c');
+      var g = canvas.getContext('2d');
+      g.fillStyle = '#ffffff';
+      g.fillRect(0, 0, canvas.width, canvas.height);
+      g.fillStyle = '#110F17';
+      g.font = '64px ' + LE.fonts.css('Great Vibes');
+      g.fillText('LocalEditor', 24, 86);
+      var width = g.measureText('LocalEditor').width;
+      if (width < 80) fail('canvas text did not use the font (' + Math.round(width) + ')');
+      g.font = 'italic 400 28px ' + LE.fonts.css('Playfair Display');
+      g.fillText('Cafe Zurich — signatures', 28, 148);
+      g.drawImage(results[3], 470, 24, 72, 72);
+      g.drawImage(results[4], 550, 24, 72, 72);
+      g.drawImage(results[5], 630, 18, 72, 72);
+      var star = LE.assets.shapes().filter(function (s) { return s.id === 'star'; })[0];
+      var p = new Path2D(star.path(80, 80, { points: 5, innerRatio: 0.4 }));
+      g.save();
+      g.translate(480, 120);
+      g.fillStyle = '#E2B15A';
+      g.fill(p);
+      g.restore();
+      log.textContent = families.length + ' fonts, sets ' + sets.map(function (s) { return s.id + ' ' + s.count; }).join(', ') + ', embed ' + bytes.byteLength + ' bytes, text width ' + Math.round(width);
+      return LE.assets.saveAllOffline(function () {});
+    }).then(function () {
+      if (errors.length) {
+        status.className = 'bad';
+        status.textContent = errors.join(' | ');
+        window.__LE_TEST_DONE = false;
+      } else if (!window.__LE_TEST_HOLD) {
+        status.className = 'ok';
+        status.textContent = 'OK';
+        window.__LE_TEST_DONE = true;
+      }
+    }).catch(function (err) {
+      fail(err && err.message ? err.message : String(err));
+      status.className = 'bad';
+      status.textContent = errors.join(' | ');
+      window.__LE_TEST_DONE = false;
+    });
+  }
+
+  function withiconsPass() {
+    return LE.assets.load('withicons').then(function () {
+      var styles = LE.assets.iconStyles();
+      if (styles.length !== 34) fail('expected 34 styles, got ' + styles.length);
+      var hits = LE.assets.search('bicycle', { set: 'withicons', style: 'clay', limit: 5 });
+      if (!hits.length || hits[0].name !== 'bike') fail('withicons search missed bike');
+      var early = LE.assets.iconPalettes('heart');
+      if (early.some(function (p) { return p.id === 'classic-red'; })) fail('icon palettes loaded with the index');
+      var clayP = LE.assets.iconPalettes('clay');
+      if (!clayP.some(function (p) { return p.id === 'amethyst'; })) fail('brand palettes missing');
+      return LE.assets.loadIconPalettes('heart').then(function (loaded) {
+        if (!loaded.some(function (p) { return p.id === 'classic-red'; })) fail('heart palette missing');
+        return null;
+      }).then(function () {
+      var names = ['bike', 'heart', 'settings'];
+      var host = document.getElementById('withicons');
+      var i = 0;
+      function next() {
+        if (i >= styles.length) return Promise.resolve();
+        var style = styles[i++];
+        return LE.assets.loadStyle(style.id).then(function () {
+          var card = document.createElement('div');
+          card.className = 'wi';
+          var label = document.createElement('b');
+          label.textContent = style.name + ' · ' + style.group;
+          card.appendChild(label);
+          var row = document.createElement('div');
+          row.className = 'row';
+          names.forEach(function (name) {
+            var pals = LE.assets.iconPalettes(name).filter(function (p) { return p.id !== 'default'; }).slice(0, 3);
+            if (pals.length < 3) fail('palettes short for ' + name);
+            pals.forEach(function (pal) {
+              var markup = LE.assets.svg('withicons:' + style.id + '/' + name, { palette: pal.id, size: 36 });
+              if (!markup || markup.indexOf('<svg') !== 0 || markup.indexOf('NaN') >= 0 || markup.indexOf('var(--with') >= 0) fail('bad svg ' + style.id + '/' + name);
+              var cell = document.createElement('div');
+              cell.innerHTML = markup;
+              row.appendChild(cell);
+            });
+          });
+          card.appendChild(row);
+          host.appendChild(card);
+          return next();
+        });
+      }
+      return next();
+      });
+    }).then(function () {
+      var sets = LE.assets.colorSets();
+      var ramps = sets.filter(function (s) { return s.group === 'ramp' && s.colors.length === 11; });
+      if (sets.length < 60 || ramps.length < 12) fail('colour sets ' + sets.length + ' ramps ' + ramps.length);
+      var grads = LE.assets.gradients();
+      var mesh = grads.filter(function (g) { return g.type === 'mesh' && g.css && g.stops.length; });
+      if (grads.length < 80 || !mesh.length) fail('gradients ' + grads.length);
+      var pats = LE.assets.patterns();
+      if (pats.length < 30) fail('patterns ' + pats.length);
+      var colorHost = document.getElementById('colors');
+      sets.slice(0, 16).forEach(function (set) {
+        var row = document.createElement('div');
+        row.className = 'row';
+        row.style.marginBottom = '6px';
+        set.colors.forEach(function (hex) {
+          var chip = document.createElement('div');
+          chip.className = 'swatch';
+          chip.style.background = hex;
+          row.appendChild(chip);
+        });
+        colorHost.appendChild(row);
+      });
+      var gradHost = document.getElementById('gradients');
+      grads.filter(function (g) { return g.type !== 'mesh'; }).slice(0, 8).concat(grads.filter(function (g) { return g.type === 'mesh'; }).slice(0, 4)).forEach(function (g) {
+        var chip = document.createElement('div');
+        chip.className = 'grad';
+        chip.style.backgroundImage = g.type === 'mesh' ? g.css : '';
+        chip.style.background = g.type === 'mesh' ? '#110F17' : g.css;
+        if (g.type === 'mesh') chip.style.backgroundImage = g.css;
+        gradHost.appendChild(chip);
+      });
+      var patHost = document.getElementById('patterns');
+      pats.forEach(function (p) {
+        var cell = document.createElement('div');
+        cell.className = 'pat';
+        cell.innerHTML = p.svg(72, '#7457F0', '#FBF8F3');
+        patHost.appendChild(cell);
+      });
+      return Promise.all([
+        LE.assets.image('withicons:clay/heart', 96, { palette: 'classic-red' }),
+        LE.assets.image('withicons:glass/bike', 96, { palette: 'amethyst' })
+      ]);
+    }).then(function (imgs) {
+      var canvas = document.getElementById('c');
+      var g = canvas.getContext('2d');
+      g.drawImage(imgs[0], 24, 190, 72, 72);
+      g.drawImage(imgs[1], 110, 190, 72, 72);
+      if (!imgs[0].width) fail('colourful image did not draw');
+      log.textContent += ' · withicons 34×1000, colours ' + LE.assets.colorSets().length + ', gradients ' + LE.assets.gradients().length + ', patterns ' + LE.assets.patterns().length;
+    });
+  }
+
+  if (!window.LE || !LE.fonts || !LE.assets) fail('LE missing');
+  var fresh = location.search.indexOf('fresh=1') >= 0;
+  if (!fresh) {
+    var clear = navigator.serviceWorker
+      ? navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })
+      : Promise.resolve();
+    clear.then(function () { return window.caches ? caches.keys() : []; }).then(function (keys) {
+      return Promise.all((keys || []).map(function (k) { return caches.delete(k); }));
+    }).then(function () { location.replace(location.pathname + '?fresh=1'); }).catch(function () { location.replace(location.pathname + '?fresh=1'); });
+  } else {
+    window.__LE_TEST_HOLD = true;
+    var previous = run;
+    run = function () {
+      return previous().then(function () {
+        window.__LE_TEST_DONE = null;
+        return withiconsPass();
+      }).then(function () {
+        if (errors.length) {
+          status.className = 'bad';
+          status.textContent = errors.join(' | ');
+          window.__LE_TEST_DONE = false;
+        } else if (window.__LE_TEST_DONE !== false) {
+          status.className = 'ok';
+          status.textContent = 'OK';
+          window.__LE_TEST_DONE = true;
+        }
+      }).catch(function (err) {
+        fail(err && err.message ? err.message : String(err));
+        status.className = 'bad';
+        status.textContent = errors.join(' | ');
+        window.__LE_TEST_DONE = false;
+      });
+    };
+    run();
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+function leConvertFixture(items) {
+  var total = 0;
+  total += 0; // LECODE step 0
+  total += 1; // LECODE step 1
+  total += 2; // LECODE step 2
+  total += 3; // LECODE step 3
+  total += 4; // LECODE step 4
+  total += 5; // LECODE step 5
+  total += 6; // LECODE step 6
+  total += 7; // LECODE step 7
+  total += 8; // LECODE step 8
+  total += 9; // LECODE step 9
+  total += 10; // LECODE step 10
+  total += 11; // LECODE step 11
+  total += 12; // LECODE step 12
+  total += 13; // LECODE step 13
+  total += 14; // LECODE step 14
+  total += 15; // LECODE step 15
+  total += 16; // LECODE step 16
+  total += 17; // LECODE step 17
+  total += 18; // LECODE step 18
+  total += 19; // LECODE step 19
+  total += 20; // LECODE step 20
+  total += 21; // LECODE step 21
+  total += 22; // LECODE step 22
+  total += 23; // LECODE step 23
+  total += 24; // LECODE step 24
+  total += 25; // LECODE step 25
+  total += 26; // LECODE step 26
+  total += 27; // LECODE step 27
+  total += 28; // LECODE step 28
+  total += 29; // LECODE step 29
+  total += 30; // LECODE step 30
+  total += 31; // LECODE step 31
+  total += 32; // LECODE step 32
+  total += 33; // LECODE step 33
+  total += 34; // LECODE step 34
+  total += 35; // LECODE step 35
+  total += 36; // LECODE step 36
+  total += 37; // LECODE step 37
+  total += 38; // LECODE step 38
+  total += 39; // LECODE step 39
+  return total;
+}

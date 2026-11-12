@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Recipes — LocalEditor</title>
+<meta name="description" content="Preview, apply, and share LocalEditor recipes. A .leworkflow file is a list of edits, not a program.">
+<link rel="canonical" href="https://localeditor.net/recipes/">
+<meta name="theme-color" content="#141318">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+.recipe-layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.compare canvas{width:100%;border-radius:12px;background:#E7E5EB}
+.stars{display:flex;gap:4px}
+.stars button{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--surface)}
+.stars button[aria-pressed="true"]{background:#1B1722;color:#fff}
+@media(max-width:860px){.recipe-layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<main id="main" class="container">
+  <header class="page-intro">
+    <p class="kicker">Recipes</p>
+    <h1>A list of edits you can hand to someone.</h1>
+    <p class="dek">Open a recipe, see what it does, then use it on your own photo. Experts can save their steps as a .leworkflow file. The file is data. It cannot run code.</p>
+  </header>
+  <div class="recipe-layout">
+    <div>
+      <div class="section-head"><h2>From LocalEditor</h2></div>
+      <div id="builtin" class="tools-grid"></div>
+      <div class="section-head"><h2>On this device</h2></div>
+      <div id="mine" class="tools-grid"></div>
+      <section class="card" style="margin-top:16px">
+        <h2>The file</h2>
+        <p>A recipe uses the format <span class="mono">localeditor-workflow</span> version 1.0. Share it as <span class="mono">name.leworkflow</span>. It can list steps, a strength slider, the author’s name, and an export suggestion. LocalEditor checks every step against a fixed list before running it.</p>
+        <p>If a step needs something this device cannot do, you will see that before it is skipped.</p>
+        <label class="field">Import a recipe<input class="input" id="import" type="file" accept=".leworkflow,.json,application/json"></label>
+      </section>
+    </div>
+    <aside class="card" id="detail" aria-live="polite">
+      <p class="kicker">Preview</p>
+      <h2>Choose a recipe</h2>
+      <p>The sample on the left is the starting picture. The one on the right is the recipe.</p>
+    </aside>
+  </div>
+</main>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/le-engine.js"></script>
+<script src="../assets/vendor/qrcode.js"></script>
+<script src="../assets/js/le-recipes-ui.js"></script>
+</body>
+</html>

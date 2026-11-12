@@ -1,0 +1,94 @@
+# Third-party licenses
+
+Everything under `assets/vendor/`, `assets/fonts/`, and `assets/data/` is vendored so LocalEditor can run offline. Only MIT, ISC, BSD, Apache-2.0, and OFL-1.1 material is included.
+
+## JavaScript
+
+| Name | Version | License | Files | Source |
+|---|---|---|---|---|
+| pdf.js (Mozilla) | 3.11.174 | Apache-2.0 | `assets/vendor/pdf.min.js`, `assets/vendor/pdf.worker.min.js` | https://github.com/mozilla/pdf.js |
+| pdf-lib | vendored build (version string not embedded in the bundle) | MIT | `assets/vendor/pdf-lib.min.js` | https://github.com/Hopding/pdf-lib |
+| QR Code Generator for JavaScript (Kazuhiko Arase) | 2009 script | MIT | `assets/vendor/qrcode.js` | http://www.d-project.com/ · https://github.com/kazuhikoarase/qrcode-generator |
+| @pdf-lib/fontkit | 1.1.1 | MIT | `assets/vendor/fontkit.umd.min.js` | https://github.com/Hopding/fontkit |
+| mammoth | 1.13.0 | BSD-2-Clause | `assets/vendor/mammoth.browser.min.js` | https://github.com/mwilliamson/mammoth.js |
+| SheetJS Community Edition | 0.20.3 | Apache-2.0 | `assets/vendor/xlsx.full.min.js` | https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz |
+| JSZip (includes pako) | 3.10.2 | MIT (dual MIT / GPL-3.0-or-later; used under MIT) | `assets/vendor/jszip.min.js` | https://github.com/Stuk/jszip |
+| DOMPurify | 3.4.17 | Apache-2.0 OR MPL-2.0 | `assets/vendor/purify.min.js` | https://github.com/cure53/DOMPurify |
+| marked | 18.1.3 | MIT | `assets/vendor/marked.umd.js` | https://github.com/markedjs/marked |
+| html2canvas | 1.4.1 | MIT | `assets/vendor/html2canvas.min.js` | https://github.com/niklasvh/html2canvas |
+
+The word “QR Code” is a registered trademark of Denso Wave Incorporated.
+
+## UI fonts (site chrome)
+
+These are the faces already referenced from `assets/css/app.css`. They are separate from the editor library below.
+
+| Family | License | Files | Source |
+|---|---|---|---|
+| Plus Jakarta Sans | SIL Open Font License 1.1 | `assets/fonts/jakarta-latin.woff2`, `assets/fonts/jakarta-latin-ext.woff2` | https://fonts.google.com/specimen/Plus+Jakarta+Sans |
+| Instrument Serif | SIL Open Font License 1.1 | `assets/fonts/instrument-serif.woff2`, `assets/fonts/instrument-serif-italic.woff2` | https://fonts.google.com/specimen/Instrument+Serif |
+
+## Editor font library
+
+Self-hosted from the Google Fonts CSS API (`scripts/fetch-fonts.js`) on 2026-11-07. Each family has latin and latin-ext WOFF2 for the browser when Google publishes that subset, plus one WOFF per face for pdf-lib / fontkit. Files live in `assets/fonts/library/<slug>/`. OFL texts: https://openfontlicense.org/
+
+| Family | License | Google Fonts version | Weights |
+|---|---|---|---|
+| Inter | OFL-1.1 | v20 | 400, 700, italic 400 |
+| Poppins | OFL-1.1 | v24 | 400, 700 |
+| Montserrat | OFL-1.1 | v31 | 400, 700 |
+| DM Sans | OFL-1.1 | v17 | 400, 700 |
+| Manrope | OFL-1.1 | v23 | 400, 700 |
+| Space Grotesk | OFL-1.1 | v22 | 400, 700 |
+| Outfit | OFL-1.1 | v15 | 400, 700 |
+| Nunito | OFL-1.1 | v32 | 400, 700, italic 400 |
+| Work Sans | OFL-1.1 | v24 | 400, 700 |
+| Rubik | OFL-1.1 | v31 | 400, 700 |
+| Plus Jakarta Sans | OFL-1.1 | v12 | 400, 700 |
+| Playfair Display | OFL-1.1 | v40 | 400, 700, italic 400 |
+| Lora | OFL-1.1 | v37 | 400, 700, italic 400 |
+| Merriweather | OFL-1.1 | v33 | 400, 700, italic 400 |
+| DM Serif Display | OFL-1.1 | v17 | 400, italic 400 |
+| Cormorant Garamond | OFL-1.1 | v21 | 400, 700, italic 400 |
+| Libre Baskerville | OFL-1.1 | v24 | 400, 700, italic 400 |
+| Fraunces | OFL-1.1 | v38 | 400, 700, italic 400 |
+| EB Garamond | OFL-1.1 | v33 | 400, 700, italic 400 |
+| Instrument Serif | OFL-1.1 | v5 | 400, italic 400 |
+| Bebas Neue | OFL-1.1 | v16 | 400 |
+| Anton | OFL-1.1 | v27 | 400 |
+| Archivo Black | OFL-1.1 | v23 | 400 |
+| Abril Fatface | OFL-1.1 | v25 | 400 |
+| Righteous | OFL-1.1 | v18 | 400 |
+| Lobster | OFL-1.1 | v32 | 400 |
+| Bungee | OFL-1.1 | v17 | 400 |
+| Oswald | OFL-1.1 | v57 | 400, 700 |
+| Syne | OFL-1.1 | v24 | 400, 700 |
+| Dancing Script | OFL-1.1 | v29 | 400, 700 |
+| Great Vibes | OFL-1.1 | v21 | 400 |
+| Caveat | OFL-1.1 | v23 | 400, 700 |
+| Sacramento | OFL-1.1 | v17 | 400 |
+| Pacifico | OFL-1.1 | v23 | 400 |
+| Satisfy | OFL-1.1 | v22 | 400 (latin only) |
+| Allura | OFL-1.1 | v23 | 400 |
+| Kalam | OFL-1.1 | v18 | 400, 700 |
+| Shadows Into Light | OFL-1.1 | v22 | 400 |
+| Homemade Apple | Apache-2.0 | v24 | 400 (latin only) |
+| Mr Dafoe | OFL-1.1 | v15 | 400 |
+| Alex Brush | OFL-1.1 | v23 | 400 |
+| JetBrains Mono | OFL-1.1 | v24 | 400, 700 |
+| Space Mono | OFL-1.1 | v17 | 400, 700 |
+| IBM Plex Mono | OFL-1.1 | v20 | 400, 700 |
+
+Specimen pages: `https://fonts.google.com/specimen/<Family>` (spaces as `+`).
+
+## Icons, emoji, stickers
+
+| Name | Version | License | Files | Source |
+|---|---|---|---|---|
+| Lucide | icon set via `@iconify-json/lucide` 1.2.151 (2100 icons) | ISC | `assets/data/lucide.json` | https://lucide.dev · https://github.com/lucide-icons/lucide |
+| Phosphor | 2.1.1 via `@iconify-json/ph` 1.2.2 (600 names × regular, fill, and duotone = 1798 icons) | MIT | `assets/data/phosphor.json` | https://phosphoricons.com · https://github.com/phosphor-icons/core |
+| Fluent Emoji (flat) | via `@iconify-json/fluent-emoji-flat` 1.2.6 (918 icons across smileys, people, animals, food, travel, activities, objects, symbols) | MIT | `assets/data/emoji.json` | https://github.com/microsoft/fluentui-emoji |
+| LocalEditor stickers | original artwork, 2026 (42 stickers) | LocalEditor (no upstream license) | `assets/data/stickers.json` | authored in `scripts/fetch-assets.js` |
+| withicons | 0.6.0 (`@withicons/core`, `@withicons/core-plus`, `@withicons/soft3d`, `@withicons/holiday`; 1000 icons × 34 styles) | MIT | `assets/data/withicons/*.json`, `assets/vendor/licenses/withicons-LICENSE.txt` | https://withicons.com · https://github.com/withicons |
+
+Icon JSON is the Iconify collection format. Lucide’s license is ISC. Phosphor and Fluent Emoji are MIT. Bodies are sanitized at build time (no script, event handlers, `foreignObject`, or external URLs).

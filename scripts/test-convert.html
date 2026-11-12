@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>LE.convert harness</title>
+<style>
+  body { margin: 16px; font: 15px/1.45 "Segoe UI", sans-serif; color: #1a1a1a; background: #f4f4f5; }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  button, select { min-height: 40px; margin: 4px 4px 4px 0; }
+  #log, #detect, #warnings { white-space: pre-wrap; background: #fff; border: 1px solid #ddd; padding: 10px; min-height: 2.5em; }
+  iframe { width: 100%; height: 280px; background: #fff; border: 1px solid #ccc; }
+  .pages { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+  canvas { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); max-width: 180px; height: auto; }
+  .fail { color: #9b1c1c; font-weight: 700; }
+  .ok { color: #146c43; font-weight: 700; }
+</style>
+</head>
+<body>
+<h1>LE.convert harness</h1>
+<p>Pick a fixture, or run the full check. Files stay in the browser.</p>
+<div id="bar"></div>
+<label>Page <select id="size"><option>A4</option><option>Letter</option><option>A5</option><option>A3</option><option>Legal</option><option>Tabloid</option></select></label>
+<label>Orientation <select id="orient"><option>portrait</option><option>landscape</option><option>auto</option></select></label>
+<label>Margin <select id="margin"><option>normal</option><option>none</option><option>small</option><option>wide</option></select></label>
+<label>Fit <select id="fit"><option>width</option><option>page</option><option>image</option></select></label>
+<button type="button" id="all">Run all checks</button>
+<button type="button" id="dl">Download PDF</button>
+<h2>Log</h2>
+<pre id="log"></pre>
+<h2>Detect</h2>
+<pre id="detect"></pre>
+<h2>Warnings</h2>
+<pre id="warnings"></pre>
+<h2>Sandboxed HTML</h2>
+<iframe id="pv" sandbox="allow-same-origin" title="Sanitized HTML preview"></iframe>
+<h2>Pages</h2>
+<div id="pages" class="pages"></div>
+<script src="../assets/js/le-convert.js?v=5"></script>
+<script>
+(function () {
+  var logEl = document.getElementById('log');
+  var lastPdf = null;
+  var lastName = 'converted.pdf';
+  window.__leScriptRan = false;
+  window.__leErrors = [];
+  window.addEventListener('error', function (e) {
+    window.__leErrors.push(String(e.message || e.error || 'error'));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    window.__leErrors.push('rejection: ' + String((e.reason && e.reason.message) || e.reason));
+  });
+
+  function log(line) {
+    logEl.textContent += line + '\n';
+  }
+
+  var files = [
+    'sample.docx', 'sample.pptx', 'sample.xlsx', 'sample.md', 'sample.html', 'sample.csv',
+    'sample.json', 'sample.txt', 'sample.rtf', 'sample.js', 'sample.png', 'sample.svg',
+    'sample.pdf', 'sample.odt', 'sample.epub', 'sample.doc', 'sample.ppt', 'sample.css',
+    'sample.tsv', 'sample.log'
+  ];
+  var bar = document.getElementById('bar');
+  files.forEach(function (name) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = name;
+    btn.addEventListener('click', function () { runOne(name, opts()).catch(function (err) { log(name + ' ERROR ' + err.message); }); });
+    bar.appendChild(btn);
+  });
+
+  function opts() {
+    return {
+      pageSize: document.getElementById('size').value,
+      orientation: document.getElementById('orient').value,
+      margin: document.getElementById('margin').value,
+      fit: document.getElementById('fit').value,
+      lineNumbers: true,
+      imageQuality: 0.86
+    };
+  }
+
+  function ink(canvas) {
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width, h = canvas.height;
+    if (!w || !h) return 0;
+    var data = ctx.getImageData(0, 0, w, h).data;
+    var step = Math.max(1, Math.floor(Math.min(w, h) / 30));
+    var n = 0, hit = 0;
+    for (var y = 0; y < h; y += step) {
+      for (var x = 0; x < w; x += step) {
+        var i = (y * w + x) * 4;
+        n++;
+        if (data[i + 3] > 10 && (data[i] < 250 || data[i + 1] < 250 || data[i + 2] < 250)) hit++;
+      }
+    }
+    return n ? hit / n : 0;
+  }
+
+  function loadFile(name) {
+    return fetch('fixtures/' + name).then(function (res) {
+      if (!res.ok) throw new Error('missing ' + name);
+      return res.arrayBuffer().then(function (buf) {
+        return new File([buf], name, { type: res.headers.get('content-type') || '' });
+      });
+    });
+  }
+
+  function ensurePdfJs() {
+    if (window.pdfjsLib && pdfjsLib.getDocument) {
+      if (!pdfjsLib.GlobalWorkerOptions.workerSrc) pdfjsLib.GlobalWorkerOptions.workerSrc = '../assets/vendor/pdf.worker.min.js';
+      return Promise.resolve();
+    }
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = '../assets/vendor/pdf.min.js';
+      s.onload = function () {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '../assets/vendor/pdf.worker.min.js';
+        resolve();
+      };
+      s.onerror = function () { reject(new Error('pdf.js failed to load')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function pdfInfo(bytes) {
+    return ensurePdfJs().then(function () {
+    var data = new Uint8Array(bytes);
+    return pdfjsLib.getDocument({ data: data, isEvalSupported: false }).promise.then(function (doc) {
+      var text = '';
+      var chain = Promise.resolve();
+      var size = null;
+      for (var n = 1; n <= doc.numPages; n++) {
+        (function (n) {
+          chain = chain.then(function () {
+            return doc.getPage(n).then(function (page) {
+              if (!size) size = page.getViewport({ scale: 1 });
+              return page.getTextContent().then(function (tc) {
+                text += tc.items.map(function (it) { return it.str; }).join(' ') + '\n';
+              });
+            });
+          });
+        })(n);
+      }
+      var pages = doc.numPages;
+      return chain.then(function () {
+        try { doc.destroy(); } catch (e) {}
+        return { text: text, pages: pages, width: size.width, height: size.height };
+      });
+    });
+    });
+  }
+
+  function show(file, det, html, canvases, pdf) {
+    document.getElementById('detect').textContent = JSON.stringify(det, null, 2);
+    document.getElementById('warnings').textContent = (html.warnings || []).concat(pdf.warnings || []).join('\n');
+    var frame = document.getElementById('pv');
+    frame.srcdoc = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' + (html.css || '') + '</style></head><body>' + (html.html || '') + '</body></html>';
+    var box = document.getElementById('pages');
+    box.innerHTML = '';
+    canvases.forEach(function (c) { box.appendChild(c); });
+    lastPdf = pdf.bytes;
+    lastName = (file.name || 'out').replace(/\.[^.]+$/, '') + '.pdf';
+  }
+
+  function runOne(name, options) {
+    return loadFile(name).then(function (file) {
+      var det = LE.convert.detect(file);
+      return LE.convert.toHTML(file, options).then(function (html) {
+        return LE.convert.previewPages(file, options).then(function (canvases) {
+          return LE.convert.toPDF(file, options).then(function (pdf) {
+            show(file, det, html, canvases, pdf);
+            log(name + ' kind=' + det.kind + ' pages=' + pdf.pageCount + ' preview=' + canvases.length);
+            return { file: file, det: det, html: html, canvases: canvases, pdf: pdf };
+          });
+        });
+      });
+    });
+  }
+
+  document.getElementById('dl').addEventListener('click', function () {
+    if (!lastPdf) return;
+    var blob = new Blob([lastPdf], { type: 'application/pdf' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = lastName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+  document.getElementById('all').addEventListener('click', function () {
+    window.__leRunAll().then(function (report) {
+      log((report.ok ? 'PASS' : 'FAIL') + '\n' + report.lines.join('\n'));
+    });
+  });
+
+  window.runFixture = function (name) { return runOne(name, opts()); };
+
+  window.__leRunAll = function () {
+    var lines = [];
+    var failed = 0;
+    function check(cond, msg) {
+      window.__leStep = msg;
+      lines.push((cond ? 'ok  ' : 'FAIL') + ' ' + msg);
+      if (!cond) failed++;
+    }
+    var expect = {
+      'sample.docx': 'docx', 'sample.pptx': 'pptx', 'sample.xlsx': 'xlsx', 'sample.md': 'markdown',
+      'sample.html': 'html', 'sample.csv': 'csv', 'sample.json': 'json', 'sample.txt': 'text',
+      'sample.rtf': 'rtf', 'sample.js': 'code', 'sample.png': 'image', 'sample.svg': 'svg',
+      'sample.pdf': 'pdf', 'sample.odt': 'odt', 'sample.epub': 'epub', 'sample.doc': 'unsupported',
+      'sample.ppt': 'unsupported', 'sample.css': 'code', 'sample.tsv': 'csv', 'sample.log': 'text'
+    };
+    var remoteBefore = performance.getEntriesByType('resource').filter(function (e) { return e.name.indexOf('example.com') >= 0; }).length;
+    var chain = Promise.resolve();
+    Object.keys(expect).forEach(function (name) {
+      chain = chain.then(function () {
+        return loadFile(name).then(function (file) {
+          var det = LE.convert.detect(file);
+          check(det.kind === expect[name], 'detect ' + name + ' → ' + det.kind + ' (wanted ' + expect[name] + ')');
+          if (name === 'sample.doc' || name === 'sample.ppt') {
+            check(det.note.indexOf(name === 'sample.doc' ? '.docx' : '.pptx') >= 0, name + ' note suggests the modern format');
+          }
+          if (name === 'photo.heic') return;
+        });
+      });
+    });
+    chain = chain.then(function () {
+      var heic = LE.convert.detect(new File(['x'], 'photo.heic'));
+      check(heic.kind === 'image' && heic.note.indexOf('HEIC') >= 0, 'heic note');
+    });
+
+    function convert(name, options) {
+      window.__leStep = 'convert ' + name;
+      return loadFile(name).then(function (file) {
+        return LE.convert.toHTML(file, options).then(function (html) {
+          return LE.convert.previewPages(file, options).then(function (canvases) {
+            return LE.convert.toPDF(file, options).then(function (pdf) {
+              return pdfInfo(pdf.bytes).then(function (info) {
+                return { file: file, html: html, canvases: canvases, pdf: pdf, info: info };
+              });
+            });
+          });
+        });
+      });
+    }
+
+    function keep(fn) {
+      chain = chain.then(fn).catch(function (err) {
+        lines.push('FAIL exception ' + (err && err.stack ? err.stack : err));
+        failed++;
+      });
+    }
+
+    var baseTxt = 0;
+    keep(function () { return convert('sample.txt', { pageSize: 'A4', orientation: 'portrait', margin: 'normal', fit: 'width', pageNumbers: true, header: '{file}' }).then(function (r) {
+        baseTxt = r.pdf.pageCount;
+        check(r.canvases.length === r.pdf.pageCount, 'txt preview matches pdf ' + r.pdf.pageCount);
+        check(r.pdf.pageCount >= 2, 'txt has at least 2 pages (' + r.pdf.pageCount + ')');
+        check(r.info.text.indexOf('LETEXTLINE') >= 0, 'txt text is selectable');
+        check(r.info.text.indexOf('sample.txt') >= 0 && r.info.text.indexOf('1') >= 0, 'header and page number are real text');
+        check(ink(r.canvases[0]) > 0.002, 'txt preview has ink ' + ink(r.canvases[0]).toFixed(3));
+      }); });
+    keep(function () { return convert('sample.txt', { pageSize: 'A4', margin: 'normal', scale: 180 }).then(function (r) { check(r.pdf.pageCount > baseTxt, 'scale 180 adds pages (' + baseTxt + ' → ' + r.pdf.pageCount + ')'); }); });
+    keep(function () { return convert('sample.json', { pageSize: 'A4', margin: 'normal' }).then(function (r) {
+        check(r.info.text.indexOf('LEJSON') >= 0, 'json contains LEJSON');
+        check(r.canvases.length === r.pdf.pageCount, 'json page match');
+      }); });
+    keep(function () { return convert('sample.js', { pageSize: 'A4', margin: 'normal', lineNumbers: true }).then(function (r) { check(r.info.text.indexOf('LECODE') >= 0 && r.info.text.indexOf('1') >= 0, 'code keeps source and line numbers'); }); });
+    keep(function () { return convert('sample.rtf', { pageSize: 'A4', margin: 'normal' }).then(function (r) {
+        check(r.info.text.indexOf('LERTFHEAD') >= 0 && r.info.text.indexOf('bold') >= 0, 'rtf text');
+        check(r.html.html.indexOf('<strong>') >= 0 && r.html.html.indexOf('<em>') >= 0, 'rtf html bold and italic');
+      }); });
+    keep(function () { return convert('sample.csv', { pageSize: 'A4', orientation: 'portrait', margin: 'normal' }).then(function (r) { check(r.info.text.indexOf('LECSVROW') >= 0, 'csv cell text'); }); });
+    keep(function () { return convert('sample.xlsx', { pageSize: 'A4', orientation: 'auto', margin: 'normal' }).then(function (r) {
+        check(r.info.width > r.info.height, 'xlsx auto landscape ' + Math.round(r.info.width) + 'x' + Math.round(r.info.height));
+        check(r.info.text.indexOf('LECELL') >= 0 && r.info.text.indexOf('Scores') >= 0, 'xlsx scores text');
+        check(r.info.text.indexOf('LESTOCK') >= 0, 'xlsx second sheet');
+        check(r.canvases.length === r.pdf.pageCount, 'xlsx page match ' + r.pdf.pageCount);
+      }); });
+    keep(function () { return convert('sample.xlsx', { pageSize: 'A4', orientation: 'portrait', margin: 'normal', sheets: ['Stock'] }).then(function (r) {
+        check(r.info.text.indexOf('LESTOCK') >= 0 && r.info.text.indexOf('LECELL') < 0, 'sheet filter keeps Stock only');
+      }); });
+    keep(function () { return convert('sample.html', { pageSize: 'A4', margin: 'normal' }).then(function (r) {
+        var h = r.html.html;
+        check(h.indexOf('LEHTMLSAFE') >= 0, 'html keeps the heading');
+        check(h.toLowerCase().indexOf('<script') < 0, 'html has no script tag');
+        check(h.toLowerCase().indexOf('onerror') < 0, 'html has no onerror');
+        check(h.indexOf('example.com') < 0, 'html has no remote url');
+        check(h.toLowerCase().indexOf('<iframe') < 0 && h.toLowerCase().indexOf('<form') < 0, 'html drops iframe and form');
+        check(h.indexOf('data:image/gif') >= 0, 'html keeps the data image');
+        check(h.indexOf('Styled text') >= 0, 'html keeps styled text');
+        check(r.canvases.length === r.pdf.pageCount && r.pdf.pageCount >= 1, 'html page match');
+        check(ink(r.canvases[0]) > 0.002, 'html preview ink');
+        check(window.__leScriptRan !== true, 'html script did not run');
+      }); });
+    keep(function () { return convert('sample.md', { pageSize: 'A4', margin: 'normal' }).then(function (r) {
+        check(r.html.html.indexOf('LEMDTITLE') >= 0 && r.html.html.indexOf('<strong>') >= 0, 'markdown html');
+        check(r.html.html.toLowerCase().indexOf('<table') >= 0, 'markdown table');
+        check(r.canvases.length === r.pdf.pageCount, 'markdown page match');
+        check(ink(r.canvases[0]) > 0.002, 'markdown ink');
+      }); });
+    keep(function () { return convert('sample.docx', { pageSize: 'A4', margin: 'normal' }).then(function (r) {
+        check(r.html.html.indexOf('LEDOCXHEADING') >= 0, 'docx heading');
+        check(r.html.html.indexOf('data:image') >= 0, 'docx image inlined');
+        check(r.html.html.toLowerCase().indexOf('<table') >= 0, 'docx table');
+        check(r.pdf.pageCount >= 2 && r.canvases.length === r.pdf.pageCount, 'docx pages ' + r.pdf.pageCount);
+        check(r.canvases.every(function (c) { return ink(c) > 0.002; }), 'docx every page has ink');
+      }); });
+    keep(function () { return convert('sample.odt', { pageSize: 'A4', margin: 'normal' }).then(function (r) {
+        check(r.html.html.indexOf('LEODT') >= 0 && r.html.html.indexOf('<strong>') >= 0, 'odt heading and bold');
+        check(r.html.html.indexOf('data:image') >= 0, 'odt image');
+        check(ink(r.canvases[0]) > 0.002, 'odt ink');
+      }); });
+    keep(function () { return convert('sample.epub', { pageSize: 'A4', margin: 'normal' }).then(function (r) {
+        check(r.html.html.indexOf('LEEPUB') >= 0, 'epub chapter');
+        check(r.html.html.toLowerCase().indexOf('<script') < 0 && r.html.html.indexOf('example.com') < 0, 'epub sanitized');
+        check(r.pdf.pageCount >= 2, 'epub chapter break ' + r.pdf.pageCount);
+      }); });
+    keep(function () { return convert('sample.pptx', { pageSize: 'A4', orientation: 'auto', margin: 'small' }).then(function (r) {
+        var h = r.html.html;
+        check(r.pdf.pageCount === 3 && r.canvases.length === 3, 'pptx 3 pages');
+        check(h.indexOf('LEPPTXTITLE') >= 0 && h.indexOf('LEPPTXTITLE') < h.indexOf('Picture slide') && h.indexOf('Picture slide') < h.indexOf('Closing'), 'pptx slide order');
+        check(h.indexOf('data:image') >= 0, 'pptx picture');
+        check(r.canvases.every(function (c) { return ink(c) > 0.002; }), 'pptx every slide has ink ' + r.canvases.map(ink).map(function (n) { return n.toFixed(3); }).join(', '));
+        check(r.info.width > r.info.height, 'pptx landscape page');
+      }); });
+    keep(function () { return convert('sample.png', { pageSize: 'A4', orientation: 'auto', margin: 'small', fit: 'page' }).then(function (r) { check(r.pdf.pageCount === 1 && ink(r.canvases[0]) > 0.002, 'png one page'); }); });
+    keep(function () { return convert('sample.svg', { pageSize: 'A4', fit: 'page', margin: 'small' }).then(function (r) { check(r.pdf.pageCount === 1, 'svg converts'); check(ink(r.canvases[0]) > 0.002, 'svg ink'); }); });
+    keep(function () { return convert('sample.pdf', { pageSize: 'A4', header: 'ignore' }).then(function (r) { check(r.info.text.indexOf('LEPDFPASS') >= 0 && r.pdf.pageCount === 1, 'pdf passthrough'); }); });
+    keep(function () {
+      return Promise.all([loadFile('sample.txt'), loadFile('sample.json')]).then(function (pair) {
+        return LE.convert.many(pair, { pageSize: 'A4', margin: 'normal' }).then(function (merged) {
+          return Promise.all([
+            convert('sample.txt', { pageSize: 'A4', margin: 'normal' }),
+            convert('sample.json', { pageSize: 'A4', margin: 'normal' })
+          ]).then(function (both) {
+            check(merged.pageCount === both[0].pdf.pageCount + both[1].pdf.pageCount, 'many() merges in order ' + merged.pageCount);
+          });
+        });
+      });
+    });
+    chain = chain.then(function () {
+      return loadFile('sample.doc').then(function (file) {
+        return LE.convert.toPDF(file, {}).then(function () { check(false, 'doc should reject'); }, function (err) {
+          check(err.message.indexOf('.docx') >= 0, 'doc error mentions docx');
+        });
+      });
+    });
+    return chain.then(function () {
+      var remoteAfter = performance.getEntriesByType('resource').filter(function (e) { return e.name.indexOf('example.com') >= 0; }).length;
+      check(remoteAfter === remoteBefore, 'no request for the remote image (' + remoteAfter + ')');
+      check(window.__leScriptRan !== true, 'fixture script never ran');
+      check(!window.__leErrors.length, 'no window errors ' + window.__leErrors.join(' | '));
+      return { ok: failed === 0, failed: failed, lines: lines, errors: window.__leErrors.slice() };
+    }).catch(function (err) {
+      lines.push('FAIL exception ' + (err && err.stack ? err.stack : err));
+      return { ok: false, failed: failed + 1, lines: lines, errors: window.__leErrors.slice() };
+    });
+  };
+})();
+</script>
+</body>
+</html>

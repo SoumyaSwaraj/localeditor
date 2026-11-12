@@ -1,7 +1,7 @@
 {
-  "name": "Instant Tools — Image, PDF & Text Tools",
-  "short_name": "Instant Tools",
-  "description": "30 free private tools for images, PDFs and text that work offline.",
+  "name": "LocalEditor",
+  "short_name": "LocalEditor",
+  "description": "Private image studio and everyday tools that stay on your device.",
   "start_url": "./",
   "scope": "./",
   "id": "./",
@@ -10,8 +10,8 @@
     "window-controls-overlay",
     "standalone"
   ],
-  "background_color": "#0b0c14",
-  "theme_color": "#5b5bf7",
+  "background_color": "#E7E5EB",
+  "theme_color": "#141318",
   "orientation": "any",
   "categories": [
     "productivity",

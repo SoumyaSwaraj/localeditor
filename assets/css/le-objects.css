@@ -1,0 +1,180 @@
+/* Layered scene overlay. The page paints on the canvas; this file is handles, guides, and edit chrome. */
+.le-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg, #EEEBF3);
+  color: var(--ink, #17131F);
+  font-family: var(--font, "Plus Jakarta Sans", sans-serif);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+}
+.le-scene:focus-visible {
+  outline: 2px solid var(--amethyst, #7457F0);
+  outline-offset: -2px;
+}
+.le-scene .le-view {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  display: block;
+}
+.le-scene .le-overlay {
+  position: absolute;
+  inset: 0;
+  max-width: none;
+}
+.le-scene[data-tool="pen"] .le-overlay,
+.le-scene[data-tool="marker"] .le-overlay,
+.le-scene[data-tool="highlighter"] .le-overlay,
+.le-scene[data-tool="shape"] .le-overlay { cursor: crosshair; }
+.le-scene[data-tool="text"] .le-overlay { cursor: text; }
+.le-scene[data-tool="eraser"] .le-overlay { cursor: cell; }
+.le-scene.is-space .le-overlay,
+.le-scene[data-tool="hand"] .le-overlay { cursor: grab; }
+.le-scene.is-panning .le-overlay { cursor: grabbing; }
+
+.le-hover,
+.le-sel,
+.le-crop,
+.le-marquee {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+.le-hover {
+  display: none;
+  border: 1.5px solid #7457F0;
+  z-index: 2;
+}
+@media (pointer: fine) {
+  .le-hover.is-on { display: block; }
+}
+.le-sel {
+  display: none;
+  border: 1.5px solid var(--amethyst, #7457F0);
+  z-index: 3;
+}
+.le-sel.is-on { display: block; }
+.le-crop {
+  display: none;
+  border: 1.5px solid #fff;
+  box-shadow: 0 0 0 9999px rgba(17, 15, 23, 0.5);
+  z-index: 4;
+}
+.le-crop.is-on { display: block; }
+.le-marquee {
+  display: none;
+  border: 1px solid var(--amethyst, #7457F0);
+  background: rgba(116, 87, 240, 0.14);
+  z-index: 3;
+}
+.le-marquee.is-on { display: block; }
+
+.le-h {
+  position: absolute;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  background: #fff;
+  border: 1.5px solid #E2B15A;
+  border-radius: 2px;
+  pointer-events: auto;
+  touch-action: none;
+  z-index: 1;
+}
+.le-h::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  transform: translate(-50%, -50%);
+}
+@media (pointer: fine) {
+  .le-h {
+    width: 12px;
+    height: 12px;
+    margin: -6px 0 0 -6px;
+  }
+  .le-h::before { width: 16px; height: 16px; }
+}
+.le-h[data-h="nw"] { left: 0; top: 0; }
+.le-h[data-h="n"] { left: 50%; top: 0; }
+.le-h[data-h="ne"] { left: 100%; top: 0; }
+.le-h[data-h="e"] { left: 100%; top: 50%; }
+.le-h[data-h="se"] { left: 100%; top: 100%; }
+.le-h[data-h="s"] { left: 50%; top: 100%; }
+.le-h[data-h="sw"] { left: 0; top: 100%; }
+.le-h[data-h="w"] { left: 0; top: 50%; }
+.le-h[data-h="rotate"] {
+  left: 50%;
+  top: -36px;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+}
+@media (pointer: coarse) {
+  .le-h[data-h="rotate"] { top: -46px; }
+}
+.le-h[data-h="rotate"] svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  pointer-events: none;
+}
+.le-guides {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 5;
+}
+.le-guides line {
+  stroke: #E0668E;
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.le-textedit {
+  position: absolute;
+  z-index: 6;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 1px dashed var(--amethyst, #7457F0);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink, #17131F);
+  caret-color: var(--ink, #17131F);
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  outline: none;
+  transform-origin: center center;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.le-textedit[hidden] { display: none !important; }
+.le-textedit:focus-visible { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  .le-scene,
+  .le-scene * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

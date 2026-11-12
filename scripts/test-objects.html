@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LE.Scene harness</title>
+  <link rel="stylesheet" href="../assets/css/app.css">
+  <link rel="stylesheet" href="../assets/css/le-objects.css">
+  <style>
+    html, body { height: 100%; }
+    body { margin: 0; display: flex; flex-direction: column; min-height: 100%; }
+    .bar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--border);
+    }
+    .bar .grow { flex: 1; min-width: 12px; }
+    #log {
+      margin: 0; padding: 8px 12px; max-height: 132px; overflow: auto;
+      background: var(--surface-2); color: var(--muted); font: 12px/1.45 var(--mono, ui-monospace, monospace);
+      white-space: pre-wrap;
+    }
+    #stage { flex: 1; min-height: 280px; }
+  </style>
+</head>
+<body class="le-built">
+  <div class="bar">
+    <button class="btn btn-sm" id="add-image" type="button">Add image</button>
+    <button class="btn btn-sm" id="add-text" type="button">Add text</button>
+    <button class="btn btn-sm" id="add-rect" type="button">Rectangle</button>
+    <button class="btn btn-sm" id="add-ellipse" type="button">Ellipse</button>
+    <button class="btn btn-sm" id="add-star" type="button">Star</button>
+    <button class="btn btn-sm" id="add-arrow" type="button">Arrow</button>
+    <button class="btn btn-sm" id="tool-select" type="button">Select</button>
+    <button class="btn btn-sm" id="tool-pen" type="button">Pen</button>
+    <button class="btn btn-sm" id="tool-marker" type="button">Marker</button>
+    <button class="btn btn-sm" id="tool-high" type="button">Highlighter</button>
+    <button class="btn btn-sm" id="tool-eraser" type="button">Eraser</button>
+    <button class="btn btn-sm" id="undo" type="button">Undo</button>
+    <button class="btn btn-sm" id="redo" type="button">Redo</button>
+    <button class="btn btn-sm btn-gold" id="export" type="button">Export PNG</button>
+    <button class="btn btn-sm btn-ghost" id="check" type="button">Run checks</button>
+    <span class="grow"></span>
+    <span id="status" class="eyebrow-sm">Ready</span>
+  </div>
+  <div id="stage"></div>
+  <pre id="log"></pre>
+  <script src="../assets/js/le-engine.js"></script>
+  <script src="../assets/js/le-objects.js"></script>
+  <script>
+    var errors = [];
+    window.addEventListener('error', function (e) {
+      errors.push(String(e.message || e.error || 'error'));
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      errors.push(String(e.reason && (e.reason.message || e.reason) || 'rejection'));
+    });
+    var stage = document.getElementById('stage');
+    var logEl = document.getElementById('log');
+    var statusEl = document.getElementById('status');
+    function log(line) {
+      logEl.textContent += line + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    var scene = new LE.Scene({
+      el: stage,
+      width: 1080,
+      height: 720,
+      background: { type: 'color', color: '#FBF8F3' }
+    });
+    window.scene = scene;
+    scene.on('tool', function (e) { statusEl.textContent = e.tool; });
+    scene.on('zoom', function (e) { statusEl.textContent = Math.round(e.zoom * 100) + '%'; });
+
+    function addImage() {
+      var key = 'img' + Math.floor(Math.random() * 1e6);
+      scene.addAsset(key, LE.sample('scene'));
+      scene.add({ type: 'image', src: key, x: 120, y: 80, w: 520, h: 340, radius: 18, name: 'Photo' });
+    }
+    document.getElementById('add-image').onclick = addImage;
+    document.getElementById('add-text').onclick = function () {
+      scene.setTool('select');
+      scene.add({ type: 'text', text: 'LocalEditor', x: 140, y: 460, w: 520, h: 90, size: 64, font: 'Instrument Serif', weight: 400 });
+    };
+    function addShape(id) {
+      scene.setTool('select');
+      scene.add({
+        type: 'shape', shape: id, x: 680, y: 90, w: id === 'line' ? 220 : 180, h: id === 'line' ? 28 : 150,
+        fill: { type: 'linear', colors: ['#7457F0', '#E0668E'], angle: 40 },
+        stroke: id === 'line' || id === 'arrow' ? { width: 6, color: '#E2B15A', cap: 'round' } : null
+      });
+    }
+    document.getElementById('add-rect').onclick = function () { addShape('rounded-rect'); };
+    document.getElementById('add-ellipse').onclick = function () { addShape('ellipse'); };
+    document.getElementById('add-star').onclick = function () { addShape('star'); };
+    document.getElementById('add-arrow').onclick = function () { addShape('arrow'); };
+    document.getElementById('tool-select').onclick = function () { scene.setTool('select'); };
+    document.getElementById('tool-pen').onclick = function () { scene.setTool('pen'); };
+    document.getElementById('tool-marker').onclick = function () { scene.setTool('marker'); };
+    document.getElementById('tool-high').onclick = function () { scene.setTool('highlighter'); };
+    document.getElementById('tool-eraser').onclick = function () { scene.setTool('eraser'); };
+    document.getElementById('undo').onclick = function () { scene.undo(); };
+    document.getElementById('redo').onclick = function () { scene.redo(); };
+    document.getElementById('export').onclick = function () {
+      statusEl.textContent = 'Exporting';
+      scene.render(1).then(function (canvas) {
+        var a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = 'scene.png';
+        a.click();
+        statusEl.textContent = canvas.width + '×' + canvas.height;
+      });
+    };
+
+    function ptr(type, x, y, extra, el) {
+      var init = { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, pointerType: 'mouse', button: 0, buttons: type === 'pointerup' ? 0 : 1, isPrimary: true };
+      if (extra) Object.keys(extra).forEach(function (k) { init[k] = extra[k]; });
+      (el || stage).dispatchEvent(new PointerEvent(type, init));
+    }
+    function centerOf(id) {
+      var r = scene.screenRect(id);
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2, rect: r };
+    }
+
+    function runChecks() {
+      errors.length = 0;
+      logEl.textContent = '';
+      var failed = [];
+      function ok(name, cond, extra) {
+        if (!cond) failed.push(name);
+        log((cond ? 'ok  ' : 'FAIL ') + name + (!cond && extra ? ' :: ' + extra : ''));
+      }
+      scene.load(LE.Scene.blank(800, 500));
+      scene.setBackground({ type: 'color', color: '#FBF8F3' });
+      scene.fit();
+      (function () {
+        var L = scene.add({ type: 'shape', shape: 'rect', x: 40, y: 40, w: 100, h: 40, fill: { type: 'solid', color: '#111111' } });
+        var R = scene.add({ type: 'shape', shape: 'rect', x: 400, y: 40, w: 80, h: 40, fill: { type: 'solid', color: '#222222' } });
+        var lc = centerOf(L);
+        var zoom = scene.zoom();
+        var dest = scene.layer(R).x - scene.layer(L).w - 1;
+        var dx = (dest - scene.layer(L).x) * zoom;
+        ptr('pointerdown', lc.x, lc.y);
+        ptr('pointermove', lc.x + dx, lc.y);
+        ptr('pointerup', lc.x + dx, lc.y);
+        var edge = scene.layer(L).x + scene.layer(L).w;
+        ok('snap edge', Math.abs(edge - scene.layer(R).x) < 1.25, 'edge ' + edge + ' target ' + scene.layer(R).x + ' x ' + scene.layer(L).x + ' zoom ' + zoom);
+        scene.remove([L, R]);
+      })();
+      ok('blank schema', scene.toJSON().v === 1 && scene.layers().length === 0);
+      var a = scene.add({ type: 'shape', shape: 'rect', x: 40, y: 40, w: 120, h: 80, fill: { type: 'solid', color: '#7457F0' } });
+      var b = scene.add({ type: 'shape', shape: 'ellipse', x: 300, y: 60, w: 100, h: 100, fill: { type: 'solid', color: '#E2B15A' } });
+      ok('hitTest', scene.hitTest(50, 50) === a && scene.hitTest(1, 1) == null);
+      ok('selection', scene.selection()[0] === b);
+      var before = scene.layer(a).x;
+      scene.update(a, { x: before + 5 }, { coalesce: 'nudge' });
+      scene.update(a, { x: before + 15 }, { coalesce: 'nudge' });
+      ok('coalesce one undo', scene.canUndo() && scene.layer(a).x === before + 15);
+      scene.undo();
+      ok('undo coalesce', Math.abs(scene.layer(a).x - before) < 0.01, 'x ' + scene.layer(a).x);
+      scene.redo();
+      ok('redo', Math.abs(scene.layer(a).x - (before + 15)) < 0.01);
+      scene.undo();
+      var gid = scene.group([a, b]);
+      ok('group', !!gid && scene.layer(a).groupId === gid && scene.layers().some(function (l) { return l.id === gid && l.type === 'group'; }));
+      var gx = scene.layer(gid).x;
+      scene.update(gid, { x: gx + 20 });
+      ok('group move', Math.abs(scene.layer(a).x - (scene.layer(gid).x + (scene.layer(a).x - scene.layer(gid).x))) < 1 && scene.layer(a).x > before);
+      scene.ungroup(gid);
+      ok('ungroup keeps children', !scene.layer(gid) && scene.layer(a) && scene.layer(b) && !scene.layer(a).groupId);
+      scene.align([a, b], 'left', 'page');
+      ok('align left', Math.abs(scene.layer(a).x) < 0.1 && Math.abs(scene.layer(b).x) < 0.1);
+      var c = scene.add({ type: 'shape', shape: 'rect', x: 200, y: 200, w: 40, h: 40 });
+      scene.distribute([a, b, c], 'h');
+      ok('order forward', (function () {
+        var ids = scene.layers().map(function (l) { return l.id; });
+        scene.order(a, 'front');
+        return scene.layers().pop().id === a && ids.indexOf(a) >= 0;
+      })());
+      scene.lock(c, true);
+      ok('lock', scene.layer(c).locked === true);
+      scene.remove([c]);
+      ok('remove', !scene.layer(c));
+      var dup = scene.duplicate([a]);
+      ok('duplicate', dup.length === 1 && dup[0] !== a && scene.layer(dup[0]));
+      var key = 'photo';
+      scene.addAsset(key, LE.sample('scene'));
+      var img = scene.add({ type: 'image', src: key, x: 180, y: 140, w: 240, h: 160, adjust: { brightness: 0 }, radius: 12 });
+      var text = scene.add({ type: 'text', text: 'Hello', x: 80, y: 300, w: 280, h: 70, size: 42, color: '#17131F' });
+      var star = scene.add({ type: 'shape', shape: 'star', x: 520, y: 40, w: 120, h: 120, params: { points: 5, innerRatio: 0.4 }, fill: { type: 'solid', color: '#E0668E' } });
+      scene.add({
+        type: 'svg',
+        svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><' + 'script>alert(1)</' + 'script><circle cx="12" cy="12" r="8" fill="currentColor"/></svg>',
+        color: '#17131F', x: 560, y: 200, w: 80, h: 80
+      });
+      ok('layers present', !!scene.layer(img) && !!scene.layer(text) && !!scene.layer(star));
+      ok('screen rect', (function () {
+        var r = scene.screenRect(img);
+        return r && r.width > 2 && r.height > 2;
+      })());
+
+      scene.order(a, 'front');
+      scene.select([a]);
+      var pt = centerOf(a);
+      var startX = scene.layer(a).x;
+      ptr('pointerdown', pt.x, pt.y);
+      ptr('pointermove', pt.x + 40, pt.y + 10);
+      ptr('pointerup', pt.x + 40, pt.y + 10);
+      ok('drag moves', scene.layer(a).x > startX + 2, 'x ' + scene.layer(a).x + ' from ' + startX);
+
+      scene.select([img]);
+      var handle = stage.querySelector('.le-sel [data-h="se"]');
+      var hr = handle.getBoundingClientRect();
+      var iw = scene.layer(img).w;
+      var hx = hr.left + hr.width / 2, hy = hr.top + hr.height / 2;
+      ptr('pointerdown', hx, hy, null, handle);
+      ptr('pointermove', hx + 48, hy + 28, null, handle);
+      ptr('pointerup', hx + 48, hy + 28, null, handle);
+      ok('resize image', scene.layer(img).w > iw + 4, 'w ' + scene.layer(img).w + ' from ' + iw);
+
+      var rot = stage.querySelector('.le-sel [data-h="rotate"]');
+      var rr = rot.getBoundingClientRect();
+      var rx = rr.left + rr.width / 2, ry = rr.top + rr.height / 2;
+      ptr('pointerdown', rx, ry, null, rot);
+      ptr('pointermove', rx + 80, ry + 50, null, rot);
+      ptr('pointerup', rx + 80, ry + 50, null, rot);
+      ok('rotate', Math.abs(scene.layer(img).rotation) > 2, 'rot ' + scene.layer(img).rotation);
+
+      scene.order(text, 'front');
+      scene.select([text]);
+      var tc = centerOf(text);
+      ptr('pointerdown', tc.x, tc.y, { detail: 2 });
+      ptr('pointerup', tc.x, tc.y, { detail: 2 });
+      var editor = stage.querySelector('.le-textedit');
+      ok('text edit opens', editor && !editor.hidden);
+      if (editor) {
+        editor.textContent = 'Edited line';
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+        ok('text edit writes', scene.layer(text).text === 'Edited line');
+        editor.blur();
+      } else ok('text edit writes', false);
+
+      scene.update(img, { rotation: 0 });
+      scene.order(img, 'front');
+      scene.select([img]);
+      var ic = centerOf(img);
+      var cropBefore = JSON.stringify(scene.layer(img).crop);
+      ptr('pointerdown', ic.x, ic.y, { detail: 2 });
+      ptr('pointerup', ic.x, ic.y, { detail: 2 });
+      ok('crop mode', scene.tool() === 'crop' && !!stage.querySelector('.le-crop.is-on'), scene.tool());
+      var ch = stage.querySelector('.le-crop [data-h="e"]');
+      if (ch) {
+        var cr = ch.getBoundingClientRect();
+        var cx = cr.left + cr.width / 2, cy = cr.top + cr.height / 2;
+        ptr('pointerdown', cx, cy, null, ch);
+        ptr('pointermove', cx - 40, cy, null, ch);
+        ptr('pointerup', cx - 40, cy, null, ch);
+      }
+      stage.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      ok('crop applies', scene.tool() === 'select' && JSON.stringify(scene.layer(img).crop) !== cropBefore);
+      scene.undo();
+      ok('crop undo', JSON.stringify(scene.layer(img).crop) === cropBefore);
+
+      scene.setTool('pen');
+      var r0 = stage.getBoundingClientRect();
+      ptr('pointerdown', r0.left + 80, r0.top + 80);
+      ptr('pointermove', r0.left + 140, r0.top + 120);
+      ptr('pointermove', r0.left + 180, r0.top + 90);
+      ptr('pointerup', r0.left + 180, r0.top + 90);
+      var path = scene.layers().filter(function (l) { return l.type === 'path'; }).pop();
+      ok('pen path', !!path && path.points.length > 2);
+      if (path) {
+        scene.setTool('eraser');
+        var pc = centerOf(path.id);
+        ptr('pointerdown', pc.rect.left + 2, pc.rect.top + pc.rect.height / 2);
+        ptr('pointermove', pc.rect.right - 2, pc.rect.top + pc.rect.height / 2);
+        ptr('pointerup', pc.rect.right - 2, pc.rect.top + pc.rect.height / 2);
+        ok('eraser removes path', !scene.layer(path.id), scene.layer(path.id) ? 'still there' : '');
+      } else ok('eraser removes path', false);
+
+      scene.setTool('select');
+      return scene.exportLayer(img, 0.5).then(function (one) {
+        var px = one.getContext('2d').getImageData(8, 8, 1, 1).data;
+        scene.update(img, { adjust: { brightness: 70 } });
+        return scene.exportLayer(img, 0.5).then(function (two) {
+          var py = two.getContext('2d').getImageData(8, 8, 1, 1).data;
+          ok('adjust brightness', (py[0] + py[1] + py[2]) > (px[0] + px[1] + px[2]) + 10);
+          scene.update(img, { adjust: { brightness: 0, warmth: 35 } });
+          return scene.exportLayer(img, 0.5);
+        });
+      }).then(function () {
+        return scene.render(0.25);
+      }).then(function (full) {
+        ok('render size', full.width === 200 && full.height === 125);
+        return scene.render(0.25, { includeBackground: false });
+      }).then(function (clear) {
+        var p = clear.getContext('2d').getImageData(0, 0, 1, 1).data;
+        ok('background excluded', p[3] === 0);
+        scene.load({ v: 1, width: 120, height: 80, background: { type: 'color', color: '#ff0000' }, layers: [] });
+        return scene.render(1);
+      }).then(function (red) {
+        var p = red.getContext('2d').getImageData(4, 4, 1, 1).data;
+        ok('background color', p[0] > 200 && p[1] < 40 && p[3] === 255);
+        ok('no console errors', errors.length === 0);
+        if (errors.length) log(errors.join('\n'));
+        log(failed.length ? ('FAILED ' + failed.length) : 'ALL PASSED');
+        statusEl.textContent = failed.length ? ('Failed ' + failed.length) : 'Checks passed';
+        return { failed: failed, errors: errors.slice() };
+      });
+    }
+    document.getElementById('check').onclick = function () {
+      runChecks().catch(function (err) {
+        log('FAIL exception ' + (err && err.stack || err));
+        statusEl.textContent = 'Checks crashed';
+      });
+    };
+    window.runChecks = runChecks;
+  </script>
+</body>
+</html>

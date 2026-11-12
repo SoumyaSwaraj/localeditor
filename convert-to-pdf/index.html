@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Convert to PDF: Word, PowerPoint, Excel, images and more, on your device · LocalEditor</title>
+<meta name="description" content="Turn Word, PowerPoint, Excel, CSV, HTML, Markdown, text, code, EPUB and images into PDF with a live page preview. Private, free, and works offline.">
+<link rel="canonical" href="https://localeditor.net/convert-to-pdf/">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#141318">
+<meta property="og:title" content="Convert to PDF · LocalEditor">
+<meta property="og:description" content="Convert documents, slides, sheets and images to PDF privately on your device.">
+<meta property="og:url" content="https://localeditor.net/convert-to-pdf/">
+<meta property="og:type" content="website">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/css/app.css">
+<link rel="stylesheet" href="../assets/css/convert.css">
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body class="le-built cv-body">
+<aside class="le-side" data-fill aria-label="LocalEditor tools"></aside>
+<button class="le-scrim" type="button" data-scrim hidden aria-label="Close menu"></button>
+
+<div class="cv-app" id="cv-app">
+  <header class="cv-top">
+    <button class="cv-ib" type="button" data-menu aria-label="Open menu" title="All tools"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="cv-brand" href="../" aria-label="LocalEditor home"><span class="cv-brand-mark" aria-hidden="true"></span><span class="cv-brand-text">Convert to PDF</span></a>
+    <span class="cv-spacer"></span>
+    <a class="cv-link cv-hide-phone" href="../pdf-studio/">PDF Studio</a>
+    <button class="cv-ib" type="button" data-cv="settings" aria-label="Quality and theme" title="Quality and theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg></button>
+    <button class="btn btn-gold btn-sm cv-dl cv-only-files" type="button" data-cv="download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span>Download PDF</span></button>
+  </header>
+
+  <section class="cv-start" id="cv-start" aria-labelledby="cv-title">
+    <div class="cv-start-inner">
+      <p class="eyebrow-sm">Private · works offline</p>
+      <h1 id="cv-title">Anything to PDF, <em>beautifully.</em></h1>
+      <p class="cv-sub">Documents, slides, spreadsheets, web pages and photos. See every page before you download.</p>
+      <button class="cv-drop" type="button" data-cv="pick">
+        <span class="ic ic-sapphire ic-lg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14h6"/></svg></span>
+        <strong>Choose files</strong>
+        <span><span class="cv-hide-phone">or drop them anywhere. </span>Pick several to merge them into one PDF.</span>
+      </button>
+      <ul class="cv-kinds" aria-label="Supported formats">
+        <li><b class="k-docx">DOCX</b>Word</li>
+        <li><b class="k-pptx">PPTX</b>PowerPoint</li>
+        <li><b class="k-xlsx">XLSX</b>Excel, CSV</li>
+        <li><b class="k-image">JPG</b>Images</li>
+        <li><b class="k-html">HTML</b>Web pages</li>
+        <li><b class="k-markdown">MD</b>Markdown</li>
+        <li><b class="k-code">TXT</b>Text, code, JSON</li>
+        <li><b class="k-epub">EPUB</b>Books, ODT, RTF</li>
+      </ul>
+    </div>
+  </section>
+
+  <aside class="cv-side" id="cv-side" aria-label="Files and options">
+    <section class="cv-card cv-files">
+      <header class="cv-card-head">
+        <h2>Files <span class="cv-count" id="cv-count"></span></h2>
+        <button class="btn btn-sm btn-ghost" type="button" data-cv="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add</button>
+      </header>
+      <ol class="cv-list" id="cv-list" aria-label="Files to convert, in order"></ol>
+      <p class="cv-hint" id="cv-order-hint" hidden>Drag or use the arrows to set the order. Files merge top to bottom.</p>
+    </section>
+
+    <section class="cv-card cv-opts" id="cv-opts" aria-label="Page options">
+      <header class="cv-card-head"><h2>Page setup</h2><button class="cv-reset" type="button" data-cv="reset">Reset</button></header>
+      <div class="cv-field">
+        <label for="cv-size">Page size</label>
+        <select class="input" id="cv-size" data-opt="pageSize">
+          <option value="A4">A4</option>
+          <option value="Letter">Letter</option>
+          <option value="Legal">Legal</option>
+          <option value="A3">A3</option>
+          <option value="A5">A5</option>
+          <option value="Tabloid">Tabloid</option>
+          <option value="image" data-kinds="image svg">Same as image</option>
+        </select>
+      </div>
+      <div class="cv-field">
+        <span class="cv-label" id="cv-or-l">Orientation</span>
+        <div class="seg cv-seg" role="group" aria-labelledby="cv-or-l" data-opt="orientation">
+          <button type="button" data-v="auto" aria-pressed="true">Auto</button>
+          <button type="button" data-v="portrait" aria-pressed="false">Portrait</button>
+          <button type="button" data-v="landscape" aria-pressed="false">Landscape</button>
+        </div>
+      </div>
+      <div class="cv-field">
+        <span class="cv-label" id="cv-mg-l">Margins</span>
+        <div class="seg cv-seg" role="group" aria-labelledby="cv-mg-l" data-opt="margin">
+          <button type="button" data-v="none" aria-pressed="false">None</button>
+          <button type="button" data-v="small" aria-pressed="false">Small</button>
+          <button type="button" data-v="normal" aria-pressed="true">Normal</button>
+          <button type="button" data-v="wide" aria-pressed="false">Wide</button>
+        </div>
+      </div>
+      <div class="cv-field">
+        <div class="cv-range-head"><label for="cv-scale">Scale</label><output id="cv-scale-out">100%</output></div>
+        <input type="range" id="cv-scale" min="50" max="200" step="5" value="100" data-opt="scale">
+      </div>
+      <div class="cv-field" data-kinds="image svg">
+        <span class="cv-label" id="cv-fit-l">Image fit</span>
+        <div class="seg cv-seg" role="group" aria-labelledby="cv-fit-l" data-opt="fit">
+          <button type="button" data-v="width" aria-pressed="true">Fill width</button>
+          <button type="button" data-v="page" aria-pressed="false">Whole page</button>
+        </div>
+      </div>
+      <div class="cv-field" data-kinds="image docx pptx odt epub html markdown svg">
+        <div class="cv-range-head"><label for="cv-q">Image quality</label><output id="cv-q-out">85%</output></div>
+        <input type="range" id="cv-q" min="40" max="100" step="5" value="85" data-opt="imageQuality">
+      </div>
+      <div class="cv-field" data-kinds="xlsx">
+        <label for="cv-sheets">Sheets</label>
+        <input class="input" id="cv-sheets" type="text" placeholder="All sheets, or e.g. Sales, 2" autocomplete="off" data-opt="sheets">
+      </div>
+      <label class="cv-toggle" data-kinds="code json">
+        <input type="checkbox" data-opt="lineNumbers" checked><span class="cv-toggle-ui"></span><span>Line numbers</span>
+      </label>
+      <details class="cv-more">
+        <summary>Header, footer & page numbers</summary>
+        <label class="cv-toggle"><input type="checkbox" data-opt="pageNumbers"><span class="cv-toggle-ui"></span><span>Page numbers</span></label>
+        <div class="cv-field">
+          <label for="cv-header">Header</label>
+          <input class="input" id="cv-header" type="text" placeholder="e.g. {file}" autocomplete="off" data-opt="header">
+        </div>
+        <div class="cv-field">
+          <label for="cv-footer">Footer</label>
+          <input class="input" id="cv-footer" type="text" placeholder="e.g. Page {page} of {pages}" autocomplete="off" data-opt="footer">
+        </div>
+        <p class="cv-hint">Tokens: {page} {pages} {date} {file}</p>
+      </details>
+    </section>
+  </aside>
+
+  <main class="cv-stage" id="cv-stage" aria-label="Preview">
+    <header class="cv-stage-head">
+      <div class="cv-stage-title">
+        <strong id="cv-prev-name">Preview</strong>
+        <span id="cv-prev-meta" aria-live="polite"></span>
+      </div>
+      <div class="seg cv-zoom" role="group" aria-label="Preview size">
+        <button type="button" data-zoom="s" aria-pressed="false" aria-label="Small pages">S</button>
+        <button type="button" data-zoom="m" aria-pressed="true" aria-label="Medium pages">M</button>
+        <button type="button" data-zoom="l" aria-pressed="false" aria-label="Large pages">L</button>
+      </div>
+    </header>
+    <div class="cv-warn" id="cv-warn" hidden></div>
+    <div class="cv-pages" id="cv-pages" data-zoom="m"></div>
+  </main>
+
+  <footer class="cv-bar cv-only-files">
+    <span class="cv-bar-meta" id="cv-bar-meta"></span>
+    <button class="btn btn-sm btn-ghost" type="button" data-cv="studio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Open in PDF Studio</span></button>
+    <button class="btn btn-gold cv-bar-dl" type="button" data-cv="download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span>Download PDF</span></button>
+  </footer>
+</div>
+
+<div class="cv-veil" aria-hidden="true"><div><strong>Drop to convert</strong><span>Several files merge into one PDF</span></div></div>
+<div class="cv-progress" id="cv-progress" hidden role="status" aria-live="polite">
+  <div class="cv-prog-card">
+    <strong class="cv-prog-label">Converting…</strong>
+    <span class="cv-prog-bar"><i></i></span>
+    <span class="cv-prog-sub"></span>
+    <button class="btn btn-sm btn-ghost cv-prog-cancel" type="button">Cancel</button>
+  </div>
+</div>
+<div class="cv-pop" id="cv-settings" hidden role="dialog" aria-label="Settings"></div>
+
+<script src="../assets/js/app.js" defer></script>
+<script src="../assets/js/le-engine.js" defer></script>
+<script src="../assets/js/le-objects.js" defer></script>
+<script src="../assets/js/le-fonts.js" defer></script>
+<script src="../assets/js/le-convert-ui.js" defer></script>
+</body>
+</html>

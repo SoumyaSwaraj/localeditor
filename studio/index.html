@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<title>Photo studio — LocalEditor</title>
+<meta name="description" content="A private, Canva-style photo and design studio that runs on your device. Layers, text, shapes, stickers, filters, sizes, and export. Nothing is uploaded.">
+<link rel="canonical" href="https://localeditor.net/studio/">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#141318">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/css/app.css">
+<link rel="stylesheet" href="../assets/css/le-objects.css">
+<link rel="stylesheet" href="../assets/css/studio.css">
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body class="le-built sx-body">
+<a class="skip" href="#sx-scene">Skip to the canvas</a>
+<div class="sx" id="sx" data-panel="">
+  <header class="sx-head" id="sx-head"></header>
+  <nav class="sx-rail" id="sx-rail" aria-label="Studio tools"></nav>
+  <aside class="sx-panel" id="sx-panel" aria-label="Tool panel" hidden>
+    <div class="sx-sheet-grip" id="sx-grip" aria-hidden="true"><i></i></div>
+    <div class="sx-panel-head" id="sx-panel-head"></div>
+    <div class="sx-panel-body" id="sx-panel-body"></div>
+  </aside>
+  <main class="sx-main" id="sx-main">
+    <div class="sx-tool" id="sx-tool" role="toolbar" aria-label="Selection tools"></div>
+    <section class="sx-stage" id="sx-stage" aria-label="Design canvas">
+      <div class="sx-scene" id="sx-scene"></div>
+      <div class="sx-mini" id="sx-mini" role="toolbar" aria-label="Quick actions" hidden></div>
+      <div class="sx-bar" id="sx-bar" hidden></div>
+      <div class="sx-pick" id="sx-pick" hidden></div>
+      <div class="sx-drop" id="sx-drop" hidden><div><strong>Drop to add</strong><span>Photos become layers. A .leproject opens as a design.</span></div></div>
+    </section>
+    <footer class="sx-foot" id="sx-foot"></footer>
+    <div class="sx-start" id="sx-start" hidden></div>
+  </main>
+  <nav class="sx-tabs" id="sx-tabs" aria-label="Studio tools"></nav>
+</div>
+<div class="sx-pop" id="sx-pop" hidden></div>
+<div class="sx-modal" id="sx-modal" hidden></div>
+<div class="sx-toast" id="sx-toast" role="status" aria-live="polite" hidden></div>
+<input id="sx-file" type="file" accept="image/*" multiple hidden>
+<input id="sx-file-project" type="file" accept=".leproject,application/zip" hidden>
+<input id="sx-file-recipe" type="file" accept=".leworkflow,.json,application/json" hidden>
+<input id="sx-file-batch" type="file" accept="image/*" multiple hidden>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/le-engine.js"></script>
+<script src="../assets/js/le-fonts.js"></script>
+<script src="../assets/js/le-assets.js"></script>
+<script src="../assets/js/le-stock.js"></script>
+<script src="../assets/js/le-objects.js"></script>
+<script src="../assets/js/le-project.js"></script>
+<script src="../assets/js/le-studio-panels.js"></script>
+<script src="../assets/js/le-studio-color.js"></script>
+<script src="../assets/js/le-studio-icons.js"></script>
+<script src="../assets/js/le-studio-tools.js"></script>
+<script src="../assets/js/le-collage.js"></script>
+<script src="../assets/js/le-studio-collage.js"></script>
+<script src="../assets/js/le-studio.js"></script>
+</body>
+</html>

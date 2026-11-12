@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LE.pdf harness</title>
+<style>
+  body { font: 15px/1.45 "Segoe UI", sans-serif; margin: 24px; background: #f6f4ef; color: #1c1a22; }
+  h1 { font-size: 1.4rem; margin: 0 0 8px; }
+  button { min-height: 40px; padding: 8px 14px; border-radius: 8px; border: 1px solid #1c1a22; background: #1c1a22; color: #fff; font: inherit; }
+  pre { white-space: pre-wrap; background: #fff; border: 1px solid #ddd; padding: 12px; border-radius: 8px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin: 12px 0; }
+  figure { margin: 0; background: #fff; padding: 8px; border-radius: 8px; border: 1px solid #ddd; }
+  figcaption { font-size: 12px; color: #555; }
+  canvas, img.sig { background: #fff; border: 1px solid #ccc; max-width: 220px; height: auto; }
+  .pass { color: #0b7a3b; font-weight: 700; }
+  .fail { color: #a32020; font-weight: 700; }
+  a { color: #6b4eff; }
+</style>
+</head>
+<body>
+<h1>LE.pdf harness</h1>
+<p>Builds a PDF, opens it, reorders and rotates pages, draws a scene, redacts text, then reads the result back.</p>
+<button id="run" type="button">Run PDF test</button>
+<p id="status">Waiting.</p>
+<pre id="log"></pre>
+<div class="row" id="thumbs"></div>
+<div class="row" id="sigs"></div>
+<p><a id="dl" hidden download="le-pdf-test.pdf">Download built PDF</a></p>
+<script src="../assets/js/le-engine.js"></script>
+<script src="../assets/js/le-pdf.js"></script>
+<script>
+(function () {
+  var errors = [];
+  var origError = console.error;
+  console.error = function () {
+    errors.push(Array.prototype.join.call(arguments, ' '));
+    origError.apply(console, arguments);
+  };
+  window.addEventListener('error', function (e) {
+    errors.push(String(e.message || e.error || 'error'));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    errors.push(String(e.reason && (e.reason.stack || e.reason.message) || e.reason));
+  });
+
+  var logEl = document.getElementById('log');
+  var statusEl = document.getElementById('status');
+  function log(line) {
+    logEl.textContent += line + '\n';
+  }
+
+  function makeMark() {
+    var c = document.createElement('canvas');
+    c.width = 120;
+    c.height = 48;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#2f6fed';
+    ctx.fillRect(0, 0, 120, 48);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '20px sans-serif';
+    ctx.fillText('MARK', 28, 32);
+    return c;
+  }
+
+  function fig(canvas, caption) {
+    var f = document.createElement('figure');
+    f.appendChild(canvas);
+    var cap = document.createElement('figcaption');
+    cap.textContent = caption;
+    f.appendChild(cap);
+    document.getElementById('thumbs').appendChild(f);
+  }
+
+  async function run() {
+    logEl.textContent = '';
+    document.getElementById('thumbs').innerHTML = '';
+    document.getElementById('sigs').innerHTML = '';
+    statusEl.textContent = 'Running…';
+    statusEl.className = '';
+    var checks = [];
+    function check(name, ok, detail) {
+      checks.push({ name: name, ok: !!ok, detail: detail || '' });
+      log((ok ? 'PASS' : 'FAIL') + '  ' + name + (detail ? ' — ' + detail : ''));
+    }
+    try {
+      await LE.pdf.ready();
+      check('libraries', !!(window.pdfjsLib && window.PDFLib && window.fontkit));
+      if (pdfjsLib.GlobalWorkerOptions.workerSrc.indexOf('pdf.worker.min.js') < 0) {
+        check('worker', false, pdfjsLib.GlobalWorkerOptions.workerSrc);
+      } else check('worker', true, pdfjsLib.GlobalWorkerOptions.workerSrc);
+
+      var src = await PDFLib.PDFDocument.create();
+      var font = await src.embedFont(PDFLib.StandardFonts.Helvetica);
+      var labels = ['ALPHA secret-one visible-one', 'BETA secret-two visible-two', 'GAMMA secret-three visible-three'];
+      for (var i = 0; i < labels.length; i++) {
+        var page = src.addPage([595.28, 841.89]);
+        page.drawText(labels[i], { x: 72, y: 760, size: 20, font: font, color: PDFLib.rgb(0.1, 0.1, 0.12) });
+        page.drawText('Body line ' + (i + 1) + ' stays in the file until a redaction rasterizes the page.', { x: 72, y: 720, size: 12, font: font });
+      }
+      src.setTitle('Source');
+      var raw = await src.save();
+      var doc = await LE.pdf.open(raw);
+      check('open page count', doc.pageCount === 3, String(doc.pageCount));
+      var thumb = await doc.thumb(0, 140);
+      fig(thumb, 'Source thumb 1');
+      var text0 = await doc.text(2);
+      var secret = (text0.items || []).filter(function (item) { return item.str.indexOf('secret-three') >= 0; })[0];
+      check('text boxes', !!(secret && secret.w > 10 && secret.h > 4), secret ? JSON.stringify({ x: Math.round(secret.x), y: Math.round(secret.y), w: Math.round(secret.w), h: Math.round(secret.h), str: secret.str }) : 'missing');
+      var meta = await doc.metadata();
+      check('metadata', meta.title === 'Source', meta.title);
+      var outline = await doc.outline();
+      check('outline', Array.isArray(outline));
+
+      var mark = makeMark();
+      var scene = {
+        v: 1,
+        width: 595.28,
+        height: 841.89,
+        layers: [
+          { id: 't', type: 'text', name: 'Note', x: 72, y: 180, w: 280, h: 70, text: 'Studio note', font: 'Helvetica', size: 22, color: '#14213d', align: 'left' },
+          { id: 's', type: 'shape', name: 'Box', shape: 'rounded-rectangle', x: 72, y: 270, w: 140, h: 70, fill: { type: 'solid', color: '#e8b931' }, stroke: { width: 2, color: '#1c1a22' }, params: { radius: 10 } },
+          { id: 'star', type: 'shape', shape: 'star', x: 230, y: 260, w: 80, h: 80, fill: '#d4526e', params: { points: 5, innerRatio: 0.45 } },
+          { id: 'ink', type: 'path', mode: 'pen', color: '#1d4e89', width: 3, smoothing: 0.6, points: [[380, 280, 0.3], [400, 300, 0.8], [430, 270, 0.5], [460, 310, 0.9], [490, 260, 0.4]] },
+          { id: 'im', type: 'image', x: 72, y: 360, w: 120, h: 48, src: 'mark' }
+        ]
+      };
+      var workspace = {
+        assets: { mark: mark },
+        pages: [
+          { docId: doc.id, pageIndex: 2, rotation: 0, scene: scene },
+          { docId: doc.id, pageIndex: 0, rotation: 90 },
+          { blank: { w: 595.28, h: 841.89, color: '#fff8e8' }, scene: { v: 1, width: 595.28, height: 841.89, layers: [
+            { id: 'b', type: 'text', x: 72, y: 120, w: 400, h: 40, text: 'BLANK-PAGE-NOTE', font: 'Times', size: 20, color: '#333333' }
+          ] } },
+          { docId: doc.id, pageIndex: 1, rotation: 0 }
+        ]
+      };
+      var built = await LE.pdf.build(workspace, {
+        metadata: { title: 'LE pdf test', author: 'LocalEditor' },
+        pageNumbers: { position: 'bc', format: 'Page n of N', start: 1, size: 12, margin: 36 },
+        watermark: { text: 'DRAFT', opacity: 0.16, rotation: 32, size: 70, color: '#c4554a' },
+        headerFooter: { header: { right: '{title}' }, footer: { left: 'Page {page} of {pages}' }, size: 9, margin: 28 },
+        redactions: secret ? [{ page: 0, x: secret.x, y: secret.y, w: secret.w, h: secret.h }] : [],
+        onProgress: function (done, total) { log('progress ' + done + '/' + total); }
+      });
+      check('build bytes', built && built.length > 1000, String(built && built.length));
+      check('report redaction', built.report && built.report.redactedPages.indexOf(0) >= 0 && /no longer selectable/i.test(built.report.warnings.join(' ')), (built.report && built.report.warnings || []).join(' | '));
+
+      var url = URL.createObjectURL(new Blob([built], { type: 'application/pdf' }));
+      var dl = document.getElementById('dl');
+      dl.href = url;
+      dl.hidden = false;
+
+      var again = await LE.pdf.open(built);
+      check('reopen count', again.pageCount === 4, String(again.pageCount));
+      for (var p = 0; p < again.pageCount; p++) {
+        fig(await again.thumb(p, 180), 'Built page ' + (p + 1));
+      }
+      var back = await again.text();
+      var blob = back.text || '';
+      check('secret-three gone', blob.indexOf('secret-three') < 0, blob.slice(0, 500));
+      check('secret-one kept', blob.indexOf('secret-one') >= 0);
+      check('secret-two kept', blob.indexOf('secret-two') >= 0);
+      check('scene text', blob.indexOf('Studio note') >= 0);
+      check('blank text', blob.indexOf('BLANK-PAGE-NOTE') >= 0);
+      check('page number text', /Page 1 of 4/.test(blob));
+      var againMeta = await again.metadata();
+      check('built title', againMeta.title === 'LE pdf test', againMeta.title);
+
+      var parts = await LE.pdf.split(built, '1-2,4');
+      check('split groups', parts.length === 2, String(parts.length));
+      var extracted = await LE.pdf.extract(built, '2,4');
+      var exDoc = await LE.pdf.open(extracted);
+      check('extract pages', exDoc.pageCount === 2, String(exDoc.pageCount));
+      exDoc.close();
+
+      var pic = document.createElement('canvas');
+      pic.width = 80;
+      pic.height = 40;
+      pic.getContext('2d').fillStyle = '#222';
+      pic.getContext('2d').fillRect(0, 0, 80, 40);
+      var fromImg = await LE.pdf.fromImages([pic], { pageSize: 'A4', margin: 24, orientation: 'portrait' });
+      var imgDoc = await LE.pdf.open(fromImg);
+      check('fromImages', imgDoc.pageCount === 1 && Math.abs(imgDoc.pages[0].width - 595.28) < 2, imgDoc.pages[0].width + 'x' + imgDoc.pages[0].height);
+      var imgs = await LE.pdf.toImages(imgDoc, { format: 'png', scale: 0.4 });
+      check('toImages', imgs.length === 1 && imgs[0].blob.size > 50, String(imgs[0] && imgs[0].blob.size));
+      imgDoc.close();
+
+      var rotated = await LE.pdf.rotate(raw, 90);
+      var rotDoc = await LE.pdf.open(rotated);
+      check('rotate tool', rotDoc.pages[0].rotation === 90, String(rotDoc.pages[0].rotation));
+      rotDoc.close();
+      var reversed = await LE.pdf.reverse(raw);
+      var revDoc = await LE.pdf.open(reversed);
+      var revText = await revDoc.text(0);
+      check('reverse', revText.text.indexOf('secret-three') >= 0, revText.text);
+      revDoc.close();
+      var orderIdx = LE.pdf.scanOrder(6, 'odd-even');
+      check('scan order', orderIdx.join(',') === '0,3,1,4,2,5', orderIdx.join(','));
+
+      var pen = LE.pdf.signatureFromPoints([
+        [10, 40, 0.2, 0], [30, 20, 0.9, 20], [70, 48, 0.4, 40], [120, 18, 0.8, 70], [160, 42, 0.3, 100]
+      ], { color: '#14213d', width: 3.2, smoothing: 0.7 });
+      var typed = await LE.pdf.signatureFromText('A. Editor', 'Georgia', '#14213d');
+      var dirty = document.createElement('canvas');
+      dirty.width = 80;
+      dirty.height = 40;
+      var dctx = dirty.getContext('2d');
+      dctx.fillStyle = '#f4f1ea';
+      dctx.fillRect(0, 0, 80, 40);
+      dctx.strokeStyle = '#111';
+      dctx.lineWidth = 3;
+      dctx.beginPath();
+      dctx.moveTo(10, 28);
+      dctx.quadraticCurveTo(40, 6, 70, 24);
+      dctx.stroke();
+      var clean = LE.pdf.cleanSignatureImage(dirty, { threshold: 40, color: '#0b3d91' });
+      var cleanData = clean.getContext('2d').getImageData(0, 0, clean.width, clean.height).data;
+      var transparent = 0;
+      var ink = 0;
+      for (var px = 3; px < cleanData.length; px += 4) {
+        if (cleanData[px] < 20) transparent++;
+        else ink++;
+      }
+      check('clean signature', transparent > 20 && ink > 5, 'clear ' + transparent + ' ink ' + ink);
+      pen.style.maxWidth = '180px';
+      typed.style.maxWidth = '180px';
+      clean.style.maxWidth = '120px';
+      var sigRow = document.getElementById('sigs');
+      sigRow.appendChild(pen);
+      sigRow.appendChild(typed);
+      sigRow.appendChild(clean);
+      var saved = await LE.pdf.signatures.save({ name: 'Test sign', kind: 'draw', canvas: pen });
+      var list = await LE.pdf.signatures.list();
+      check('signature store', list.some(function (row) { return row.id === saved.id && row.png.indexOf('data:image/png') === 0; }));
+      await LE.pdf.signatures.remove(saved.id);
+      var list2 = await LE.pdf.signatures.list();
+      check('signature remove', !list2.some(function (row) { return row.id === saved.id; }));
+
+      var bad = null;
+      try { await LE.pdf.open(new Uint8Array([1, 2, 3, 4])); }
+      catch (e) { bad = e; }
+      check('rejects junk', !!bad);
+
+      doc.close();
+      again.close();
+      check('no console errors', errors.length === 0, errors.join(' || '));
+      var failed = checks.filter(function (c) { return !c.ok; });
+      statusEl.textContent = failed.length ? ('Failed ' + failed.length + ' of ' + checks.length) : ('Passed ' + checks.length + ' checks');
+      statusEl.className = failed.length ? 'fail' : 'pass';
+      window.__pdfResult = { ok: failed.length === 0, checks: checks, errors: errors, report: built.report };
+    } catch (e) {
+      log('THREW ' + (e && e.stack || e));
+      statusEl.textContent = 'Threw';
+      statusEl.className = 'fail';
+      window.__pdfResult = { ok: false, error: String(e && e.stack || e), checks: checks, errors: errors };
+    }
+  }
+
+  document.getElementById('run').addEventListener('click', function () { run(); });
+  window.runPdfTest = run;
+  if (location.search.indexOf('auto=0') < 0) run();
+})();
+</script>
+</body>
+</html>

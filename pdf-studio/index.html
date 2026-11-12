@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PDF Studio: edit, sign, fill and organize PDFs on your device · LocalEditor</title>
+<meta name="description" content="Edit, annotate, sign, fill forms, reorder, merge, split, watermark and number PDFs right in your browser. Files never leave your device and it works offline.">
+<link rel="canonical" href="https://localeditor.net/pdf-studio/">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#141318">
+<meta property="og:title" content="PDF Studio · LocalEditor">
+<meta property="og:description" content="Edit, sign, fill and organize PDFs privately on your device.">
+<meta property="og:url" content="https://localeditor.net/pdf-studio/">
+<meta property="og:type" content="website">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/css/app.css">
+<link rel="stylesheet" href="../assets/css/le-objects.css">
+<link rel="stylesheet" href="../assets/css/pdf-studio.css">
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body class="le-built ps-body">
+<a class="ps-skip" href="#ps-viewer">Skip to document</a>
+<aside class="le-side" data-fill aria-label="LocalEditor tools"></aside>
+<button class="le-scrim" type="button" data-scrim hidden aria-label="Close menu"></button>
+
+<div class="ps-app" id="ps-app">
+  <header class="ps-top">
+    <button class="ps-ib ps-menu" type="button" data-menu aria-label="Open menu" title="All tools">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <a class="ps-brand" href="../" aria-label="LocalEditor home">
+      <span class="ps-brand-mark" aria-hidden="true"></span>
+      <span class="ps-brand-text">PDF Studio</span>
+    </a>
+    <div class="ps-doc">
+      <input class="ps-name" id="ps-name" type="text" value="" placeholder="No document open" aria-label="File name" spellcheck="false" autocomplete="off">
+      <span class="ps-saved" id="ps-saved" aria-live="polite"></span>
+    </div>
+    <div class="ps-top-acts">
+      <button class="ps-ib ps-only-doc ps-hide-phone" type="button" data-act="undo" aria-label="Undo" title="Undo (Ctrl+Z)" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+      <button class="ps-ib ps-only-doc ps-hide-phone" type="button" data-act="redo" aria-label="Redo" title="Redo (Ctrl+Y)" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+      <button class="ps-ib ps-only-doc" type="button" data-act="find" aria-label="Find in document" title="Find (Ctrl+F)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+      <button class="ps-ib" type="button" data-act="settings" aria-label="Settings" title="Quality and theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg></button>
+      <button class="btn btn-gold btn-sm ps-save ps-only-doc" type="button" data-act="save" title="Save PDF (Ctrl+S)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span>Save PDF</span></button>
+    </div>
+  </header>
+
+  <nav class="ps-rail" id="ps-rail" aria-label="PDF tools" role="tablist">
+    <button type="button" role="tab" aria-selected="false" data-panel="pages"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="12" height="15" rx="2"/><path d="M8 21h10a2 2 0 0 0 2-2V7"/></svg><span>Pages</span></button>
+    <button type="button" role="tab" aria-selected="false" data-panel="edit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Edit</span></button>
+    <button type="button" role="tab" aria-selected="false" data-panel="sign"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17c2.5-2 4-8 6.5-8 2.8 0-.8 8 2.2 8 2 0 2.6-3.5 4.6-3.5 1.6 0 1.7 2.5 4.7 2.5"/><path d="M3 21h18"/></svg><span>Sign</span></button>
+    <button type="button" role="tab" aria-selected="false" data-panel="forms"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h4"/></svg><span>Forms</span></button>
+    <button type="button" role="tab" aria-selected="false" data-panel="tools"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Tools</span></button>
+    <button type="button" role="tab" aria-selected="false" data-panel="convert"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h12l-3.5-3.5M20 17H8l3.5 3.5"/></svg><span>Add</span></button>
+    <button type="button" role="tab" aria-selected="false" data-panel="export"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span>Export</span></button>
+  </nav>
+
+  <aside class="ps-panel" id="ps-panel" aria-label="Tool panel">
+    <div class="ps-sheet-handle" id="ps-sheet-handle" role="button" tabindex="-1" aria-label="Resize panel"><i></i></div>
+    <header class="ps-panel-head">
+      <h2 class="ps-panel-title" id="ps-panel-title"></h2>
+      <button class="ps-ib" type="button" data-act="panel-close" aria-label="Close panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </header>
+    <div class="ps-panel-body" id="ps-panel-body"></div>
+  </aside>
+
+  <aside class="ps-thumbs" id="ps-thumbs" aria-label="Page thumbnails">
+    <div class="ps-thumbs-head">
+      <span>Pages <b data-page-total>0</b></span>
+      <button class="ps-ib" type="button" data-act="organize" aria-pressed="false" aria-label="Organize pages in a grid" title="Organize"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button>
+    </div>
+    <div class="ps-thumb-list" id="ps-thumb-list" role="listbox" aria-label="Pages" aria-multiselectable="true"></div>
+  </aside>
+
+  <main class="ps-stage" id="ps-stage">
+    <div class="ps-ctx" id="ps-ctx" role="toolbar" aria-label="Quick tools"></div>
+    <div class="ps-find" id="ps-find" hidden role="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="ps-find-input" type="search" placeholder="Find in document" aria-label="Find in document" autocomplete="off" spellcheck="false">
+      <span class="ps-find-count" id="ps-find-count" aria-live="polite"></span>
+      <button class="ps-ib" type="button" data-find="prev" aria-label="Previous match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></button>
+      <button class="ps-ib" type="button" data-find="next" aria-label="Next match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      <button class="ps-ib" type="button" data-find="close" aria-label="Close find"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+
+    <div class="ps-viewer" id="ps-viewer" tabindex="-1" aria-label="Document">
+      <div class="pv-stack" id="pv-stack"></div>
+    </div>
+
+    <section class="ps-empty" id="ps-empty" aria-labelledby="ps-empty-title">
+      <div class="ps-empty-inner">
+        <p class="eyebrow-sm">Private · works offline</p>
+        <h1 id="ps-empty-title">Edit any PDF, <em>right here.</em></h1>
+        <p class="ps-empty-sub">Annotate, sign, fill, reorder and convert. Your files are never uploaded.</p>
+        <button class="ps-dropzone" type="button" data-act="intent" data-intent="open">
+          <span class="ic ic-violet ic-lg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14h6"/></svg></span>
+          <strong>Open a PDF</strong>
+          <span class="ps-dz-sub"><span class="ps-hide-phone">Drop files anywhere, or click to choose. </span>Word, PowerPoint, Excel and images work too.</span>
+        </button>
+        <div class="ps-starts">
+          <button class="ps-start" type="button" data-act="intent" data-intent="sign"><span class="ic ic-sapphire"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17c2.5-2 4-8 6.5-8 2.8 0-.8 8 2.2 8 2 0 2.6-3.5 4.6-3.5 1.6 0 1.7 2.5 4.7 2.5"/><path d="M3 21h18"/></svg></span><strong>Sign a document</strong><small>Draw, type or upload</small></button>
+          <button class="ps-start" type="button" data-act="intent" data-intent="fill"><span class="ic ic-jade"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h4"/></svg></span><strong>Fill a form</strong><small>Type into any field</small></button>
+          <button class="ps-start" type="button" data-act="intent" data-intent="merge"><span class="ic ic-rose"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v6a4 4 0 0 0 4 4h0a4 4 0 0 1 4 4v4M16 3v6a4 4 0 0 1-4 4"/><path d="m5 6 3-3 3 3M13 6l3-3 3 3"/></svg></span><strong>Merge files</strong><small>Combine into one PDF</small></button>
+          <button class="ps-start" type="button" data-act="intent" data-intent="convert"><span class="ic ic-copper"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h12l-3.5-3.5M20 17H8l3.5 3.5"/></svg></span><strong>Convert a file</strong><small>Docs, slides, sheets</small></button>
+          <button class="ps-start" type="button" data-act="intent" data-intent="images"><span class="ic ic-gold"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="14" height="12" rx="2"/><path d="M3 7v12a2 2 0 0 0 2 2h12"/><circle cx="12" cy="8" r="1.4"/><path d="m21 12-3.5-3.5L11 15"/></svg></span><strong>Images to PDF</strong><small>Photos and scans</small></button>
+          <button class="ps-start" type="button" data-act="intent" data-intent="blank"><span class="ic ic-violet"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/></svg></span><strong>Blank PDF</strong><small>Start from an empty page</small></button>
+        </div>
+        <p class="ps-empty-foot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.2 7 10 4-1.8 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></svg>Processed on this device. Nothing is sent anywhere.</p>
+      </div>
+    </section>
+
+    <section class="ps-organize" id="ps-organize" hidden aria-label="Organize pages">
+      <header class="ps-org-head">
+        <div>
+          <strong>Organize pages</strong>
+          <small class="ps-hide-phone">Drag to reorder. Ctrl or Shift click to select several. On touch, press and hold.</small>
+        </div>
+        <div class="ps-org-acts">
+          <button class="btn btn-sm btn-ghost" type="button" data-org="rotL" title="Rotate left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.34-5.66"/><path d="M4 4v6h6"/></svg><span class="ps-hide-phone">Rotate</span></button>
+          <button class="btn btn-sm btn-ghost" type="button" data-org="rotR" title="Rotate right" aria-label="Rotate right"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg></button>
+          <button class="btn btn-sm btn-ghost" type="button" data-org="dup" title="Duplicate" aria-label="Duplicate"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></button>
+          <button class="btn btn-sm btn-ghost" type="button" data-org="del" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7M9 7V4h6v3"/></svg></button>
+          <button class="btn btn-sm btn-ghost" type="button" data-org="blank" title="Insert blank page" aria-label="Insert blank page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button class="btn btn-sm" type="button" data-act="close-organize">Done</button>
+        </div>
+      </header>
+      <div class="ps-org-grid" role="listbox" aria-label="All pages" aria-multiselectable="true"></div>
+    </section>
+
+    <div class="ps-hint" id="ps-hint" hidden role="status"></div>
+
+    <div class="ps-restore" id="ps-restore" hidden role="region" aria-label="Restore previous session">
+      <span class="ic ic-violet"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+      <div class="ps-restore-text">
+        <strong>Pick up where you left off?</strong>
+        <span><span class="ps-restore-name"></span> · <span class="ps-restore-meta"></span></span>
+      </div>
+      <div class="ps-restore-acts">
+        <button class="btn btn-sm btn-ghost" type="button" data-act="discard">Discard</button>
+        <button class="btn btn-sm btn-gold" type="button" data-act="restore">Restore</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="ps-status" aria-label="Document status">
+    <div class="ps-status-l">
+      <button class="ps-ib ps-hide-phone" type="button" data-act="toggle-thumbs" aria-pressed="true" aria-label="Show page thumbnails" title="Thumbnails"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="6" height="8" rx="1.5"/><rect x="4" y="13" width="6" height="8" rx="1.5"/><path d="M14 5h6M14 9h4M14 15h6M14 19h4"/></svg></button>
+      <button class="ps-ib" type="button" data-act="organize" aria-pressed="false" aria-label="Organize pages" title="Organize pages"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button>
+    </div>
+    <div class="ps-status-c">
+      <button class="ps-ib" type="button" data-act="prev-page" aria-label="Previous page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+      <label class="ps-pageno"><span class="ps-sr">Page</span><input id="ps-page-input" class="ps-page-input" type="text" inputmode="numeric" pattern="[0-9]*" aria-label="Current page"><span>of <b data-page-total>0</b></span></label>
+      <button class="ps-ib" type="button" data-act="next-page" aria-label="Next page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+    </div>
+    <div class="ps-status-r">
+      <button class="ps-ib ps-show-phone" type="button" data-act="undo" aria-label="Undo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+      <button class="ps-ib ps-show-phone" type="button" data-act="redo" aria-label="Redo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+      <button class="ps-ib ps-hide-phone" type="button" data-act="zoom-out" aria-label="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M20 20l-3.5-3.5"/></svg></button>
+      <button class="ps-zoom" type="button" data-act="fit-width" title="Fit width" aria-label="Zoom level, click to fit width"><span data-zoom-label>100%</span></button>
+      <button class="ps-ib ps-hide-phone" type="button" data-act="zoom-in" aria-label="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6M20 20l-3.5-3.5"/></svg></button>
+      <button class="ps-ib ps-hide-tablet" type="button" data-act="fit-page" aria-label="Fit page" title="Fit page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></button>
+    </div>
+  </footer>
+</div>
+
+<div class="ps-dropveil" aria-hidden="true"><div><strong>Drop to add</strong><span>PDFs, documents and images become pages</span></div></div>
+<dialog class="ps-dialog" id="ps-dialog"></dialog>
+<div class="ps-progress" id="ps-progress" hidden role="status" aria-live="polite">
+  <div class="ps-prog-card">
+    <span class="ps-prog-label">Working…</span>
+    <span class="ps-prog-bar"><i></i></span>
+    <span class="ps-prog-sub"></span>
+    <button class="btn btn-sm btn-ghost ps-prog-cancel" type="button">Cancel</button>
+  </div>
+</div>
+<div class="ps-pop" id="ps-settings" hidden role="dialog" aria-label="Settings"></div>
+
+<script src="../assets/js/app.js" defer></script>
+<script src="../assets/js/le-engine.js" defer></script>
+<script src="../assets/js/le-objects.js" defer></script>
+<script src="../assets/js/le-fonts.js" defer></script>
+<script src="../assets/js/le-assets.js" defer></script>
+<script src="../assets/js/le-pdf.js" defer></script>
+<script src="../assets/js/le-pdf-studio.js" defer></script>
+<script src="../assets/js/le-pdf-studio-color.js" defer></script>
+<script src="../assets/js/le-pdf-studio-panels.js" defer></script>
+<script src="../assets/js/le-pdf-studio-graphics.js" defer></script>
+<script src="../assets/js/le-pdf-studio-office.js" defer></script>
+</body>
+</html>
