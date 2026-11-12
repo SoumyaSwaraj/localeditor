@@ -714,6 +714,17 @@
       if (rn || rb) out.remix = { name: rn, by: rb };
     }
     if (Array.isArray(m.pageIds)) out.pageIds = m.pageIds.slice(0, LIMITS.pages).map(function (p) { return idOk(p, 48) ? p : ''; });
+    /* Agent mode (le-agent.js): notes the person pins for an assistant. Plain text, shown with textContent. */
+    if (Array.isArray(m.notes)) {
+      out.notes = m.notes.slice(0, 200).map(function (n) {
+        if (!n || typeof n !== 'object' || !idOk(n.id, 48) || typeof n.text !== 'string' || !n.text.trim()) return null;
+        var o = { id: n.id, page: clamp(Math.round(num(n.page, 0)), 0, LIMITS.pages - 1), x: clamp(num(n.x, 0), -100000, 100000), y: clamp(num(n.y, 0), -100000, 100000),
+          text: n.text.replace(/[\u0000-\u0008\u000b-\u001f<>]/g, '').slice(0, 1000), status: oneOf(n.status, ['open', 'done'], 'open'), at: num(n.at, 0) };
+        if (idOk(n.layer, 48)) o.layer = n.layer;
+        if (typeof n.reply === 'string' && n.reply.trim()) o.reply = n.reply.replace(/[\u0000-\u0008\u000b-\u001f<>]/g, '').slice(0, 1000);
+        return o;
+      }).filter(Boolean);
+    }
     if (m.guides && typeof m.guides === 'object') {
       var gd = {};
       ['x', 'y'].forEach(function (a) { gd[a] = (Array.isArray(m.guides[a]) ? m.guides[a] : []).slice(0, 40).map(function (n) { return clamp(num(n, 0), -20000, 40000); }); });
