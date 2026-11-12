@@ -124,4 +124,46 @@ async function same(pg, a, b, what, tolerance) {
   return d;
 }
 
-module.exports = { page, render, diff, golden, same, dataUrl, GL_ARGS, GOLDEN, ROOT };
+/* Adds window.fxT (load, fit, card, png, pixels, diff) to any page, e.g. the studio. */
+async function attach(pg) { await pg.addScriptTag({ content: '(' + inPage.toString() + ')()' }); return pg; }
+
+/* The studio page's current design exported at a scale, as a PNG buffer. */
+async function shot(pg, scale) {
+  const url = await pg.evaluate((s) => window.LEStudio.scene.render(s).then((c) => c.toDataURL('image/png')), scale || 1);
+  return Buffer.from(url.split(',')[1], 'base64');
+}
+
+/* Builds a design that uses every legacy image feature and no expert data, and returns its export at half size.
+   kind 'sample': the sample photo with adjust, filter, radius, border, shadow, rotation; a colour-keyed, masked, flipped copy;
+   a cut-out with feather and outline; a blended shape; text. kind 'collage': a four-photo grid from the pool. */
+async function legacy(pg, kind) {
+  await pg.evaluate(async (k) => {
+    const c = window.LEStudio, s = c.scene, LE = window.LE;
+    if (k === 'collage') {
+      const data = await LE.collage.photos(), ids = [];
+      for (let i = 0; i < 4; i++) {
+        const p = data.photos[i * 3 % data.photos.length];
+        const blob = await (await fetch('/' + p.file)).blob();
+        ids.push((await c.ingest(new File([blob], p.id + '.jpg', { type: 'image/jpeg' }))).id);
+      }
+      window.LEStudioCollage.createGrid(c, ids, {});
+      const slot = s.layers().find((l) => l.type === 'image');
+      s.update(slot.id, { adjust: { contrast: 20, saturation: -40 } });
+      return;
+    }
+    const first = s.layers()[0], src = first.src, filters = Object.keys((LE.presets && LE.presets.filters) || {});
+    s.update(first.id, { x: 60, y: 40, w: 900, h: 600, rotation: 4, radius: 40, border: { width: 6, color: '#ffffff' }, shadow: { color: 'rgba(0,0,0,.4)', blur: 24, x: 0, y: 12 },
+      adjust: { brightness: 12, contrast: 18, saturation: 25, warmth: 10, highlights: -20, sharpness: 20 }, filter: filters.length ? { name: filters[Math.min(2, filters.length - 1)], intensity: 60 } : null });
+    s.add({ type: 'image', src, x: 760, y: 420, w: 380, h: 320, mask: 'ellipse', flipX: true, opacity: 0.9, removeBg: { color: '#ffffff', tolerance: 60 }, crop: { x: 0.2, y: 0.1, w: 0.6, h: 0.7 }, adjust: { blur: 2, hue: 40 } });
+    const m = document.createElement('canvas'); m.width = 300; m.height = 200; const mx = m.getContext('2d');
+    mx.fillStyle = '#fff'; mx.beginPath(); mx.arc(150, 100, 80, 0, 7); mx.fill();
+    s.addAsset('legacy-mask', m);
+    s.add({ type: 'image', src, x: 40, y: 480, w: 420, h: 280, cutout: { asset: 'legacy-mask', feather: 4, outline: { width: 8, color: '#ffffff' } }, shadow: { color: 'rgba(0,0,0,.5)', blur: 12, x: 4, y: 6 } });
+    s.add({ type: 'shape', shape: 'ellipse', x: 820, y: 60, w: 300, h: 240, fill: { type: 'solid', color: '#7457F0' }, blend: 'multiply', opacity: 0.8 });
+    s.add({ type: 'text', text: 'Legacy', x: 120, y: 90, w: 520, h: 120, size: 96, color: '#ffffff', shadow: { color: 'rgba(0,0,0,.6)', blur: 8, x: 0, y: 4 } });
+    s.select([]);
+  }, kind);
+  return shot(pg, 0.5);
+}
+
+module.exports = { page, attach, render, shot, legacy, diff, golden, same, dataUrl, inPage, GL_ARGS, GOLDEN, ROOT };
