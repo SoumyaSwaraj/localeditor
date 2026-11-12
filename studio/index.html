@@ -61,7 +61,8 @@
 <script src="../assets/js/le-fonts.js"></script>
 <script src="../assets/js/le-fonts-originals.js"></script>
 <script src="../assets/js/le-assets.js"></script>
-<script src="../assets/js/le-stock.js"></script>
+<script src="../assets/js/le-load.js"></script>
+<script>LE.modules.defer({ id: 'stock', src: '../assets/js/le-stock.js', rerender: ['apps', 'uploads', 'elements'] }); /* docs/LOADING.md */</script>
 <script src="../assets/js/le-objects.js"></script>
 <script src="../assets/js/le-project.js"></script>
 <script src="../assets/js/le-fx-boot.js"></script>
