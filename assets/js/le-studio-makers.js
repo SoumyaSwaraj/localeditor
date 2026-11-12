@@ -498,9 +498,16 @@
         if (token !== F.token) return null;
         return M.build(F.m.id, vals, { style: F.style, size: F.size, images: imgs, names: namesOf(F.c, F.m, vals) }).then(function (out) {
           if (token !== F.token) return null;
+          notes(F, out.warnings);
           var box = F.canvas.getBoundingClientRect();
           var dpr = Math.min(2, window.devicePixelRatio || 1);
-          return M.renderPage(out.pages[0], { images: imgs, maxEdge: Math.max(320, Math.round(Math.max(box.width, box.height) * dpr)) });
+          var edge = Math.max(320, Math.round(Math.max(box.width, box.height) * dpr));
+          pagesNote(F, out.pages.length);
+          if (out.pages.length < 2) return M.renderPage(out.pages[0], { images: imgs, maxEdge: edge });
+          /* Long runs (a 50-page catalogue) are virtualised: only the first pages are drawn, the note gives the count. */
+          var shown = out.pages.slice(0, PREVIEW_PAGES);
+          var small = Math.max(240, Math.round(edge / Math.min(shown.length, 3)));
+          return Promise.all(shown.map(function (pg) { return M.renderPage(pg, { images: imgs, maxEdge: small }); })).then(strip);
         });
       }).then(function (cv) {
         if (!cv || token !== F.token) return;
@@ -515,6 +522,37 @@
         if (err && err.errors) showErrors(F, err.errors.filter(function (e) { return !e.required; }));
       });
     }, ms == null ? 180 : ms);
+  }
+
+  var PREVIEW_PAGES = 6;
+  /* "5 pages" (or "50 pages · first 6 shown") over the preview of a multi-page make. */
+  function pagesNote(F, n) {
+    var host = F.node.querySelector('.mk-preview'), note = host.querySelector('.mk-pages');
+    if (n < 2) { if (note) note.remove(); return; }
+    if (!note) {
+      note = el('<span class="mk-pages" role="status" style="position:absolute;left:12px;bottom:8px;font-size:11px;font-weight:650;color:var(--faint)"></span>');
+      host.appendChild(note);
+    }
+    note.textContent = n + ' pages' + (n > PREVIEW_PAGES ? ' · first ' + PREVIEW_PAGES + ' shown' : '');
+  }
+  /* Several pages side by side, one height, as one preview canvas. */
+  function strip(list) {
+    var hh = 600, gap = 24, w = 0;
+    list.forEach(function (c) { w += Math.round(c.width * hh / c.height) + gap; });
+    var out = document.createElement('canvas');
+    out.width = Math.max(1, w - gap); out.height = hh;
+    var g = out.getContext('2d'), x = 0;
+    list.forEach(function (c) { var cw = Math.round(c.width * hh / c.height); g.drawImage(c, x, 0, cw, hh); x += cw + gap; });
+    return out;
+  }
+  /* Build warnings of kind 'input' (layer = an input key) show as a note under that field, e.g. "this link is long". */
+  function notes(F, warnings) {
+    F.form.querySelectorAll('.mk-note').forEach(function (n) { n.remove(); });
+    (warnings || []).forEach(function (w) {
+      if (w.kind !== 'input') return;
+      var f = F.form.querySelector('.mk-field[data-key="' + String(w.layer).replace(/[^\w-]/g, '') + '"]');
+      if (f) f.insertBefore(el('<small class="mk-hint mk-note" role="status">' + esc(w.message) + '</small>'), f.querySelector('.mk-err'));
+    });
   }
 
   /* ---------- Making ---------- */
@@ -540,8 +578,7 @@
       var pages = out.pages.map(function (pg) { var n = normalize(pg); n.maker.sig = M.signature(n.layers); return n; });
       var edit = F.edit;
       close();
-      if (pages.length > 1 || m.maxPages > 1 || runOf(c).to > runOf(c).from) placeAll(c, pages, out.name, edit, m);
-      else place(c, pages[0], out.name, edit);
+      place(c, pages, out.name, edit);
       return pages[0];
     }).catch(function (err) {
       btn.disabled = false;
@@ -550,24 +587,15 @@
       return null;
     });
   }
-  /* New design, or the current page when it is empty or being remade, or a new page after it. Never overwrites work. */
-  function place(c, page, name, edit) {
-    if (!c.S.project) c.newDesign(page.width, page.height, name);
-    else if (!edit && c.scene.layers().length) c.addPage(false);
-    if (c.hideStart) c.hideStart();
-    c.replaceDoc(page, true);
-    var p = c.S.project;
-    photoIdsOfPage(page).forEach(function (id) { if (c.mem[id] && p) p.assets[id] = c.mem[id].meta; });
-    c.scene.select([]);
-    c.fit();
-    c.markDirty();
-    if (c.renderFoot) c.renderFoot();
-    c.toast(edit ? 'Page remade' : 'Made. Tap any part to edit it.', { action: { label: 'Edit details', fn: function () { editDetails(c); } } });
-  }
-  /* Makers that make several pages (books, catalogues): a new make goes after the current page; a remake replaces the
-     run of pages that came from the same make (same maker, style, size and values) and adds or removes pages to fit. */
+  /* Placing a make. One mechanism for every maker, one page or many:
+     - a new make goes on the current page when it is empty, else on new pages after the run the current page belongs to;
+     - Edit details on any page remakes the run of pages that came from the same make (same maker, style, size and
+       values, so hand edits and reordering elsewhere do not break it), growing or shrinking it to fit;
+     - the page being looked at is replaced through history and the rest of the run in the project, and one undo (or
+       redo) on that page swaps the whole run back, because studio history is per page. Leaving the page ends that link,
+       like any page history. Never overwrites work outside the run. */
   function makeKey(mk) { return mk ? mk.id + '|' + mk.style + '|' + mk.size + '|' + JSON.stringify(mk.values) : ''; }
-  /* The pages around the active one that came from the same make of a multi-page maker. */
+  /* The pages around the active one that came from the same make. */
   function runOf(c) {
     var P0 = c && c.S && c.S.project;
     if (!P0) return { from: 0, to: -1 };
@@ -580,32 +608,68 @@
     while (to < P0.pages.length - 1 && same(to + 1)) to++;
     return { from: from, to: to };
   }
-  function placeAll(c, pages, name, edit, m) {
-    var from = 0, to = -1;
-    if (!c.S.project) { c.newDesign(pages[0].width, pages[0].height, name); to = 0; }
+  function docKey(d) { return M.signature(d.layers) + '|' + JSON.stringify(d.maker || null) + '|' + d.width + 'x' + d.height; }
+  function place(c, pages, name, edit) {
+    ST.multi = null;
+    var run, pos = 0;
+    if (!c.S.project) { c.newDesign(pages[0].width, pages[0].height, name); run = { from: 0, to: 0 }; }
     else {
-      var run = runOf(c);
-      if (edit) { from = run.from; to = run.to; }
-      else if (!c.scene.layers().length) { from = c.S.project.activePage; to = from; }
-      else { from = run.to + 1; to = run.to; }
+      run = runOf(c);
+      var active = c.S.project.activePage;
+      if (edit) pos = Math.min(active - run.from, pages.length - 1);
+      else if (!c.scene.layers().length) run = { from: active, to: active };
+      else {
+        /* A fresh page after the run; it is the page that takes the make through history. */
+        if (active !== run.to) c.switchPage(run.to);
+        c.addPage(false);
+        run = { from: c.S.project.activePage, to: c.S.project.activePage };
+      }
     }
     if (c.hideStart) c.hideStart();
-    pages.forEach(function (pg, k) {
-      var at = from + k;
-      if (at <= to) c.switchPage(at);
-      else { if (c.S.project.activePage !== at - 1) c.switchPage(at - 1); c.addPage(false); }
-      c.replaceDoc(pg, true);
-      photoIdsOfPage(pg).forEach(function (id) { if (c.mem[id] && c.S.project) c.S.project.assets[id] = c.mem[id].meta; });
-    });
-    for (var extra = to - (from + pages.length - 1); extra > 0; extra--) c.deletePage(from + pages.length);
     c.syncProject();
-    if (c.S.project.activePage !== from) c.switchPage(from);
+    var p = c.S.project;
+    var multi = pages.length > 1 || run.to > run.from;
+    var before = multi ? { pages: clone(p.pages), active: p.activePage, key: docKey(p.pages[p.activePage]) } : null;
+    if (multi) {
+      var fresh = pages.slice();
+      fresh[pos] = p.pages[p.activePage];
+      p.pages.splice.apply(p.pages, [run.from, run.to - run.from + 1].concat(fresh));
+      p.activePage = run.from + pos;
+    }
+    c.replaceDoc(pages[pos], true);
+    c.syncProject();
+    if (multi) {
+      c.S.pageThumbs = {};
+      ST.multi = { project: p, before: before, after: { pages: clone(p.pages), active: p.activePage, key: docKey(p.pages[p.activePage]) }, state: 'after' };
+    }
+    pages.forEach(function (pg) { photoIdsOfPage(pg).forEach(function (id) { if (c.mem[id] && p) p.assets[id] = c.mem[id].meta; }); });
     c.scene.select([]);
     c.fit();
     c.markDirty();
     if (c.renderFoot) c.renderFoot();
-    c.toast((edit ? 'Remade ' : 'Made ') + pages.length + (pages.length === 1 ? ' page' : ' pages') + '. Tap any part to edit it.', { action: { label: 'Edit details', fn: function () { editDetails(c); } } });
+    var n = pages.length;
+    c.toast(edit ? (n > 1 ? 'Remade ' + n + ' pages' : 'Page remade') : (n > 1 ? 'Made ' + n + ' pages. Tap any part to edit it.' : 'Made. Tap any part to edit it.'), { action: { label: 'Edit details', fn: function () { editDetails(c); } } });
   }
+  function swapRun(c, to) {
+    var R = ST.multi, p = c.S.project, snap = R[to];
+    var cur = c.scene.toJSON();
+    p.pages = clone(snap.pages);
+    p.pages[snap.active] = cur;
+    p.activePage = snap.active;
+    R.state = to;
+    c.S.pageThumbs = {};
+    if (c.renderFoot) c.renderFoot();
+    c.markDirty();
+  }
+  (H.change = H.change || []).push(function (c) {
+    var R = ST.multi;
+    if (!R || !c.S.project) return;
+    if (c.S.project !== R.project) { ST.multi = null; return; }
+    var key = docKey(c.scene.toJSON());
+    if (R.state === 'after' && key === R.before.key && key !== R.after.key) swapRun(c, 'before');
+    else if (R.state === 'before' && key === R.after.key && key !== R.before.key) swapRun(c, 'after');
+  });
+  (H.page = H.page || []).push(function () { ST.multi = null; });
   function photoIdsOfPage(d) {
     var out = [];
     (d.layers || []).forEach(function (l) { if (l.type === 'image' && l.src) out.push(l.src); });

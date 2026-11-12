@@ -54,5 +54,8 @@ Kept by the lead architect. Things reported by the team that are not yet assigne
 - **One agent session at a time.**
 - ~~**`llms.txt`** agent mode section.~~ Done, with the agent guide, format specs, agent kit and schema now deployed at their repository paths.
 
+## Site data pass 2 (not yet assigned)
+Built and merged but still marked "coming soon" or missing on the hubs and feature pages: the nine makers of set 2 (movie poster, album cover, front page, event kit, invitation with QR, scan-to-pay poster, Wi-Fi sign, app-store screenshots, link cards) and the seven print makers (calendar, chart, labels, stickers, photo book, zine, catalogue); PDF office tools (saved details, compare, bundle, stamps, workflows, fingerprint and `/verify/`); PDF documents (searchable-text convert, invoices, tables to spreadsheet); agent mode. Each needs a verified launch link and wording written from the code. Do this once fonts, the command line and expert mode have landed, in one pass.
+
 ## Never verified in this build environment
 Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen readers, the Android share sheet, real AWS (deploy, CloudFront function, headers policy), and every stock API (Pixabay, Pexels, Openverse, Unsplash are all tested against mocked responses).
