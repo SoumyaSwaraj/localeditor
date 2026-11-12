@@ -4,8 +4,9 @@
  * Inference runs in assets/js/le-bgremove-worker.js on onnxruntime-web (WASM, one thread unless the page is
  * cross-origin isolated). Model bytes are kept in Cache Storage 'le-models-v1', keyed by URL, with an x-le-model header.
  *
- *   LE.bgRemove.models()                         -> [{ id, name, label, about, goodAt, tier, bytes, size, subject, licence, supportId, memoryMB, url }]
- *   LE.bgRemove.register(model)                  -> add a model to the registry (labs use this for evaluation models)
+ *   LE.bgRemove.models()                         -> registry entries (see "Model registry" below) plus { url, listed, qualityLabel, speedLabel }
+ *   LE.bgRemove.register(def)                    -> add an option to the registry (or queue it in window.LE_BGREMOVE_MODELS)
+ *   LE.bgRemove.recommend({ people, checks, cached }) -> the one option id to pre-select
  *   LE.bgRemove.budget()                         -> { tier, maxSide }   input cap for this device
  *   LE.bgRemove.support(id)                      -> Promise<{ status: ok|limited|unsupported|unknown, reasons, suggest, canForce }>
  *   LE.bgRemove.gate(id, { title, run })         -> LE.support.gate when present, else a minimal check, then run()
@@ -30,31 +31,78 @@
 
   var IMAGENET = { mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225] };
   var NEEDS = ['wasm', 'wasm-simd', 'worker', 'offscreen-canvas'];
-  /* memoryMB = measured peak browser RSS minus an idle tab (docs/research/background-remover.md, rounded up). */
-  var MODELS = [
-    { id: 'u2netp', name: 'Fast', label: 'Fast (u2netp)', tier: 'fast', size: 320, bytes: 4574861, path: 'assets/models/u2netp.onnx',
-      norm: IMAGENET, sigmoid: false, subject: 'general', licence: 'Apache-2.0', bundled: true, supportId: 'cutout.fast', memoryMB: 700, downloadMB: 7,
-      about: 'Quick, small download.', goodAt: 'One clear subject: a person, a pet, a product' },
-    { id: 'u2net-int8', name: 'Detailed', label: 'Detailed (u2net int8)', tier: 'detailed', size: 320, bytes: 44212603, path: 'assets/models/u2net-int8.onnx',
-      norm: IMAGENET, sigmoid: false, subject: 'general', licence: 'Apache-2.0 (int8 derived)', bundled: true, supportId: 'cutout.detailed', memoryMB: 1000, downloadMB: 44,
-      about: 'Fuller, cleaner masks. About twice as slow.', goodAt: 'Objects with thin parts, groups, busy edges' },
-    { id: 'u2net_human_seg-int8', name: 'People', label: 'People (u2net human seg int8)', tier: 'people', size: 320, bytes: 44212602, path: 'assets/models/u2net_human_seg-int8.onnx',
-      norm: IMAGENET, sigmoid: false, subject: 'people', licence: 'Apache-2.0 (int8 derived)', bundled: true, supportId: 'cutout.people', memoryMB: 1000, downloadMB: 44,
-      about: 'Best on portraits and groups. Poor on anything else.', goodAt: 'Portraits, selfies, groups of people' }
-  ];
-
-  /* Device-support declarations (LE.support reads these whenever it loads; order does not matter). */
-  var defs = global.LE_SUPPORT_DEFS = global.LE_SUPPORT_DEFS || [];
-  MODELS.forEach(function (m) {
-    if (defs.some(function (d) { return d && d.id === m.supportId; })) return;
-    defs.push({ id: m.supportId, name: 'Background remover (' + m.name + ')', needs: NEEDS.slice(), wants: [], memoryMB: m.memoryMB, downloadMB: m.downloadMB });
-  });
-  function describe() {
-    if (!global.LEPwa || typeof global.LEPwa.describeModel !== 'function') return;
-    MODELS.forEach(function (m) { if (m.bundled) global.LEPwa.describeModel(m.id, { name: 'Background remover (' + m.name.toLowerCase() + ')', about: m.goodAt }); });
+  /* ---------- Model registry ----------
+   * Every option the person can pick is one entry. The studio's chooser is built from these entries only, so a new option
+   * (for example a larger "pro" model on WebGPU) appears without UI changes. Add one from any file, before or after this
+   * script loads:
+   *   (window.LE_BGREMOVE_MODELS = window.LE_BGREMOVE_MODELS || []).push(def)    // before (queued, read on load)
+   *   LE.bgRemove.register(def)                                                  // after
+   *
+   * def (plain data):
+   *   id          string, unique, [\w.-]+                  also the x-le-model id in Cache Storage and the storage manager
+   *   label       short human name by purpose: "Quick", "More detail", "People and portraits"
+   *   bestFor     one plain line: "Best for products and objects with clean edges"
+   *   quality     1..3 (1 Good, 2 Better, 3 Best)          qualityMax defaults to 3; set it to 5 for a 1..5 scale
+   *   speed       'fast' | 'medium' | 'slow'                shown as "Fast" / "Takes a little longer" / "Takes a while"
+   *   downloadMB  whole MB of the model file (the engine, ~3 MB, is added on first use automatically)
+   *   example     site-relative URL of a small before/after image (assets/img/cutout/*.jpg), or ''
+   *   supportId   LE.support feature id; declared here in LE_SUPPORT_DEFS from needs/memoryMB/downloadMB
+   *   tier        'standard' | 'pro'                        anything else (e.g. 'eval') is hidden from the chooser
+   *   runtime     'wasm' | 'webgpu'                          webgpu needs assets/vendor/ort-webgpu/ (another owner's file)
+   *   subject     'general' | 'people'                      the studio recommends 'people' only for people photos
+   *   path        site-relative model URL; bytes: exact file size (checked after download)
+   *   size, norm { mean, std }, sigmoid                     model input (square side), normalisation, logits?
+   *   memoryMB    peak working memory while it runs (for the device check)
+   *   needs       LE.support capability ids (default: wasm, wasm-simd, worker, offscreen-canvas; webgpu adds 'webgpu')
+   *   about       { model, licence, source, notes }          technical facts, shown only behind "About this option"
+   */
+  var MODELS = [];
+  var QUALITY = ['', 'Good', 'Better', 'Best'];
+  function normDef(d) {
+    if (!d || typeof d !== 'object' || !/^[\w.-]{1,60}$/.test(d.id || '')) return null;
+    var m = Object.assign({
+      label: d.id, bestFor: '', quality: 1, qualityMax: 3, speed: 'fast', downloadMB: d.bytes ? Math.max(1, Math.round(d.bytes / 1e6)) : 0, example: '',
+      supportId: 'cutout.' + d.id, tier: 'standard', runtime: 'wasm', subject: 'general', size: 320, norm: IMAGENET, sigmoid: false, memoryMB: 1000, about: {}
+    }, d);
+    m.needs = (d.needs || NEEDS.concat(m.runtime === 'webgpu' ? ['webgpu'] : [])).slice();
+    m.listed = m.tier === 'standard' || m.tier === 'pro';
+    m.bundled = m.listed;
+    m.name = m.label;
+    m.qualityLabel = m.qualityMax === 3 ? QUALITY[Math.max(1, Math.min(3, m.quality))] : (m.quality >= m.qualityMax ? 'Best' : m.quality > m.qualityMax / 2 ? 'Better' : 'Good');
+    m.speedLabel = { fast: 'Fast', medium: 'Takes a little longer', slow: 'Takes a while' }[m.speed] || String(m.speed);
+    return m;
   }
-  describe();
-  if (!global.LEPwa) global.addEventListener('le-pwa-ready', describe, { once: true });
+  function declare(m) {
+    var defs = global.LE_SUPPORT_DEFS = global.LE_SUPPORT_DEFS || [];
+    if (!defs.some(function (d) { return d && d.id === m.supportId; })) {
+      defs.push({ id: m.supportId, name: 'Background remover: ' + m.label, needs: m.needs.slice(), wants: [], memoryMB: m.memoryMB, downloadMB: m.downloadMB });
+    }
+    if (m.listed && global.LEPwa && typeof global.LEPwa.describeModel === 'function') {
+      var a = m.about || {};
+      global.LEPwa.describeModel(m.id, { name: 'Background remover: ' + m.label, about: m.bestFor + (a.model ? ' (' + a.model + (a.licence ? ', ' + a.licence : '') + ')' : '') });
+    }
+  }
+  function addModel(d) {
+    var m = normDef(d);
+    if (!m || find(m.id)) return false;
+    MODELS.push(m);
+    declare(m);
+    return true;
+  }
+  [
+    { id: 'u2netp', label: 'Quick', bestFor: 'Best for products and objects with clean edges', quality: 1, speed: 'fast', downloadMB: 5, example: 'assets/img/cutout/quick.jpg',
+      supportId: 'cutout.fast', tier: 'standard', runtime: 'wasm', subject: 'general', path: 'assets/models/u2netp.onnx', bytes: 4574861, memoryMB: 700,
+      about: { model: 'U\u00b2-Net small (u2netp), 320 px input', licence: 'Apache-2.0', source: 'github.com/xuebinqin/U-2-Net (ONNX export via rembg)', notes: 'Trained on DUTS-TR.' } },
+    { id: 'u2net-int8', label: 'More detail', bestFor: 'Best for busy edges, groups and things with thin parts', quality: 2, speed: 'medium', downloadMB: 44, example: 'assets/img/cutout/detail.jpg',
+      supportId: 'cutout.detailed', tier: 'standard', runtime: 'wasm', subject: 'general', path: 'assets/models/u2net-int8.onnx', bytes: 44212603, memoryMB: 1000,
+      about: { model: 'U\u00b2-Net (u2net), 8-bit quantised by LocalEditor, 320 px input', licence: 'Apache-2.0', source: 'github.com/xuebinqin/U-2-Net', notes: 'Trained on DUTS-TR.' } },
+    { id: 'u2net_human_seg-int8', label: 'People and portraits', bestFor: 'Best for selfies, portraits and groups of people', quality: 3, speed: 'medium', downloadMB: 44, example: 'assets/img/cutout/people.jpg',
+      supportId: 'cutout.people', tier: 'standard', runtime: 'wasm', subject: 'people', path: 'assets/models/u2net_human_seg-int8.onnx', bytes: 44212602, memoryMB: 1000,
+      about: { model: 'U\u00b2-Net human segmentation, 8-bit quantised by LocalEditor, 320 px input', licence: 'Apache-2.0', source: 'github.com/xuebinqin/U-2-Net', notes: 'People only: poor on objects. Trained on the Supervisely Person dataset.' } }
+  ].forEach(addModel);
+  (global.LE_BGREMOVE_MODELS || []).forEach(addModel);
+  global.LE_BGREMOVE_MODELS = { push: function (d) { return addModel(d); } };
+  if (!global.LEPwa) global.addEventListener('le-pwa-ready', function () { MODELS.forEach(declare); }, { once: true });
 
   var worker = null, current = null, seq = 0, pending = {};
 
@@ -92,6 +140,7 @@
     }
     if (typeof Worker === 'undefined') { status = 'unsupported'; reasons.push('This browser cannot run background workers.'); }
     if (typeof OffscreenCanvas === 'undefined') { status = 'unsupported'; reasons.push('This browser lacks OffscreenCanvas (Safari 16.4 or newer has it).'); }
+    if (m.runtime === 'webgpu' && !navigator.gpu) { status = 'unsupported'; reasons.push('This option needs WebGPU, which this browser does not offer.'); }
     var mem = navigator.deviceMemory;
     if (status === 'ok') {
       if (mem && mem * 1024 < m.memoryMB * 2.5) { status = 'limited'; reasons.push('This device reports ' + mem + ' GB of memory; this model needs about ' + (m.memoryMB >= 1000 ? (m.memoryMB / 1000).toFixed(1) + ' GB' : m.memoryMB + ' MB') + ' while it runs, so it may be slow or stop.'); }
@@ -161,7 +210,7 @@
       if (isAbort(e2) || (signal && signal.aborted)) throw aborted();
       throw coded('The download stopped part-way. Check your connection and try again.', 'download', e2);
     }
-    if (m.bytes && Math.abs(loaded - m.bytes) > 16 && m.bundled) throw coded('The model download was incomplete. Try again.', 'download');
+    if (m.bytes && Math.abs(loaded - m.bytes) > 16 && m.listed) throw coded('The model download was incomplete. Try again.', 'download');
     var out = new Uint8Array(loaded), off = 0;
     chunks.forEach(function (c) { out.set(c, off); off += c.length; });
     chunks = null;
@@ -226,10 +275,19 @@
     },
     models: function () { return MODELS.map(function (m) { return Object.assign({}, m, { url: abs(m.path) }); }); },
     model: function (id) { var m = find(id); return m ? Object.assign({}, m, { url: abs(m.path) }) : null; },
-    register: function (m) {
-      if (!m || !m.id || find(m.id)) return false;
-      MODELS.push(Object.assign({ norm: IMAGENET, sigmoid: false, size: 320, subject: 'general', bundled: false, memoryMB: 1000, name: m.label || m.id, about: '', goodAt: '' }, m));
-      return true;
+    register: addModel,
+    /* The one option to pre-select. ctx: { people: bool, checks: { id: status } }. Prefers an option that is already on this
+       device and runs well here; otherwise the smallest standard option. A 'people' option only for people photos. */
+    recommend: function (ctx) {
+      ctx = ctx || {};
+      var list = MODELS.filter(function (m) { return m.listed && m.tier === 'standard'; });
+      var ok = function (m) { return !ctx.checks || ctx.checks[m.id] === 'ok'; };
+      var have = ctx.cached || {};
+      var fits = list.filter(function (m) { return (m.subject !== 'people' || ctx.people) && ok(m); });
+      var ready = fits.filter(function (m) { return have[m.id]; }).sort(function (a, b) { return (b.subject === 'people' && ctx.people) - (a.subject === 'people' && ctx.people) || b.quality - a.quality; });
+      if (ready.length) return ready[0].id;
+      var small = list.slice().sort(function (a, b) { return a.downloadMB - b.downloadMB; });
+      return (small[0] || MODELS[0]).id;
     },
     budget: budget,
     support: support,
@@ -258,6 +316,7 @@
       o = o || {};
       var m = find(id);
       if (!m) return Promise.reject(new Error('Unknown model: ' + id));
+      if (!o.ep && m.runtime === 'webgpu') o = Object.assign({}, o, { ep: 'webgpu' });
       if (current && worker && current.id === id && current.ep === (o.ep || 'wasm') && current.threads === (o.threads || 1)) return Promise.resolve(current.info);
       return (async function () {
         API.unload();
@@ -326,7 +385,7 @@
         try {
           info = await API.load(id, opts.onProgress, { signal: opts.signal });
           if (opts.onProgress) opts.onProgress({ fraction: 1, stage: 'running' });
-          res = await API.run(src, { refine: opts.refine || 'guided', harden: [0.2, 0.8], maxSide: maxSide, stats: true, maskOnly: true, signal: opts.signal });
+          res = await API.run(src, { refine: opts.refine || 'guided', harden: [0.2, 0.8], despeckle: opts.despeckle == null ? 0.03 : opts.despeckle, maxSide: maxSide, stats: true, maskOnly: true, signal: opts.signal });
           break;
         } catch (e) {
           if (isAbort(e) || (opts.signal && opts.signal.aborted)) throw aborted();

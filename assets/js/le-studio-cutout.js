@@ -40,7 +40,7 @@
     thumb: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M10 9.5v5l4.5-2.5z"/>'
   };
 
-  var ST = { model: lsGet(MODEL_KEY, 'u2netp'), run: null, error: null, last: null, checks: {}, cached: {}, unloadT: 0 };
+  var ST = { model: lsGet(MODEL_KEY, null), rec: null, engineMissing: true, run: null, error: null, last: null, checks: {}, cached: {}, unloadT: 0 };
   var BR = null;
 
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
@@ -110,13 +110,12 @@
       engine: ['The cut-out stopped', 'Something went wrong while removing the background. Nothing was changed.']
     })[code] || ['The cut-out stopped', 'Something went wrong. Nothing was changed.'];
   }
-  function stageText(p, m) {
-    if (!p) return 'Preparing…';
+  function stageText(p) {
+    if (!p) return 'Getting ready…';
     if (p.stage === 'running') return 'Finding the subject…';
-    if (p.stage === 'starting') return 'Starting the engine…';
-    if (p.cached) return 'Loading the model…';
-    if (p.total) return 'Downloading ' + (m ? m.name + ' model' : 'model') + ' · ' + mb(p.loaded || 0) + ' of ' + mb(p.total);
-    return 'Preparing…';
+    if (p.stage === 'starting' || p.cached) return 'Getting ready…';
+    if (p.total) return 'Downloading · ' + Math.max(0, Math.round((p.loaded || 0) / 1e6)) + ' of ' + Math.max(1, Math.round(p.total / 1e6)) + ' MB';
+    return 'Getting ready…';
   }
   function run(c, layerId, opts) {
     c = c || studio;
@@ -127,7 +126,7 @@
     if (!mem || !mem.canvas) { c.toast('This photo is still loading.'); return Promise.resolve(null); }
     if (ST.run) return Promise.resolve(null);
     if (BR) endRefine(c, true);
-    var model = opts.model || ST.model || 'u2netp';
+    var model = opts.model || chosen();
     clearTimeout(ST.unloadT);
     ST.error = null;
     var ac = new AbortController();
@@ -224,57 +223,94 @@
   }
 
   /* ---------- panel ---------- */
-  function badge(status) {
-    var map = { ok: ['ok', 'Runs well here'], limited: ['warn', 'May be slow on this device'], unsupported: ['err', 'Not supported in this browser'], unknown: ['', 'Not checked yet'] };
-    var b = map[status] || map.unknown;
-    return '<span class="sxc-badge' + (b[0] ? ' is-' + b[0] : '') + '">' + b[1] + '</span>';
+  /* ---------- the option chooser (plain words; built from the LE.bgRemove registry only) ---------- */
+  function chosen() { return ST.model || ST.rec || 'u2netp'; }
+  function deviceWord(c) { return c.isPhone() ? 'phone' : (LE.device && LE.device.tier && LE.device.tier() === 'desktop') ? 'computer' : 'device'; }
+  function verdict(c, r) {
+    if (!r) return ['', ''];
+    var d = deviceWord(c);
+    if (r.status === 'ok') return ['ok', 'Works well on this ' + d];
+    if (r.status === 'limited') return ['warn', 'May be slow on this ' + d];
+    if (r.status === 'unsupported') return ['err', /memory|RAM|GB|computer/i.test((r.reasons || []).join(' ')) ? 'Needs a computer' : 'Not supported in this browser'];
+    return ['', ''];
   }
-  function modelRows(c, host, onPick) {
-    remover().then(function (bg) {
-      if (!host.isConnected) return;
-      host.innerHTML = '';
-      bg.models().filter(function (m) { return m.bundled; }).forEach(function (m) {
-        var row = el(c, '<div class="sxc-model" data-model="' + m.id + '"><button type="button" class="sxc-pick" role="radio" aria-checked="' + (m.id === ST.model) + '">' +
-          '<span class="sxc-radio" aria-hidden="true"></span><span class="sxc-mtext"><span class="sxc-mhead"><b>' + c.esc(m.name) + '</b><small>' + mb(m.bytes) + '</small></span>' +
-          '<span class="sxc-mabout">' + c.esc(m.goodAt) + '</span><span class="sxc-mmeta"><span class="sxc-check">' + badge(ST.checks[m.id] ? ST.checks[m.id].status : 'unknown') + '</span><span class="sxc-have"></span></span></span></button></div>');
-        row.querySelector('.sxc-pick').onclick = function () {
-          ST.model = m.id; lsSet(MODEL_KEY, m.id);
-          host.querySelectorAll('.sxc-pick').forEach(function (b) { b.setAttribute('aria-checked', b === row.querySelector('.sxc-pick')); });
-          if (onPick) onPick(m.id);
-        };
-        host.appendChild(row);
-        bg.support(m.id).then(function (r) {
-          ST.checks[m.id] = r;
-          row.querySelector('.sxc-check').innerHTML = badge(r.status);
-          if (r.reasons && r.reasons.length && r.status !== 'ok') row.querySelector('.sxc-check').title = r.reasons.join(' ');
-        });
-        bg.isCached(m.id).then(function (have) {
-          ST.cached[m.id] = have;
-          var slot = row.querySelector('.sxc-have');
-          if (!have) { slot.textContent = ''; return; }
-          slot.innerHTML = '<span class="sxc-ok">Downloaded</span>';
-          var del = el(c, '<button type="button" class="sxc-del" aria-label="Remove the ' + c.esc(m.name) + ' model from this device">Remove</button>');
-          del.onclick = function (e) {
-            e.stopPropagation();
-            bg.remove(m.id).then(function () { ST.cached[m.id] = false; c.toast(m.name + ' model removed from this device'); refresh(c); });
-          };
-          row.appendChild(del);
-        });
+  /* Whole MB the first use downloads: the option itself plus the shared engine (about 2.9 MB compressed) when missing. */
+  function mbOf(m, engineMissing) { return Math.max(1, Math.round(((m.bytes || (m.downloadMB || 0) * 1e6) + (engineMissing ? 2.9e6 : 0)) / 1e6)); }
+  function dlLine(m, engineMissing, ready) {
+    if (ready) return 'Ready on this device';
+    var n = mbOf(m, engineMissing);
+    return (n < 15 ? 'Small download' : 'Larger download') + ' · ' + n + ' MB, one time';
+  }
+  function meter(m) {
+    var max = m.qualityMax === 5 ? 5 : 3, q = Math.max(1, Math.min(max, m.quality || 1)), dots = '';
+    for (var i = 1; i <= max; i++) dots += '<i' + (i <= q ? ' class="on"' : '') + '></i>';
+    return '<span class="sxc-q" role="img" aria-label="Quality: ' + m.qualityLabel + '"><span class="sxc-dots" aria-hidden="true">' + dots + '</span>' + m.qualityLabel + '</span>';
+  }
+  /* Checks, cache state and the recommendation, then fn(models, bg). */
+  function survey(fn) {
+    return remover().then(function (bg) {
+      var list = bg.models().filter(function (m) { return m.listed; });
+      return Promise.all(list.map(function (m) {
+        return Promise.all([bg.support(m.id), bg.isCached(m.id)]).then(function (r) { ST.checks[m.id] = r[0]; ST.cached[m.id] = r[1]; });
+      })).then(function () { return bg.downloadSize(list[0].id); }).then(function (size) {
+        var st = {};
+        list.forEach(function (m) { st[m.id] = ST.checks[m.id] && ST.checks[m.id].status; });
+        ST.rec = bg.recommend({ checks: st, cached: ST.cached, people: false });
+        ST.engineMissing = !!size.engine;
+        if (ST.model && !list.some(function (m) { return m.id === ST.model; })) ST.model = null;
+        fn(list, bg);
       });
-      if (onPick) onPick(ST.model);
-    }).catch(function () {
-      if (host.isConnected) host.innerHTML = '<p class="sx-note is-warn">The background remover could not load. Check your connection and reopen this panel.</p>';
     });
+  }
+  function optionCards(c, host, list, bg, onPick) {
+    host.innerHTML = '';
+    list.forEach(function (m) {
+      var ready = !!ST.cached[m.id], v = verdict(c, ST.checks[m.id]), a = m.about || {};
+      var card = el(c, '<div class="sxc-opt" data-model="' + c.esc(m.id) + '"><button type="button" class="sxc-pick" role="radio" aria-checked="' + (m.id === chosen()) + '">' +
+        (m.example ? '<img class="sxc-ex" src="' + c.esc(new URL(m.example, ROOT).href) + '" alt="" width="144" height="70" loading="lazy" decoding="async">' : '') +
+        '<span class="sxc-otext"><span class="sxc-ohead"><b>' + c.esc(m.label) + '</b>' + (m.id === ST.rec ? '<span class="sxc-rec">Recommended for you</span>' : '') + '</span>' +
+        '<span class="sxc-obest">' + c.esc(m.bestFor) + '</span>' +
+        '<span class="sxc-ometa">' + meter(m) + '<span class="sxc-speed">' + c.esc(m.speedLabel) + '</span></span>' +
+        '<span class="sxc-odl' + (ready ? ' is-ready' : '') + '">' + c.esc(dlLine(m, ST.engineMissing, ready)) + '</span>' +
+        (v[1] ? '<span class="sxc-verdict is-' + v[0] + '">' + c.esc(v[1]) + '</span>' : '') + '</span></button>' +
+        '<div class="sxc-orow"></div></div>');
+      var row = card.querySelector('.sxc-orow');
+      card.querySelector('.sxc-pick').onclick = function () {
+        ST.model = m.id; lsSet(MODEL_KEY, m.id);
+        host.querySelectorAll('.sxc-pick').forEach(function (b) { b.setAttribute('aria-checked', String(b.parentNode === card)); });
+        if (onPick) onPick(m);
+      };
+      var chk = ST.checks[m.id];
+      if (chk && chk.status === 'unsupported' && chk.canForce) {
+        row.appendChild(btn(c, 'Try anyway', null, 'sxc-link', function () { ST.model = m.id; lsSet(MODEL_KEY, m.id); run(c, (c.targetImage() || {}).id, { model: m.id, force: true }); }));
+      }
+      if (ready) {
+        row.appendChild(btn(c, 'Remove from this device', null, 'sxc-link', function () {
+          bg.remove(m.id).then(function () { ST.cached[m.id] = false; c.toast(m.label + ' removed from this device'); refresh(c); });
+        }));
+      }
+      var about = el(c, '<details class="sxc-about"><summary>About this option</summary><dl>' +
+        (a.model ? '<dt>Model</dt><dd>' + c.esc(a.model) + '</dd>' : '') + (a.licence ? '<dt>Licence</dt><dd>' + c.esc(a.licence) + '</dd>' : '') +
+        '<dt>Download</dt><dd>' + (m.bytes ? (m.bytes / 1048576).toFixed(1) + ' MB (' + m.bytes.toLocaleString('en') + ' bytes)' : m.downloadMB + ' MB') + '</dd>' +
+        '<dt>Memory while running</dt><dd>about ' + (m.memoryMB >= 1000 ? (m.memoryMB / 1000).toFixed(1) + ' GB' : m.memoryMB + ' MB') + '</dd>' +
+        '<dt>Engine</dt><dd>' + (m.runtime === 'webgpu' ? 'ONNX Runtime Web, WebGPU' : 'ONNX Runtime Web, WebAssembly') + '</dd>' +
+        (a.source ? '<dt>Source</dt><dd>' + c.esc(a.source) + '</dd>' : '') + (a.notes ? '<dt>Notes</dt><dd>' + c.esc(a.notes) + '</dd>' : '') +
+        (chk && chk.reasons && chk.reasons.length ? '<dt>This device</dt><dd>' + c.esc(chk.reasons.join(' ')) + '</dd>' : '') + '</dl></details>');
+      row.appendChild(about);
+      host.appendChild(card);
+    });
+  }
+  function askCopy(c, m, ready) {
+    if (ready) return 'Ready on this device. It works offline, and your photo stays on this device.';
+    var n = mbOf(m, ST.engineMissing);
+    return 'This downloads ' + (n < 15 ? 'a small helper' : 'a larger helper') + ' once (' + n + ' MB) and then works offline. Your photo stays on this device.';
   }
   function firstUseNote(c, node, id) {
-    remover().then(function (bg) { return Promise.all([bg.downloadSize(id), bg.model(id)]); }).then(function (r) {
+    survey(function (list) {
       if (!node.isConnected) return;
-      var size = r[0], m = r[1];
-      var gold = node.parentNode && node.parentNode.querySelector('.sxc-go span');
-      if (!size.model && !size.engine) { node.textContent = 'Downloaded. Runs on this device, offline too. Your photo never leaves it.'; if (gold) gold.textContent = 'Remove background'; return; }
-      node.textContent = 'First time only: a one-time download of about ' + Math.max(1, Math.round(size.bytes / 1e6)) + ' MB (' + m.name + ' model' + (size.engine ? ' and the AI engine' : '') + '). It stays on this device and works offline afterwards. Your photo is never uploaded.';
-      if (gold) gold.textContent = 'Download and remove';
-    });
+      var m = list.filter(function (x) { return x.id === (id || chosen()); })[0] || list[0];
+      node.textContent = askCopy(c, m, !!ST.cached[m.id]);
+    }).catch(function () {});
   }
   function renderStart(c, body, img) {
     var err = ST.error && ST.error.layerId === img.id ? ST.error : null;
@@ -284,31 +320,42 @@
       var act = card.querySelector('.sxc-alert-act');
       if (err.code === 'no-subject') {
         act.appendChild(btn(c, 'Cut out by hand', 'brush', 'btn btn-sm', function () { beginRefine(c, img.id, { manual: true }); }));
-        if (ST.model !== 'u2net-int8') act.appendChild(btn(c, 'Try Detailed', 'sparkle', 'btn btn-ghost btn-sm', function () { run(c, img.id, { model: 'u2net-int8' }); }));
+        if (err.model !== 'u2net-int8' && ST.checks['u2net-int8'] && ST.checks['u2net-int8'].status === 'ok') act.appendChild(btn(c, 'Try More detail', 'sparkle', 'btn btn-ghost btn-sm', function () { run(c, img.id, { model: 'u2net-int8' }); }));
       } else if (err.code === 'memory') {
         act.appendChild(btn(c, 'Try again', 'reset', 'btn btn-sm', function () { run(c, img.id); }));
-        if (ST.model !== 'u2netp') act.appendChild(btn(c, 'Use Fast', 'sparkle', 'btn btn-ghost btn-sm', function () { run(c, img.id, { model: 'u2netp' }); }));
+        if (err.model !== 'u2netp') act.appendChild(btn(c, 'Use Quick', 'sparkle', 'btn btn-ghost btn-sm', function () { run(c, img.id, { model: 'u2netp' }); }));
       } else if (err.code !== 'unsupported') {
         act.appendChild(btn(c, 'Try again', 'reset', 'btn btn-sm', function () { run(c, img.id); }));
       }
       body.appendChild(card);
-    } else {
-      body.appendChild(el(c, '<p class="sxc-lead">Keep the subject, remove the rest. Works best with one clear subject. <span class="sxc-beta">Beta</span></p>'));
     }
+    var ask = el(c, '<div class="sxc-ask"><h3>Remove the background? <span class="sxc-beta">Beta</span></h3><p class="sxc-ask-p sxc-first">Works best with one clear subject.</p></div>');
     var go = btn(c, 'Remove background', 'cutout', 'btn btn-gold sx-block sxc-go', function () { run(c, img.id); });
-    var wrap = el(c, '<div class="sxc-gowrap"></div>');
-    wrap.appendChild(go);
-    var note = el(c, '<p class="sx-note sxc-first"></p>');
-    wrap.appendChild(note);
-    body.appendChild(wrap);
-    var sec = c.ui.section('Model');
-    var host = el(c, '<div class="sxc-models" role="radiogroup" aria-label="Model"><p class="sx-note">Checking this device…</p></div>');
-    sec.querySelector('.sx-sec-body').appendChild(host);
-    body.appendChild(sec);
-    modelRows(c, host, function (id) { firstUseNote(c, note, id); });
-    var row = el(c, '<div class="sx-row-between sxc-more"></div>');
+    ask.appendChild(go);
+    body.appendChild(ask);
+    var other = el(c, '<details class="sxc-other"><summary>Other quality options</summary><div class="sxc-models" role="radiogroup" aria-label="Quality options"><p class="sx-note">Checking this device…</p></div></details>');
+    if (lsGet('le-cutout-other', false)) other.open = true;
+    other.addEventListener('toggle', function () { lsSet('le-cutout-other', other.open); });
+    body.appendChild(other);
+    var row = el(c, '<div class="sxc-more"></div>');
     row.appendChild(btn(c, 'Cut out by hand', 'brush', 'btn btn-ghost btn-sm', function () { beginRefine(c, img.id, { manual: true }); }));
     body.appendChild(row);
+    var host = other.querySelector('.sxc-models');
+    var p = ask.querySelector('.sxc-ask-p');
+    function paint(m) {
+      var ready = !!ST.cached[m.id];
+      p.textContent = askCopy(c, m, ready);
+      go.querySelector('span').textContent = ready ? 'Remove background' : 'Download and remove';
+      var v = ST.checks[m.id];
+      go.disabled = !!(v && v.status === 'unsupported' && !v.canForce);
+    }
+    survey(function (list, bg) {
+      if (!host.isConnected) return;
+      optionCards(c, host, list, bg, paint);
+      paint(list.filter(function (m) { return m.id === chosen(); })[0] || list[0]);
+    }).catch(function () {
+      if (host.isConnected) host.innerHTML = '<p class="sx-note is-warn">The background remover could not load. Check your connection and reopen this panel.</p>';
+    });
   }
   function renderRunning(c, body) {
     var job = ST.run;
@@ -342,12 +389,12 @@
     var others = el(c, '<div class="sxc-retry"></div>');
     body.appendChild(others);
     remover().then(function (bg) {
-      bg.models().filter(function (m) { return m.bundled && m.id !== cut.model; }).forEach(function (m) {
+      bg.models().filter(function (m) { return m.listed && m.id !== cut.model; }).forEach(function (m) {
         var chk = ST.checks[m.id];
         var p = chk ? Promise.resolve(chk) : bg.support(m.id).then(function (r) { ST.checks[m.id] = r; return r; });
         p.then(function (r) {
           if (!others.isConnected || r.status !== 'ok') return;
-          others.appendChild(btn(c, 'Try ' + m.name, null, 'btn btn-ghost btn-sm', function () { run(c, id, { model: m.id }); }));
+          others.appendChild(btn(c, 'Try ' + m.label, null, 'btn btn-ghost btn-sm', function () { run(c, id, { model: m.id }); }));
         });
       });
     });
@@ -411,8 +458,9 @@
     body.appendChild(el(c, '<p class="sx-note">Your original photo is untouched. Show the original at any time, or refine the edges with the brush.</p>'));
   }
   function modelName(id) {
-    var names = { u2netp: 'Fast model', 'u2net-int8': 'Detailed model', 'u2net_human_seg-int8': 'People model', manual: 'Cut out by hand' };
-    return names[id] || (id ? id : 'Cut-out');
+    if (id === 'manual') return 'Cut out by hand';
+    var m = LE.bgRemove && LE.bgRemove.model(id);
+    return m ? m.label + ' quality' : 'Cut-out';
   }
   P.cutout = {
     title: 'Remove background', eyebrow: 'Beta · on this device', select: true,
@@ -464,7 +512,7 @@
     if (l.cutout || ST.run) { c.openPanel('cutout'); return Promise.resolve(null); }
     c.scene.select([layerId]);
     c.openPanel('cutout');
-    return remover().then(function (bg) { return bg.isCached(ST.model); }).then(function (have) {
+    return remover().then(function (bg) { return survey(function () {}).then(function () { return bg.isCached(chosen()); }); }).then(function (have) {
       if (have) return run(c, layerId);
       return null;
     }).catch(function () { return null; });
@@ -865,18 +913,22 @@
   var LAYOUTS = [
     { id: 'bold-right', name: 'Bold left, subject right', bg: { type: 'color', color: '#14121A' }, subject: { side: 'right', h: 1.06 }, accent: 'bar', text: { x: 56, y: 120, w: 640, size: 132, font: 'Anton', color: '#FFFFFF', stroke: '#000000', accent: '#FFD43B', align: 'left' } },
     { id: 'bold-left', name: 'Subject left, bold right', bg: { type: 'gradient', kind: 'linear', angle: 135, colors: ['#FF4D6D', '#7457F0'] }, subject: { side: 'left', h: 1.06 }, accent: 'none', text: { x: 600, y: 140, w: 630, size: 128, font: 'Anton', color: '#FFFFFF', stroke: '#14121A', align: 'right' } },
-    { id: 'behind', name: 'Big word behind', bg: { type: 'color', color: '#FFD43B' }, subject: { side: 'center', h: 1.04 }, accent: 'none', text: { x: 30, y: 70, w: 1220, size: 300, font: 'Anton', color: '#14121A', stroke: null, align: 'center', behind: true, lines: 1 } },
-    { id: 'blurred', name: 'Blurred scene', bg: { type: 'blur' }, subject: { side: 'right', h: 1.04 }, accent: 'shade', text: { x: 56, y: 150, w: 640, size: 124, font: 'Archivo Black', color: '#FFD43B', stroke: '#000000', align: 'left' } },
-    { id: 'split', name: 'Colour block', bg: { type: 'color', color: '#F2EFE9' }, subject: { side: 'right', h: 1.02 }, accent: 'block', text: { x: 48, y: 150, w: 560, size: 110, font: 'Archivo Black', color: '#FFFFFF', stroke: null, align: 'left', accent: '#2F6BFF' } },
+    { id: 'behind', name: 'Big word behind', bg: { type: 'color', color: '#FFD43B' }, subject: { side: 'center', h: 0.8 }, accent: 'none', text: { x: 30, y: 26, w: 1220, size: 280, font: 'Anton', color: '#14121A', stroke: null, align: 'center', behind: true, lines: 1 } },
+    { id: 'blurred', name: 'Blurred scene', bg: { type: 'blur' }, subject: { side: 'right', h: 1.04 }, accent: 'shade', text: { x: 56, y: 150, w: 620, size: 136, font: 'Anton', color: '#FFD43B', stroke: '#000000', align: 'left' } },
+    { id: 'split', name: 'Colour block', bg: { type: 'color', color: '#F2EFE9' }, subject: { side: 'right', h: 1.02 }, accent: 'block', text: { x: 44, y: 150, w: 560, size: 120, font: 'Archivo Black', color: '#FFFFFF', stroke: null, align: 'left', accent: '#2F6BFF', lines: 3 } },
     { id: 'burst', name: 'Circle pop', bg: { type: 'gradient', kind: 'linear', angle: 90, colors: ['#0F2A5C', '#2F6BFF'] }, subject: { side: 'right', h: 1.0 }, accent: 'circle', text: { x: 56, y: 140, w: 600, size: 126, font: 'Bebas Neue', color: '#FFFFFF', stroke: '#0F2A5C', align: 'left', accent: '#FFD43B' } },
     { id: 'banner', name: 'Bottom banner', bg: { type: 'gradient', kind: 'linear', angle: 180, colors: ['#1B7F54', '#0E3B2A'] }, subject: { side: 'center', h: 0.98 }, accent: 'banner', text: { x: 40, y: 556, w: 1200, size: 104, font: 'Anton', color: '#FFFFFF', stroke: null, align: 'center', accent: '#FF4D6D', lines: 1 } },
-    { id: 'badge', name: 'Badge corner', bg: { type: 'color', color: '#FFFFFF' }, subject: { side: 'left', h: 1.04 }, accent: 'badge', text: { x: 620, y: 200, w: 620, size: 118, font: 'Archivo Black', color: '#14121A', stroke: null, align: 'left', accent: '#FF4D6D' } }
+    { id: 'badge', name: 'Badge corner', bg: { type: 'color', color: '#FFFFFF' }, subject: { side: 'left', h: 1.04 }, accent: 'badge', text: { x: 620, y: 200, w: 620, size: 140, font: 'Anton', color: '#14121A', stroke: null, align: 'left', accent: '#FF4D6D' } }
   ];
   function words(s) { return String(s || '').trim().split(/\s+/).filter(Boolean); }
   function breakHeadline(text, lines) {
     var w = words(text);
     if (lines === 1 || w.length <= 1) return w.join(' ');
     if (w.length === 2) return w.join('\n');
+    if (lines === 3 && w.length >= 3) {
+      var a = Math.ceil(w.length / 3), b = Math.ceil((w.length - a) / 2);
+      return [w.slice(0, a).join(' '), w.slice(a, a + b).join(' '), w.slice(a + b).join(' ')].filter(Boolean).join('\n');
+    }
     var half = Math.ceil(w.length / 2);
     return w.slice(0, half).join(' ') + '\n' + w.slice(half).join(' ');
   }
@@ -884,11 +936,22 @@
     var n = String(text).split('\n').length;
     return Math.ceil(n * spec.size * 0.98 * 1.06 + 8);
   }
+  var measureCtx = null;
   function fitSize(spec, text) {
-    /* Rough width check so long words shrink instead of overflowing the box (Anton is ~0.45 em per char, Archivo ~0.68). */
-    var per = /Archivo/.test(spec.font) ? 0.68 : /Bebas/.test(spec.font) ? 0.4 : 0.46;
-    var longest = Math.max.apply(null, String(text).split('\n').map(function (s) { return s.length; }).concat([1]));
-    return Math.min(spec.size, Math.floor(spec.w / (longest * per)));
+    /* Measure the widest line in the real face (loaded first by thumbFonts) so long words shrink instead of wrapping. */
+    var lines = String(text).toUpperCase().split('\n'), widest = 0;
+    measureCtx = measureCtx || document.createElement('canvas').getContext('2d');
+    var family = LE.fonts && LE.fonts.css ? LE.fonts.css(spec.font) : '"' + spec.font + '", sans-serif';
+    measureCtx.font = '400 100px ' + family;
+    lines.forEach(function (ln) { widest = Math.max(widest, measureCtx.measureText(ln).width + (/Bebas/.test(spec.font) ? ln.length * 2 : 0)); });
+    var est = /Archivo/.test(spec.font) ? 82 : /Bebas/.test(spec.font) ? 42 : 50;
+    var longest = Math.max.apply(null, lines.map(function (x) { return x.length; }).concat([1]));
+    if (!(widest > 0) || !(document.fonts && document.fonts.check && document.fonts.check('100px ' + family))) widest = Math.max(widest, longest * est);
+    return Math.max(40, Math.min(spec.size, Math.floor(spec.w * 0.94 / widest * 100)));
+  }
+  function thumbFonts() {
+    if (!LE.fonts || !LE.fonts.load) return Promise.resolve();
+    return Promise.all(['Anton', 'Archivo Black', 'Bebas Neue'].map(function (f) { return LE.fonts.load(f, 400).catch(function () {}); }));
   }
   function subjectBox(c, layout, photo, maskCanvas) {
     /* Place by the subject's own bounds (from the mask) so the person, not the whole photo, lands where the layout wants it. */
@@ -933,7 +996,7 @@
       var cs = Math.max(TW / photo.width, TH / photo.height), bw = photo.width * cs, bh = photo.height * cs;
       layers.push({ type: 'image', name: 'Blurred photo', src: opts.photo, x: (TW - bw) / 2, y: (TH - bh) / 2, w: bw, h: bh, adjust: { blur: 22, brightness: -18, saturation: 10 }, locked: false });
     }
-    var T = lay.text, head = breakHeadline(opts.headline || 'WATCH THIS', T.lines), size = fitSize(T, head);
+    var T = lay.text, head = breakHeadline(opts.headline || 'WATCH THIS', T.lines === 1 && words(opts.headline).length > 2 && T.behind ? 2 : T.lines), size = fitSize(T, head);
     var th = textBox({ size: size }, head);
     var accent = T.accent || '#FFD43B';
     if (lay.accent === 'shade') layers.push({ type: 'shape', shape: 'rect', name: 'Shade', x: 0, y: 0, w: TW, h: TH, fill: { type: 'linear', angle: 0, colors: ['rgba(10,8,14,.82)', 'rgba(10,8,14,.35)', 'rgba(10,8,14,0)'] } });
@@ -942,11 +1005,12 @@
     if (lay.accent === 'badge') layers.push({ type: 'shape', shape: 'rect', name: 'Badge', x: 620, y: 96, w: 230, h: 76, radius: 38, fill: { type: 'solid', color: accent } });
     var text = {
       type: 'text', name: 'Headline', text: head, font: T.font, weight: /Anton|Bebas|Archivo/.test(T.font) ? 400 : 700, size: size, color: T.color, align: T.align, uppercase: true,
-      lineHeight: 0.98, letterSpacing: /Bebas/.test(T.font) ? 2 : 0, x: T.x, y: T.behind ? T.y : Math.max(24, T.y + (lay.accent === 'banner' ? 0 : (360 - th) / 2 - 100)), w: T.w, h: th
+      lineHeight: 0.98, letterSpacing: /Bebas/.test(T.font) ? 2 : 0, x: T.x, y: T.behind ? T.y : Math.max(lay.accent === 'badge' ? 196 : 36, Math.round((TH - th) / 2 - 70)), w: T.w, h: th
     };
     if (T.stroke) text.stroke = { width: Math.max(6, Math.round(size * 0.07)), color: T.stroke };
-    if (!T.behind) text.shadow = { color: 'rgba(0,0,0,.55)', blur: 0, x: Math.round(size * 0.05), y: Math.round(size * 0.06) };
-    if (T.behind) text.y = Math.round((TH - th) / 2 - 30);
+    var darkInk = /^#(1|0|2)/.test(T.color);
+    if (!T.behind) text.shadow = darkInk ? { color: 'rgba(20,18,26,.16)', blur: 0, x: Math.round(size * 0.04), y: Math.round(size * 0.05) } : { color: 'rgba(0,0,0,.55)', blur: 0, x: Math.round(size * 0.05), y: Math.round(size * 0.06) };
+    if (T.behind) text.y = T.y;
     if (lay.accent === 'banner') {
       layers.push({ type: 'shape', shape: 'rect', name: 'Banner', x: 0, y: TH - 170, w: TW, h: 170, fill: { type: 'solid', color: accent } });
       text.y = TH - 170 + (170 - th) / 2;
@@ -962,18 +1026,34 @@
     if (!T.behind) layers.push(text);
     return { v: 1, width: TW, height: TH, background: bg, layers: layers };
   }
+  /* Rendered at full size and scaled down: canvas shadows do not scale with the transform, so a 1:4 render would
+     show shadows four times too large. */
   function previewThumb(c, layoutId, opts, scale) {
-    var d = buildThumb(c, layoutId, opts);
-    var fonts = LE.fonts && LE.fonts.load ? Promise.all(['Anton', 'Archivo Black', 'Bebas Neue'].map(function (f) { return LE.fonts.load(f).catch(function () {}); })) : Promise.resolve();
-    return fonts.then(function () { return c.hiddenRender(d, scale || 0.25, { small: true }); });
+    return thumbFonts().then(function () {
+      var d = buildThumb(c, layoutId, opts);
+      return c.hiddenRender(d, 1, { small: true });
+    }).then(function (full) {
+      var s = scale || 0.25;
+      var out = document.createElement('canvas');
+      out.width = Math.round(TW * s); out.height = Math.round(TH * s);
+      var x = out.getContext('2d');
+      x.imageSmoothingQuality = 'high';
+      x.drawImage(full, 0, 0, out.width, out.height);
+      full.width = full.height = 1;
+      return out;
+    });
   }
   function createThumb(c, layoutId, opts) {
     c = c || studio;
+    return thumbFonts().then(function () { return createThumbNow(c, layoutId, opts); });
+  }
+  function createThumbNow(c, layoutId, opts) {
     var d = buildThumb(c, layoutId, opts);
     var metas = [opts.photo, opts.mask].filter(Boolean).map(function (id) { return c.mem[id] && c.mem[id].meta; }).filter(Boolean);
     c.newDesign(TW, TH, 'Thumbnail' + (opts.headline ? ' · ' + String(opts.headline).slice(0, 40) : ''));
     metas.forEach(function (m) { c.S.project.assets[m.id] = m; c.scene.addAsset(m.id, c.mem[m.id].canvas); });
-    c.replaceDoc(d, false);
+    c.scene.load(d);
+    c.syncProject();
     c.fit();
     c.scene.select([]);
     c.markDirty();
@@ -1001,9 +1081,9 @@
     TK.abort = ac;
     TK.stage = 'Preparing…';
     return remover().then(function (bg) {
-      var info = bg.model(ST.model);
-      return bg.gate(ST.model, { title: 'Cut out the subject', run: function () {
-        return bg.cutout(mem.canvas, { model: ST.model, signal: ac.signal, onProgress: function (p) {
+      var mid = chosen(), info = bg.model(mid);
+      return bg.gate(mid, { title: 'Cut out the subject', run: function () {
+        return bg.cutout(mem.canvas, { model: mid, signal: ac.signal, onProgress: function (p) {
           TK.stage = stageText(p, info);
           var s = document.getElementById('sxc-tk-stage');
           if (s) s.textContent = TK.stage;
@@ -1011,7 +1091,7 @@
       } });
     }).then(function (res) {
       if (!res || !res.mask) return null;
-      return storeMask(c, res.mask).then(function (id) { TK.mask = id; TK.model = ST.model; return id; });
+      return storeMask(c, res.mask).then(function (id) { TK.mask = id; TK.model = chosen(); return id; });
     }).then(function (id) { TK.busy = false; TK.error = null; scheduleUnload(90000); return id; }, function (err) {
       TK.busy = false;
       TK.error = err && (err.name === 'AbortError' || err.code === 'cancelled') ? null : { code: (err && err.code) || 'engine', message: err && err.message };
@@ -1082,7 +1162,7 @@
       lb.appendChild(row);
       var fu = el(c, '<p class="sx-note"></p>');
       lb.appendChild(fu);
-      firstUseNote(c, fu, ST.model);
+      firstUseNote(c, fu, chosen());
       if (!TK.whole) return;
     }
     var grid = el(c, '<div class="sxc-tk-grid"></div>');
@@ -1117,9 +1197,9 @@
     open: function (layerId) { return quick(studio, layerId || (studio.one() || {}).id); },
     state: function () {
       return { running: !!ST.run, stage: ST.run ? ST.run.stage : null, fraction: ST.run ? ST.run.fraction : 0, error: ST.error ? { code: ST.error.code, layerId: ST.error.layerId, coverage: ST.error.coverage } : null,
-        model: ST.model, last: ST.last, brush: BR ? { layerId: BR.id, mode: BR.mode, size: BR.size, hard: BR.hard, undo: BR.undo.length, redo: BR.redo.length } : null };
+        model: chosen(), recommended: ST.rec, last: ST.last, brush: BR ? { layerId: BR.id, mode: BR.mode, size: BR.size, hard: BR.hard, undo: BR.undo.length, redo: BR.redo.length } : null };
     },
-    model: function () { return ST.model; },
+    model: chosen,
     setModel: function (id) { ST.model = id; lsSet(MODEL_KEY, id); },
     refine: function (layerId, o) { return beginRefine(studio, layerId || (studio.one() || {}).id, o); },
     brush: {
@@ -1131,7 +1211,7 @@
     isMask: isMask,
     thumbnail: {
       layouts: function () { return LAYOUTS.map(function (l) { return { id: l.id, name: l.name }; }); },
-      build: function (layoutId, o) { return Promise.resolve(buildThumb(studio, layoutId, o)); },
+      build: function (layoutId, o) { return thumbFonts().then(function () { return buildThumb(studio, layoutId, o); }); },
       preview: function (layoutId, o, scale) { return previewThumb(studio, layoutId, o, scale); },
       create: function (layoutId, o) { return createThumb(studio, layoutId, o); },
       cut: function (photoId) { return cutForKit(studio, photoId); }

@@ -218,6 +218,49 @@
     return cnt ? sum / cnt : 0;
   }
 
+  /* Drop small islands (stray blobs the model picked up away from the subject): connected components on a coarse grid,
+     anything under `frac` of the largest component is cleared, with a one-cell margin for its soft edge. */
+  function despeckle(alpha, w, h, frac) {
+    var f = Math.max(1, Math.round(Math.max(w, h) / 480));
+    var gw = Math.ceil(w / f), gh = Math.ceil(h / f), gn = gw * gh, x, y, i;
+    var on = new Uint8Array(gn), lab = new Int32Array(gn), sizes = [0];
+    for (y = 0; y < gh; y++) for (x = 0; x < gw; x++) {
+      var px = Math.min(w - 1, x * f + (f >> 1)), py = Math.min(h - 1, y * f + (f >> 1));
+      on[y * gw + x] = alpha[py * w + px] > 0.5 ? 1 : 0;
+    }
+    var stack = new Int32Array(gn), next = 0;
+    for (i = 0; i < gn; i++) {
+      if (!on[i] || lab[i]) continue;
+      next++; var top = 0, size = 0;
+      stack[top++] = i; lab[i] = next;
+      while (top) {
+        var j = stack[--top]; size++;
+        var jx = j % gw, jy = (j / gw) | 0;
+        if (jx > 0 && on[j - 1] && !lab[j - 1]) { lab[j - 1] = next; stack[top++] = j - 1; }
+        if (jx < gw - 1 && on[j + 1] && !lab[j + 1]) { lab[j + 1] = next; stack[top++] = j + 1; }
+        if (jy > 0 && on[j - gw] && !lab[j - gw]) { lab[j - gw] = next; stack[top++] = j - gw; }
+        if (jy < gh - 1 && on[j + gw] && !lab[j + gw]) { lab[j + gw] = next; stack[top++] = j + gw; }
+      }
+      sizes.push(size);
+    }
+    if (!next) return 0;
+    var big = Math.max.apply(null, sizes), dropped = 0;
+    var keep = new Uint8Array(gn);
+    for (i = 0; i < gn; i++) if (lab[i] && sizes[lab[i]] >= big * frac) keep[i] = 1;
+    for (i = 1; i <= next; i++) if (sizes[i] < big * frac) dropped++;
+    /* Keep pixels within two cells of a kept component (its soft edge); clear faint haze and small islands elsewhere. */
+    var near = new Uint8Array(gn), R = 2;
+    for (y = 0; y < gh; y++) for (x = 0; x < gw; x++) {
+      if (!keep[y * gw + x]) continue;
+      for (var yy = Math.max(0, y - R); yy <= Math.min(gh - 1, y + R); yy++) for (var xx = Math.max(0, x - R); xx <= Math.min(gw - 1, x + R); xx++) near[yy * gw + xx] = 1;
+    }
+    for (y = 0; y < h; y++) {
+      var row = ((y / f) | 0) * gw;
+      for (x = 0; x < w; x++) if (!near[row + ((x / f) | 0)]) alpha[y * w + x] = 0;
+    }
+    return dropped;
+  }
+
   /* ---------- run ---------- */
   async function run(m) {
     var t = {}, T = now(), bmp = m.bitmap, o = m.opts || {};
@@ -298,6 +341,7 @@
       var lo = o.harden[0], hi = o.harden[1], inv = 1 / Math.max(1e-4, hi - lo);
       for (i = 0; i < n; i++) { var q = (alpha[i] - lo) * inv; q = q < 0 ? 0 : q > 1 ? 1 : q; alpha[i] = q * q * (3 - 2 * q); }
     }
+    if (o.despeckle) despeckle(alpha, w, h, o.despeckle);
     if (o.stats) st.edgeAfter = edgeScore(getLum(), alpha, w, h);
     /* Coverage: the share of clearly opaque pixels. Under 3 % or over 97 % means "no clear subject". */
     var solid = 0;

@@ -37,8 +37,17 @@ cases['the model is not fetched until asked, then cached in le-models-v1'] = asy
   h.assert.equal(await page.evaluate(() => caches.has('le-models-v1')), false, 'Model cache exists before asked');
   await page.click('.sxc-tb');
   await page.waitForSelector('.sxc-go');
-  const note = await page.waitForFunction(() => { const n = document.querySelector('.sxc-first'); return n && /one-time download of about \d+ MB/.test(n.textContent) && n.textContent; });
-  h.assert(/stays on this device/.test(await note.jsonValue()), 'First-use sentence missing');
+  const note = await page.waitForFunction(() => { const n = document.querySelector('.sxc-first'); return n && /once \(\d+ MB\)/.test(n.textContent) && n.textContent; });
+  h.assert(/works offline/.test(await note.jsonValue()) && /stays on this device/.test(await note.jsonValue()), 'First-use sentence missing');
+  h.assert.equal(await page.textContent('.sxc-go'), 'Download and remove');
+  /* The chooser is data-driven, plain-worded and pre-selects one recommended option. */
+  await page.click('.sxc-other > summary');
+  const cards = await page.evaluate(() => [...document.querySelectorAll('.sxc-opt')].map((o) => ({ id: o.dataset.model, text: o.querySelector('.sxc-pick').textContent, on: o.querySelector('.sxc-pick').getAttribute('aria-checked') })));
+  h.assert.equal(cards.length, await page.evaluate(() => LE.bgRemove.models().filter((m) => m.listed).length));
+  h.assert(cards.every((c) => !/int8|u2net|onnx|RAM/i.test(c.text)), 'Jargon on a card: ' + cards.map((c) => c.text).join(' | '));
+  h.assert(cards.every((c) => /\d+ MB, one time/.test(c.text) && /(Good|Better|Best)/.test(c.text)), 'Download line or quality missing');
+  h.assert.equal(cards.filter((c) => /Recommended for you/.test(c.text)).length, 1);
+  h.assert.equal(cards.filter((c) => c.on === 'true')[0].id, 'u2netp');
   const urls = await page.evaluate(() => performance.getEntriesByType('resource').map((r) => r.name));
   h.assert(!urls.some((u) => /\.onnx|\.wasm/.test(u)), 'Model fetched before the button was pressed');
   await page.click('.sxc-go');
@@ -269,6 +278,26 @@ cases['phone: one tap, refine with the brush, no sideways scroll at 360 px'] = a
   await page.tap('.sxc-brushbar [data-cmd="cutDone"]');
   await page.waitForFunction(() => !document.querySelector('.sxc-brush'));
   h.assert(await h.noOverflow(page), 'Sideways scroll after refine');
+  h.assert.noErrors(page);
+};
+
+cases['a second file can add options to the chooser through the registry'] = async ({ browser, base, h }) => {
+  const page = await studioWithPhoto(browser, base, h, 'desktop', 'arch-01');
+  await page.evaluate(() => {
+    (window.LE_BGREMOVE_MODELS = window.LE_BGREMOVE_MODELS || []).push({ id: 'test-pro', label: 'Finest edges', bestFor: 'Best for hair and fur', quality: 3, speed: 'slow', downloadMB: 120,
+      example: '', supportId: 'cutout.test-pro', tier: 'pro', runtime: 'webgpu', path: 'assets/models/none.onnx', bytes: 120000000, memoryMB: 2500, about: { model: 'Test model', licence: 'MIT' } });
+    LEStudio.openPanel('cutout');
+  });
+  await page.click('.sxc-other > summary');
+  await page.waitForSelector('.sxc-opt[data-model="test-pro"]');
+  const r = await page.evaluate(() => ({
+    text: document.querySelector('.sxc-opt[data-model="test-pro"]').textContent,
+    rec: LEStudioCutout.state().recommended,
+    defs: (window.LE_SUPPORT_DEFS || []).filter((d) => /^cutout\./.test(d.id)).map((d) => d.id)
+  }));
+  h.assert(/Finest edges/.test(r.text) && /Best for hair and fur/.test(r.text) && /Takes a while/.test(r.text) && /123 MB, one time|120 MB, one time/.test(r.text), 'Card text: ' + r.text);
+  h.assert.equal(r.rec, 'u2netp');
+  h.assert(['cutout.fast', 'cutout.detailed', 'cutout.people', 'cutout.test-pro'].every((id) => r.defs.indexOf(id) >= 0), 'Support defs: ' + r.defs.join(','));
   h.assert.noErrors(page);
 };
 
