@@ -196,7 +196,7 @@
       if (kind === 'catalogue') {
         var withPhoto = v.slots !== false;
         var cols = small ? 2 : 3;
-        var rowsPer = withPhoto ? (small ? 3 : 4) : (small ? 5 : 7);
+        var rowsPer = withPhoto ? (small ? 2 : 3) : (small ? 4 : 6);
         var gap = mm(small ? 4 : 5), secH = mm(small ? 10 : 12);
         var cw = (body.w - gap * (cols - 1)) / cols;
         var ch = (body.h - 3 * secH - mm(6) - gap * (rowsPer - 1)) / rowsPer;

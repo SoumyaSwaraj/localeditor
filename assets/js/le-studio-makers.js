@@ -540,7 +540,7 @@
       var pages = out.pages.map(function (pg) { var n = normalize(pg); n.maker.sig = M.signature(n.layers); return n; });
       var edit = F.edit;
       close();
-      if (pages.length > 1 || m.maxPages > 1) placeAll(c, pages, out.name, edit, m);
+      if (pages.length > 1 || m.maxPages > 1 || runOf(c).to > runOf(c).from) placeAll(c, pages, out.name, edit, m);
       else place(c, pages[0], out.name, edit);
       return pages[0];
     }).catch(function (err) {
@@ -567,19 +567,27 @@
   /* Makers that make several pages (books, catalogues): a new make goes after the current page; a remake replaces the
      run of pages that came from the same make (same maker, style, size and values) and adds or removes pages to fit. */
   function makeKey(mk) { return mk ? mk.id + '|' + mk.style + '|' + mk.size + '|' + JSON.stringify(mk.values) : ''; }
+  /* The pages around the active one that came from the same make of a multi-page maker. */
+  function runOf(c) {
+    var P0 = c && c.S && c.S.project;
+    if (!P0) return { from: 0, to: -1 };
+    c.syncProject();
+    var a = P0.activePage, mk = P0.pages[a] && P0.pages[a].maker, def = mk && M.get(mk.id);
+    if (!def || def.maxPages < 2) return { from: a, to: a };
+    var key = makeKey(mk), from = a, to = a;
+    var same = function (i) { return makeKey(P0.pages[i] && P0.pages[i].maker) === key; };
+    while (from > 0 && same(from - 1)) from--;
+    while (to < P0.pages.length - 1 && same(to + 1)) to++;
+    return { from: from, to: to };
+  }
   function placeAll(c, pages, name, edit, m) {
     var from = 0, to = -1;
     if (!c.S.project) { c.newDesign(pages[0].width, pages[0].height, name); to = 0; }
     else {
-      c.syncProject();
-      var P0 = c.S.project, a = P0.activePage, key = makeKey(P0.pages[a].maker);
-      if (edit && key) {
-        var same = function (i) { return makeKey(P0.pages[i] && P0.pages[i].maker) === key; };
-        from = a; to = a;
-        while (from > 0 && same(from - 1)) from--;
-        while (to < P0.pages.length - 1 && same(to + 1)) to++;
-      } else if (!c.scene.layers().length) { from = a; to = a; }
-      else { from = a + 1; to = a; }
+      var run = runOf(c);
+      if (edit) { from = run.from; to = run.to; }
+      else if (!c.scene.layers().length) { from = c.S.project.activePage; to = from; }
+      else { from = run.to + 1; to = run.to; }
     }
     if (c.hideStart) c.hideStart();
     pages.forEach(function (pg, k) {
