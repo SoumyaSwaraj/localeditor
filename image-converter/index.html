@@ -162,10 +162,12 @@ function canvasToBMP(c) {
 }
 (function () {
   var drop = $('#drop'), app = $('#app'), list = $('#list'), q = $('#q'), qv = $('#qv'), bg = $('#bg');
-  var items = [], fmt = 'image/jpeg', ver = 0, running = false;
+  var items = [], fmt = 'image/jpeg', ver = 0, running = false, pending = false;
   if (!WEBP_OK) { var wb = $('#fmt [data-v="image/webp"]'); wb.disabled = true; wb.title = 'WebP encoding is not supported in this browser'; }
   var input = IT.dropzone(drop, { accept: 'image/*', multiple: true, paste: true, onFiles: add });
-  var schedule = debounce(function () { runAll(true); }, 250);
+  var timer = 0;
+  /* An option changed: what is on the list is the old format until the re-encode finishes (QA-016), so block downloads meanwhile. */
+  function schedule() { pending = true; items.forEach(function (it) { it.dl.disabled = true; }); state(); clearTimeout(timer); timer = setTimeout(function () { timer = 0; runAll(true); }, 250); }
   function syncFields() {
     $('#q-f').classList.toggle('hidden', !(fmt === 'image/jpeg' || fmt === 'image/webp'));
     $('#bg-f').classList.toggle('hidden', !(fmt === 'image/jpeg' || fmt === 'image/bmp'));
@@ -179,7 +181,7 @@ function canvasToBMP(c) {
     if (!files.length) { IT.toast('Please choose image files'); return; }
     files.forEach(function (f) {
       var it = makeItem(f); items.push(it); list.appendChild(it.li);
-      it.dl.addEventListener('click', function () { if (it.blob) IT.download(it.blob, outName(it)); });
+      it.dl.addEventListener('click', function () { if (it.blob && !pending) IT.download(it.blob, outName(it)); });
       it.rm.addEventListener('click', function () { remove(it); });
     });
     drop.classList.add('hidden'); app.classList.remove('hidden');
@@ -205,7 +207,7 @@ function canvasToBMP(c) {
         for (var i = 0; i < todo.length; i++) { if (ver !== my) break; await convert(todo[i], my); }
         if (ver === my) break;
       }
-    } finally { running = false; }
+    } finally { running = false; if (!timer) pending = false; state(); }
   }
   async function convert(it, my) {
     it.sub.textContent = IT.formatBytes(it.file.size) + ' · converting…';
@@ -230,9 +232,10 @@ function canvasToBMP(c) {
     }
     state();
   }
-  function state() { $('#dl-all').disabled = !items.some(function (it) { return it.blob; }); }
+  function state() { $('#dl-all').disabled = pending || running && items.some(function (it) { return it.ver !== ver; }) || !items.some(function (it) { return it.blob; }); }
   $('#dl-all').addEventListener('click', function () {
-    var ready = items.filter(function (it) { return it.blob; });
+    if (pending) return;
+    var ready = items.filter(function (it) { return it.blob && it.ver === ver; });
     ready.forEach(function (it, i) { setTimeout(function () { IT.download(it.blob, outName(it)); }, i * 350); });
     IT.toast('Downloading ' + ready.length + ' file' + (ready.length > 1 ? 's' : ''));
   });

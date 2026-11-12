@@ -219,7 +219,7 @@ cases['a large (4000x3000) photo opens, keeps its shape and exports as a valid P
   h.assert(i.type === 'png' && i.w === d.width && i.h === d.height, 'export matches the page ' + JSON.stringify(i));
   h.assert.noErrors(page);
 };
-cases['KNOWN-BUG: a 4000x3000 photo exported at 1x keeps its original pixel size (QA-015: it is cut to 2400x1800 on opening)'] = async ({ browser, base, h }) => {
+cases['a 4000x3000 photo exported at 1x keeps its original pixel size (QA-015)'] = async ({ browser, base, h }) => {
   const file = await h.makeJpeg(browser, base, 4000, 3000);
   const page = await h.openPhotoDesign(browser, base, 'desktop', file);
   const r = await download(page, h, 'PNG', '1');
