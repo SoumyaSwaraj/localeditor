@@ -19,5 +19,18 @@ Kept by the lead architect. Things reported by the team that are not yet assigne
 - **Recipes:** resize, border and text steps only run on export or batch, not live in the studio.
 - **Local languages and scripts.** The font library is Latin only.
 
+## Reported by wave 2 (12 November 2026)
+- **Format:** add `carousel`, `maker`, `redact` and `cutout` to `.ledesign.json` and the JSON Schema. Page ids are matched by position and go wrong after a page is deleted or reordered. The schema was hand-checked only.
+- **PDF fonts (existing bug):** the vendored fontkit subsets the Inter WOFF wrongly (only some glyphs appear) and throws on IBM Plex Mono, so PDF studio exports using Inter are probably broken and Bates numbering falls back to a standard font.
+- **PDF studio deep links:** `pdf-studio/?panel=X` is parsed but nothing opens the panel, so feature pages cannot launch a PDF tool directly.
+- **PDF studio rail on phones:** eight tabs now; Export is partly off-screen at 360 px.
+- **PDF security:** scrub, redact and make-safe refuse encrypted files until they are unlocked first (unlock now exists in the bulk tools; wire the two together). The older Edit → Redact tool still rasterises without a verify pass; point it at Protect.
+- **PDF passwords:** not verified in Adobe Reader, macOS Preview or Chrome's viewer. 200 protected files take about 45 s on desktop.
+- **Studio:** `brand` has no `?tool=` deep link. The `toolbar-add` hook lets only one module append. Layer shadows ignore zoom and export scale (wrong size at anything but 1×). Collage should never place mask images (`background-*` names) into slots.
+- **Export:** wide carousels on phones are split in bands, so a photo or gradient background can show a seam. The replay timeline is session-only.
+- **Redact:** "Apply permanently" does not cover photo backgrounds; version history may still hold the original photo.
+- **Makers:** style chips have no previews; story sizes leave empty space in a few styles.
+- **Photo privacy check:** HEIC can be read but not cleaned in Chromium; GIF is not checked.
+
 ## Never verified in this build environment
 Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen readers, the Android share sheet, real AWS (deploy, CloudFront function, headers policy), and every stock API (Pixabay, Pexels, Openverse, Unsplash are all tested against mocked responses).
