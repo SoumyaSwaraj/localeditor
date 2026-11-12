@@ -15,7 +15,7 @@
         for (var i = 0; i < nodes.length; i++) {
           if (nodes[i].getAttribute('data-le-src') === src || nodes[i].src === src) { found = nodes[i]; break; }
         }
-        function fail() { reject(new Error('Could not load ' + src)); }
+        function fail() { delete lazyLoads[src]; if (script && script.parentNode) script.parentNode.removeChild(script); reject(new Error('Could not load ' + src)); }   /* forgotten, so the next call tries again */
         if (found && found.getAttribute('data-le-loaded') === '1') { resolve(); return; }
         var script = found || document.createElement('script');
         script.async = true;
@@ -398,7 +398,7 @@
     if (!v || typeof v !== 'object' || d > 4) return null;
     if (Array.isArray(v)) return v.slice(0, inList && !cap ? 4 : 512).map(function (x) { return fxVal(x, d + 1, true, cap); });
     var o = {};
-    Object.keys(v).slice(0, 24).forEach(function (k) { if (/^[a-zA-Z][\w-]{0,31}$/.test(k) && k !== 'constructor' && k !== 'prototype') o[k] = fxVal(v[k], d + 1, inList, cap); });
+    Object.keys(v).slice(0, 48).forEach(function (k) { if (/^[a-zA-Z][\w-]{0,31}$/.test(k) && k !== 'constructor' && k !== 'prototype') o[k] = fxVal(v[k], d + 1, inList, cap); });
     return o;
   }
   function fxObj(v, d, cap) { v = fxVal(v, d, false, cap); return v && !Array.isArray(v) && Object.keys(v).length ? v : null; }
@@ -1720,6 +1720,9 @@
         value.onload = function () { res(rec); };
         value.onerror = function () { rej(new Error('Could not read that image.')); };
       });
+    } else if (typeof Blob !== 'undefined' && value instanceof Blob && value.type && !/^image\//.test(value.type)) {
+      rec.blob = value;   /* a data asset (LUT text and the like): kept as it is, never decoded as a picture */
+      rec.ready = Promise.resolve(rec);
     } else if (typeof Blob !== 'undefined' && value instanceof Blob) {
       rec.url = URL.createObjectURL(value);
       rec.ready = new Promise(function (res, rej) {
@@ -2063,7 +2066,8 @@
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      self._drawLayer(ctx, layer, { preview: false, bitmaps: bitmaps, local: true });
+      var lo = { preview: false, bitmaps: bitmaps, local: true };
+      if (!(LE.fxBoot && LE.fxBoot.local(self, ctx, layer, lo))) self._drawLayer(ctx, layer, lo);   /* draw-time effects of a non-photo layer */
       return c;
     });
   };

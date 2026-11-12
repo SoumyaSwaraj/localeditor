@@ -47,7 +47,7 @@
         label: o.label || labelOf(key, ps), schema: sc, value: val(entry(), key, ps),
         gradient: o.gradient || (ps.ui && ps.ui.gradient) || (ps.type === 'number' ? GRAD_BY_NAME[key] : null), fine: o.fine,
         control: o.control, style: o.style, hint: ps.help || ps.hint,
-        layerId: B.layerId, histogram: B.histogram, channels: ps.channels,
+        layerId: B.layerId, histogram: B.histogram, channels: ps.ui && ps.ui.channels === false ? false : ps.channels,   /* ui.channels: false → one curve, no R/G/B tabs */
         onInput: function (v, k) { B.write(key, v, k, true); },
         onCommit: function (v, k) { B.write(key, v, k, false); }
       });
@@ -55,7 +55,54 @@
       items.push({ keys: [key], ctl: ctl, read: function (e) { return val(e, key, ps); }, when: o.when });
       el.appendChild(ctl.el);
     }
+    /* { action: 'grade.auto', label }: a button for an action registered with LE.fx.actions (docs/FX-AUTHORING.md "Actions"). The
+       action is a pure function in the registry; what it returns is applied here as ordinary operations, in one undo step. */
+    function action(it) {
+      var R = global.LE.fx, info = R && R.actions && R.actions.get(it.action);
+      if (!info) { console.warn('LE.expert: ' + def.id + ' ui names an unknown action "' + it.action + '"'); return; }
+      var btn = h('<button type="button" class="btn btn-sm xp-action" data-action="' + esc(info.id) + '">' + esc(it.label || info.label) + '</button>');
+      function finish(res) {
+        var c = global.LEStudio, id = B.layerId(), doc, i, l;
+        btn.disabled = false;
+        if (!res || !res.ok) { if (c && c.toast && res && res.message) c.toast(res.message); return; }
+        if (res.ops.length && c && id) {
+          doc = c.scene.toJSON();
+          for (i = 0; i < res.ops.length; i++) { var r = R.ops.apply(doc, res.ops[i]); if (r.ok) doc = r.doc; else if (c.toast) c.toast(r.errors[0].message); }
+          l = doc.layers.filter(function (x) { return x.id === id; })[0];
+          if (l) { c.scene.update(id, { fx: l.fx || null }, { coalesce: X.gesture() }); X.emit('fx', id); }
+        }
+        if (res.download && global.URL && URL.createObjectURL) {
+          var a = document.createElement('a'), url = URL.createObjectURL(new Blob([res.download.text], { type: res.download.type }));
+          a.href = url; a.download = res.download.name; document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        }
+        if (res.message && c && c.toast) c.toast(res.message);
+      }
+      function go(extra) {
+        var c = global.LEStudio, id = B.layerId(), layer = id && c ? c.scene.layer(id) : null, ctx = Object.assign({ layer: layer, entry: entry() }, extra || {});
+        if (!layer) return;
+        btn.disabled = true;
+        var ready = info.needs.indexOf('stats') >= 0 ? R.analyze({ scene: c.scene, layer: id }).catch(function () { return null; }) : Promise.resolve(null);
+        ready.then(function (stats) { ctx.stats = stats; return R.actions.run(info.id, ctx); }).then(finish, function () { btn.disabled = false; });
+      }
+      btn.addEventListener('click', function () {
+        var c = global.LEStudio;
+        if (info.kind === 'pick' && c && c.startPick) {
+          c.startPick(function (hex) {
+            var m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(String(hex)) || [0, '80', '80', '80'], d = [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255];
+            go({ pick: { display: d, linear: d.map(R.math.srgbToLinear) } });
+          }, X.say('Click the photo to sample it', 'Tap the photo to sample it'));
+        } else if (info.kind === 'import') {
+          var inp = document.createElement('input');
+          inp.type = 'file'; if (info.accept) inp.accept = info.accept;
+          inp.addEventListener('change', function () { var f = inp.files && inp.files[0]; if (f) f.text().then(function (t) { go({ text: t, file: f, name: f.name }); }); });
+          inp.click();
+        } else go();
+      });
+      el.appendChild(btn);
+    }
     function group(it) {
+      if (it.action) { action(it); return; }
       if (it.heading) { el.appendChild(h('<h4 class="xp-subhead">' + esc(it.heading) + '</h4>')); return; }
       if (it.row) { it.row.forEach(function (k) { single(k); }); return; }
       if (it.control === 'wheels') {

@@ -8,7 +8,17 @@
   var FX = LE.fx = LE.fx || {};
 
   /* Part of every cache key. Bump when the renderer's pixels change for the same document. */
-  FX.version = 1;
+  FX.build = 2;
+  /* The registry's change counter: it moves whenever an effect or an action is registered. Cheap to ask on every frame. */
+  var revision = 0;
+  FX.version = function () { return revision; };
+  /* The ui grammar's fixed words, one source for the registry, the tests and the workspace (docs/EXPERT-UI.md). */
+  FX.UI = {
+    sections: ['Light', 'Colour', 'Curves', 'Colour mixer', 'Colour grading', 'Detail', 'Optics', 'Geometry', 'Effects', 'Shadows & reflections', 'Compositing', 'Retouch'],
+    controls: ['slider', 'bool', 'choice', 'color', 'point', 'angle', 'curve', 'wheel', 'bands', 'lut', 'seed'],
+    composite: ['wheels', 'mixer', 'line'],
+    spaces: ['linear', 'display', 'oklab']
+  };
   /* Effect packs loaded with the renderer. Feature teams add their pack name here (assets/js/fx/le-fx-<name>.js). */
   var PACKS = ['basic', 'grade'];
 
@@ -26,7 +36,7 @@
     face: {}
   };
   var FACE_PARTS = { skin: 1, eyes: 1, lips: 1, teeth: 1, brows: 1, 'under-eyes': 1 };
-  var LIMITS = { stack: 32, parts: 8, params: 24, points: 64 };
+  var LIMITS = { stack: 32, parts: 8, params: 48, points: 64 };
 
   function own(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
   function isObj(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
@@ -53,6 +63,16 @@
   };
   /* Curves are LE.curves (assets/js/fx/curves.js): the one spline the curve editor draws and the renderer samples. */
   M.curveLUT = function (points, n) { return LE.curves.sample(points, n || 1024); };
+  /* OKLab (Björn Ottosson, 2020) from and to linear sRGB; the GLSL twins are fx_oklab and fx_oklab_inv in every shader. */
+  M.oklab = function (c) {
+    var l = Math.cbrt(0.4122214708 * c[0] + 0.5363325363 * c[1] + 0.0514459929 * c[2]), m = Math.cbrt(0.2119034982 * c[0] + 0.6806995451 * c[1] + 0.1073969566 * c[2]), q = Math.cbrt(0.0883024619 * c[0] + 0.2817188376 * c[1] + 0.6299787005 * c[2]);
+    return [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * q, 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * q, 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * q];
+  };
+  M.oklabInv = function (L) {
+    var l = L[0] + 0.3963377774 * L[1] + 0.2158037573 * L[2], m = L[0] - 0.1055613458 * L[1] - 0.0638541728 * L[2], q = L[0] - 0.0894841775 * L[1] - 1.2914855480 * L[2];
+    l = l * l * l; m = m * m * m; q = q * q * q;
+    return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * q, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * q, -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * q];
+  };
   M.hash = function (s) {
     s = String(s);
     var h = 2166136261;
@@ -143,7 +163,7 @@
     var sup = isObj(def.support) ? def.support : {};
     var d = {
       id: def.id, name: String(def.name || def.id).slice(0, 60), group: String(def.group || 'effects').slice(0, 30), version: v,
-      space: def.space === 'display' ? 'display' : 'linear',
+      space: def.space === 'display' || def.space === 'oklab' ? def.space : 'linear',
       needs: (Array.isArray(def.needs) ? def.needs : []).filter(function (n) { return NEEDS.indexOf(n) >= 0; }),
       params: params,
       radius: typeof def.radius === 'function' ? def.radius : function () { return 0; },
@@ -159,6 +179,7 @@
     if (!defs[d.id]) order.push(d.id);
     defs[d.id] = d;
     resolveMemo = {};
+    revision++; shared = null;
     /* E7: every effect says what a device needs. Works whether le-support.js has loaded or not. */
     var sdef = { id: 'fx.' + d.id, name: d.name, group: 'Photo studio', needs: d.support.needs, wants: d.support.wants, memoryMB: d.support.memoryMB || undefined, note: d.agent.summary || undefined, degraded: d.cpu ? 'Uses a slower path without the graphics chip.' : undefined };
     try { if (LE.support && LE.support.define) LE.support.define(sdef); else (global.LE_SUPPORT_DEFS = global.LE_SUPPORT_DEFS || []).push(sdef); } catch (e) { /* support is optional */ }
@@ -173,17 +194,152 @@
     Object.keys(d.params).forEach(function (k) { p[k] = clone(d.params[k].default); });
     return p;
   };
-  /* The registrations as plain data, for the workspace's generated panels and the agent reference. */
-  FX.describe = function () {
-    return order.map(function (id) {
-      var d = defs[id];
-      return { id: d.id, name: d.name, group: d.group, version: d.version, space: d.space, needs: d.needs.slice(), spatial: d.silhouette || d.radius(FX.defaults(id), 1) > 0 || !!d._spatial, params: clone(d.params), ui: clone(d.ui), agent: clone(d.agent), support: clone(d.support), cpu: !!d.cpu };
+  /* ---------- Describing the registry ----------
+     describe()            a compact index, one line per effect: [{ id, name, group, section, summary }]
+     describe(id)          one registration in full: { id, name, group, version, space, needs, spatial, params, ui, agent, support, cpu, actions }
+     describe({ group })   the full registrations of a group (also { section }, { ids: [...] })
+     defs()                every full registration, for the workspace's panels
+     Full registrations are built once per registry version, frozen and shared: nothing is cloned per call, so they are safe to ask
+     for during a drag. Copy before changing one. */
+  var shared = null;
+  function firstSentence(t) { t = String(t || ''); var m = /^[\s\S]*?[.!?](?=\s|$)/.exec(t); return (m ? m[0] : t).slice(0, 140); }
+  function freeze(o) {
+    if (o && typeof o === 'object' && !Object.isFrozen(o)) { Object.freeze(o); Object.keys(o).forEach(function (k) { freeze(o[k]); }); }
+    return o;
+  }
+  function build() {
+    if (shared) return shared;
+    var full = [], byId = {}, index = [];
+    order.forEach(function (id) {
+      var d = defs[id], spatial = d.silhouette;
+      try { spatial = spatial || d.radius(FX.defaults(id), 1) > 0; } catch (e) { /* a pack that is still loading */ }
+      var one = freeze({ id: d.id, name: d.name, group: d.group, version: d.version, space: d.space, needs: d.needs.slice(), spatial: !!spatial, params: clone(d.params), ui: clone(d.ui), agent: clone(d.agent), support: clone(d.support), cpu: !!d.cpu, inert: d.inert });
+      full.push(one); byId[id] = one;
+      index.push(Object.freeze({ id: d.id, name: d.name, group: d.group, section: String(d.ui.section || 'Effects'), summary: firstSentence(d.agent.summary) }));
     });
+    return (shared = { full: Object.freeze(full), byId: byId, index: Object.freeze(index) });
+  }
+  FX.defs = function () { return build().full; };
+  FX.describe = function (what) {
+    var b = build();
+    if (what == null) return b.index;
+    if (typeof what === 'string') return own(b.byId, what) ? b.byId[what] : null;
+    if (isObj(what)) {
+      return b.full.filter(function (d) {
+        return (what.group == null || d.group === what.group) && (what.section == null || d.ui.section === what.section) && (!Array.isArray(what.ids) || what.ids.indexOf(d.id) >= 0);
+      });
+    }
+    return null;
   };
+
+  /* ---------- Actions ----------
+     A button in an effect's panel, or a call an agent makes, that works something out and answers with data: never script in a
+     document (rule A5). ui.controls names one with { action: 'grade.auto', label }.
+       LE.fx.actions.register({ id, label, kind, needs, accept, run })
+         kind    'apply' (default) | 'pick' (the person clicks the picture first) | 'export' | 'import' (a file is chosen first)
+         needs   ['stats'] to be handed LE.fx.analyze numbers of the layer
+         run     function (ctx) → result or a promise of one; pure: it reads ctx and returns data
+         ctx     { layer, stack, entry, p, stats, pick: { linear: [r,g,b], display: [r,g,b], x, y }, text, file, name }
+         result  { p: { …patch of this entry's parameters } } | { fx: [ { type, p } … ] } (each is added, or merged into the first
+                 entry of that type) | { ops: [ LE.fx.ops operations without "layer" ] } | { download: { name, text, type } } | { message }
+       LE.fx.actions.run(id, ctx) → a promise of { ok, ops: [...validated operations for ctx.layer.id], download, message } */
+  var actions = {};
+  FX.actions = {
+    register: function (a) {
+      if (!isObj(a) || typeof a.id !== 'string' || !/^[a-z][\w.-]{1,59}$/.test(a.id) || typeof a.run !== 'function') throw new Error('An action needs an id such as "grade.auto" and run(ctx).');
+      actions[a.id] = { id: a.id, label: String(a.label || a.id).slice(0, 60), kind: ['pick', 'export', 'import'].indexOf(a.kind) >= 0 ? a.kind : 'apply', needs: Array.isArray(a.needs) ? a.needs.filter(function (n) { return n === 'stats'; }) : [], accept: typeof a.accept === 'string' ? a.accept.slice(0, 80) : '', summary: String(a.summary || '').slice(0, 200), run: a.run };
+      revision++;
+      return actions[a.id];
+    },
+    get: function (id) { var a = own(actions, id) ? actions[id] : null; return a ? { id: a.id, label: a.label, kind: a.kind, needs: a.needs.slice(), accept: a.accept, summary: a.summary } : null; },
+    list: function () { return Object.keys(actions).map(function (id) { return FX.actions.get(id); }); },
+    run: function (id, ctx) {
+      var a = own(actions, id) ? actions[id] : null;
+      ctx = ctx || {};
+      if (!a) return Promise.resolve({ ok: false, ops: [], message: 'Unknown action "' + String(id).slice(0, 60) + '".' });
+      var layer = isObj(ctx.layer) ? ctx.layer : { id: 'layer' }, stack = Array.isArray(ctx.stack) ? ctx.stack : (Array.isArray(layer.fx) ? layer.fx : []);
+      var given = { layer: clone(layer), stack: clone(stack), entry: ctx.entry ? clone(ctx.entry) : null, p: ctx.entry && isObj(ctx.entry.p) ? clone(ctx.entry.p) : {}, stats: ctx.stats || null, pick: ctx.pick || null, text: ctx.text == null ? null : String(ctx.text), file: ctx.file || null, name: ctx.name || '' };
+      return Promise.resolve().then(function () { return a.run(given); }).then(function (r) {
+        r = isObj(r) ? r : {};
+        var ops = [], seen = {};
+        if (isObj(r.p) && given.entry) ops.push({ op: 'fx.update', layer: layer.id, id: given.entry.id, p: clone(r.p) });
+        (Array.isArray(r.fx) ? r.fx : []).slice(0, LIMITS.stack).forEach(function (e) {
+          if (!isObj(e) || typeof e.type !== 'string') return;
+          var at = -1;
+          stack.forEach(function (x, i) { if (at < 0 && x && x.type === e.type && !seen[x.id]) at = i; });
+          if (at >= 0) { seen[stack[at].id] = 1; ops.push({ op: 'fx.update', layer: layer.id, id: stack[at].id, p: clone(e.p || {}) }); }
+          else ops.push({ op: 'fx.add', layer: layer.id, entry: clone(e) });
+        });
+        (Array.isArray(r.ops) ? r.ops : []).slice(0, 64).forEach(function (o) { if (isObj(o) && own(OPS, o.op)) { var c = clone(o); c.layer = layer.id; ops.push(c); } });
+        var dl = isObj(r.download) && typeof r.download.text === 'string' ? { name: String(r.download.name || 'download.txt').replace(/[^\w .()-]/g, '').slice(0, 80) || 'download.txt', text: r.download.text, type: /^[\w.+-]+\/[\w.+-]+$/.test(r.download.type || '') ? r.download.type : 'text/plain' } : null;
+        return { ok: true, ops: ops, download: dl, message: typeof r.message === 'string' ? r.message.slice(0, 300) : '' };
+      }, function (e) { return { ok: false, ops: [], message: String(e && e.message || e).slice(0, 300) }; });
+    }
+  };
+
+  /* ---------- Data assets (LUT text and other non-image files) ----------
+     LE.fx.data(id) → { id, text, bytes } once it is loaded, else null: it is fetched from the scene's assets or the project store
+     in the background and LE.fx.touch() redraws when it arrives. LE.fx.data.load(id) → a promise of the same.
+     Inside an effect, g.asset(id) is this call. Up to 16 MB of text per asset; 12 are kept. */
+  var dataCache = {}, dataOrder = [], dataJobs = {}, DATA_MAX = 16 * 1048576;
+  function dataKeep(id, rec) {
+    dataCache[id] = rec;
+    var i = dataOrder.indexOf(id);
+    if (i >= 0) dataOrder.splice(i, 1);
+    dataOrder.push(id);
+    while (dataOrder.length > 12) delete dataCache[dataOrder.shift()];
+    return rec;
+  }
+  FX.data = function (id) {
+    if (!idOk(id, 80)) return null;
+    if (own(dataCache, id)) return dataCache[id];
+    FX.data.load(id).then(function (rec) { if (rec && FX.touch) FX.touch(); }, function () {});
+    return null;
+  };
+  FX.data.sources = [];   /* functions (id) → Blob | string | null (or a promise), asked in order; the scene path adds its assets */
+  FX.data.put = function (id, text) { return idOk(id, 80) && typeof text === 'string' && text.length <= DATA_MAX ? dataKeep(id, { id: id, text: text, bytes: text.length }) : null; };
+  FX.data.load = function (id) {
+    if (!idOk(id, 80)) return Promise.resolve(null);
+    if (own(dataCache, id)) return Promise.resolve(dataCache[id]);
+    if (dataJobs[id]) return dataJobs[id];
+    var tries = FX.data.sources.slice();
+    if (LE.project && LE.project.getAsset) tries.push(function (x) { return LE.project.getAsset(x); });
+    function next(i) {
+      if (i >= tries.length) return Promise.resolve(null);
+      return Promise.resolve().then(function () { return tries[i](id); }).then(function (v) {
+        if (typeof v === 'string') return v;
+        if (v && typeof v.text === 'function' && !(v.size > DATA_MAX) && !/^image\//.test(v.type || '')) return v.text();
+        return next(i + 1);
+      }, function () { return next(i + 1); });
+    }
+    dataJobs[id] = next(0).then(function (text) { delete dataJobs[id]; return typeof text === 'string' && text.length <= DATA_MAX ? dataKeep(id, { id: id, text: text, bytes: text.length }) : null; });
+    return dataJobs[id];
+  };
+
+  /* ---------- Resizing a design ----------
+     Lengths marked unit: 'px' are document pixels, so when a design is resized with its content they scale with it.
+     LE.fx.rescale(layer, k) changes the layer in place (its fx stack, mask blurs, quad) and returns true when anything moved. */
+  FX.rescale = function (layer, k) {
+    if (!isObj(layer) || !isNum(k) || !(k > 0) || k === 1) return false;
+    var changed = false;
+    function mask(m) { ((m && m.parts) || []).forEach(function (q) { if (q && isNum(q.blur) && q.blur) { q.blur = Math.round(q.blur * k * 1000) / 1000; changed = true; } }); }
+    (Array.isArray(layer.fx) ? layer.fx : []).forEach(function (e) {
+      var d = e && FX.get(e.type);
+      mask(e && e.mask);
+      if (!d || !isObj(e.p)) return;
+      Object.keys(d.params).forEach(function (key) {
+        var sc = d.params[key];
+        if (sc.type === 'number' && sc.unit === 'px' && isNum(e.p[key]) && e.p[key] !== 0) { e.p[key] = clamp(Math.round(e.p[key] * k * 1000) / 1000, sc.min, sc.max); changed = true; }
+      });
+    });
+    mask(layer.layerMask);
+    return changed;
+  };
+
   /* Everything else an agent needs to write expert data: blends, mask kinds and their ranges, limits, the entry shape. */
   FX.schema = function () {
     return {
-      version: FX.version, blends: BLENDS.slice(), paramTypes: PARAM_TYPES.slice(),
+      version: FX.build, blends: BLENDS.slice(), paramTypes: PARAM_TYPES.slice(), spaces: FX.UI.spaces.slice(), sections: FX.UI.sections.slice(), actions: FX.actions.list(),
       maskKinds: Object.keys(MASK_KINDS).map(function (k) { return { kind: k, fields: clone(MASK_KINDS[k]) }; }),
       mask: { on: true, invert: false, parts: [{ kind: 'radial', mode: 'add', invert: false, feather: 0.25, density: 1, blur: 0 }] },
       faceParts: Object.keys(FACE_PARTS), limits: clone(LIMITS),
@@ -471,6 +627,13 @@
         if (raw.fx != null && !Array.isArray(raw.fx)) { rep.err(path + '/fx', 'fx is a list of effect entries: [{ "type": "exposure", "p": { "ev": 0.5 } }].'); raw.fx = null; }
         ['layerMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { if (raw[k] != null && !isObj(raw[k])) { rep.err(path + '/' + k, k + ' must be an object.'); raw[k] = null; } });
         try { raw = clone({ fx: raw.fx, layerMask: raw.layerMask, transform: raw.transform, retouch: raw.retouch, maps: raw.maps, raw: raw.raw }); } catch (e) { rep.err(path, 'The expert fields of this layer could not be read.'); return; }
+        /* A data asset written into a parameter (LUT text as a data: URI) is taken out before the shape check, which keeps strings
+           short, and stored as a project asset afterwards; the parameter then holds its id. */
+        var datas = [];
+        (Array.isArray(raw.fx) ? raw.fx : []).forEach(function (e) {
+          if (!isObj(e) || !isObj(e.p)) return;
+          Object.keys(e.p).forEach(function (k) { if (typeof e.p[k] === 'string' && /^data:/i.test(e.p[k])) { datas.push(e.p[k]); e.p[k] = 'x:data:' + (datas.length - 1); } });
+        });
         /* Every "asset" is an image source like src. It is swapped for a marker while the shape is checked, and resolved with the other images. */
         (function walk(o, at, depth) {
           if (!o || typeof o !== 'object' || depth > 6) return;
@@ -488,9 +651,34 @@
         if (Array.isArray(raw.fx) && (!x.fx || x.fx.length !== Math.min(raw.fx.length, LIMITS.stack))) rep.warn(path + '/fx', 'bad-effect', 'An effect entry needs a "type" such as "exposure"; entries without one were left out.', l.id);
         if (Array.isArray(raw.fx) && raw.fx.length > LIMITS.stack) rep.warn(path + '/fx', 'too-many', 'A layer can have up to ' + LIMITS.stack + ' effects; the rest were left out.', l.id);
         if (isObj(raw.transform) && !x.transform) rep.err(path + '/transform/quad', 'transform.quad is four [x, y] corners in page units: top-left, top-right, bottom-right, bottom-left.');
-        todo.push({ d: d, x: x, refs: refs });
+        todo.push({ d: d, x: x, refs: refs, datas: datas });
       });
+      function storeData(t) {
+        var jobs = [];
+        (t.x.fx || []).forEach(function (e, i) {
+          var def = FX.get(e.type);
+          Object.keys(e.p || {}).forEach(function (k) {
+            var m = typeof e.p[k] === 'string' ? /^x:data:(\d+)$/.exec(e.p[k]) : null;
+            if (!m) return;
+            var uri = t.datas[Number(m[1])], at = t.d.path + '/fx/' + i + '/p/' + k;
+            e.p[k] = null;
+            var q = /^data:(text\/plain|application\/octet-stream)(?:;charset=[\w-]+)?(;base64)?,([\s\S]*)$/i.exec(uri || '');
+            if (!def || !def.params[k] || def.params[k].type !== 'lut' || !q) { rep.warn(at, 'bad-data', 'Only a LUT parameter can carry embedded data, as a text/plain data: URI; this one was left out.', t.d.l.id); return; }
+            if (q[3].length > 6 * 1048576) { rep.warn(at, 'too-large', 'Embedded data can be up to 4 MB; this one was left out.', t.d.l.id); return; }
+            if (!(LE.project && LE.project.putAsset)) return;
+            jobs.push(Promise.resolve().then(function () {
+              var text = q[2] ? atob(q[3].replace(/\s+/g, '')) : decodeURIComponent(q[3]), bytes = new Uint8Array(text.length);
+              for (var j = 0; j < text.length; j++) bytes[j] = text.charCodeAt(j) & 255;
+              return LE.project.putAsset({ blob: new Blob([bytes], { type: 'text/plain' }), name: 'look.cube', type: 'text/plain' });
+            }).then(function (meta) { e.p[k] = meta.id; }, function () { rep.warn(at, 'bad-data', 'The embedded data could not be read; it was left out.', t.d.l.id); }));
+          });
+        });
+        return Promise.all(jobs);
+      }
       return function () {
+        return Promise.all(todo.map(storeData)).then(function () { finish(); });
+      };
+      function finish() {
         todo.forEach(function (t) {
           var d = t.d, l = d.l;
           (function fix(o) {

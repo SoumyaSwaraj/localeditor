@@ -33,6 +33,8 @@
       load(scene).catch(function () {});
       return layer.type === 'adjust';
     },
+    local: function (scene, ctx, layer, opts) { return !!(LE.fx && LE.fx.local && has(layer) && LE.fx.local(scene, ctx, layer, opts)); },
+    rescale: function (layer, k) { return !!(LE.fx && LE.fx.rescale && has(layer) && LE.fx.rescale(layer, k)); },   /* resize with content: px lengths follow */
     prepare: function (scene) { return needs(scene._doc) ? load(scene).then(function (fx) { return fx.prepare(scene); }, function () {}) : null; }
   };
 })();
