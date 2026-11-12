@@ -358,6 +358,13 @@ cases['local API: token required, foreign Host/Origin refused, apply works, SSE 
     sseReq.destroy();
     console.log('       speed: API first call ' + coldMs + ' ms (engine start + studio + load), warm apply ' + warm + ' ms; render ' + renderMs + ' ms');
     h.assert(engineProfiles(dir).length === 1 && chromeProcs(dir).length > 0, 'engine running while serving: ' + JSON.stringify([engineProfiles(dir), chromeProcs(dir), errText.slice(-300)]));
+    /* The browser dies: the next call restarts it cleanly. */
+    chromeProcs(dir).forEach((pid) => { try { process.kill(Number(pid), 'SIGKILL'); } catch (e) { /* already gone */ } });
+    await new Promise((r) => setTimeout(r, 300));
+    fs.writeFileSync(path.join(dir, 'a.ledesign.json'), JSON.stringify({ format: 'localeditor-design', version: 1, name: 'A', pages: [{ width: 300, height: 300, layers: [{ id: 's', type: 'shape', fill: '#ff0000', x: 60, y: 0, w: 100, h: 100 }] }] }));
+    const again = await req(api + '/state?file=a.ledesign.json');
+    h.assert(again.status === 200 && again.json.outline.pages[0].layers[0].x === 60, 'works again after the browser was killed: ' + again.body.toString().slice(0, 200));
+    h.assert.equal(engineProfiles(dir).length, 1, 'the dead profile was replaced, not left behind');
   } finally {
     c.kill('SIGTERM');
     await new Promise((r) => c.on('close', r));

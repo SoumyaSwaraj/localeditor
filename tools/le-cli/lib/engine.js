@@ -59,6 +59,8 @@ class Engine {
   async _start() {
     const t0 = Date.now();
     hookProcess();
+    /* A previous browser that died: make sure it and its profile are gone before starting again. */
+    if (this.child || this.profile) { this._killSync(true); this.pages.clear(); }
     live.add(this);
     this.browser = findBrowser(this.opts.browser);
     if (!this.server) this.server = await staticServer.start({ prefix: true, swNoop: true });

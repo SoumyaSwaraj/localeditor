@@ -46,7 +46,8 @@
     return Promise.resolve(A.begin({ name: 'localeditor CLI', headless: true })).then(function (s) { session = s || true; return session; });
   }
   function agentError(e) {
-    return { ok: false, code: (e && e.code) || 'invalid', errors: (e && e.errors) || [{ path: (e && e.path) || '', message: String((e && e.message) || e) }] };
+    var errs = (e && e.errors && e.errors.length) ? e.errors.map(function (x) { return { path: x.path || '', message: x.message || String(x), code: x.code, index: x.op }; }) : [{ path: (e && e.path) || '', message: String((e && e.message) || e) }];
+    return { ok: false, code: (e && e.code) || 'invalid', errors: errs, agent: true };
   }
 
   /* ---------------------------------------------------------------- state */
@@ -196,7 +197,7 @@
       /* Agent mode: hand the same text to LEAgent.load, so its state matches ours. */
       return agentSession(A).then(function () {
         return A.load(cur.text, { resolve: function (p) { return input.files && input.files[p] ? b64ToBlob(input.files[p], typeOf(p)) : null; }, headless: true });
-      }).then(function () { return summary(cur); }, function (e) { return agentError(e); });
+      }).then(function (res) { return res && res.ok === false ? agentError(res) : summary(cur); }, function (e) { return agentError(e); });
     });
   }
 
@@ -236,8 +237,14 @@
       if (input.dryRun) return summary(next, extra);
       var commit = function () { cur = next; return summary(cur, extra); };
       if (!A) return commit();
-      return agentSession(A).then(function () { return A.apply(input.original || input.ops, { label: input.label || 'localeditor CLI', partial: !!input.partial, ifRev: input.ifRev }); })
-        .then(function () { return commit(); }, function (e) { return agentError(e); });
+      /* Agent mode gets the canonical names; file-level extensions (notes, page.update, page.move, doc.update) stay here. */
+      var orig = input.original || input.ops;
+      if (isObj(orig) && Array.isArray(orig.ops)) orig = orig.ops;
+      var forAgent = [].concat(orig).filter(isObj).map(function (o) { return Object.assign({}, o, { op: LE.link.canonical(o.op) }); })
+        .filter(function (o) { return LE.link.FILE_OPS.indexOf(o.op) < 0; });
+      if (!forAgent.length) return commit();
+      return agentSession(A).then(function () { return A.apply(forAgent, { label: input.label || 'localeditor CLI', partial: !!input.partial, ifRev: input.ifRev }); })
+        .then(function (res) { return res && res.ok === false ? agentError(res) : commit(); }, function (e) { return agentError(e); });
     });
   }
 

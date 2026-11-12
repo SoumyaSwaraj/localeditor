@@ -703,7 +703,7 @@
     };
   }
 
-  var core = { applyOps: applyOps, diff: diff, merge: merge, outline: outline, canon: canon, same: same, findLayer: findLayer, cleanNotes: function (l) { try { return { ok: true, notes: cleanNotes(l, '/notes') }; } catch (e) { return { ok: false, error: { path: e.path, message: e.message } }; } }, OPS: Object.keys(OPS), VERSION: 1 };
+  var core = { applyOps: applyOps, diff: diff, merge: merge, outline: outline, canon: canon, same: same, findLayer: findLayer, canonical: function (name) { return ALIASES[name] || name; }, FILE_OPS: ['note.add', 'note.resolve', 'doc.update', 'page.update', 'page.move'], cleanNotes: function (l) { try { return { ok: true, notes: cleanNotes(l, '/notes') }; } catch (e) { return { ok: false, error: { path: e.path, message: e.message } }; } }, OPS: Object.keys(OPS), VERSION: 1 };
 
   /* ================================================================== the tab client */
   core._client = function (win) {
