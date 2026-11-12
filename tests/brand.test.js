@@ -161,9 +161,14 @@ cases['themes: the choice applies without reload, persists, and is on <html> bef
   }
   const page = await openSkin(browser, base, '/', 'desktop', 'clear', 'light');
   const bg0 = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  /* The cross-fade (a view transition) applies the choice a frame later; switch it off so each read below is exact. */
+  await page.addInitScript(() => { try { document.startViewTransition = undefined; } catch (e) {} });
+  await page.evaluate(() => { try { document.startViewTransition = undefined; } catch (e) {} });
   await page.click('.le-top [data-appearance]');
   await page.waitForSelector('#le-appearance[open] .ap-card');
   await page.click('#le-appearance .ap-card[data-ap-skin="graphite"]');
+  /* The switch runs inside a view transition where the browser has one, so the attribute lands on the next frame, not in the click itself. */
+  await page.waitForFunction(() => document.documentElement.getAttribute('data-skin') === 'graphite', null, { timeout: 1500 }).catch(() => {});
   h.assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-skin')), 'graphite', 'applied at once');
   h.assert(bg0 !== await page.evaluate(() => getComputedStyle(document.body).backgroundColor), 'repainted without reload');
   await page.click('#le-appearance [data-ap-mode="dark"]');
@@ -221,6 +226,51 @@ cases['themes: comfort fallbacks are declared (reduced transparency, reduced mot
     }
   };
 });
+
+/* ---------- Pass 4: components in the default theme ---------- */
+cases['components: tool-page options are switches, grouped lists are inset cards, licences fit 360'] = async ({ browser, base, h }) => {
+  let page = await openSkin(browser, base, '/image-resizer/', 'small', 'clear', 'light');
+  const sw = await page.evaluate(() => { const i = [...document.querySelectorAll('.check > input[type="checkbox"]')].find((x) => x.closest('.check').getBoundingClientRect().height > 0); if (!i) return null; const cs = getComputedStyle(i); const r = i.closest('.check').getBoundingClientRect(); return { role: i.getAttribute('role'), app: cs.appearance || cs.webkitAppearance, w: parseFloat(cs.width), h: parseFloat(cs.height), row: r.height }; });
+  if (sw) {
+    h.assert.equal(sw.role, 'switch', 'option checkbox announces itself as a switch');
+    h.assert(sw.app === 'none' && sw.w >= 44 && sw.h >= 26, 'drawn as a switch: ' + JSON.stringify(sw));
+    h.assert(sw.row >= 44, 'switch row is a 44 px target: ' + sw.row);
+  }
+  await page.context().close();
+  page = await openSkin(browser, base, '/storage-manager/', 'small', 'clear', 'light');
+  await page.evaluate(() => { const b = document.querySelector('[data-le-storage]'); b && b.click(); });
+  await page.waitForSelector('.lp-cats');
+  const g = await page.evaluate(() => { const l = document.querySelector('.lp-cats'), d = l.closest('dialog'); return { list: getComputedStyle(l).backgroundColor, sheet: getComputedStyle(d).backgroundColor, radius: parseFloat(getComputedStyle(l).borderTopLeftRadius) }; });
+  h.assert(g.list !== g.sheet && g.radius >= 10, 'storage list is an inset group on the grouped background: ' + JSON.stringify(g));
+  await page.context().close();
+  for (const vp of ['small', 'desktop']) {
+    page = await openSkin(browser, base, '/licenses/', vp, 'clear', 'light');
+    h.assert(await h.noOverflow(page), '/licenses/ scrolls sideways at ' + vp);
+    await page.context().close();
+  }
+};
+
+cases['components: slider thumb is findable, phone tab labels are 11 px or more, one filled button in the export view'] = async ({ browser, base, h }) => {
+  for (const skin of ['clear', 'paper', 'graphite', 'contrast']) {
+    const page = await openSkin(browser, base, '/', 'desktop', skin, 'light');
+    const sh = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--thumb-shadow'));
+    const m = sh.match(/rgba?\(([^)]+)\)/);
+    const alpha = m ? (m[1].split(',')[3] !== undefined ? parseFloat(m[1].split(',')[3]) : 1) : 0;
+    h.assert(alpha >= 0.35 || /#000|#000000/.test(sh), skin + ': the thumb has a visible edge: ' + sh);
+    await page.context().close();
+  }
+  const page = await openSkin(browser, base, '/studio/', 'small', 'clear', 'light');
+  await page.waitForFunction(() => window.LEStudio && window.LEStudio.scene);
+  await page.evaluate(async () => { const r = await fetch('/assets/photos/collage/arch-02.jpg'); const b = await r.blob(); await window.LEStudio.newFromPhoto(new File([b], 'a.jpg', { type: 'image/jpeg' })); });
+  await page.waitForTimeout(400);
+  const tabs = await page.evaluate(() => [...document.querySelectorAll('.sx-tabs .sx-rail-btn')].filter((b) => b.offsetParent).map((b) => parseFloat(getComputedStyle(b).fontSize)));
+  h.assert(tabs.length >= 4 && tabs.every((x) => x >= 11), 'tab labels: ' + tabs.join(', '));
+  await page.evaluate(() => window.LEStudio.openPanel('export'));
+  await page.waitForTimeout(500);
+  const filled = await page.evaluate(() => [...document.querySelectorAll('button, a')].filter((b) => { if (!b.offsetParent) return false; const c = getComputedStyle(b).backgroundColor; const p = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(); const t = document.createElement('i'); t.style.color = p; document.body.appendChild(t); const pc = getComputedStyle(t).color; t.remove(); return c === pc; }).map((b) => (b.textContent || b.getAttribute('aria-label') || '').trim().slice(0, 16)));
+  h.assert(filled.length === 1, 'one filled primary while exporting: ' + filled.join(' | '));
+  h.assert.noErrors(page);
+};
 
 cases['no retired gold, foil or amethyst literals in CSS or inline styles'] = async ({ h }) => {
   const OLD = /#(E2B15A|F3CC7C|F2D594|2A1F0A|2C220F|C9963F|E9BE6A|B9832F|F8E3AE|F6D68E|E8BD6E|E7BA66|CBB78E|7457F0|8D74FF|6A4FE8|5B3FD9|4E36C9|A893FF|B3A1FF|141318|17131F|FBF8F3|F7F6F3|F7EFDC)\b|rgba?\(\s*(226,\s*177,\s*90|242,\s*213,\s*148|185,\s*131,\s*47|116,\s*87,\s*240|42,\s*31,\s*10)\b/i;

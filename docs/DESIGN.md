@@ -61,6 +61,21 @@ The interface has **five themes**. A theme is a **token set and nothing else**: 
 | Motion | `--ease-out: cubic-bezier(.32,.72,0,1)` for sheets and popovers, `--ease-spring` with a 6 % overshoot for small confirmations only, 150 / 250 / 350 ms; all off under reduced motion |
 | Icons | Our own 24 px line set (Lucide-style), 1.8 stroke; never SF Symbols |
 
+### Pass 4 components (all themes; drawn from tokens)
+
+| Component | Spec | Where |
+|---|---|---|
+| **Grouped (inset) list** `.list-inset` | Rows ≥ `--target`, hairline separators between rows, value on the right in `--muted`, chevron for navigation rows; the list sits on `--list-bg` (white in Clear) over `--group-bg` (grouped grey) with `--list-radius` | Storage (`.lp-cats`, `.lp-limits`), downloads (`.ld-packs`, `.ld-log`), install chooser cards (`.lp-app`), FAQ on hubs and feature pages |
+| **Switch** | 46 × 28 track, 24 px white knob, tint when on, `role="switch"` on the same checkbox (ids, names and behaviour unchanged); the whole row is the 44 px target | Tool-page options (`.check`), PDF studio toggles (`.ps-toggle`), storage limits (`.lp-switch`), studio (`.sx-toggle`). Lapis keeps native checkboxes |
+| **Slider** | 4 px track, tint on the filled side, 26 px white thumb with a 1 px 40 % edge and a soft shadow (`--thumb`, `--thumb-shadow`); two-sided sliders show a 2 px centre detent | Studio, PDF studio, tool pages |
+| **Selected chip / toolbar primary** | Tinted (`--chip-on-bg`, `--tb-primary-bg`), never filled, so the one filled button per view stays the action | Studio chips, maker styles, the Done chip |
+| **Large title** | Phone: when the page `h1` scrolls under the bar, its words appear centred in the bar (`.le-top.is-titled`) | Hubs, feature pages, tool pages |
+| **Skeleton** `.skel`, `.skel-row`, `.skel-line`, `.skel-cards` | The shape of what is loading, shimmering softly (off under reduced motion) | Appearance section while its module loads; use for any list whose layout is known |
+| **Product page** | Hero with the launch action, "what it does" tiles, three step cards, a privacy band, the FAQ as an inset list, related tiles, an inverse closing band | Homepage, hubs, feature pages (Lapis keeps pass 2) |
+| **Motion** | Nothing over 350 ms; sheets and popovers grow from their origin; theme switch cross-fades in 250 ms (View Transitions); no animation on the canvas while dragging; all off under reduced motion | Everywhere |
+
+**One filled button per view** is tested (`brand › components`): in the export view only the panel's Download is filled.
+
 ### Do / don't (all themes)
 
 | Do | Don't |

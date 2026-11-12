@@ -195,7 +195,7 @@
     var bar = document.createElement('div');
     bar.className = 'mkp-bar';
     var can = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-    bar.innerHTML = '<button type="button" class="btn btn-primary mkp-open">' + svgIcon(ICON_CAM) + '<span>Use the camera</span></button>' +
+    bar.innerHTML = '<button type="button" class="btn mkp-open">' + svgIcon(ICON_CAM) + '<span>Use the camera</span></button>' +
       '<p class="mkp-note" role="status">' + (can ? 'Countdown, flash, and you can retake any frame. Or pick photos below.' : 'This browser cannot use a camera here. Pick photos below instead.') + '</p>';
     host.insertBefore(bar, F.form);
     var openBtn = bar.querySelector('.mkp-open'), note = bar.querySelector('.mkp-note');

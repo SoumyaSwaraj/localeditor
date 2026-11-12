@@ -268,7 +268,7 @@ button.xp-clip[aria-pressed="true"] { box-shadow: 0 0 0 1.5px #fff; border-radiu
 .xp-empty strong { font-size: 14px; }
 .xp-empty p { margin: 0 0 6px; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
 .xp-sec { border-top: 1px solid var(--line); contain: layout style; }
-.xp-sec-head { display: flex; align-items: center; gap: 2px; min-height: 38px; }
+.xp-sec-head { display: flex; align-items: center; gap: 2px; min-height: 38px; position: sticky; top: -8px; z-index: 2; background: var(--surface); }
 button.xp-sec-tog { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 4px 0 0; border: 0; background: transparent; color: var(--ink); font: 700 13px var(--font, sans-serif); cursor: pointer; text-align: left; letter-spacing: -.005em; }
 button.xp-sec-tog span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .xp-chev { width: 16px; height: 16px; color: var(--faint); transform: rotate(-90deg); transition: transform var(--dur-2, .2s) var(--ease, ease); }

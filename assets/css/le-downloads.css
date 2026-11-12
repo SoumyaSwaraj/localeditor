@@ -56,13 +56,14 @@
 .ld-settings h3 { margin: 0 0 10px; font-size: 16px; }
 .ld-settings h4 { margin: 18px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint, #6B6B6B); }
 .ld-modes { display: grid; gap: 8px; }
-.ld-mode { display: flex; gap: 12px; align-items: flex-start; min-height: 44px; padding: 12px; border: 1px solid var(--border, #E0E0E0); border-radius: var(--r-sm, 10px); cursor: pointer; }
+.ld-mode { display: flex; gap: 12px; align-items: flex-start; min-height: 44px; padding: 12px; border: 1px solid var(--border, #E0E0E0); border-radius: var(--card-radius-sm, var(--r-sm, 10px)); background: var(--list-bg, transparent); cursor: pointer; }
 .ld-mode:has(input:checked) { border-color: var(--primary); background: var(--accent-soft, rgba(63, 103, 217, 0.1)); }
 .ld-mode input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--primary); }
 .ld-mode b, .ld-mode small { display: block; }
 .ld-mode small, .ld-packs small, .ld-log small { color: var(--muted, #5C5C5C); font-size: 13px; line-height: 1.4; }
-.ld-packs, .ld-log { list-style: none; margin: 0; padding: 0; }
-.ld-packs li, .ld-log li { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 0; border-bottom: 1px solid var(--line, rgba(21, 21, 21, 0.08)); }
+.ld-packs, .ld-log { list-style: none; margin: 0; padding: 0 var(--list-pad, 0px); background: var(--list-bg, transparent); border: var(--hair-w, 1px) solid var(--list-frame, transparent); border-radius: var(--list-radius, 0); }
+.ld-packs li, .ld-log li { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 0; border-bottom: var(--hair-w, 1px) solid var(--line, rgba(21, 21, 21, 0.08)); }
+.ld-packs li:last-child, .ld-log li:last-child { border-bottom-color: var(--list-last-line, var(--line, rgba(21, 21, 21, 0.08))); }
 .ld-packs li > div, .ld-log li > div { flex: 1; min-width: 0; }
 .ld-packs b, .ld-log b { display: block; font-size: 14.5px; }
 .ld-packs small, .ld-log small { display: block; overflow-wrap: anywhere; }
