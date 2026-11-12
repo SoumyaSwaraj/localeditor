@@ -155,6 +155,10 @@ cases['large download: asks first, refuses without space, cancel keeps nothing, 
   const page = await studio(browser, base, h);
   await openOptions(page);
   const BYTES = 70000000;   /* over the 60 MB automatic limit (docs/DOWNLOADS.md) */
+  /* This case covers the remover's own question (.sxc-confirm), used where the shared download manager is not on the
+     page. With LE.downloads present the manager asks instead (its sheet; covered by "download policy … shared manager
+     used"), and the run waited on that unanswered sheet until the 90 s limit. */
+  await page.evaluate(() => { window.__dl = window.LE.downloads; window.LE.downloads = null; });
   await page.evaluate((bytes) => {
     LE.bgRemove.register({ id: 'fake-pro', label: 'Test large', bestFor: 'Best for testing', level: 'best', rank: 99, quality: 3, speed: 'slow', tier: 'pro', runtime: 'wasm',
       supportId: 'cutout.fake-pro', path: 'assets/models/pro/fake.onnx', bytes: bytes, memoryMB: 800, warmup: false, about: { model: 'Test' } });
@@ -188,7 +192,8 @@ cases['large download: asks first, refuses without space, cancel keeps nothing, 
   page.onPro = async (route) => {
     if (route.request().method() === 'HEAD') return route.fulfill({ status: 200, headers: { 'content-type': 'application/octet-stream' }, body: '' });
     await held;
-    return route.fulfill({ status: 200, headers: { 'content-type': 'application/octet-stream' }, body: Buffer.alloc(BYTES, 7) }).catch(() => {});
+    /* The page already cancelled; sending 70 MB through the test bridge here only cost time (the case hit 90 s). */
+    return route.abort('aborted').catch(() => {});
   };
   await page.evaluate(() => LEStudioCutout.run(null, { model: 'fake-pro' }));
   await page.click('.sxc-confirm-go');

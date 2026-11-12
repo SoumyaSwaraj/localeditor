@@ -41,7 +41,7 @@ A feature with its own way round passes it as `fallback`; the sheet shows it as 
 LE.support.gate('export.share', { title: 'Share', run: share, fallback: { label: 'Download instead', run: download } });
 ```
 
-`gate()` records a thrown or rejected run as a failure on this device, except errors that say nothing about the device: `AbortError` (or `err.cancelled`), and `err.code` of `cancelled`, `offline`, `download`, `network` or `unsupported`. An error can also say `err.deviceFailure = true | false`. Run the feature inside `gate()` (do not swallow its errors first) so failures are recorded; call `reportSuccess` when it really produced its result.
+`gate()` records a thrown or rejected run as a failure on this device, except errors that say nothing about the device: `AbortError` (or `err.cancelled`), and `err.code` of `cancelled`, `offline`, `download`, `network`, `unsupported`, `quota` (no free space), `consent` or `declined`. An error can also say `err.deviceFailure = true | false`. Run the feature inside `gate()` (do not swallow its errors first) so failures are recorded; call `reportSuccess` when it really produced its result.
 
 Or mark a control and let the module handle it: `<button data-le-feature="export.copy" data-le-badge>`. `annotate()` runs on load and when such elements are added: it sets `data-le-support="ok|limited|unknown|unsupported"`, adds an `aria-describedby` explanation, appends a badge when `data-le-badge` is present, and turns a tap on an unavailable control into the explanation sheet (opt out with `data-le-gate="off"`). Controls are never hidden.
 

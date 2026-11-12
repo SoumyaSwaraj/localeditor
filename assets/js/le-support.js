@@ -564,7 +564,7 @@
     if (err.deviceFailure === false) return false;
     if (err.deviceFailure === true) return true;
     if (err.name === 'AbortError' || err.cancelled) return false;
-    return !/^(cancelled|canceled|abort|offline|download|network|unsupported)$/.test(String(err.code || ''));
+    return !/^(cancelled|canceled|abort|offline|download|network|unsupported|quota|consent|declined)$/.test(String(err.code || ''));
   }
   function reportFailure(id, error) {
     if (typeof id !== 'string') return;

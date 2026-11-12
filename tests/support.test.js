@@ -329,10 +329,11 @@ cases['gate offers the feature\'s own fallback, and cancels or lost downloads ar
     await fail(abort); out.abort = S.history('t.ok');
     await fail(Object.assign(new Error('dl'), { code: 'download' })); out.download = S.history('t.ok');
     await fail(Object.assign(new Error('off'), { code: 'offline' })); out.offline = S.history('t.ok');
+    await fail(Object.assign(new Error('full'), { code: 'quota' })); out.quota = S.history('t.ok');
     await fail(Object.assign(new Error('oom'), { code: 'memory' })); out.memory = S.history('t.ok');
     return out;
   });
-  h.assert(!hist.abort && !hist.download && !hist.offline, 'not device failures: ' + JSON.stringify(hist));
+  h.assert(!hist.abort && !hist.download && !hist.offline && !hist.quota, 'not device failures: ' + JSON.stringify(hist));
   h.assert(hist.memory && hist.memory.fail, 'out of memory is recorded');
   await page.evaluate(() => { LE.support.override('eyedropper'); LE.support.forget(); });
   h.assert.noErrors(page);
