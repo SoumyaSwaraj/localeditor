@@ -260,4 +260,94 @@ cases['D17: the invoice editor works on a 390 px and a 360 px phone'] = async ({
   }
 };
 
+/* ---------------- D18: tables ---------------- */
+
+cases['D18: planted tables (ruled grid, borderless, wrapped cells, three pages) come back cell for cell'] = async ({ browser, base, h }) => {
+  const page = await studio(h, browser, base);
+  const r = await page.evaluate(async () => {
+    const exp = await (await fetch('/tests/fixtures/pdf-docs/expected-tables.json')).json();
+    const out = {};
+    for (const f of Object.keys(exp)) {
+      const t = await LE.pdfDocs.extractTables(await window.__fx(f), { page: 'all' });
+      out[f] = { tables: t.map((x) => ({ rows: x.rows, header: x.header, pages: x.pages, types: LE.pdfDocs.columnTypes(x) })), expected: exp[f], scanned: t.scannedPages };
+    }
+    const grid = await window.__fx('tables-grid.pdf');
+    out.rect = (await LE.pdfDocs.extractTables(grid, { page: 0, rect: { x: 50, y: 95, w: 500, h: 120 } }))[0];
+    return out;
+  });
+  ['tables-grid.pdf', 'tables-borderless.pdf', 'tables-wrapped.pdf', 'tables-multipage.pdf'].forEach((f) => {
+    const got = r[f].tables, exp = r[f].expected[0];
+    h.assert.equal(got.length, 1, f + ': one table');
+    h.assert.equal(JSON.stringify(got[0].rows), JSON.stringify(exp.rows), f + ': every cell matches');
+    h.assert(got[0].header, f + ': header row detected');
+  });
+  h.assert.equal(JSON.stringify(r['tables-multipage.pdf'].tables[0].pages), '[0,1,2]', 'the three-page table is one table without repeated headers');
+  h.assert.equal(JSON.stringify(r['tables-borderless.pdf'].tables[0].types), JSON.stringify(['text', 'text', 'number', 'number', 'text']), 'IDs with leading zeros and dates stay text');
+  h.assert(r['tables-scanned.pdf'].tables.length === 0 && r['tables-scanned.pdf'].scanned === 1, 'a scanned page is reported as having no text');
+  h.assert(r.rect && r.rect.rows[0][0] === 'Supplier' && r.rect.rows.length < 12 && r.rect.rows.length >= 5, 'a dragged box reads only what is inside it: ' + (r.rect && r.rect.rows.length));
+};
+
+cases['D18: a table from a converted Word file round-trips, and CSV/XLSX exports are valid and safe'] = async ({ browser, base, h }) => {
+  const page = await studio(h, browser, base);
+  const r = await page.evaluate(async () => {
+    await LE.lazy('../assets/js/le-convert.js');
+    const docx = new File([await (await fetch('/tests/fixtures/pdf-docs/report.docx')).arrayBuffer()], 'report.docx');
+    const pdf = await LE.convert.toPDF(docx, {});
+    const t = await LE.pdfDocs.extractTables(pdf.bytes, { page: 'all' });
+    const rows = [['ID', 'Formula', 'Amount', 'Date'], ['007', '=HYPERLINK("http://x")', '1234.5', '2026-01-02'], ['010', '+1+1', '-3', '01/02/2026'], ['011', '@SUM(A1)', '1,234', 'a,"b"']];
+    const csv = LE.pdfDocs.toCsv(rows);
+    const types = LE.pdfDocs.columnTypes({ rows, header: true });
+    const xbytes = await LE.pdfDocs.toXlsx([{ name: 'T1', rows, types, header: true }, { name: 'T1', rows: [['a']], types: ['text'] }]);
+    const wb = XLSX.read(xbytes, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const cell = (a) => ws[a] ? { t: ws[a].t, v: ws[a].v, f: ws[a].f || null } : null;
+    return { tables: t.map((x) => ({ n: x.rows.length, cols: x.rows[0].length, pages: x.pages, head: x.rows[0], r1: x.rows[1], last: x.rows[x.rows.length - 1] })), csv, types, sheets: wb.SheetNames, A2: cell('A2'), B2: cell('B2'), C2: cell('C2'), C3: cell('C3'), C4: cell('C4'), D2: cell('D2'), B3: cell('B3') };
+  });
+  const t = r.tables[0];
+  h.assert(t && t.n === 73 && t.cols === 5 && t.pages.length >= 2, 'the 72-row Word table: ' + JSON.stringify(t && { n: t.n, cols: t.cols, pages: t.pages }));
+  h.assert.equal(JSON.stringify(t.head), JSON.stringify(['Month', 'Item', 'Supplier', 'Amount', 'Notes']), 'header once');
+  h.assert.equal(JSON.stringify(t.r1), JSON.stringify(['January', 'Line item 01', 'Supplier A', '100.00', 'Cell text that wraps onto a second line in a narrow column']), 'wrapped cell joined');
+  h.assert.equal(t.last[1], 'Line item 72', 'last row');
+  h.assert(r.csv.charCodeAt(0) === 0xFEFF, 'CSV starts with a BOM so Excel reads UTF-8');
+  h.assert(r.csv.indexOf('"\'=HYPERLINK(""http://x"")"') >= 0 && r.csv.indexOf("'+1+1") >= 0 && r.csv.indexOf("'@SUM(A1)") >= 0, 'CSV formula injection guarded: ' + r.csv);
+  h.assert(r.csv.indexOf(',-3,') >= 0, 'a plain negative number is not prefixed');
+  h.assert.equal(JSON.stringify(r.types), JSON.stringify(['text', 'text', 'text', 'text']), 'a column with "1,234" (ambiguous) stays text');
+  h.assert(r.A2.t === 's' && r.A2.v === '007', 'leading zeros kept as text: ' + JSON.stringify(r.A2));
+  h.assert(r.B2.t === 's' && !r.B2.f, 'formula-looking text is text, never a formula: ' + JSON.stringify(r.B2));
+  h.assert(r.D2.t === 's', 'dates stay text');
+  h.assert.equal(r.sheets.length, 2, 'two sheets with unique names: ' + r.sheets);
+};
+
+cases['D18: in the studio a person finds a table, fixes a column and downloads CSV and Excel'] = async ({ browser, base, h }) => {
+  const page = await studio(h, browser, base);
+  await page.click('#ps-rail [data-panel="docs"]');
+  await page.click('[data-job="tables"]');
+  const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-act="choose-pdf"]')]);
+  await fc.setFiles(path.join(FX, 'tables-borderless.pdf'));
+  await page.waitForFunction(() => !document.querySelector('[data-act="find-page"]').disabled);
+  await page.click('[data-act="find-page"]');
+  await page.waitForSelector('.pd-grid');
+  h.assert(/Best effort/.test(await page.textContent('.pd-callout')), 'best-effort label shown');
+  const cols = () => page.evaluate(() => document.querySelectorAll('.pd-grid tbody tr:first-child td').length);
+  h.assert.equal(await cols(), 5, 'five columns');
+  await page.click('[data-merge="0"]');
+  h.assert.equal(await cols(), 4, 'merge two columns with a tap');
+  h.assert.equal(await page.textContent('.pd-grid tbody tr:nth-child(2) td'), '004100 Copy paper A4', 'merged text');
+  await page.click('[data-split="0"]');
+  h.assert.equal(await cols(), 5, 'split it again');
+  h.assert.equal(await page.textContent('.pd-grid tbody tr:nth-child(2) td:nth-child(2)'), 'Copy paper A4', 'split after the leading ID gives the columns back');
+  const csv = await h.capture(page, () => page.click('[data-act="csv"]'));
+  h.assert(/\.csv$/.test(csv.name) && csv.buf.toString('utf8').indexOf('Item ID') >= 0, 'CSV downloaded: ' + csv.name);
+  const xl = await h.capture(page, () => page.click('[data-act="xlsx"]'));
+  h.assert(xl.buf.slice(0, 2).toString() === 'PK' && /\.xlsx$/.test(xl.name), 'XLSX downloaded: ' + xl.name);
+  const back = await page.evaluate(async (b64) => {
+    const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const wb = XLSX.read(u, { type: 'array' }); const ws = wb.Sheets[wb.SheetNames[0]];
+    return { a2: ws.A2 && ws.A2.v, a2t: ws.A2 && ws.A2.t, c2: ws.C2 && ws.C2.v, c2t: ws.C2 && ws.C2.t };
+  }, xl.buf.toString('base64'));
+  h.assert(back.a2 === '004100' && back.a2t === 's' && back.c2t === 'n', 'XLSX keeps IDs as text and counts as numbers: ' + JSON.stringify(back));
+  h.assert.noErrors(page);
+  h.assert.equal(page.foreign.length, 0, 'no outside requests');
+};
+
 module.exports = cases;
