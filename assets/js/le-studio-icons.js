@@ -51,14 +51,16 @@
     return pl && pl.colors && pl.colors.length ? { colors: pl.colors.slice() } : { palette: id };
   }
   function iconName(id) { var m = /^withicons:([\w-]+)\/([\w-]+)$/.exec(id || ''); return m ? { style: m[1], name: m[2] } : null; }
-  var urls = {};
+  var urls = P._urlCache ? P._urlCache('icons', 400) : null;
+  var urlMemo = {};
   function iconUrl(id, o) {
     var key = id + '|' + JSON.stringify(o || {});
-    if (urls[key]) return urls[key];
+    var hit = urls ? urls.get(key) : urlMemo[key];
+    if (hit) return hit;
     var markup = LE.assets.svg(id, o || {});
     if (!markup) throw new Error('missing');
-    urls[key] = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml' }));
-    return urls[key];
+    var u = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml' }));
+    return urls ? urls.set(key, u) : (urlMemo[key] = u);
   }
   var loading = {};
   function loadStyle(id, onProgress) {
