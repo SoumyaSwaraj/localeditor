@@ -21,6 +21,7 @@ Everything under `assets/vendor/`, `assets/fonts/`, and `assets/data/` is vendor
 | tesseract.js worker script (text recognition) | 7.0.0 | Apache-2.0 (the minified worker also bundles `buffer` MIT, `ieee754` BSD-3-Clause, `regenerator-runtime` MIT, `zlibjs` MIT, `bmp-js` MIT, `is-url` MIT, `wasm-feature-detect` Apache-2.0) | `assets/vendor/tesseract/worker.min.js`; licence text `assets/vendor/licenses/tesseract.js-LICENSE.txt` | https://www.npmjs.com/package/tesseract.js · https://github.com/naptha/tesseract.js |
 | tesseract.js-core (Tesseract 5 LSTM engine, Leptonica, compiled to WebAssembly) | 7.0.0 | Apache-2.0 | `assets/vendor/tesseract/tesseract-core-simd-lstm.wasm.js`, `assets/vendor/tesseract/tesseract-core-lstm.wasm.js` (no-SIMD fallback); licence text `assets/vendor/licenses/tesseract.js-core-LICENSE.txt` | https://www.npmjs.com/package/tesseract.js-core · https://github.com/naptha/tesseract.js-core |
 | jsQR (QR code reader; **tests only**, never loaded by the site) | 1.4.0 | Apache-2.0 | `tests/lib/jsqr.js` (the package's `dist/jsQR.js`, unchanged; SHA-256 bc40c8a15196236b2314db0856f72ca0b49980cd5413b8c852a7349f5fee0859); licence text `assets/vendor/licenses/jsqr-LICENSE.txt`. Used by `tests/pdf-office.test.js` to decode the fingerprint receipt QR codes. | https://www.npmjs.com/package/jsqr · https://github.com/cozmo/jsQR |
+| woff2-encoder (WOFF2 decoder: Google woff2 MIT + Brotli MIT compiled to WebAssembly, inline) | 2.0.0 | MIT | `assets/vendor/woff2-decompress.js` (the package's `dist/decompress.js`, SHA-256 6910ba38d0a981513b297701d309fa2efc4f67a311815bcc4de5837085d2ee46 before the edit: the ES module export replaced by `window.LEWoff2Decompress` and the file wrapped in a function). Loaded only when a library font is embedded in a PDF. Licence texts `assets/vendor/licenses/woff2-encoder-LICENSE.txt`, `assets/vendor/licenses/woff2-brotli-LICENSE.txt` | https://www.npmjs.com/package/woff2-encoder · https://github.com/itskyedo/woff2-encoder · https://github.com/google/woff2 · https://github.com/google/brotli |
 | GlyphLessFont (572-byte blank-glyph TrueType font, embedded as base64 in the invisible text layer of searchable PDFs) | from Tesseract `pdf_ttf.h` | Apache-2.0 | inside `labs/pdf-ocr/ocr.js` | https://github.com/tesseract-ocr/tesseract |
 
 The word “QR Code” is a registered trademark of Denso Wave Incorporated.
@@ -36,56 +37,9 @@ These are the faces already referenced from `assets/css/app.css`. They are separ
 
 ## Editor font library
 
-Self-hosted from the Google Fonts CSS API (`scripts/fetch-fonts.js`) on 2026-11-07. Each family has latin and latin-ext WOFF2 for the browser when Google publishes that subset, plus one WOFF per face for pdf-lib / fontkit. Files live in `assets/fonts/library/<slug>/`. OFL texts: https://openfontlicense.org/
+257 families (253 in the repository, 4 Chinese/Japanese/Korean families downloaded at deploy time), every one OFL-1.1 or Apache-2.0, built from the Fontsource npm packages of the Google Fonts catalogue by `scripts/fetch-fonts.js` with pinned versions and tarball hashes (`scripts/fonts/lock.json`). The full table (family, licence, package and version, Google Fonts version, copyright line) is generated into `assets/vendor/licenses/fonts-LICENSES.md`. Each family folder (`assets/fonts/library/<slug>/`, `assets/fonts/cjk/<slug>/`) carries `LICENSE.txt`: the copyright notice and the complete licence text from the package. Font files are unmodified; `assets/fonts/previews/` holds name-only subsets used under internal names. How the library is built: `docs/FONTS.md`.
 
-| Family | License | Google Fonts version | Weights |
-|---|---|---|---|
-| Inter | OFL-1.1 | v20 | 400, 700, italic 400 |
-| Poppins | OFL-1.1 | v24 | 400, 700 |
-| Montserrat | OFL-1.1 | v31 | 400, 700 |
-| DM Sans | OFL-1.1 | v17 | 400, 700 |
-| Manrope | OFL-1.1 | v23 | 400, 700 |
-| Space Grotesk | OFL-1.1 | v22 | 400, 700 |
-| Outfit | OFL-1.1 | v15 | 400, 700 |
-| Nunito | OFL-1.1 | v32 | 400, 700, italic 400 |
-| Work Sans | OFL-1.1 | v24 | 400, 700 |
-| Rubik | OFL-1.1 | v31 | 400, 700 |
-| Plus Jakarta Sans | OFL-1.1 | v12 | 400, 700 |
-| Playfair Display | OFL-1.1 | v40 | 400, 700, italic 400 |
-| Lora | OFL-1.1 | v37 | 400, 700, italic 400 |
-| Merriweather | OFL-1.1 | v33 | 400, 700, italic 400 |
-| DM Serif Display | OFL-1.1 | v17 | 400, italic 400 |
-| Cormorant Garamond | OFL-1.1 | v21 | 400, 700, italic 400 |
-| Libre Baskerville | OFL-1.1 | v24 | 400, 700, italic 400 |
-| Fraunces | OFL-1.1 | v38 | 400, 700, italic 400 |
-| EB Garamond | OFL-1.1 | v33 | 400, 700, italic 400 |
-| Instrument Serif | OFL-1.1 | v5 | 400, italic 400 |
-| Bebas Neue | OFL-1.1 | v16 | 400 |
-| Anton | OFL-1.1 | v27 | 400 |
-| Archivo Black | OFL-1.1 | v23 | 400 |
-| Abril Fatface | OFL-1.1 | v25 | 400 |
-| Righteous | OFL-1.1 | v18 | 400 |
-| Lobster | OFL-1.1 | v32 | 400 |
-| Bungee | OFL-1.1 | v17 | 400 |
-| Oswald | OFL-1.1 | v57 | 400, 700 |
-| Syne | OFL-1.1 | v24 | 400, 700 |
-| Dancing Script | OFL-1.1 | v29 | 400, 700 |
-| Great Vibes | OFL-1.1 | v21 | 400 |
-| Caveat | OFL-1.1 | v23 | 400, 700 |
-| Sacramento | OFL-1.1 | v17 | 400 |
-| Pacifico | OFL-1.1 | v23 | 400 |
-| Satisfy | OFL-1.1 | v22 | 400 (latin only) |
-| Allura | OFL-1.1 | v23 | 400 |
-| Kalam | OFL-1.1 | v18 | 400, 700 |
-| Shadows Into Light | OFL-1.1 | v22 | 400 |
-| Homemade Apple | Apache-2.0 | v24 | 400 (latin only) |
-| Mr Dafoe | OFL-1.1 | v15 | 400 |
-| Alex Brush | OFL-1.1 | v23 | 400 |
-| JetBrains Mono | OFL-1.1 | v24 | 400, 700 |
-| Space Mono | OFL-1.1 | v17 | 400, 700 |
-| IBM Plex Mono | OFL-1.1 | v20 | 400, 700 |
-
-Specimen pages: `https://fonts.google.com/specimen/<Family>` (spaces as `+`).
+The `.woff` files of the original 44 families (from the Google Fonts CSS API, 2026-11-07) remain under the same folders until the woff2 PDF path has replaced them.
 
 ## Icons, emoji, stickers
 
