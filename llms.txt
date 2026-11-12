@@ -95,6 +95,8 @@ Key facts:
 - [Split by text](https://localeditor.net/split-pdf-by-text/): One file per employee or student.
 - [Per-recipient watermarks](https://localeditor.net/bulk-pdf-watermarks/): One named copy per recipient.
 - [Compress to a target size](https://localeditor.net/compress-pdf/): “Under 2 MB” in one step.
+- [Searchable scans](https://localeditor.net/searchable-pdf/): On-device text recognition for scans.
+- [Camera scan](https://localeditor.net/scan-to-pdf/): Straightened, cleaned and saved as PDF.
 
 ## Optional
 

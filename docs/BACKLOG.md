@@ -79,3 +79,10 @@ Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen
 - Beautifier has no "original" aspect (a page takes its size's fixed pixels); resize after making is the workaround.
 - Shared photo × button in maker forms is 28 px (`studio-makers.css`), under the 44 px rule.
 - Preview shadows look heavier than export: the engine does not scale shadow blur with render scale (also on the integration list).
+
+## PDF scan and searchable scans — follow-ups
+
+- Never tried on a real phone, real camera or iOS (tests use a canvas stream); accuracy measured on synthetic pages only.
+- One language per run; no blur or glare warning at capture; HEIC only where the browser decodes it.
+- The "make searchable" offer bar and the Protect panel can both show at once on desktop.
+- `/licenses/` scrolls sideways at 390 and 360 px (generated page; also makes the `tools` phone sweep fail once it gets past its timeout).
