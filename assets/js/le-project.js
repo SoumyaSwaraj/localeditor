@@ -643,6 +643,8 @@
     layers.slice(0, LIMITS.layers).forEach(function (l) { var s = sanitizeLayer(l, errors); if (s) out.layers.push(s); });
     var collage = LE.Scene && LE.Scene.collageOf ? LE.Scene.collageOf(doc.collage) : null;
     if (collage) out.collage = collage;
+    var maker = LE.Scene && LE.Scene.makerOf ? LE.Scene.makerOf(doc.maker) : null;
+    if (maker) out.maker = maker;
     return out;
   }
   function sizeEntry(e, errors) {

@@ -345,6 +345,28 @@
     if (Array.isArray(c.order)) out.order = c.order.slice(0, 60).map(function (id) { return word(String(id == null ? '' : id), 40); });
     return out;
   }
+  /* Quick-maker meta (doc.maker): the form values a page was made from, so it can be reopened and remade. */
+  function makerOf(m) {
+    if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+    function word(v, n) { return typeof v === 'string' ? v.replace(/[^\w.:-]/g, '').slice(0, n) : ''; }
+    function val(v, d) {
+      if (typeof v === 'string') return v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').slice(0, 2000);
+      if (typeof v === 'number') return isFinite(v) ? v : null;
+      if (typeof v === 'boolean') return v;
+      if (Array.isArray(v) && d < 2) return v.slice(0, 40).map(function (x) { return val(x, d + 1); }).filter(function (x) { return x != null; });
+      return null;
+    }
+    var out = { v: 1, id: word(m.id, 40), style: word(m.style, 40), size: word(m.size, 24), values: {} };
+    if (!out.id) return null;
+    var src = m.values && typeof m.values === 'object' && !Array.isArray(m.values) ? m.values : {};
+    Object.keys(src).slice(0, 40).forEach(function (k) {
+      if (!/^[a-zA-Z]\w{0,31}$/.test(k) || k === 'constructor' || k === 'prototype') return;
+      var v = val(src[k], 0);
+      if (v != null) out.values[k] = v;
+    });
+    if (word(m.sig, 16)) out.sig = word(m.sig, 16);
+    return out;
+  }
   /* Keeps a crop's centre and zoom when the photo moves into a frame of another shape. */
   function refitCrop(crop, iw, ih, W, H) {
     crop = crop || { x: 0, y: 0, w: 1, h: 1 };
@@ -1012,7 +1034,8 @@
       height: this._doc.height,
       background: this._doc.background,
       layers: this._doc.layers,
-      collage: this._doc.collage || undefined
+      collage: this._doc.collage || undefined,
+      maker: this._doc.maker || undefined
     });
   };
   P._histInfo = function () {
@@ -1060,6 +1083,7 @@
     this._doc.background = data.background || { type: 'color', color: '#ffffff' };
     this._doc.layers = data.layers || [];
     if (data.collage) this._doc.collage = collageOf(data.collage); else delete this._doc.collage;
+    if (makerOf(data.maker)) this._doc.maker = makerOf(data.maker); else delete this._doc.maker;
     this._clearBitmaps();
     this._jobs = {};
     var self = this;
@@ -1125,6 +1149,7 @@
       self._doc.layers.push(normalize(layer, self, true));
     });
     if (collageOf(doc.collage)) this._doc.collage = collageOf(doc.collage);
+    if (makerOf(doc.maker)) this._doc.maker = makerOf(doc.maker);
     this._sel = [];
     this._hist = { undo: [], redo: [], key: null, base: null, pushed: false };
     this._clearBitmaps();
@@ -3959,6 +3984,7 @@
   LE.Scene.EXTENDED_ADJUST = true;
   LE.Scene.blank = blank;
   LE.Scene.collageOf = collageOf;
+  LE.Scene.makerOf = makerOf;
   LE.Scene.refitCrop = refitCrop;
   LE.Scene.backgroundSpec = bgSpec;
   LE.Scene.backgroundPlacement = function (bg, W, H, sw, sh) { return bgPlace(bgSpec(bg), W, H, sw, sh); };
