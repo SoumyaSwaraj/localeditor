@@ -87,6 +87,17 @@ Audience: office workers who need a tool they can trust with confidential files.
 
 Order: D3, D4, D1, D2, D6 first (the security story), then D8, D5, D12, D13, D7 (weekly office use), then the rest. D9 and D10 start with a feasibility check like the background remover had.
 
+## Wave 2M — added by the owner, 12 November 2026
+
+| Id | Work |
+|---|---|
+| S1 | **Device support check.** Every feature declares what it needs. The app tells the person what works on this device and browser, suggests a browser that supports more, and still offers "Try anyway" when the answer is uncertain. A `/device-check/` page shows the whole picture. |
+| S2 | **Model choice for the background remover.** Fast, Detailed and People models, each with its size, what it is good at, and whether this device can run it. Beta label. Brush for touch-ups. |
+| C1 | **Category and feature pages.** A hub page per category (photo and design, PDF and documents, privacy, social and creators, small business, teachers, text and developer) and a page per major feature, generated from one data file. Only features that are live get a page. |
+| M1 | **Quick makers**: a form in, an editable design out. First set: V8 quote cards, V20 review cards, V4 receipt-style lists, V2 milestone cards, V1 palette poster, V6 film-camera looks. |
+| M2 | Makers: V3 movie poster, album cover, newspaper front page; V14 event kit; V15 invitations with QR; V19 payment and Wi-Fi QR posters; V21 app-store screenshot sets; V22 link preview cards and README banners. |
+| M3 | Print makers: V12 printables with cut marks; V13 photo book and zine layouts; V18 catalogue or price list from a spreadsheet. |
+
 ## Wave 3 — agents
 
 | Id | Work |
