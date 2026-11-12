@@ -131,14 +131,16 @@
     var name = String(file || '').split('/').pop().replace(/[^a-zA-Z0-9._-]/g, '');
     return name ? rootPath() + 'assets/photos/collage/' + name : '';
   }
+  var poolIds = {};
   function ingestPool(c, photo) {
     var url = photoFileUrl(photo.file);
     if (!url) return Promise.resolve('');
+    if (poolIds[photo.id] && c.mem[poolIds[photo.id]]) return Promise.resolve(poolIds[photo.id]);
     return fetch(url).then(function (r) { return r.ok ? r.blob() : null; }).then(function (blob) {
       if (!blob) return '';
       var file = new File([blob], photo.id + '.jpg', { type: blob.type || 'image/jpeg' });
       file.source = sourceFromPhoto(photo);
-      return c.ingest(file).then(function (meta) { return meta ? meta.id : ''; });
+      return c.ingest(file).then(function (meta) { if (meta) poolIds[photo.id] = meta.id; return meta ? meta.id : ''; });
     }).catch(function () { return ''; });
   }
   /* Loads stored uploads into memory so they can fill cells. */
@@ -896,9 +898,16 @@
   }
 
   /* ---------- Template apply (catalogue styles) ---------- */
+  /* The person's own photos: uploads in this design that did not come from the sample pool. */
+  function ownUploads(c) {
+    return uploadIds(c).filter(function (id) {
+      var a = c.S.project.assets[id] || {};
+      return !(a.source && a.source.provider === 'pool');
+    });
+  }
   function chooseFill(c, tpl, mode) {
     var n = tpl.slots.length;
-    var uploads = uploadIds(c);
+    var uploads = ownUploads(c);
     if (!mode) mode = uploads.length >= n ? 'uploads' : 'pool';
     if (mode === 'empty') return Promise.resolve(tpl.slots.map(function () { return ''; }));
     if (mode === 'uploads') {
@@ -1208,7 +1217,7 @@
       if (stockState.loading && !stockState.hits.length) { grid.innerHTML = skeletons(9); return; }
       var kind = errKind(stockState.error);
       if (kind && !stockState.hits.length) {
-        if (kind === 'offline') grid.appendChild(state('You are offline', 'Stock search needs a connection. Your own photos and the editor still work.', [{ label: 'Try again', gold: true, fn: function () { run(true); } }], svg('offline')));
+        if (kind === 'offline') grid.appendChild(state(navigator.onLine === false ? 'You are offline' : 'Could not reach ' + p.name, navigator.onLine === false ? 'Stock search needs a connection. Your own photos and the editor still work.' : 'Check the connection and try again. Your own photos and the editor still work.', [{ label: 'Try again', gold: true, fn: function () { run(true); } }], svg('offline')));
         else if (kind === 'rate') grid.appendChild(state(p.name + ' needs a short rest', stockState.error.message || 'Too many searches. Try again in a moment.', otherSources().concat([{ label: 'Try again', fn: function () { run(true); } }]), svg('clock')));
         else if (kind === 'key') { grid.appendChild(state(p.name + ' did not accept the key', 'Paste the ' + (p.keyLabel || 'key') + ' again.', [], c.ic('lock'))); grid.lastChild.appendChild(keyForm(c, p, function () { rerun(true); })); }
         else grid.appendChild(state('Could not search ' + p.name, stockState.error.message || 'Something went wrong.', [{ label: 'Try again', gold: true, fn: function () { run(true); } }].concat(otherSources())));

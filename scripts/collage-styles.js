@@ -156,7 +156,7 @@ module.exports = function (A) {
           tapes(sh, 5);
         } else if (v.mode === 'stripes') {
           p(0, 40, 70, 480, 700, -2); p(1, 560, 90, 480, 680, 2); p(2, 1080, 70, 460, 700, -1);
-          for (var t = 0; t < 5; t++) tape(sh, 40, 140 + t * 140, 1500, t % 2 ? 2 : -2, WASHI[t]);
+          tapes(sh, 7);
         } else if (v.mode === 'cols') {
           p(0, 60, 80, 540, 860, -2); p(1, 680, 120, 540, 800, 1); p(2, 1300, 80, 540, 860, 2);
           tapes(sh, 6);
@@ -273,7 +273,7 @@ module.exports = function (A) {
           sh.text(CITIES[i % CITIES.length], x, y + h + 4, w, 28, { font: 'Libre Baskerville', size: 16, align: 'center', color: INK });
         }
         if (v.mode === 'route') {
-          pin(0, 80, 160, 280, 240); pin(1, 400, 80, 260, 220); pin(2, 620, 420, 300, 250); pin(3, 180, 620, 280, 240);
+          pin(0, 60, 150, 370, 310); pin(1, 470, 70, 350, 290); pin(2, 610, 430, 380, 320); pin(3, 110, 590, 380, 320);
           ticket(sh, 700, 860, 280, 110, CITIES[4], 'DAY 4', '#F6E7CF');
         } else if (v.mode === 'list') {
           for (var i = 0; i < 4; i++) pin(i, 220, 80 + i * 440, 720, 360);
@@ -333,19 +333,19 @@ module.exports = function (A) {
         if (v.mode === 'top') {
           sh.slot(60, 100, 440, 360, pol(ph[0], 2, -3, 8));
           sh.slot(540, 120, 440, 340, pol(ph[1], 3, 3, 8));
-          sh.text(note, 70, 520, sh.w - 140, 200, { font: 'Caveat', size: 32, color: '#3C3128' });
+          sh.text(note, 70, 520, sh.w - 140, 200, { font: 'Caveat', size: 54, color: '#3C3128' });
         } else if (v.mode === 'side') {
           sh.slot(60, 120, 820, 820, pol(ph[0], 2, -2, 12));
-          sh.text(note, 960, 180, 860, 500, { font: 'Caveat', size: 36, color: '#3C3128' });
+          sh.text(note, 960, 180, 860, 500, { font: 'Caveat', size: 60, color: '#3C3128' });
         } else if (v.mode === 'three') {
-          sh.slot(50, 100, 300, 280, pol(ph[0], 2, -4, 6));
-          sh.slot(390, 80, 300, 280, pol(ph[1], 3, 2, 6));
-          sh.slot(700, 120, 300, 280, pol(ph[2], 4, 4, 6));
-          sh.text(note, 70, 460, 900, 240, { font: 'Caveat', size: 32, color: '#3C3128' });
+          sh.slot(40, 110, 320, 360, pol(ph[0], 2, -4, 6));
+          sh.slot(380, 90, 320, 360, pol(ph[1], 3, 2, 6));
+          sh.slot(720, 120, 320, 360, pol(ph[2], 4, 4, 6));
+          sh.text(note, 70, 460, 900, 240, { font: 'Caveat', size: 54, color: '#3C3128' });
         } else if (v.mode === 'long') {
           sh.slot(140, 120, 800, 520, pol(ph[0], 2, -2, 10));
           sh.slot(180, 1100, 720, 480, pol(ph[1], 3, 2, 10));
-          sh.text(note, 120, 700, 840, 280, { font: 'Caveat', size: 34, color: '#3C3128' });
+          sh.text(note, 120, 700, 840, 280, { font: 'Caveat', size: 56, color: '#3C3128' });
         } else if (v.mode === 'stain') {
           sh.slot(80, 140, 500, 460, pol(ph[0], 2, -3, 8));
           sh.slot(520, 480, 460, 420, pol(ph[1], 3, 4, 8));
@@ -354,18 +354,18 @@ module.exports = function (A) {
           sh.slot(40, 80, 460, 400, pol(ph[0], 2, -2, 8));
           sh.slot(540, 100, 460, 380, pol(ph[1], 3, 1, 8));
           sh.slot(1060, 80, 480, 400, pol(ph[2], 4, 2, 8));
-          sh.text(note, 60, 540, 1400, 160, { font: 'Caveat', size: 32, color: '#3C3128' });
+          sh.text(note, 60, 540, 1400, 160, { font: 'Caveat', size: 54, color: '#3C3128' });
         } else if (v.mode === 'corners') {
-          sh.slot(40, 80, 280, 240, pol(ph[0], 2, -3, 6));
-          sh.slot(760, 80, 280, 240, pol(ph[1], 3, 3, 6));
-          sh.slot(40, 760, 280, 240, pol(ph[2], 4, 2, 6));
-          sh.slot(760, 760, 280, 240, pol(ph[3], 5, -2, 6));
-          sh.text(note, 300, 400, 480, 200, { font: 'Caveat', size: 28, align: 'center', color: '#3C3128' });
+          sh.slot(40, 90, 380, 320, pol(ph[0], 2, -3, 6));
+          sh.slot(660, 90, 380, 320, pol(ph[1], 3, 3, 6));
+          sh.slot(40, 680, 380, 320, pol(ph[2], 4, 2, 6));
+          sh.slot(660, 680, 380, 320, pol(ph[3], 5, -2, 6));
+          sh.text(note, 280, 430, 520, 220, { font: 'Caveat', size: 46, align: 'center', color: '#3C3128' });
         } else if (v.mode === 'margin') {
           sh.slot(60, 140, 420, 360, pol(ph[0], 2, -2, 8));
           sh.slot(60, 620, 420, 360, pol(ph[1], 3, 2, 8));
           sh.slot(60, 1120, 420, 360, pol(ph[2], 4, -2, 8));
-          sh.text(note, 540, 200, 460, 800, { font: 'Caveat', size: 32, color: '#3C3128' });
+          sh.text(note, 540, 200, 460, 800, { font: 'Caveat', size: 54, color: '#3C3128' });
         } else if (v.mode === 'dated') {
           sh.text('12 march', 80, 40, 300, 40, { font: 'Homemade Apple', size: 22, color: '#6B4A32' });
           sh.slot(80, 140, 800, 760, pol(ph[0], 2, -2, 10));
