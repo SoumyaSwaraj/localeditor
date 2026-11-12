@@ -1,0 +1,36 @@
+/* LocalEditor: /verify/ page (fingerprint check). Tokens from app.css; see docs/DESIGN.md. */
+.vf-app { display: grid; gap: 16px; }
+.vf-expected { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-md, 14px); background: var(--surface-2); }
+.vf-label { font-size: var(--text-xs, 12px); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+.vf-short { display: block; font: 760 22px/1.3 var(--font-mono, ui-monospace, monospace); letter-spacing: 0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.vf-full { display: block; font: 500 12.5px/1.6 var(--font-mono, ui-monospace, monospace); color: var(--muted); overflow-wrap: anywhere; background: none; padding: 0; }
+.vf-result { display: grid; gap: 14px; }
+.vf-verdict { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: var(--r-md, 14px); border: 1px solid var(--line); background: var(--surface); }
+.vf-verdict strong { display: block; font-size: var(--text-xl, 22px); font-weight: 720; letter-spacing: -0.02em; line-height: 1.25; color: var(--ink); }
+.vf-verdict p { margin: 6px 0 0; font-size: var(--text-sm, 14px); line-height: 1.55; color: var(--muted); }
+.vf-verdict-ic { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--surface-2); position: relative; }
+.vf-verdict-ic::after { content: ''; position: absolute; left: 13px; top: 8px; width: 9px; height: 16px; border-right: 3px solid currentColor; border-bottom: 3px solid currentColor; transform: rotate(45deg); opacity: 0; }
+.vf-verdict.is-match { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); background: color-mix(in srgb, var(--ok) 8%, var(--surface)); }
+.vf-verdict.is-match .vf-verdict-ic { background: var(--ok); color: #fff; }
+.vf-verdict.is-match .vf-verdict-ic::after { opacity: 1; }
+.vf-verdict.is-diff { border-color: color-mix(in srgb, var(--err) 45%, var(--line)); background: color-mix(in srgb, var(--err) 7%, var(--surface)); }
+.vf-verdict.is-diff .vf-verdict-ic { background: var(--err); }
+.vf-verdict.is-diff .vf-verdict-ic::before, .vf-verdict.is-diff .vf-verdict-ic::after { content: ''; position: absolute; left: 17px; top: 8px; width: 3px; height: 20px; background: #fff; border: 0; opacity: 1; transform: rotate(45deg); }
+.vf-verdict.is-diff .vf-verdict-ic::before { transform: rotate(-45deg); }
+.vf-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0; font-size: var(--text-sm, 14px); }
+.vf-facts dt { color: var(--faint); }
+.vf-facts dd { margin: 0; overflow-wrap: anywhere; min-width: 0; }
+.vf-manual summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 640; color: var(--accent); }
+.vf-manual label { display: block; margin: 6px 0; font-size: 13px; font-weight: 640; }
+.vf-manual .input { width: 100%; font-family: var(--font-mono, ui-monospace, monospace); }
+.vf-paste-msg { min-height: 1.4em; margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.vf-private { display: flex; gap: 8px; align-items: flex-start; margin: 0; font-size: 13px; line-height: 1.5; color: var(--faint); }
+.vf-private svg { width: 16px; height: 16px; flex: none; margin-top: 2px; }
+.vf-result .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 600px) {
+  .vf-facts { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .vf-facts dd { margin-bottom: 8px; }
+  .vf-short { font-size: 19px; }
+  .vf-result .actions .btn { flex: 1; min-height: 44px; }
+  .vf-manual .input { font-size: 16px; }
+}

@@ -437,6 +437,15 @@
   /* Asset ids the expert fields point at (masks, retouch overlay, maps, LUTs), so projects keep them. */
   function expertAssets(l) { return JSON.stringify([l.fx, l.fxMask, l.retouch, l.maps]).match(/[a-f0-9]{64}/g) || []; }
 
+  /* Print meta (doc.print): the physical page this page is meant for, in mm, and the pixels per inch it was laid out at.
+     PDF export uses it for the page size. */
+  function printOf(p) {
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+    var w = Number(p.w), h = Number(p.h), dpi = Number(p.dpi);
+    if (!(w > 0) || !(h > 0) || !isFinite(w) || !isFinite(h)) return null;
+    var paper = typeof p.paper === 'string' ? p.paper.replace(/[^\w.:-]/g, '').slice(0, 24) : '';
+    return { v: 1, paper: paper, w: Math.round(clamp(w, 10, 2000) * 100) / 100, h: Math.round(clamp(h, 10, 2000) * 100) / 100, dpi: Math.round(clamp(isFinite(dpi) && dpi > 0 ? dpi : 300, 72, 1200)) };
+  }
   /* Keeps a crop's centre and zoom when the photo moves into a frame of another shape. */
   function refitCrop(crop, iw, ih, W, H) {
     crop = crop || { x: 0, y: 0, w: 1, h: 1 };
@@ -1114,7 +1123,8 @@
       layers: this._doc.layers,
       collage: this._doc.collage || undefined,
       carousel: this._doc.carousel || undefined,
-      maker: this._doc.maker || undefined
+      maker: this._doc.maker || undefined,
+      print: this._doc.print || undefined
     });
   };
   P._histInfo = function () {
@@ -1164,6 +1174,7 @@
     if (data.collage) this._doc.collage = collageOf(data.collage); else delete this._doc.collage;
     if (carouselOf(data.carousel)) this._doc.carousel = carouselOf(data.carousel); else delete this._doc.carousel;
     if (makerOf(data.maker)) this._doc.maker = makerOf(data.maker); else delete this._doc.maker;
+    if (printOf(data.print)) this._doc.print = printOf(data.print); else delete this._doc.print;
     this._clearBitmaps();
     this._jobs = {};
     var self = this;
@@ -1231,6 +1242,7 @@
     if (collageOf(doc.collage)) this._doc.collage = collageOf(doc.collage);
     if (carouselOf(doc.carousel)) this._doc.carousel = carouselOf(doc.carousel);
     if (makerOf(doc.maker)) this._doc.maker = makerOf(doc.maker);
+    if (printOf(doc.print)) this._doc.print = printOf(doc.print);
     this._sel = [];
     this._hist = { undo: [], redo: [], key: null, base: null, pushed: false };
     this._clearBitmaps();
@@ -4357,6 +4369,7 @@
   LE.Scene.expertOf = expertOf;
   LE.Scene.expertAssets = expertAssets;
   LE.Scene._fx = { cutoutAlpha: cutoutAlpha, cutoutApply: cutoutApply, cutoutOutline: cutoutOutline };
+  LE.Scene.printOf = printOf;
   LE.Scene.refitCrop = refitCrop;
   LE.Scene.backgroundSpec = bgSpec;
   LE.Scene.backgroundPlacement = function (bg, W, H, sw, sh) { return bgPlace(bgSpec(bg), W, H, sw, sh); };
