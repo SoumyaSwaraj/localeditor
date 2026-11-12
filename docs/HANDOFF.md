@@ -210,7 +210,7 @@ Workarounds exist in the studio. Real engine support is nicer but not required f
 - Click-test text effects, photo effects, frame drop, and format painter.
 - Full-width checks at 1280×560 and 1366×768.
 - withicons deploy weight (~133 MB). Packs are lazy; do not precache them. Slimming SVG bodies further is optional.
-- Unsplash is build-time only. Do not add an Unsplash search tab unless the user asks. Keys: `PIXABAY_KEY`, `PEXELS_KEY`, `UNSPLASH_ACCESS_KEY` in the environment for `scripts/fetch-collage-photos.js` only.
+- Unsplash search is in the studio (user pastes an Access Key). `PIXABAY_KEY`, `PEXELS_KEY`, `UNSPLASH_ACCESS_KEY` in the environment are still read by `scripts/fetch-collage-photos.js` for the build-time pool.
 
 ## File map for the next session
 

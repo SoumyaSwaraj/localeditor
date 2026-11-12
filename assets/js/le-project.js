@@ -399,6 +399,8 @@
     if (typeof s.photographer === 'string' && s.photographer.trim()) o.photographer = s.photographer.trim().slice(0, 160);
     var page = safeHttp(s.pageUrl);
     if (page) o.pageUrl = page;
+    var who = safeHttp(s.photographerUrl);
+    if (who) o.photographerUrl = who;
     if (typeof s.license === 'string' && s.license.trim()) o.license = s.license.trim().slice(0, 80);
     if (typeof s.attribution === 'string' && s.attribution.trim()) o.attribution = s.attribution.trim().slice(0, 600);
     if (!o.provider && !o.photographer && !o.pageUrl && !o.license && !o.attribution) return null;
@@ -601,6 +603,8 @@
     var layers = Array.isArray(doc.layers) ? doc.layers : [];
     if (layers.length > LIMITS.layers) errors.push('This page has too many layers; extra ones were left out.');
     layers.slice(0, LIMITS.layers).forEach(function (l) { var s = sanitizeLayer(l, errors); if (s) out.layers.push(s); });
+    var collage = LE.Scene && LE.Scene.collageOf ? LE.Scene.collageOf(doc.collage) : null;
+    if (collage) out.collage = collage;
     return out;
   }
   function sizeEntry(e, errors) {

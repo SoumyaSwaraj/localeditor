@@ -818,6 +818,8 @@
         tb('addPhoto', 'image', 'Add photo', { text: true }) + tb('addText', 'text', 'Add text', { text: true }) + tb('elements', 'elements', 'Elements', { text: true }) + SEP +
         tb('replaceAll', 'swap', 'Replace colours & fonts', { text: 'Replace all' }) + tb('pagesPanel', 'pages', 'Pages') + '<span class="sx-grow"></span>' + tb('compareHold', 'compare', 'Hold to compare', { cls: 'sx-hold' }) : '<span class="sx-tb-label">' + ic('shield') + 'Private by design — nothing leaves this device</span>';
     }
+    var custom = fire('toolbar', kind, l);
+    if (typeof custom === 'string') html = custom;
     E.tool.innerHTML = html;
     E.tool.setAttribute('data-kind', kind);
     var fs = byId('sx-fsize');
@@ -984,6 +986,7 @@
       if (s.provider) source.provider = String(s.provider).slice(0, 40);
       if (s.photographer) source.photographer = String(s.photographer).slice(0, 160);
       if (s.pageUrl && /^https?:\/\//i.test(s.pageUrl)) source.pageUrl = String(s.pageUrl).slice(0, 500);
+      if (s.photographerUrl && /^https?:\/\//i.test(s.photographerUrl)) source.photographerUrl = String(s.photographerUrl).slice(0, 500);
       if (s.license) source.license = String(s.license).slice(0, 80);
       if (s.attribution) source.attribution = String(s.attribution).slice(0, 600);
       if (source.provider || source.photographer || source.pageUrl || source.license || source.attribution) meta.source = source;
