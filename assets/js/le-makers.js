@@ -8,7 +8,7 @@
   /* Maker files under assets/js/makers/, loaded on first use by LE.makers.ready(). Add yours here. */
   var FILES = ['quote', 'review', 'receipt', 'milestone', 'palette', 'film',
     /* Print set: calendars, charts, labels, stickers, photo books, zines, catalogues. */
-    'calendar', 'chart', 'labels', 'stickers', 'photobook', 'zine'];
+    'calendar', 'chart', 'labels', 'stickers', 'photobook', 'zine', 'catalogue'];
 
   var SIZES = {
     square: { id: 'square', name: 'Square', w: 1080, h: 1080 },
