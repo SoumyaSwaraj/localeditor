@@ -58,6 +58,35 @@ The open-format core (validator, shorthand, import and export) is pulled forward
 | 2.10 | **Photobooth strips and recap collages** from the camera or the camera roll. | 1.3 |
 | 2.11 | **Phone studio pass and first-run guidance**, driven by the QA phone review and the designer's polish list. | 1.8 |
 
+## Wave 2P — PDF studio for office work (added by the owner, 12 November 2026)
+
+Audience: office workers who need a tool they can trust with confidential files. Runs alongside wave 2. Everything is on-device; anything that needs a model or a new library is an optional download listed in the storage manager.
+
+| Id | Work | Notes |
+|---|---|---|
+| D1 | **True redaction.** Removes the underlying text and image data, not just a black box, with a "verify" pass that re-reads the saved file. | Page content must be rewritten or rasterised; decide per page |
+| D2 | **Find sensitive data.** Emails, phone numbers, account and ID numbers found automatically, then redacted in one click. | Pattern matching on extracted text; scanned pages need D9 |
+| D3 | **"What does this PDF reveal?"** Author, software, dates, hidden text, comments, attachments, form data; strip them all. | |
+| D4 | **"Is this PDF safe to open?"** Flags scripts, embedded files, auto-launch actions and outside links. | |
+| D5 | **Password-protect and unlock**, locally. | Needs a PDF encryption library; pdf-lib has none |
+| D6 | **Safe to send.** One click: flatten, scrub (D3), remove active content (D4), compress. | D3, D4, D8 |
+| D7 | **Per-recipient watermarks in bulk**, so a leak can be traced. | |
+| D8 | **Compress to a target size** ("under 2 MB"). | |
+| D9 | **Make scanned PDFs searchable.** On-device text recognition. | Optional model download |
+| D10 | **Phone camera to clean scan.** Edge detection, straighten, clean up, save as PDF. | |
+| D11 | **Saved details that fill any form**, stored only on the device. | |
+| D12 | **Mail-merge.** Template plus spreadsheet gives one PDF per person, each with its own password. | D5 |
+| D13 | **Split by text.** One long file becomes one file per employee or student. | |
+| D14 | **Compare two versions**, text and visual. | |
+| D15 | **Bundle builder.** Merge with cover page, contents and page numbers. | |
+| D16 | **Stamps** (Approved, Paid, Received) with name and date, plus a summary page of comments. | |
+| D17 | **Invoice, quote and receipt maker** with a local client list. | |
+| D18 | **Extract tables to a spreadsheet.** | Quality depends on the PDF; label as best effort |
+| D19 | **Saved PDF workflows** ("merge → number → watermark → protect") shared as recipe files. | Reuses the `.leworkflow` idea with a PDF operation list |
+| D20 | **Fingerprint receipt.** A checksum and QR code so anyone can confirm a file is unchanged. | |
+
+Order: D3, D4, D1, D2, D6 first (the security story), then D8, D5, D12, D13, D7 (weekly office use), then the rest. D9 and D10 start with a feasibility check like the background remover had.
+
 ## Wave 3 — agents
 
 | Id | Work |
