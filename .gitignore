@@ -1,3 +1,7 @@
 /*.png
 node_modules/
 .claude/worktrees/
+
+# local model evaluation downloads (scripts/fetch-models.js)
+/assets/models/local/
+/assets/vendor/ort-webgpu/
