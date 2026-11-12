@@ -814,7 +814,7 @@
       html = tb('group', 'group', 'Group (Ctrl+G)', { text: true }) + tb('alignMenu', 'alC', 'Align', { text: true }) + SEP + tb('opacity', 'opacity', 'Transparency') + tb('position', 'position', 'Position', { text: true }) + SEP + tb('dup', 'copy', 'Duplicate') + tb('del', 'trash', 'Delete');
     } else {
       var bg = doc().background || {};
-      html = S.project ? tb('resize', 'resize', 'Resize', { text: true }) + swatch('pageBg', bg.type === 'gradient' ? { type: 'gradient', kind: bg.kind, colors: bg.colors, angle: bg.angle } : (bg.color || '#ffffff'), 'Background color') + SEP +
+      html = S.project ? tb('resize', 'resize', 'Resize', { text: true }) + swatch('pageBg', bg.type === 'gradient' ? { type: 'gradient', kind: bg.kind, colors: bg.colors, angle: bg.angle } : (bg.color || '#ffffff'), 'Background color') + (fire('toolbar', 'page') || '') + SEP +
         tb('addPhoto', 'image', 'Add photo', { text: true }) + tb('addText', 'text', 'Add text', { text: true }) + tb('elements', 'elements', 'Elements', { text: true }) + SEP +
         tb('replaceAll', 'swap', 'Replace colours & fonts', { text: 'Replace all' }) + tb('pagesPanel', 'pages', 'Pages') + '<span class="sx-grow"></span>' + tb('compareHold', 'compare', 'Hold to compare', { cls: 'sx-hold' }) : '<span class="sx-tb-label">' + ic('shield') + 'Private by design — nothing leaves this device</span>';
     }
@@ -1719,6 +1719,7 @@
   function setAsBackground() {
     var l = one();
     if (!l || l.type !== 'image') return;
+    if (window.LEStudioBackground && LEStudioBackground.fromLayer) { LEStudioBackground.fromLayer(ctx, l.id); return; }
     batch(function () {
       scene.setBackground({ type: 'image', src: l.src, fit: 'cover', color: '#ffffff' });
       scene.remove([l.id]);

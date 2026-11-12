@@ -1469,10 +1469,33 @@
     this._after();
   };
 
-  P.setBackground = function (bg) {
-    this._before(null);
-    this._doc.background = clone(bg || { type: 'color', color: '#ffffff' });
+  /* opts.coalesce: one undo step per gesture key; opts.history === false: live change with no undo step. */
+  P.setBackground = function (bg, opts) {
+    var next = clone(bg || { type: 'color', color: '#ffffff' });
+    var self = this;
+    if (opts && opts.history === false) { this._live(function () { self._doc.background = next; }); return; }
+    this._before(opts && opts.coalesce ? String(opts.coalesce) : null);
+    this._doc.background = next;
     this._after();
+  };
+  P.background = function () { return clone(this._doc.background || { type: 'color', color: '#ffffff' }); };
+  /* Background edit mode: ghost of the photo outside the page; peek hides the layers while dragging. */
+  P.editBackground = function (state) {
+    this._bgEdit = state ? { peek: !!(state && state.peek) } : null;
+    this._mark();
+  };
+  P.pageRect = function () { return this._rectToScreen({ x: 0, y: 0, w: this._doc.width, h: this._doc.height }); };
+  /* Natural size of the background photo after its crop, and where it sits on the page (document units). */
+  P.backgroundInfo = function () {
+    var bg = this._doc.background;
+    if (!bgPhoto(bg)) return null;
+    var node = assetNode(this._assets[bg.src]);
+    if (!node) return null;
+    var s = bgSpec(bg);
+    var iw = node.naturalWidth || node.width, ih = node.naturalHeight || node.height;
+    var sw = Math.max(1, iw * s.crop.w), sh = Math.max(1, ih * s.crop.h);
+    var p = bgPlace(s, this._doc.width, this._doc.height, sw, sh);
+    return { width: iw, height: ih, sw: sw, sh: sh, page: { w: this._doc.width, h: this._doc.height }, spec: s, place: p };
   };
   P.resizePage = function (w, h, opts) {
     w = Math.max(1, num(w, this._doc.width));
@@ -1556,6 +1579,7 @@
     this._imageCache = {};
     this._svgCache = {};
     this._textCache = {};
+    this._dropBg();
   };
   P._scheduleImage = function (id) {
     var job = this._jobs[id] || (this._jobs[id] = { token: 0, busy: false, again: false, frame: 0 });
@@ -1693,6 +1717,7 @@
       }
       return null;
     });
+    jobs.push(this._prepareBg(scale).then(function (pic) { if (pic) bitmaps[BG_KEY] = pic; }));
     return Promise.all(jobs).then(function () { return bitmaps; });
   };
 
@@ -1788,6 +1813,7 @@
     ctx.fillStyle = this._workspace;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(dpr * this._zoom, 0, 0, dpr * this._zoom, this._panX * dpr, this._panY * dpr);
+    if (this._bgEdit) this._drawBgGhost(ctx);
     if (level !== 'low') {
       ctx.save();
       ctx.shadowColor = 'rgba(23,19,31,.20)';
@@ -1804,6 +1830,7 @@
     ctx.lineWidth = 1 / this._zoom;
     ctx.strokeRect(0, 0, this._doc.width, this._doc.height);
     ctx.restore();
+    if (this._bgEdit) this._drawBgFrame(ctx);
   };
 
   P._drawDocument = function (ctx, opts) {
@@ -1811,16 +1838,17 @@
     ctx.beginPath();
     ctx.rect(0, 0, this._doc.width, this._doc.height);
     ctx.clip();
-    if (opts.includeBackground !== false) this._drawBackground(ctx);
+    if (opts.includeBackground !== false) this._drawBackground(ctx, opts);
     var self = this;
     this._doc.layers.forEach(function (layer) {
+      if (opts.preview && self._bgEdit && self._bgEdit.peek) return;
       if (opts.preview && self._crop && self._crop.id === layer.id) self._drawCropGhost(ctx, layer);
       self._drawLayer(ctx, layer, opts);
     });
     ctx.restore();
   };
 
-  P._drawBackground = function (ctx) {
+  P._drawBackground = function (ctx, opts) {
     var bg = this._doc.background || { type: 'color', color: '#ffffff' };
     var w = this._doc.width, h = this._doc.height;
     if (bg.type === 'gradient') {
@@ -1836,20 +1864,323 @@
     if (bg.type === 'image') {
       ctx.fillStyle = bg.color || '#ffffff';
       ctx.fillRect(0, 0, w, h);
-      var rec = this._assets[bg.src];
-      var node = assetNode(rec);
-      if (!node) return;
-      var iw = node.naturalWidth || node.width, ih = node.naturalHeight || node.height;
-      if (!iw || !ih) return;
-      var fit = bg.fit || 'cover';
-      if (fit === 'fill') { ctx.drawImage(node, 0, 0, w, h); return; }
-      var s = fit === 'contain' ? Math.min(w / iw, h / ih) : Math.max(w / iw, h / ih);
-      var dw = iw * s, dh = ih * s;
-      ctx.drawImage(node, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      this._paintBgPhoto(ctx, bg, opts || {});
       return;
     }
+    this._dropBg();
     ctx.fillStyle = bg.color || '#ffffff';
     ctx.fillRect(0, 0, w, h);
+  };
+
+  /* ---------- Photo backgrounds ----------
+     doc.background = { type:'image', src, color, fit:'cover'|'contain'|'fill'|'tile', crop:{x,y,w,h}, x, y, scale,
+     rotation, flipX, flipY, opacity, blur, dim:{color,amount}, adjust:{...}, filter:{name,intensity}, tile:{size,gap} }.
+     crop/adjust/filter go through the same pipeline as image layers; every other field is applied when drawing. */
+  var BG_KEY = '\u0000background';
+  var BG_FITS = { cover: 1, contain: 1, fill: 1, tile: 1 };
+  function bgPhoto(bg) { return !!(bg && bg.type === 'image' && bg.src); }
+  function bgSpec(bg) {
+    bg = bg || {};
+    var crop = bg.crop || {};
+    var dim = bg.dim && typeof bg.dim === 'object' ? bg.dim : null;
+    var tile = bg.tile && typeof bg.tile === 'object' ? bg.tile : {};
+    var cx = clamp(num(crop.x, 0), 0, 0.999), cy = clamp(num(crop.y, 0), 0, 0.999);
+    return {
+      fit: BG_FITS[bg.fit] ? bg.fit : 'cover',
+      crop: { x: cx, y: cy, w: clamp(num(crop.w, 1), 0.001, 1 - cx), h: clamp(num(crop.h, 1), 0.001, 1 - cy) },
+      x: clamp(num(bg.x, 0), -10, 10),
+      y: clamp(num(bg.y, 0), -10, 10),
+      scale: clamp(num(bg.scale, 1), 0.05, 50),
+      rotation: num(bg.rotation, 0),
+      flipX: !!bg.flipX,
+      flipY: !!bg.flipY,
+      opacity: clamp(num(bg.opacity, 1), 0, 1),
+      blur: clamp(num(bg.blur, 0), 0, 250),
+      dim: dim ? { color: safePaint(dim.color) || '#000000', amount: clamp(num(dim.amount, 0), 0, 1) } : null,
+      tile: { size: clamp(num(tile.size, 0.25), 0.02, 4), gap: clamp(num(tile.gap, 0), 0, 1) }
+    };
+  }
+  function bgLook(bg, s) {
+    return { src: bg.src, crop: s.crop, adjust: bg.adjust || {}, filter: bg.filter && bg.filter.name ? bg.filter : null, removeBg: null };
+  }
+  /* Where the photo (sw × sh after crop) lands on a W × H page: centre, page-axis scale, rotation. */
+  function bgPlace(s, W, H, sw, sh) {
+    var rad = (s.rotation || 0) * Math.PI / 180;
+    var c = Math.abs(Math.cos(rad)), n = Math.abs(Math.sin(rad));
+    if (c < 1e-9) c = 0;
+    if (n < 1e-9) n = 0;
+    var ew = sw * c + sh * n, eh = sw * n + sh * c;
+    var kx, ky;
+    if (s.fit === 'fill') { kx = W / ew; ky = H / eh; }
+    else if (s.fit === 'tile') { kx = ky = s.tile.size * W / ew; }
+    else if (s.fit === 'contain') { kx = ky = Math.min(W / ew, H / eh); }
+    else { kx = ky = Math.max((W * c + H * n) / sw, (W * n + H * c) / sh); }
+    if (s.fit !== 'tile') { kx *= s.scale; ky *= s.scale; }
+    return { cx: W / 2 + s.x * W, cy: H / 2 + s.y * H, kx: kx, ky: ky, rad: rad, dw: ew * kx, dh: eh * ky };
+  }
+  function bgDrawOne(ctx, pic, s, p) {
+    ctx.save();
+    ctx.translate(p.cx, p.cy);
+    ctx.scale(p.kx, p.ky);
+    ctx.rotate(p.rad);
+    if (s.flipX || s.flipY) ctx.scale(s.flipX ? -1 : 1, s.flipY ? -1 : 1);
+    ctx.drawImage(pic.img, pic.sx, pic.sy, pic.sw, pic.sh, -pic.nw / 2, -pic.nh / 2, pic.nw, pic.nh);
+    ctx.restore();
+  }
+  function bgTileCanvas(pic, s, p, W, res) {
+    var gap = s.tile.gap * W;
+    var cw = p.dw + gap, ch = p.dh + gap;
+    var k = Math.max(0.05, res);
+    if (Math.max(cw, ch) * k > 4096) k = 4096 / Math.max(cw, ch);
+    var t = document.createElement('canvas');
+    t.width = Math.max(1, Math.round(cw * k));
+    t.height = Math.max(1, Math.round(ch * k));
+    var x = t.getContext('2d');
+    x.imageSmoothingEnabled = true;
+    x.imageSmoothingQuality = 'high';
+    x.scale(t.width / cw, t.height / ch);
+    bgDrawOne(x, pic, s, { cx: cw / 2, cy: ch / 2, kx: p.kx, ky: p.ky, rad: p.rad });
+    return { canvas: t, cw: cw, ch: ch };
+  }
+  function bgDrawTiles(ctx, tile, p, W, H) {
+    var ox = p.cx - tile.cw / 2, oy = p.cy - tile.ch / 2;
+    var pat = ctx.createPattern(tile.canvas, 'repeat');
+    if (pat && typeof pat.setTransform === 'function' && typeof DOMMatrix === 'function') {
+      pat.setTransform(new DOMMatrix([tile.cw / tile.canvas.width, 0, 0, tile.ch / tile.canvas.height, ox, oy]));
+      ctx.fillStyle = pat;
+      ctx.fillRect(0, 0, W, H);
+      return;
+    }
+    var x0 = ox - Math.ceil(ox / tile.cw) * tile.cw, y0 = oy - Math.ceil(oy / tile.ch) * tile.ch;
+    for (var y = y0; y < H; y += tile.ch) for (var x = x0; x < W; x += tile.cw) ctx.drawImage(tile.canvas, x, y, tile.cw, tile.ch);
+  }
+  var canFilter = null;
+  function filterBlur() {
+    if (canFilter == null) {
+      try { var t = document.createElement('canvas').getContext('2d'); t.filter = 'blur(2px)'; canFilter = t.filter === 'blur(2px)'; }
+      catch (e) { canFilter = false; }
+    }
+    return canFilter;
+  }
+  function ctxScale(ctx) {
+    try { var m = ctx.getTransform(); return Math.hypot(m.a, m.b) || 1; } catch (e) { return 1; }
+  }
+  function blank2d(w, h) {
+    var c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(w));
+    c.height = Math.max(1, Math.round(h));
+    return c;
+  }
+
+  P._dropBg = function () {
+    var c = this._bgc;
+    if (!c) return;
+    var self = this;
+    ['src', 'blur', 'tile'].forEach(function (k) { if (c[k] && c[k].canvas) self._dropCanvas(c[k].canvas); });
+    this._bgc = {};
+  };
+  P._bgRaw = function (bg, s) {
+    var node = assetNode(this._assets[bg.src]);
+    if (!node) return null;
+    var iw = node.naturalWidth || node.width, ih = node.naturalHeight || node.height;
+    if (!iw || !ih) return null;
+    var sw = Math.max(1, iw * s.crop.w), sh = Math.max(1, ih * s.crop.h);
+    return { img: node, sx: iw * s.crop.x, sy: ih * s.crop.y, sw: sw, sh: sh, nw: sw, nh: sh, id: 'raw|' + bg.src + '|' + JSON.stringify(s.crop) };
+  };
+  function bgProcessed(canvas, raw, id) {
+    return { img: canvas, sx: 0, sy: 0, sw: canvas.width, sh: canvas.height, nw: raw ? raw.nw : canvas.width, nh: raw ? raw.nh : canvas.height, id: id };
+  }
+  /* The photo to draw: the raw asset when there is nothing to process, else the processed bitmap (cached, made off-frame). */
+  P._bgPic = function (bg, s, opts) {
+    if (opts && opts.bitmaps && opts.bitmaps[BG_KEY]) return opts.bitmaps[BG_KEY];
+    var raw = this._bgRaw(bg, s);
+    if (!raw) return null;
+    var look = bgLook(bg, s);
+    if (!imageSteps(look, false).length) return raw;
+    var mul = this._level() === 'high' ? 2 : this._level() === 'mid' ? 1.5 : 1;
+    var p = bgPlace(s, this._doc.width, this._doc.height, raw.sw, raw.sh);
+    var need = Math.max(64, Math.min(this._previewMax(), Math.ceil(Math.max(p.dw, p.dh) * mul)));
+    var target = Math.ceil(need / 128) * 128;
+    var key = JSON.stringify([bg.src, s.crop, look.adjust, look.filter, this._level(), target]);
+    var c = this._bgc || (this._bgc = {});
+    if (!c.src || c.src.key !== key) this._scheduleBg(key, look, target);
+    if (c.src && c.src.canvas) return bgProcessed(c.src.canvas, raw, 'p|' + c.src.key);
+    return raw;
+  };
+  P._scheduleBg = function (key, look, target) {
+    var job = this._bgJob || (this._bgJob = { busy: null, want: null });
+    if (job.busy === key || (job.want && job.want.key === key)) return;
+    job.want = { key: key, look: look, target: target };
+    if (!job.busy) this._pumpBg();
+  };
+  P._pumpBg = function () {
+    var job = this._bgJob;
+    var want = job && job.want;
+    if (!want) return;
+    job.want = null;
+    job.busy = want.key;
+    var self = this;
+    function next() { job.busy = null; if (job.want && !self._dead) self._pumpBg(); }
+    this._processImage(want.look, want.target, true).then(function (canvas) {
+      if (self._dead) return;
+      var c = self._bgc || (self._bgc = {});
+      if (c.src && c.src.canvas && c.src.canvas !== canvas) self._dropCanvas(c.src.canvas);
+      c.src = { key: want.key, canvas: canvas };
+      self._mark();
+      next();
+    }, function () {
+      var c = self._bgc || (self._bgc = {});
+      c.src = { key: want.key, canvas: null };
+      next();
+    });
+  };
+  /* Export: process the photo at output resolution. */
+  P._prepareBg = function (scale) {
+    var bg = this._doc.background;
+    if (!bgPhoto(bg)) return Promise.resolve(null);
+    var rec = this._assets[bg.src];
+    var self = this;
+    return Promise.resolve(rec && rec.ready).then(function () {
+      var s = bgSpec(bg);
+      var raw = self._bgRaw(bg, s);
+      if (!raw) return null;
+      var look = bgLook(bg, s);
+      if (!imageSteps(look, false).length) return raw;
+      var p = bgPlace(s, self._doc.width, self._doc.height, raw.sw, raw.sh);
+      var need = Math.ceil(Math.max(p.dw, p.dh) * scale);
+      var target = Math.min(8192, Math.max(need, Math.min(Math.max(raw.sw, raw.sh), 8192)));
+      return self._processImage(look, target, false).then(function (canvas) {
+        return canvas ? bgProcessed(canvas, raw, 'export') : raw;
+      });
+    }, function () { return null; });
+  };
+  /* Sharp photo at full opacity: one placed image, or a tiled fill. */
+  P._bgSharp = function (ctx, pic, s, W, H, res, cache) {
+    var p = bgPlace(s, W, H, pic.nw, pic.nh);
+    if (s.fit !== 'tile') { bgDrawOne(ctx, pic, s, p); return; }
+    var tile;
+    if (cache) {
+      var bucket = Math.pow(2, clamp(Math.round(Math.log(Math.max(res, 0.01)) / Math.LN2 * 2) / 2, -3, 1.5));
+      var key = JSON.stringify([pic.id, s.tile, s.rotation, s.flipX, s.flipY, W, bucket]);
+      if (!cache.tile || cache.tile.key !== key) {
+        if (cache.tile && cache.tile.canvas) this._dropCanvas(cache.tile.canvas);
+        var made = bgTileCanvas(pic, s, p, W, bucket);
+        cache.tile = { key: key, canvas: made.canvas, cw: made.cw, ch: made.ch };
+      }
+      tile = cache.tile;
+    } else tile = bgTileCanvas(pic, s, p, W, res);
+    bgDrawTiles(ctx, tile, p, W, H);
+    if (!cache) this._dropCanvas(tile.canvas);
+  };
+  /* Blurred photo as a page-sized bitmap at r pixels per document unit. */
+  P._bgBlurred = function (pic, s, W, H, r, cache) {
+    var cw = Math.max(1, Math.round(W * r)), ch = Math.max(1, Math.round(H * r));
+    var br = s.blur * r;
+    var pad = Math.ceil(br * 2.5);
+    var sharp = blank2d(cw + pad * 2, ch + pad * 2);
+    var x = sharp.getContext('2d');
+    x.imageSmoothingEnabled = true;
+    x.imageSmoothingQuality = 'high';
+    x.translate(pad, pad);
+    x.scale(r, r);
+    if (s.fit === 'cover') {
+      x.save();
+      x.translate(W / 2, H / 2);
+      x.scale((W + pad * 2 / r) / W, (H + pad * 2 / r) / H);
+      x.translate(-W / 2, -H / 2);
+      this._bgSharp(x, pic, s, W, H, r, null);
+      x.restore();
+    }
+    this._bgSharp(x, pic, s, W, H, r, cache);
+    var out = blank2d(cw, ch);
+    var o = out.getContext('2d');
+    o.imageSmoothingEnabled = true;
+    o.imageSmoothingQuality = 'high';
+    if (filterBlur()) {
+      o.filter = 'blur(' + br + 'px)';
+      o.drawImage(sharp, -pad, -pad);
+      o.filter = 'none';
+    } else {
+      var f = Math.max(1, br / 2);
+      var small = blank2d(sharp.width / f, sharp.height / f);
+      var sx = small.getContext('2d');
+      sx.imageSmoothingEnabled = true;
+      sx.drawImage(sharp, 0, 0, small.width, small.height);
+      o.drawImage(small, pad / f, pad / f, cw / f, ch / f, 0, 0, cw, ch);
+      this._dropCanvas(small);
+    }
+    this._dropCanvas(sharp);
+    return out;
+  };
+  P._paintBgPhoto = function (ctx, bg, opts) {
+    var s = bgSpec(bg);
+    var pic = this._bgPic(bg, s, opts);
+    if (!pic) return;
+    var W = this._doc.width, H = this._doc.height;
+    var preview = !opts.bitmaps;
+    var cache = preview ? (this._bgc || (this._bgc = {})) : null;
+    var res = ctxScale(ctx);
+    ctx.save();
+    ctx.globalAlpha = ctx.globalAlpha * s.opacity;
+    if (s.blur > 0) {
+      var comp;
+      if (preview) {
+        var r = Math.min(1, Math.min(this._previewMax(), 1600) / Math.max(W, H));
+        var key = JSON.stringify([pic.id, s, W, H, r]);
+        if (!cache.blur || cache.blur.key !== key) {
+          if (cache.blur && cache.blur.canvas) this._dropCanvas(cache.blur.canvas);
+          cache.blur = { key: key, canvas: this._bgBlurred(pic, s, W, H, r, cache) };
+        }
+        comp = cache.blur.canvas;
+      } else comp = this._bgBlurred(pic, s, W, H, Math.min(res, 16384 / Math.max(W, H)), null);
+      ctx.drawImage(comp, 0, 0, W, H);
+      if (!preview) this._dropCanvas(comp);
+    } else {
+      this._bgSharp(ctx, pic, s, W, H, res, cache);
+    }
+    ctx.restore();
+    if (s.dim && s.dim.amount > 0) {
+      ctx.save();
+      ctx.globalAlpha = s.dim.amount;
+      ctx.fillStyle = s.dim.color;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+  };
+  /* Edit-background mode: the part of the photo outside the page, faded. */
+  P._drawBgGhost = function (ctx) {
+    var bg = this._doc.background;
+    if (!bgPhoto(bg)) return;
+    var s = bgSpec(bg);
+    if (s.fit === 'tile') return;
+    var pic = this._bgPic(bg, s, {});
+    if (!pic) return;
+    ctx.save();
+    ctx.globalAlpha = 0.34;
+    bgDrawOne(ctx, pic, s, bgPlace(s, this._doc.width, this._doc.height, pic.nw, pic.nh));
+    ctx.restore();
+  };
+  P._drawBgFrame = function (ctx) {
+    var bg = this._doc.background;
+    if (!bgPhoto(bg)) return;
+    var s = bgSpec(bg);
+    var raw = this._bgRaw(bg, s);
+    ctx.save();
+    ctx.lineWidth = 2 / this._zoom;
+    ctx.strokeStyle = '#7457F0';
+    ctx.strokeRect(0, 0, this._doc.width, this._doc.height);
+    if (raw && s.fit !== 'tile') {
+      var p = bgPlace(s, this._doc.width, this._doc.height, raw.nw, raw.nh);
+      ctx.translate(p.cx, p.cy);
+      ctx.rotate(p.rad);
+      var hw = raw.nw * p.kx / 2, hh = raw.nh * p.ky / 2;
+      if (Math.abs(Math.sin(p.rad)) > 0.5) { hw = raw.nw * p.ky / 2; hh = raw.nh * p.kx / 2; }
+      ctx.setLineDash([6 / this._zoom, 5 / this._zoom]);
+      ctx.lineWidth = 1.5 / this._zoom;
+      ctx.strokeStyle = 'rgba(116,87,240,.85)';
+      ctx.strokeRect(-hw, -hh, hw * 2, hh * 2);
+    }
+    ctx.restore();
   };
 
   P._drawLayer = function (ctx, layer, opts) {
@@ -3411,4 +3742,6 @@
 
   LE.Scene = Scene;
   LE.Scene.blank = blank;
+  LE.Scene.backgroundSpec = bgSpec;
+  LE.Scene.backgroundPlacement = function (bg, W, H, sw, sh) { return bgPlace(bgSpec(bg), W, H, sw, sh); };
 })(typeof window !== 'undefined' ? window : this);
