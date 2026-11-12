@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Face lab</title>
+<link rel="stylesheet" href="lab.css">
+</head>
+<body>
+<main>
+  <h1>Face lab</h1>
+  <p class="lead">Finds faces and 478 landmarks on this device, derives part masks, then proves the data is good enough for skin-only smoothing and a face-aware warp. Nothing downloads until you press <b>Make face map</b>. Face points are never uploaded and are not used to identify anyone. <a href="index.html">Maps lab</a> &middot; <a href="depth.html">Depth lab</a></p>
+
+  <div class="panel">
+    <div id="drop">Drop a photo here, or <label class="btn" style="display:inline-flex;color:var(--ink)">Choose a photo<input id="file" type="file" accept="image/*" class="hidden"></label>
+      or pick one from the pool: <select id="pool" style="min-height:36px"></select></div>
+    <p class="hint" id="srcinfo"></p>
+    <div class="row" style="margin-top:8px">
+      <label class="chk"><input type="checkbox" id="useParts" checked> Add hair and skin detail (about 9 MB more)</label>
+      <label>Most faces<select id="maxFaces"><option>1</option><option>4</option><option selected>8</option><option>16</option></select></label>
+      <label class="chk"><input type="checkbox" id="scan" checked> Look for small faces</label>
+      <button class="gold" id="go" disabled>Make face map</button>
+      <button id="cancel" class="hidden">Cancel</button>
+    </div>
+    <progress id="bar" max="1" value="0" class="hidden"></progress>
+    <p id="status"></p>
+    <table id="timings" class="hidden"></table>
+  </div>
+
+  <div class="panel" id="viewPanel" hidden>
+    <h2>Landmarks and parts</h2>
+    <div class="row" style="margin-bottom:8px">
+      <label class="chk"><input type="checkbox" id="vPoints" checked> Points</label>
+      <label class="chk"><input type="checkbox" id="vLines" checked> Outlines</label>
+      <label class="chk"><input type="checkbox" id="vBox"> Boxes</label>
+      <label>Part mask
+        <select id="partSel"><option value="skin">Skin</option><option value="eyes">Eyes</option><option value="lips">Lips</option><option value="teeth">Teeth</option><option value="brows">Brows</option><option value="underEyes">Under-eyes</option><option value="innerMouth">Inner mouth</option></select></label>
+      <label class="chk"><input type="checkbox" id="useSeg" checked> Use hair and skin detail for skin</label>
+    </div>
+    <div class="grid">
+      <div class="cell"><canvas id="cOver"></canvas><span class="cap">Landmarks</span></div>
+      <div class="cell"><canvas id="cMask"></canvas><span class="cap" id="capMask">Mask</span></div>
+    </div>
+    <p class="hint" id="faceInfo"></p>
+  </div>
+
+  <div class="panel" id="demoSkin" hidden>
+    <h2>Skin smoothing, skin only, texture kept</h2>
+    <div class="cell"><canvas id="cSkin"></canvas><span class="cap" id="capSkin">After</span></div>
+    <div class="row" style="margin-top:8px">
+      <label>Amount <input type="range" id="sAmt" min="0" max="1" step="0.01" value="0.8"></label>
+      <label>Blemish size <input type="range" id="sRad" min="2" max="16" step="1" value="7"></label>
+      <label>Keep texture <input type="range" id="sTex" min="0" max="1" step="0.01" value="0.75"></label>
+      <label class="chk"><input type="checkbox" id="sSeg" checked> Skin mask uses hair and skin detail</label>
+      <label class="chk"><input type="checkbox" id="sShowMask"> Show mask only</label>
+      <button id="sHold">Hold for original</button>
+    </div>
+  </div>
+
+  <div class="panel" id="demoWarp" hidden>
+    <h2>Face-aware warp, anchored to landmarks</h2>
+    <div class="cell"><canvas id="cWarp"></canvas><span class="cap">After</span></div>
+    <div class="row" style="margin-top:8px">
+      <label>Face <select id="wFace"></select></label>
+      <label>Adjust <select id="wKind"><option value="eyes">Eye size</option><option value="jaw">Jaw width</option><option value="smile">Smile</option></select></label>
+      <label>Amount <input type="range" id="wAmt" min="-1" max="1" step="0.01" value="0.5"></label>
+      <label class="chk"><input type="checkbox" id="wGrid"> Show displacement grid</label>
+      <button id="wHold">Hold for original</button>
+    </div>
+  </div>
+</main>
+<script src="maps.js"></script>
+<script src="face-lab.js"></script>
+</body>
+</html>

@@ -8,6 +8,9 @@ node_modules/
 /assets/models/pro/
 __pycache__/
 
+# maps lab: larger depth candidates fetched by scripts/fetch-maps-models.js
+/assets/models/maps/local/
+
 # OCR language packs fetched by scripts/fetch-ocr-data.js (the English pack is committed)
 /assets/models/ocr/more/
 
@@ -15,3 +18,4 @@ __pycache__/
 /tools/raw-decoder/.cache/
 # sample RAW files fetched by scripts/fetch-raw-samples.js
 /labs/raw/samples/
+__pycache__/
