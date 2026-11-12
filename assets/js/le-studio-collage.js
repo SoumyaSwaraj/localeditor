@@ -686,7 +686,7 @@
     var bg = section(c, 'Background');
     var curBg = (d.background && d.background.type === 'color' && d.background.color) || '';
     bg.body.appendChild(swatchRow(c, curBg, function (col, key) {
-      if (key) { c.scene.setBackground({ type: 'color', color: col }); return; }
+      if (key) { c.scene.setBackground({ type: 'color', color: col }, { coalesce: key }); return; }
       commit(c, function () { c.setBackground({ type: 'color', color: col }); });
     }, 'Background colour'));
     bg.body.appendChild(c.h('<p class="sx-note">Spacing and margin show this colour. Photo backgrounds live in the Background panel.</p>'));

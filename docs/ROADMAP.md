@@ -34,31 +34,48 @@ Written 12 November 2026 by the lead architect. This supersedes the "Plans after
 | 1.7 | **Background remover spike.** Can a permissively licensed model remove a background in the browser at acceptable speed and size? Prototype, numbers, recommendation. | Junior |
 | 1.8 | **Test harness and baseline QA.** Playwright smoke tests for the core flows at desktop and phone sizes; bug list. | QA |
 
-## Phase 2 — easy and complete
+## Build order after phase 1 (set by the owner, 12 November 2026)
+
+1. **Wave 2 — features that spread and features people use every week.**
+2. **Wave 3 — what makes agents better at design.**
+3. Remaining depth work, as capacity allows.
+
+The open-format core (validator, shorthand, import and export) is pulled forward into wave 2, because remix links, template variables and bulk create all need it.
+
+## Wave 2 — spread and weekly use
+
+| Id | Work | Depends on |
+|---|---|---|
+| 2.1 | **Open format core.** `.ledesign.json`: one validator shared with `.leproject`, the shorthand in `docs/AI-FORMAT.md`, import and export in the studio, JSON Schema. | Phase 1 document fields |
+| 2.2 | **Remix links.** A template in the URL fragment: layout, text, styles and empty photo slots. Open the link, add photos, edit. Nothing reaches a server. Designs with photos share as a file. | 2.1 |
+| 2.3 | **Process replay.** Export the making of a design as a short video, for a person's edits or an agent's. | — |
+| 2.4 | **One design, every size.** Pick sizes, get a zip. Plus copy to clipboard and the system share sheet. | — |
+| 2.5 | **Carousel maker.** One wide design split into seamless slides, with slide guides while editing. | 2.4 |
+| 2.6 | **Template variables and bulk create.** `{{name}}`, `{{price}}`, `{{photo}}` in any text or photo slot; a spreadsheet in, a zip of finished designs out. | 2.1 |
+| 2.7 | **Photo privacy check.** "What does this photo know about you?": location, device, time; strip in one tap. Metadata is stripped on export by default. Redact tool (blur, pixelate, box) burned in on export. | — |
+| 2.8 | **Screenshot and post beautifier.** Paste a screenshot or code and get a framed, share-ready image. | — |
+| 2.9 | **Background remover in the studio, and the thumbnail kit** (cut-out, outline, bold text). | 1.7 passing |
+| 2.10 | **Photobooth strips and recap collages** from the camera or the camera roll. | 1.3 |
+| 2.11 | **Phone studio pass and first-run guidance**, driven by the QA phone review and the designer's polish list. | 1.8 |
+
+## Wave 3 — agents
 
 | Id | Work |
 |---|---|
-| 2.1 | Phone studio pass: larger handles, pinch and two-finger rotate, contextual bottom bar, sheet snap points, thumb-reach layout. |
-| 2.2 | First-run guidance, command palette (search every action), shortcut sheet, better empty states. |
-| 2.3 | Privacy tools: redact (blur, pixelate, solid box, burned in on export), strip metadata on export by default, a "what this file contains" report. |
-| 2.4 | Export and share: presets, export several sizes at once, WebP and AVIF, copy to clipboard, system share sheet. |
-| 2.5 | Photo depth: curves, per-colour HSL, LUT import (`.cube`), straighten and perspective, grain, duotone, tilt-shift. |
-| 2.6 | Template library beyond collage (quotes, sales, stories, thumbnails, invitations), shared as `.letemplate`. |
-| 2.7 | Background remover in the studio, if 1.7 passes. |
-| 2.8 | More elements: photo frames and grids, charts from pasted data, tables, device mock-ups, speech bubbles. |
+| 3.1 | **Live link.** Open a folder from the studio; it reloads when the file changes, writes back when the person edits, and highlights what changed. File System Access API, no server. |
+| 3.2 | **Self-check loop.** After each load the studio writes a problems list (overflowing text, off-page layers, low contrast, missing images) and a rendered preview next to the design. |
+| 3.3 | **Local bridge and one-command setup.** `npx localeditor`: serves the app, syncs a folder with any browser, and runs an MCP server (read, write, patch, validate, render, catalogues). |
+| 3.4 | **Brand file.** Colours, fonts and logo in one file that every agent output follows; reads and writes the existing brand kit. |
+| 3.5 | **Design as code.** A command and a GitHub Action that validate and render `.ledesign` files in a repository. |
+| 3.6 | **"Edit this design" embed.** A small viewer for docs and blogs with an "Open in LocalEditor" button. |
+| 3.7 | **Agent kit.** `llms.txt`, format guide, examples, instruction files for Claude Code, Codex, OpenCode, Cursor and Antigravity. |
+| 3.8 | **Agent activity in the studio.** Change feed, per-change undo, pinned notes for the agent. |
 
-## Phase 3 — AI-ready
+## Later — depth
 
-| Id | Work |
-|---|---|
-| 3.1 | **Open design format.** A design as readable JSON plus an assets folder (`.ledesign`), with a published JSON Schema, a validator and version migration. The zip `.leproject` stays as the single-file form of the same document. |
-| 3.2 | Import and export of the open format in the studio, with a lossless round trip. |
-| 3.3 | **Live link.** Open a folder from the studio; the studio reloads when the file changes and writes back when the person edits. Changed layers are highlighted. Uses the File System Access API, so it works from the hosted site with no server. |
-| 3.4 | **Local bridge.** A zero-dependency Node command that serves the app locally, syncs a folder with any browser (including Safari and Firefox), and exposes an MCP server so an agent can read the design, apply changes and ask the open tab for a rendered preview. |
-| 3.5 | **Agent kit.** `llms.txt`, format guide, examples, and ready-made instruction files for Claude Code, Codex, OpenCode, Cursor and Antigravity. |
-| 3.6 | **Agent activity in the studio.** A change feed, per-change undo, and pinned notes a person can leave for the agent ("make this warmer"). |
+Command palette and shortcut sheet; curves, per-colour HSL, LUT import, straighten and perspective, grain, duotone, tilt-shift; a wider template library shared as `.letemplate`; charts, tables, device mock-ups, speech bubbles.
 
-Phase 3 starts after phases 1 and 2 land, so the format covers every feature. Rule A3 is what keeps that possible.
+Not planned: accounts, cloud sync, a hosted gallery, a forced watermark, an in-app assistant that needs our API key.
 
 ## Working rules for everyone on the build
 

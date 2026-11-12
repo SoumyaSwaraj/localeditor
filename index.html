@@ -3,221 +3,348 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>LocalEditor — Edit images on your device</title>
-<meta name="description" content="A private image studio in the browser. Crop, resize, color, text, collages, and shareable recipes. Files stay on your device and the tools work offline.">
+<title>LocalEditor — A private design studio that runs on your device</title>
+<meta name="description" content="Edit photos, design posts and collages, and sign or merge PDFs in your browser. Nothing is uploaded, there is no account, and it works offline once installed.">
 <link rel="canonical" href="https://localeditor.net/">
 <meta name="robots" content="index,follow,max-image-preview:large">
-<meta name="theme-color" content="#141318">
+<meta name="theme-color" content="#F7F6F3">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
 <link rel="preload" href="assets/fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/instrument-serif-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/img/home/people-08.webp" as="image" type="image/webp">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="LocalEditor">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="LocalEditor">
-<meta property="og:title" content="LocalEditor — Edit images on your device">
-<meta property="og:description" content="Crop, color, export, and share editing recipes. Nothing is uploaded.">
+<meta property="og:title" content="LocalEditor — A private design studio that runs on your device">
+<meta property="og:description" content="Photos, designs and PDFs, edited in your browser. Nothing is uploaded.">
 <meta property="og:url" content="https://localeditor.net/">
+<meta property="og:image" content="https://localeditor.net/assets/icons/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="assets/css/app.css">
-<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"LocalEditor","url":"https://localeditor.net/","applicationCategory":"MultimediaApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Private browser image studio. Files stay on the device."}</script>
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"LocalEditor","url":"https://localeditor.net/","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"A private photo and PDF studio in the browser. Files stay on the device and the app works offline."},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Do my photos or PDFs leave this device?","acceptedAnswer":{"@type":"Answer","text":"No. The studios and tools run inside your browser. There is no account and no upload; files are read, edited and saved on your device."}},{"@type":"Question","name":"Does it work offline?","acceptedAnswer":{"@type":"Answer","text":"Yes. After the first visit the app keeps working without a connection. You can also install it to your home screen or dock."}},{"@type":"Question","name":"Is it free?","acceptedAnswer":{"@type":"Answer","text":"Yes. There is no sign-up, no watermark and no paid tier."}}]}]}</script>
 </head>
 <body class="le-built">
 <a class="skip" href="#main">Skip to content</a>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <linearGradient id="g-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6DC9E"/><stop offset=".55" stop-color="#E2B15A"/><stop offset="1" stop-color="#B9832F"/></linearGradient>
-    <linearGradient id="g-arc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7457F0"/><stop offset=".5" stop-color="#E0668E"/><stop offset="1" stop-color="#F2CF86"/></linearGradient>
-  </defs>
-</svg>
 <div class="le-app">
-  <aside class="le-side" data-fill></aside>
+  <aside class="le-side" data-fill aria-label="Menu"></aside>
   <div class="le-main">
     <header class="le-top" data-fill></header>
     <main id="main" class="le-content">
       <div class="home">
 
-        <section class="bento" aria-label="Introduction">
-          <article class="hero-card">
-            <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
-            <div class="hero-copy">
-              <p class="chip"><span class="dot"></span>Private image studio</p>
-              <h1>Edit the photo.<br><em>Leave the file here.</em></h1>
-              <p class="hero-lead">Crop, light, color, type, and shareable recipes. Everything runs in your browser, so the picture never travels.</p>
-              <div class="hero-actions">
-                <a class="btn btn-gold btn-lg" href="studio/">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17v4M17 19h4"/></svg>
-                  Open studio
-                </a>
-                <a class="btn btn-ghost btn-lg" href="recipes/">Browse recipes
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                </a>
-              </div>
+        <section class="hp-hero" aria-labelledby="hp-title">
+          <div class="hp-hero-copy">
+            <p class="hp-kicker">
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Free</span>
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>No account</span>
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Works offline</span>
+            </p>
+            <h1 id="hp-title">The design studio that <em>stays on your&nbsp;device.</em></h1>
+            <p class="hp-lead">Edit photos, lay out posts and collages, sign and merge PDFs. It all runs in your browser, so your files are never uploaded.</p>
+            <div class="hp-cta">
+              <a class="btn btn-gold btn-lg" href="studio/">Open the studio
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </a>
+              <a class="btn btn-ghost btn-lg" href="pdf-studio/">Edit a PDF</a>
             </div>
-            <div class="mock" aria-hidden="true">
-              <div class="mock-photo">
-                <span class="sun"></span><span class="hill h1"></span><span class="hill h2"></span>
-                <span class="mock-before"></span>
-                <span class="mock-split"><b></b></span>
-              </div>
-              <div class="float f1"><span class="ic ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2"/></svg></span><span><small>Warmth</small><b>+18</b></span></div>
-              <div class="float f2"><span class="ic ic-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h9l3 3v15H6z"/><path d="M9 12h6M9 16h4"/></svg></span><span><small>Recipe</small><b>Golden Hour</b></span></div>
-              <div class="float f3"><span class="ic ic-jade"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span><span><small>Exported</small><b>1.2 MB · JPG</b></span></div>
-            </div>
-          </article>
+          </div>
 
-          <article class="gauge-card">
-            <div class="gauge-head">
-              <span class="ic ic-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.5 3 8.2 7 10 4-1.8 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></svg></span>
-              <strong>Privacy score</strong>
+          <figure class="hp-shot">
+            <div class="hp-app" role="img" aria-label="The LocalEditor photo studio with a portrait design open, the text layer selected, and the Cinematic Portrait recipe applied.">
+              <div class="hp-app-bar" aria-hidden="true">
+                <span class="le-mark"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#E9BE6A"/><circle cx="16" cy="16" r="7.5" fill="none" stroke="#2A1F0A" stroke-width="1.9"/><circle cx="16" cy="16" r="2" fill="#2A1F0A"/></svg></span>
+                <span class="hp-app-title">Summer story</span>
+                <span class="hp-app-saved"><i></i>Saved on this device</span>
+                <span class="hp-app-sp"></span>
+                <span class="hp-app-tools">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
+                </span>
+                <span class="hp-app-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Download</span>
+              </div>
+              <div class="hp-app-body" aria-hidden="true">
+                <div class="hp-app-rail">
+                  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Design</span>
+                  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg>Text</span>
+                  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7 9l5-5 5 5M5 20h14"/></svg>Uploads</span>
+                  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Adjust</span>
+                  <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 12h6M9 16h4"/></svg>Recipes</span>
+                  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg>Layers</span>
+                </div>
+                <div class="hp-app-panel">
+                  <p class="hp-pn-eyebrow">Recipe</p>
+                  <p class="hp-pn-title">Cinematic Portrait</p>
+                  <ul class="hp-pn-steps">
+                    <li><i></i>Exposure<b>+0.16</b></li>
+                    <li><i></i>Warmth<b>+14</b></li>
+                    <li><i></i>Contrast<b>+16</b></li>
+                    <li><i></i>Vignette<b>32%</b></li>
+                    <li class="off"><i></i>Sharpen<b>22</b></li>
+                  </ul>
+                  <div class="hp-pn-slider"><div>Strength<b>75%</b></div><span class="hp-pn-track"></span></div>
+                  <span class="hp-pn-apply">Save as my recipe</span>
+                </div>
+                <div class="hp-app-stage">
+                  <div class="hp-page">
+                    <img src="assets/img/home/people-08.webp" width="960" height="640" alt="" decoding="async" fetchpriority="high">
+                    <span class="hp-page-vig"></span>
+                    <div class="hp-page-text">
+                      <span class="hp-sel-label">Title</span>
+                      Long light,<br><em>good friends.</em>
+                      <small>Summer 2026</small>
+                      <i class="hp-h hp-h1"></i><i class="hp-h hp-h2"></i><i class="hp-h hp-h3"></i><i class="hp-h hp-h4"></i>
+                    </div>
+                  </div>
+                  <span class="hp-stage-meta">Instagram portrait · 1080 × 1350</span>
+                </div>
+              </div>
+              <div class="hp-app-tabs" aria-hidden="true">
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Design</span>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg>Text</span>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7 9l5-5 5 5M5 20h14"/></svg>Uploads</span>
+                <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 12h6M9 16h4"/></svg>Recipes</span>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg>Layers</span>
+              </div>
             </div>
-            <div class="gauge">
-              <svg viewBox="0 0 200 116">
-                <path class="g-ticks" d="M20 104a80 80 0 0 1 160 0" pathLength="100"/>
-                <path class="g-track" d="M34 104a66 66 0 0 1 132 0" pathLength="100"/>
-                <path class="g-fill" d="M34 104a66 66 0 0 1 132 0" pathLength="100"/>
-              </svg>
-              <div class="g-num"><b>100</b><span>out of 100</span></div>
+          </figure>
+        </section>
+
+        <section class="hp-pillars" aria-label="Why LocalEditor">
+          <div class="hp-pillar">
+            <span class="hp-pillar-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+            <h2>Nothing is uploaded</h2>
+            <p>Your browser opens, edits and saves every file on this device. There is no account and no server that ever sees your photos or documents.</p>
+          </div>
+          <div class="hp-pillar">
+            <span class="hp-pillar-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>
+            <h2>Works offline, installs anywhere</h2>
+            <p>Add it to your phone’s home screen or your computer’s dock. After the first visit the studios open without a connection.</p>
+            <button type="button" class="btn-link" data-le-install>Install the app
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+          <div class="hp-pillar">
+            <span class="hp-pillar-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M10 13l-2 2 2 2M14 13l2 2-2 2"/></svg></span>
+            <h2>Files you own</h2>
+            <p>Save a whole design as a project file and reopen it later. Share an edit as a recipe: a small, readable file of steps that can never run code.</p>
+          </div>
+        </section>
+
+        <section class="hp-section" aria-labelledby="hp-studios-title">
+          <div class="hp-head">
+            <p class="eyebrow">Two studios</p>
+            <h2 id="hp-studios-title">One for pictures, one for <em>paperwork.</em></h2>
+            <p>Both open instantly in the browser and keep your work on this device.</p>
+          </div>
+          <div class="hp-studios">
+            <article class="hp-studio">
+              <div class="hp-studio-art" aria-hidden="true">
+                <div class="hp-collage">
+                  <img src="assets/img/home/garden-05.webp" width="560" height="374" alt="" loading="lazy" decoding="async">
+                  <img src="assets/img/home/still-01.webp" width="560" height="374" alt="" loading="lazy" decoding="async">
+                  <img src="assets/img/home/travel-08.webp" width="560" height="374" alt="" loading="lazy" decoding="async">
+                </div>
+                <span class="hp-collage-cap">weekend, slowly</span>
+              </div>
+              <div class="hp-studio-body">
+                <h3>Photo studio</h3>
+                <p>Layers, text in dozens of typefaces, collages with a slot for every photo, filters and every social size. Start from a template or a blank page.</p>
+                <ul class="hp-tags"><li>Crop and adjust</li><li>Text and fonts</li><li>Collages</li><li>Filters</li><li>Recipes</li></ul>
+                <a class="btn btn-gold" href="studio/">Open the photo studio</a>
+              </div>
+            </article>
+            <article class="hp-studio">
+              <div class="hp-studio-art" aria-hidden="true">
+                <div class="hp-doc hp-doc-2"></div>
+                <div class="hp-doc">
+                  <b>Rental agreement</b>
+                  <i></i><i class="m"></i><i></i><i class="s"></i>
+                  <i class="gap"></i><i></i><i class="m"></i>
+                  <div class="hp-sign">
+                    <svg viewBox="0 0 160 48" preserveAspectRatio="none"><path d="M4 34c10-2 14-24 22-24 7 0-4 30 4 30 6 0 10-20 16-20 5 0 1 14 7 14 5 0 9-10 14-10 4 0 2 8 7 8 8 0 18-8 30-10 10-2 20 0 30 2" fill="none" stroke="#4E36C9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <small>Signed here</small>
+                  </div>
+                </div>
+                <span class="hp-doc-chip"><i></i>Page 2 of 4</span>
+              </div>
+              <div class="hp-studio-body">
+                <h3>PDF studio</h3>
+                <p>Sign and fill forms, add text and images, then merge, split and reorder pages. Turn Word, Excel and PowerPoint files into PDFs.</p>
+                <ul class="hp-tags"><li>Sign</li><li>Fill forms</li><li>Merge and split</li><li>Reorder pages</li><li>Office to PDF</li></ul>
+                <a class="btn" href="pdf-studio/">Open the PDF studio</a>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="hp-section hp-files" aria-labelledby="hp-files-title">
+          <div>
+            <div class="hp-head">
+              <p class="eyebrow">Open files</p>
+              <h2 id="hp-files-title">Share the edit, <em>not the photo.</em></h2>
+              <p>Your work is saved as plain files you can keep, copy and send, so you are never locked in.</p>
             </div>
-            <ul class="gauge-facts">
-              <li><b>0</b><span>Uploads</span></li>
-              <li><b>0</b><span>Accounts</span></li>
-              <li><b>0</b><span>Trackers</span></li>
+            <ul class="hp-list">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 12h6M9 16h4"/></svg><span><b>Recipes</b> are lists of edits such as warmth, contrast and sharpen. Anyone can apply one to their own picture, change the steps and pass it on.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span><b>Projects</b> keep every page, layer and photo of a design in one <span class="mono">.leproject</span> file on your own disk.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.2 7 10 4-1.8 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></svg><span><b>Safe to open.</b> Both are data only. They are checked on import and can never carry scripts.</span></li>
             </ul>
-            <p>Every edit happens on this device, including after you install the app.</p>
-          </article>
+            <a class="btn-link" href="recipes/">Browse the recipes
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+          </div>
+          <figure class="hp-code" aria-label="An excerpt of the Cinematic Portrait recipe file">
+            <div class="hp-code-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/></svg><span>cinematic-portrait.leworkflow</span><span>Excerpt</span></div>
+<pre><code><span class="p">{</span>
+  <span class="k">"format"</span><span class="p">:</span> <span class="s">"localeditor-workflow"</span><span class="p">,</span>
+  <span class="k">"metadata"</span><span class="p">: {</span> <span class="k">"name"</span><span class="p">:</span> <span class="s">"Cinematic Portrait"</span> <span class="p">},</span>
+  <span class="k">"steps"</span><span class="p">: [</span>
+    <span class="p">{</span> <span class="k">"operation"</span><span class="p">:</span> <span class="s">"exposure"</span><span class="p">,</span>    <span class="k">"value"</span><span class="p">:</span> <span class="n">0.16</span> <span class="p">},</span>
+    <span class="p">{</span> <span class="k">"operation"</span><span class="p">:</span> <span class="s">"temperature"</span><span class="p">,</span> <span class="k">"value"</span><span class="p">:</span> <span class="n">14</span> <span class="p">},</span>
+    <span class="p">{</span> <span class="k">"operation"</span><span class="p">:</span> <span class="s">"contrast"</span><span class="p">,</span>    <span class="k">"value"</span><span class="p">:</span> <span class="n">16</span> <span class="p">},</span>
+    <span class="p">{</span> <span class="k">"operation"</span><span class="p">:</span> <span class="s">"vignette"</span><span class="p">,</span>    <span class="k">"amount"</span><span class="p">:</span> <span class="n">0.32</span> <span class="p">},</span>
+    <span class="p">{</span> <span class="k">"operation"</span><span class="p">:</span> <span class="s">"sharpness"</span><span class="p">,</span>   <span class="k">"value"</span><span class="p">:</span> <span class="n">22</span> <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span></code></pre>
+          </figure>
         </section>
 
-        <section class="stat-strip" aria-label="At a glance">
-          <div class="stat-tile"><span class="ic ic-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></span><div><b>30+</b><span>Tools in one place</span></div></div>
-          <div class="stat-tile"><span class="ic ic-rose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.4a5 5 0 0 1 7 0"/><path d="M3 3l18 18"/></svg></span><div><b>Offline</b><span>Install once, edit anywhere</span></div></div>
-          <div class="stat-tile"><span class="ic ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 3h9l3 3v15H6z"/><path d="M9 12h6M9 16h4"/></svg></span><div><b>6</b><span>Recipes ready to apply</span></div></div>
-          <div class="stat-tile"><span class="ic ic-sapphire"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></span><div><b>50</b><span>Steps of undo</span></div></div>
-        </section>
-
-        <div class="section-head"><div><p class="eyebrow-sm">Start</p><h2>What would you like to do?</h2></div></div>
-        <div class="intents">
-          <a class="intent" href="studio/?tool=crop">
-            <span class="ic ic-lg ic-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 3v14a2 2 0 0 0 2 2h13"/><path d="M18 21V8a2 2 0 0 0-2-2H3"/></svg></span>
-            <strong>Edit a photo</strong><span>Crop, resize, rotate, and fix the light.</span>
-            <i class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8"/></svg></i>
-          </a>
-          <a class="intent" href="studio/?tool=filters">
-            <span class="ic ic-lg ic-rose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 16v4M17 18h4"/></svg></span>
-            <strong>Enhance it</strong><span>Looks, blur, background, and sharpen.</span>
-            <i class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8"/></svg></i>
-          </a>
-          <a class="intent" href="studio/?tool=text">
-            <span class="ic ic-lg ic-sapphire"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg></span>
-            <strong>Add words</strong><span>Text, watermarks, memes, and frames.</span>
-            <i class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8"/></svg></i>
-          </a>
-          <a class="intent" href="recipes/">
-            <span class="ic ic-lg ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 3h9l3 3v15H6z"/><path d="M9 12h6M9 16h4"/></svg></span>
-            <strong>Use a recipe</strong><span>Apply an edit list, then make it your own.</span>
-            <i class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8"/></svg></i>
-          </a>
-        </div>
-
-        <div class="section-head" id="tools"><div><p class="eyebrow-sm">Most used</p><h2>Popular tools</h2></div><a class="more" href="#image">See the full list <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
-        <div class="metrics">
-          <a class="metric m-violet" href="image-compressor/">
-            <span class="top"><span class="ic ic-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg></span>Compressor</span>
-            <div class="num">80<sup>%</sup></div>
-            <p>Smaller files for email and the web, at the quality you choose.</p>
-            <div class="bars">
-              <div><span>Before</span><i style="--w:100%"></i><b>4.2 MB</b></div>
-              <div><span>After</span><i style="--w:20%"></i><b>0.8 MB</b></div>
+        <section class="hp-section" id="tools" aria-labelledby="hp-tools-title" data-tool-dir>
+          <span id="all-tools"></span>
+          <div class="hp-head">
+            <p class="eyebrow">Every tool</p>
+            <h2 id="hp-tools-title">Quick tools for one job.</h2>
+            <p>Compress, convert and tidy files in a single step. Each tool works on its own page, offline, on this device.</p>
+          </div>
+          <div class="hp-dir-bar">
+            <div class="hp-dir-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
+              <label class="sr-only" for="hp-dir-q">Search tools</label>
+              <input id="hp-dir-q" type="search" placeholder="Search, for example “merge” or “resize”" autocomplete="off" enterkeyhint="search" data-dir-search>
             </div>
-          </a>
-          <a class="metric m-pearl" href="image-resizer/">
-            <span class="top"><span class="ic ic-sapphire"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></span>Resizer</span>
-            <div class="num">2<sup>×</sup></div>
-            <p>Exact pixels, a percentage, or a size made for a social post.</p>
-            <div class="sizes"><span>1080</span><span>1350</span><span class="on">1920</span><span>4K</span></div>
-          </a>
-          <a class="metric m-rose" href="image-filters/">
-            <span class="top"><span class="ic ic-copper"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="9" cy="9" r="5.5"/><circle cx="15" cy="15" r="5.5"/></svg></span>Filters</span>
-            <div class="num">11</div>
-            <p>Looks with one strength slider. The original stays put.</p>
-            <div class="looks"><i style="--c:#E9C37A"></i><i style="--c:#C4567A"></i><i style="--c:#7457F0"></i><i style="--c:#2F6BFF"></i><i style="--c:#17A37A"></i><i class="more-looks">+6</i></div>
-          </a>
-        </div>
+            <div class="hp-chips" role="group" aria-label="Filter by kind">
+              <button type="button" class="chip" data-dir-cat="all" aria-pressed="true">All</button>
+              <button type="button" class="chip" data-dir-cat="studios" aria-pressed="false">Studios</button>
+              <button type="button" class="chip" data-dir-cat="image" aria-pressed="false">Image</button>
+              <button type="button" class="chip" data-dir-cat="pdf" aria-pressed="false">PDF</button>
+              <button type="button" class="chip" data-dir-cat="text" aria-pressed="false">Text</button>
+              <button type="button" class="chip" data-dir-cat="dev" aria-pressed="false">Utilities</button>
+            </div>
+            <p class="sr-only" aria-live="polite" data-dir-status></p>
+          </div>
+          <section class="hp-dir-group" data-dir-group="studios" aria-labelledby="dir-studios">
+            <h3 class="hp-dir-label" id="dir-studios">Studios <span>5</span></h3>
+            <ul class="hp-dir-list">
+              <li><a class="hp-tool" href="studio/" data-k="photo studio layers, text, collages, filters and every social size. design editor canva layers poster instagram story"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg></span><span><b>Photo Studio</b><small>Layers, text, collages, filters and every social size.</small></span></a></li>
+              <li><a class="hp-tool" href="pdf-studio/" data-k="pdf studio sign, fill, annotate, merge and reorder pdf pages. sign signature fill form annotate edit pdf"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="m9.5 17 4.8-4.8a1.3 1.3 0 0 1 1.8 1.8L11.3 18.8 9 19.3z"/></svg></span><span><b>PDF Studio</b><small>Sign, fill, annotate, merge and reorder PDF pages.</small></span></a></li>
+              <li><a class="hp-tool" href="convert-to-pdf/" data-k="convert to pdf word, excel, powerpoint, images and text to pdf. docx xlsx pptx word excel powerpoint markdown html"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h11l-3-3M20 17H9l3 3"/><path d="M17 4h3v6M7 20H4v-6"/></svg></span><span><b>Convert to PDF</b><small>Word, Excel, PowerPoint, images and text to PDF.</small></span></a></li>
+              <li><a class="hp-tool" href="recipes/" data-k="recipes apply, edit and share a list of photo edits. leworkflow look preset filter share"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M8 12h8M8 16h5"/></svg></span><span><b>Recipes</b><small>Apply, edit and share a list of photo edits.</small></span></a></li>
+              <li><a class="hp-tool" href="studio/?tool=collage" data-k="collage maker templates with a photo slot for every cell. grid photos layout moodboard scrapbook"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/></svg></span><span><b>Collage Maker</b><small>Templates with a photo slot for every cell.</small></span></a></li>
+            </ul>
+          </section>
+          <section class="hp-dir-group" data-dir-group="image" id="image" aria-labelledby="dir-image">
+            <h3 class="hp-dir-label" id="dir-image">Image <span>10</span></h3>
+            <ul class="hp-dir-list">
+              <li><a class="hp-tool" href="image-compressor/" data-k="image compressor shrink jpg, png &amp; webp file size without visible quality loss. image compressor"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg></span><span><b>Image Compressor</b><small>Shrink JPG, PNG &amp; WebP file size without visible quality loss.</small></span></a></li>
+              <li><a class="hp-tool" href="image-resizer/" data-k="image resizer resize photos to exact pixels, percent or social presets. image resizer"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></span><span><b>Image Resizer</b><small>Resize photos to exact pixels, percent or social presets.</small></span></a></li>
+              <li><a class="hp-tool" href="image-converter/" data-k="image converter convert between jpg, png and webp in bulk. image converter"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span><span><b>Image Converter</b><small>Convert between JPG, PNG and WebP in bulk.</small></span></a></li>
+              <li><a class="hp-tool" href="image-cropper/" data-k="image cropper crop to any size or aspect ratio like 1:1 or 16:9. image cropper"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg></span><span><b>Image Cropper</b><small>Crop to any size or aspect ratio like 1:1 or 16:9.</small></span></a></li>
+              <li><a class="hp-tool" href="rotate-flip-image/" data-k="rotate &amp; flip image rotate by any angle and mirror horizontally or vertically. rotate flip image"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 2v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.7L21 8"/></svg></span><span><b>Rotate &amp; Flip Image</b><small>Rotate by any angle and mirror horizontally or vertically.</small></span></a></li>
+              <li><a class="hp-tool" href="watermark-image/" data-k="watermark image stamp text or a logo on photos — single or tiled. watermark image"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 22h14M19.3 14.3A2 2 0 0 0 18 14H6a2 2 0 0 0-2 2v2h16v-2a2 2 0 0 0-.7-1.7zM14 14V9.5a4 4 0 1 0-4 0V14"/></svg></span><span><b>Watermark Image</b><small>Stamp text or a logo on photos — single or tiled.</small></span></a></li>
+              <li><a class="hp-tool" href="image-to-base64/" data-k="image to base64 turn images into data urls and back again. image to base64"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></span><span><b>Image to Base64</b><small>Turn images into data URLs and back again.</small></span></a></li>
+              <li><a class="hp-tool" href="color-picker/" data-k="image color picker pick exact colors and extract palettes from any image. color picker"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 22 1-1h3l9-9M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3z"/></svg></span><span><b>Image Color Picker</b><small>Pick exact colors and extract palettes from any image.</small></span></a></li>
+              <li><a class="hp-tool" href="favicon-generator/" data-k="favicon generator create favicon.ico and app icons from an image or emoji. favicon generator"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg></span><span><b>Favicon Generator</b><small>Create favicon.ico and app icons from an image or emoji.</small></span></a></li>
+              <li><a class="hp-tool" href="image-filters/" data-k="photo filters adjust brightness, contrast, saturation and apply filters. image filters"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></span><span><b>Photo Filters</b><small>Adjust brightness, contrast, saturation and apply filters.</small></span></a></li>
+            </ul>
+          </section>
+          <section class="hp-dir-group" data-dir-group="pdf" id="pdf" aria-labelledby="dir-pdf">
+            <h3 class="hp-dir-label" id="dir-pdf">PDF <span>8</span></h3>
+            <ul class="hp-dir-list">
+              <li><a class="hp-tool" href="merge-pdf/" data-k="merge pdf combine multiple pdfs into one in the order you choose. merge pdf"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h10a2 2 0 0 1 2 2v12"/><rect x="2" y="2" width="12" height="16" rx="2"/></svg></span><span><b>Merge PDF</b><small>Combine multiple PDFs into one in the order you choose.</small></span></a></li>
+              <li><a class="hp-tool" href="split-pdf/" data-k="split pdf extract page ranges or split every page into its own file. split pdf"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M8 3H3v5M21 3l-7 7M3 3l7 7M12 22v-8"/></svg></span><span><b>Split PDF</b><small>Extract page ranges or split every page into its own file.</small></span></a></li>
+              <li><a class="hp-tool" href="jpg-to-pdf/" data-k="jpg to pdf convert jpg, png and webp images into a single pdf. jpg to pdf"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></span><span><b>JPG to PDF</b><small>Convert JPG, PNG and WebP images into a single PDF.</small></span></a></li>
+              <li><a class="hp-tool" href="pdf-to-jpg/" data-k="pdf to jpg turn every pdf page into a high-quality jpg or png. pdf to jpg"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M10 13l-2 2 2 2M14 13l2 2-2 2"/></svg></span><span><b>PDF to JPG</b><small>Turn every PDF page into a high-quality JPG or PNG.</small></span></a></li>
+              <li><a class="hp-tool" href="rotate-pdf/" data-k="rotate pdf rotate one page or all pages and save permanently. rotate pdf"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 2v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.7L21 8"/></svg></span><span><b>Rotate PDF</b><small>Rotate one page or all pages and save permanently.</small></span></a></li>
+              <li><a class="hp-tool" href="organize-pdf/" data-k="organize pdf reorder, delete, duplicate and insert pdf pages. organize pdf"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg></span><span><b>Organize PDF</b><small>Reorder, delete, duplicate and insert PDF pages.</small></span></a></li>
+              <li><a class="hp-tool" href="add-page-numbers/" data-k="add page numbers number pdf pages with custom position and format. add page numbers"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M10 18h4M12 12v6"/></svg></span><span><b>Add Page Numbers</b><small>Number PDF pages with custom position and format.</small></span></a></li>
+              <li><a class="hp-tool" href="watermark-pdf/" data-k="watermark pdf add a text watermark such as confidential to every page. watermark pdf"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 22h14M19.3 14.3A2 2 0 0 0 18 14H6a2 2 0 0 0-2 2v2h16v-2a2 2 0 0 0-.7-1.7zM14 14V9.5a4 4 0 1 0-4 0V14"/></svg></span><span><b>Watermark PDF</b><small>Add a text watermark such as CONFIDENTIAL to every page.</small></span></a></li>
+            </ul>
+          </section>
+          <section class="hp-dir-group" data-dir-group="text" id="text" aria-labelledby="dir-text">
+            <h3 class="hp-dir-label" id="dir-text">Text <span>4</span></h3>
+            <ul class="hp-dir-list">
+              <li><a class="hp-tool" href="word-counter/" data-k="word counter count words, characters, sentences and reading time. word counter"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span><span><b>Word Counter</b><small>Count words, characters, sentences and reading time.</small></span></a></li>
+              <li><a class="hp-tool" href="case-converter/" data-k="case converter upper, lower, title, camelcase, snake_case and more. case converter"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18 7.5 6 12 18M4.7 14h5.6M15 13a3 3 0 1 0 6 0v5M21 13a3 3 0 1 0-6 0"/></svg></span><span><b>Case Converter</b><small>UPPER, lower, Title, camelCase, snake_case and more.</small></span></a></li>
+              <li><a class="hp-tool" href="text-diff/" data-k="text compare highlight differences between two texts line by line. text diff"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v14M5 10h14M5 21h14"/></svg></span><span><b>Text Compare</b><small>Highlight differences between two texts line by line.</small></span></a></li>
+              <li><a class="hp-tool" href="lorem-ipsum-generator/" data-k="lorem ipsum generator generate placeholder paragraphs, sentences or words. lorem ipsum generator"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 4v16M17 4v16M19 4H9.5a4.5 4.5 0 0 0 0 9H13"/></svg></span><span><b>Lorem Ipsum Generator</b><small>Generate placeholder paragraphs, sentences or words.</small></span></a></li>
+            </ul>
+          </section>
+          <section class="hp-dir-group" data-dir-group="dev" id="office" aria-labelledby="dir-dev">
+            <h3 class="hp-dir-label" id="dir-dev">Utilities <span>8</span></h3>
+            <ul class="hp-dir-list">
+              <li><a class="hp-tool" href="qr-code-generator/" data-k="qr code generator make qr codes for urls, wi-fi, contacts — png &amp; svg. qr code generator"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 17h4v4h-4"/></svg></span><span><b>QR Code Generator</b><small>Make QR codes for URLs, Wi-Fi, contacts — PNG &amp; SVG.</small></span></a></li>
+              <li><a class="hp-tool" href="password-generator/" data-k="password generator create strong random passwords and passphrases. password generator"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></svg></span><span><b>Password Generator</b><small>Create strong random passwords and passphrases.</small></span></a></li>
+              <li><a class="hp-tool" href="json-formatter/" data-k="json formatter beautify, minify and validate json with error hints. json formatter"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/></svg></span><span><b>JSON Formatter</b><small>Beautify, minify and validate JSON with error hints.</small></span></a></li>
+              <li><a class="hp-tool" href="base64-encoder/" data-k="base64 encode / decode encode and decode base64 text and files with utf-8. base64 encoder"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="14" y="14" width="4" height="6" rx="2"/><rect x="6" y="4" width="4" height="6" rx="2"/><path d="M6 20h4M14 10h4M6 14h2v6M14 4h2v6"/></svg></span><span><b>Base64 Encode / Decode</b><small>Encode and decode Base64 text and files with UTF-8.</small></span></a></li>
+              <li><a class="hp-tool" href="hash-generator/" data-k="hash generator md5, sha-1, sha-256 and sha-512 for text and files. hash generator"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 10a2 2 0 0 0-2 2c0 1 0 4-1 6M14 13.1c0 2.5 0 5-1 7.4M17.3 21c.3-1 .6-2 .7-3M2 12a10 10 0 0 1 18-6M2 16h.01M21.8 16c.2-2 .1-5.3 0-6M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .3-2M8.7 6.8A6 6 0 0 1 18 12c0 .5 0 1.4-.1 2.4"/></svg></span><span><b>Hash Generator</b><small>MD5, SHA-1, SHA-256 and SHA-512 for text and files.</small></span></a></li>
+              <li><a class="hp-tool" href="unit-converter/" data-k="unit converter length, weight, temperature, data and 6 more categories. unit converter"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0zM14.5 12.5l2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/></svg></span><span><b>Unit Converter</b><small>Length, weight, temperature, data and 6 more categories.</small></span></a></li>
+              <li><a class="hp-tool" href="color-converter/" data-k="color converter hex, rgb, hsl, cmyk conversion with contrast checker. color converter"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2a10 10 0 0 0 0 20c.9 0 1.7-.8 1.7-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.8-1.7 1.7-1.7h2A5.6 5.6 0 0 0 22 11c0-5-4.5-9-10-9z"/></svg></span><span><b>Color Converter</b><small>HEX, RGB, HSL, CMYK conversion with contrast checker.</small></span></a></li>
+              <li><a class="hp-tool" href="uuid-generator/" data-k="uuid generator bulk-generate uuid v4 and v7 and validate uuids. uuid generator"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h2M15 12h2M7 16h10"/></svg></span><span><b>UUID Generator</b><small>Bulk-generate UUID v4 and v7 and validate UUIDs.</small></span></a></li>
+            </ul>
+          </section>
+          <p class="hp-dir-empty" data-dir-empty hidden>No tool matches “<span data-dir-query></span>”. The <a href="studio/">photo studio</a> and <a href="pdf-studio/">PDF studio</a> cover most jobs.</p>
+        </section>
 
-        <div class="section-head"><div><p class="eyebrow-sm">Community</p><h2>Recipes people can share</h2></div><a class="more" href="recipes/">Open the library <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
-        <div class="recipes-row">
-          <a class="recipe-card" href="recipes/#cinematic-portrait"><div class="recipe-swatch swatch-a"><span class="tag">5 steps</span></div><div class="body"><strong>Cinematic Portrait</strong><span>Portrait · Beginner</span></div></a>
-          <a class="recipe-card" href="recipes/#clean-product"><div class="recipe-swatch swatch-b"><span class="tag">4 steps</span></div><div class="body"><strong>Clean Product</strong><span>Product · Beginner</span></div></a>
-          <a class="recipe-card" href="recipes/#vintage-film"><div class="recipe-swatch swatch-c"><span class="tag">1 look</span></div><div class="body"><strong>Vintage Film</strong><span>Creative · Beginner</span></div></a>
-        </div>
-
-        <section id="image">
-          <div class="section-head"><div><p class="eyebrow-sm">Library</p><h2>Image tools</h2></div></div>
-          <div class="tools-grid">
-            <a class="tool-card cat-image" href="image-compressor/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg></span><span><h3>Compress</h3><p>Shrink JPG, PNG, and WebP.</p></span></a>
-            <a class="tool-card cat-image" href="image-resizer/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></span><span><h3>Resize</h3><p>Pixels, percent, or a preset.</p></span></a>
-            <a class="tool-card cat-image" href="image-converter/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg></span><span><h3>Convert</h3><p>JPG, PNG, and WebP.</p></span></a>
-            <a class="tool-card cat-image" href="image-cropper/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 3v14a2 2 0 0 0 2 2h13"/><path d="M18 21V8a2 2 0 0 0-2-2H3"/></svg></span><span><h3>Crop</h3><p>Free, 1:1, 4:5, 16:9, 9:16.</p></span></a>
-            <a class="tool-card cat-image" href="rotate-flip-image/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M21 3v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.7L21 8"/></svg></span><span><h3>Rotate</h3><p>Turn or mirror a photo.</p></span></a>
-            <a class="tool-card cat-image" href="watermark-image/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7 5.6 9.1a9 9 0 1 0 12.8 0z"/></svg></span><span><h3>Watermark</h3><p>Text or a tiled logo.</p></span></a>
-            <a class="tool-card cat-image" href="image-filters/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="9" cy="9" r="5.5"/><circle cx="15" cy="15" r="5.5"/></svg></span><span><h3>Filters</h3><p>Light, color, and looks.</p></span></a>
-            <a class="tool-card cat-image" href="color-picker/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3a9 9 0 0 0 0 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A4.6 4.6 0 0 0 21 9.8C21 6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg></span><span><h3>Palette</h3><p>Colors from any image.</p></span></a>
-            <a class="tool-card cat-image" href="studio/?tool=background"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" fill-opacity=".3"/></svg></span><span><h3>Background</h3><p>Remove a flat color, or paint.</p></span></a>
-            <a class="tool-card cat-image" href="studio/?tool=collage"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/></svg></span><span><h3>Collage</h3><p>Grid of several photos.</p></span></a>
-            <a class="tool-card cat-image" href="studio/?tool=text"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg></span><span><h3>Text</h3><p>Captions you can drag.</p></span></a>
-            <a class="tool-card cat-image" href="studio/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg></span><span><h3>Full studio</h3><p>Every edit in one place.</p></span></a>
+        <section class="hp-section hp-faq" aria-labelledby="hp-faq-title">
+          <div class="hp-head">
+            <p class="eyebrow">Questions</p>
+            <h2 id="hp-faq-title">Short, honest answers.</h2>
+            <p>More detail on the <a href="about/">privacy and install page</a>.</p>
+          </div>
+          <div class="faq">
+            <details><summary>Do my photos or PDFs leave this device?</summary><p>No. The studios and tools run inside your browser. There is no account and no upload; files are read, edited and saved on your device. The only time the app reaches the internet for you is when you ask it to, for example to search stock photos.</p></details>
+            <details><summary>Does it work offline?</summary><p>Yes. After the first visit the app keeps working without a connection. Install it to your home screen or dock and it opens like any other app. Large extras, such as more fonts, are saved for offline use when you first use them.</p></details>
+            <details><summary>Is it really free?</summary><p>Yes. There is no sign-up, no watermark on exports and no paid tier.</p></details>
+            <details><summary>What is a recipe, and what is a project file?</summary><p>A recipe is a small <span class="mono">.leworkflow</span> file listing edits, such as warmth and contrast, that you can apply to any photo and share. A project is a <span class="mono">.leproject</span> file holding a whole design, with its pages, layers and photos, so you can reopen it later. Neither can contain code.</p></details>
+            <details><summary>Can it remove a background automatically?</summary><p>Not yet. Today you can remove a flat colour or paint a background away by hand. Automatic removal is being tested and will only arrive if it can run on your device.</p></details>
+            <details><summary>Which browsers and devices does it support?</summary><p>Current versions of Chrome, Edge, Safari and Firefox, on phones, tablets and computers. Very large photos and long PDFs work best on a computer.</p></details>
           </div>
         </section>
 
-        <section id="pdf">
-          <div class="section-head"><div><p class="eyebrow-sm">Documents</p><h2>PDF tools</h2></div><span class="muted">Still on this device</span></div>
-          <div class="tools-grid">
-            <a class="tool-card cat-pdf" href="merge-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M8 6h10a2 2 0 0 1 2 2v12"/><rect x="2" y="2" width="12" height="16" rx="2"/></svg></span><span><h3>Merge PDF</h3><p>Join files in the order you choose.</p></span></a>
-            <a class="tool-card cat-pdf" href="split-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M16 3h5v5M8 3H3v5M21 3l-7 7M3 3l7 7M12 22v-8"/></svg></span><span><h3>Split PDF</h3><p>Pull out the pages you need.</p></span></a>
-            <a class="tool-card cat-pdf" href="jpg-to-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></span><span><h3>JPG to PDF</h3><p>Images into one document.</p></span></a>
-            <a class="tool-card cat-pdf" href="pdf-to-jpg/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M10 13l-2 2 2 2M14 13l2 2-2 2"/></svg></span><span><h3>PDF to JPG</h3><p>Each page as an image.</p></span></a>
-            <a class="tool-card cat-pdf" href="rotate-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M21 3v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.7L21 8"/></svg></span><span><h3>Rotate PDF</h3><p>Turn pages and save.</p></span></a>
-            <a class="tool-card cat-pdf" href="organize-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg></span><span><h3>Organize PDF</h3><p>Reorder, drop, or duplicate pages.</p></span></a>
-            <a class="tool-card cat-pdf" href="add-page-numbers/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg></span><span><h3>Page numbers</h3><p>Add them where you want.</p></span></a>
-            <a class="tool-card cat-pdf" href="watermark-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 22h14M19.3 14.3A2 2 0 0 0 18 14H6a2 2 0 0 0-2 2v2h16v-2a2 2 0 0 0-.7-1.7zM14 14V9.5a4 4 0 1 0-4 0V14"/></svg></span><span><h3>Watermark PDF</h3><p>Stamp every page.</p></span></a>
+        <section class="hp-close" aria-labelledby="hp-close-title">
+          <h2 id="hp-close-title">Make something. <em>Keep it yours.</em></h2>
+          <p>Open the studio, drop in a photo, and nothing about it leaves this device.</p>
+          <div class="hp-cta">
+            <a class="btn btn-gold btn-lg" href="studio/">Open the studio</a>
+            <a class="btn btn-ghost btn-lg" href="#tools">See every tool</a>
           </div>
         </section>
 
-        <section id="office">
-          <div class="section-head"><div><p class="eyebrow-sm">Everyday</p><h2>Office and everyday</h2></div></div>
-          <div class="tools-grid">
-            <a class="tool-card cat-text" href="word-counter/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span><span><h3>Word counter</h3><p>Words, characters, reading time.</p></span></a>
-            <a class="tool-card cat-text" href="text-diff/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3v18M5 8h4M7 6v4M15 16h4"/></svg></span><span><h3>Text compare</h3><p>See what changed.</p></span></a>
-            <a class="tool-card cat-text" href="case-converter/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 18 7.5 6 12 18M4.5 14h6"/><circle cx="17.5" cy="15" r="3"/><path d="M20.5 12v6"/></svg></span><span><h3>Case</h3><p>Upper, lower, title, camel.</p></span></a>
-            <a class="tool-card cat-dev" href="qr-code-generator/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 17h4v4h-4"/></svg></span><span><h3>QR code</h3><p>Links, Wi-Fi, and contacts.</p></span></a>
-            <a class="tool-card cat-dev" href="json-formatter/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/></svg></span><span><h3>JSON</h3><p>Format and check.</p></span></a>
-            <a class="tool-card cat-dev" href="password-generator/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></svg></span><span><h3>Password</h3><p>A strong one, made locally.</p></span></a>
+        <footer class="hp-foot">
+          <div class="hp-foot-top">
+            <a class="le-brand" href="./"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#E9BE6A"/><circle cx="16" cy="16" r="7.5" fill="none" stroke="#2A1F0A" stroke-width="1.9"/><circle cx="16" cy="16" r="2" fill="#2A1F0A"/></svg></span><span><strong>LocalEditor</strong></span></a>
+            <nav aria-label="Footer">
+              <a href="studio/">Photo studio</a>
+              <a href="pdf-studio/">PDF studio</a>
+              <a href="recipes/">Recipes</a>
+              <a href="about/">Privacy</a>
+              <button type="button" data-le-install>Install</button>
+              <button type="button" data-le-storage>Storage</button>
+              <a href="llms.txt">llms.txt</a>
+            </nav>
           </div>
-        </section>
-
-        <section class="card faq faq-lux" aria-labelledby="faq-title">
-          <div class="faq-intro">
-            <p class="eyebrow-sm">Questions</p>
-            <h2 id="faq-title">Before you <em>start</em></h2>
-            <p>Short answers about privacy, offline use, and recipes.</p>
-          </div>
-          <div class="faq-list">
-            <details open><summary>Does a photo leave this device?</summary><p>No. Editing uses the browser on your computer or phone. There is no account and no upload.</p></details>
-            <details><summary>Will it work offline?</summary><p>After the first visit, the app can be installed and the tools that have already loaded keep working without a connection.</p></details>
-            <details><summary>What is a recipe?</summary><p>A recipe is a small .leworkflow file: a list of edits such as warmth, contrast, and sharpen. You can preview it, apply it, change the steps, and send the file to someone else. It cannot contain scripts.</p></details>
-            <details><summary>Can I remove a background?</summary><p>You can remove a flat color or paint the background away. Automatic AI removal is not included, and a recipe that asks for it will tell you before it continues.</p></details>
-          </div>
-        </section>
-
-        <footer class="site-footer"><div class="foot"><span>&copy; 2026 LocalEditor. Photos stay on your device.</span><span><a href="about/">Privacy</a> · <a href="studio/">Studio</a> · <a href="recipes/">Recipes</a></span></div></footer>
+          <p>&copy; 2026 LocalEditor. Files stay on your device.</p>
+          <p class="hp-credits">Photos via Openverse: <a href="https://stocksnap.io/photo/friends-fun-TK55STNQN8" rel="noopener">Matt Moloney</a> (CC0), <a href="https://www.flickr.com/photos/135396164@N05/29183443693" rel="noopener">freestocks.org</a> (CC0), <a href="https://www.flickr.com/photos/92082510@N04/49728296203" rel="noopener">*rboed*</a> (<a href="https://creativecommons.org/licenses/by/2.0/" rel="noopener license">CC&nbsp;BY&nbsp;2.0</a>), <a href="https://www.flickr.com/photos/59383938@N04/52540347293" rel="noopener">Robin Mulligan</a> (<a href="https://creativecommons.org/licenses/by/2.0/" rel="noopener license">CC&nbsp;BY&nbsp;2.0</a>), resized and cropped.</p>
+        </footer>
       </div>
     </main>
   </div>
 </div>
-<button class="le-scrim" type="button" data-scrim hidden aria-label="Close menu"></button>
+<button class="le-scrim" type="button" data-scrim hidden tabindex="-1" aria-label="Close menu"></button>
 <script src="assets/js/app.js"></script>
 </body>
 </html>

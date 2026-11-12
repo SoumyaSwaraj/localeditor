@@ -583,6 +583,25 @@
     }
     return l;
   }
+  /* Photo background framing and look (see le-objects.js "Photo backgrounds"); only fields that are present are kept. */
+  function photoBg(bg, out) {
+    if (bg.crop && typeof bg.crop === 'object') out.crop = region(bg.crop);
+    if (bg.x != null) out.x = clamp(num(bg.x, 0), -10, 10);
+    if (bg.y != null) out.y = clamp(num(bg.y, 0), -10, 10);
+    if (bg.scale != null) out.scale = clamp(num(bg.scale, 1), 0.05, 50);
+    if (bg.rotation != null) out.rotation = clamp(num(bg.rotation, 0), -3600, 3600);
+    if (bg.flipX != null) out.flipX = bool(bg.flipX);
+    if (bg.flipY != null) out.flipY = bool(bg.flipY);
+    if (bg.opacity != null) out.opacity = clamp(num(bg.opacity, 1), 0, 1);
+    if (bg.blur != null) out.blur = clamp(num(bg.blur, 0), 0, 250);
+    if (bg.dim && typeof bg.dim === 'object') out.dim = { color: safeColor(bg.dim.color) || '#000000', amount: clamp(num(bg.dim.amount, 0), 0, 1) };
+    if (bg.adjust && typeof bg.adjust === 'object') {
+      out.adjust = {};
+      ADJUST_KEYS.forEach(function (k) { if (bg.adjust[k] != null && isFinite(Number(bg.adjust[k]))) out.adjust[k] = clamp(Number(bg.adjust[k]), -1000, 1000); });
+    }
+    if (bg.filter && typeof bg.filter.name === 'string' && /^[a-z-]{1,30}$/.test(bg.filter.name)) out.filter = { name: bg.filter.name, intensity: clamp(num(bg.filter.intensity, 100), 0, 100) };
+    if (bg.tile && typeof bg.tile === 'object') out.tile = { size: clamp(num(bg.tile.size, 0.25), 0.02, 4), gap: clamp(num(bg.tile.gap, 0), 0, 1) };
+  }
   function sanitizeDoc(doc, errors) {
     if (!doc || typeof doc !== 'object' || Array.isArray(doc)) { errors.push('A page could not be read.'); return null; }
     var bg = doc.background && typeof doc.background === 'object' ? doc.background : {};
@@ -597,7 +616,8 @@
     if (Array.isArray(bg.colors)) out.background.colors = bg.colors.slice(0, 8).map(safeColor).filter(Boolean);
     if (bg.angle != null) out.background.angle = clamp(num(bg.angle, 0), -360, 360);
     if (bg.src && idOk(bg.src, 80)) out.background.src = bg.src;
-    if (bg.fit) out.background.fit = oneOf(bg.fit, ['cover', 'contain', 'fill'], 'cover');
+    if (bg.fit) out.background.fit = oneOf(bg.fit, ['cover', 'contain', 'fill', 'tile'], 'cover');
+    if (out.background.type === 'image') photoBg(bg, out.background);
     var spec = bgSpec(bg.spec);
     if (spec) out.background.spec = spec;
     var layers = Array.isArray(doc.layers) ? doc.layers : [];
