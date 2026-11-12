@@ -144,7 +144,7 @@ const PANELS = ['design', 'elements', 'text', 'uploads', 'draw', 'adjust', 'filt
     }
   };
 
-  cases['KNOWN-BUG: ' + tag + ' the middle of a selected heading is not covered by a resize handle, so a finger can drag it (QA-004)'] = async ({ browser, base, h }) => {
+  cases[tag + ' the middle of a selected heading is not covered by a resize handle, so a finger can drag it (QA-004)'] = async ({ browser, base, h }) => {
     const page = await h.newDesign(browser, base, vp, 'Instagram post');
     await page.locator('#sx-tabs [data-panel-btn=text]').tap();
     await page.waitForTimeout(450);

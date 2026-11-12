@@ -18,7 +18,7 @@ const wrong = (list) => list.filter((g) => g.color !== INK);
     h.assert.noErrors(page);
     h.assert((await goldColours(page)).length >= 1, 'a gold button exists on the home page');
   };
-  cases['KNOWN-BUG: ' + theme + ': home page gold buttons compute to ink #2A1F0A (QA-009: site-wide --gold-ink is #2C220F)'] = async ({ browser, base, h }) => {
+  cases[theme + ': home page gold buttons compute to ink #2A1F0A (QA-009: site-wide --gold-ink is #2C220F)'] = async ({ browser, base, h }) => {
     const page = await h.openTheme(browser, base, '/', 'desktop', theme);
     await page.waitForTimeout(400);
     const g = await goldColours(page);

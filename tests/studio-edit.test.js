@@ -83,7 +83,7 @@ cases['adjust sliders write to layer.adjust'] = async ({ browser, base, h }) => 
   h.assert(a.brightness === 25 && a.contrast === -20 && a.saturation === 40 && a.blur === 6 && a.vignette > 0, 'adjust values ' + JSON.stringify(a));
   h.assert.noErrors(page);
 };
-cases['KNOWN-BUG: "Reset adjustments" button clears all adjust values (QA-001)'] = async ({ browser, base, h }) => {
+cases['"Reset adjustments" button clears all adjust values (QA-001)'] = async ({ browser, base, h }) => {
   const page = await photoPage(browser, base, h);
   await h.openPanel(page, 'adjust');
   await page.locator('input[type=range][aria-label=Brightness]').fill('25');
@@ -326,7 +326,7 @@ cases['draw: the eraser removes or trims a stroke it crosses'] = async ({ browse
 cases['text-layout template adds editable layers (group) over the page'] = async ({ browser, base, h }) => {
   const page = await photoPage(browser, base, h);
   await h.openPanel(page, 'design', { tab: 'templates' });
-  await page.getByRole('tab', { name: 'Text layouts' }).click();
+  await page.locator('#sx-panel-body button', { hasText: /^Text layouts$/ }).click();
   await page.locator('#sx-panel-body .sx-tpl').first().click();
   await page.waitForFunction(() => window.LEStudio.scene.layers().length > 1, null, { timeout: 5000 });
   const ls = await h.layers(page);
