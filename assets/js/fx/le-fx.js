@@ -20,7 +20,7 @@
     spaces: ['linear', 'display', 'oklab']
   };
   /* Effect packs loaded with the renderer. Feature teams add their pack name here (assets/js/fx/le-fx-<name>.js). */
-  var PACKS = ['basic', 'grade'];
+  var PACKS = ['basic', 'grade', 'retouch'];
 
   var BAD = { __proto__: 1, constructor: 1, prototype: 1 };
   var BLENDS = ['normal', 'multiply', 'screen', 'overlay', 'soft-light', 'hard-light', 'darken', 'lighten', 'difference', 'color', 'luminosity'];
