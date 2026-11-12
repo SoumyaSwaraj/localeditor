@@ -618,6 +618,7 @@
     return 'This browser does not say whether it can ' + c.can + '.';
   }
 
+  function engineOf(os, b) { return os === 'ios' || b === 'safari' ? 'webkit' : b === 'firefox' ? 'gecko' : 'blink'; }
   function suggestFor(def, missing) {
     var e = env();
     var caps = missing.filter(suggestable);
@@ -635,6 +636,15 @@
       return caps.every(function (c) { return matrixValue(c, e.os, b) === true; });
     });
     var can = joinAnd(caps.map(function (c) { return CAPS[c].can; }).filter(Boolean));
+    /* The table says the current version of this browser can do it, but the live test says no: this copy is
+       out of date (or the feature is switched off). Say so; browsers on the same engine would fail the same way. */
+    var curName = BROWSER_NAMES[e.browser];
+    var outdated = !!curName && caps.every(function (c) { return matrixValue(c, e.os, e.browser) === true; });
+    if (outdated) {
+      var upd = e.os === 'ios' ? e.osName : curName;
+      out.push({ browser: null, update: true, name: upd, reason: 'The current version of ' + curName + ' can ' + (can || 'run ' + def.name.toLowerCase()) + '. Update ' + upd + ' to the latest version, then try again.' });
+      names = names.filter(function (b) { return engineOf(e.os, b) !== e.engine; });
+    }
     if (e.os === 'ios') {
       /* Every iOS browser uses Safari's engine, so another browser cannot help; say where it does work. */
       var desk = ['windows', 'mac', 'chromeos'].some(function (os) {
@@ -775,7 +785,7 @@
     var primaryRuns = r.status === 'limited' || (r.status === 'unknown' && r.canForce);
     var runLabel = r.status === 'limited' && r.label !== LABELS.failed ? 'Continue' : 'Try anyway';
     var sug = r.suggest.map(function (s) {
-      return '<li>' + (s.browser ? ICON.browser : ICON.device) + '<div><b>' + esc(s.browser ? 'Works in ' + s.browser : 'Works on a computer') + '</b><small>' + esc(s.reason) + '</small></div></li>';
+      return '<li>' + (s.update ? ICON.refresh : s.browser ? ICON.browser : ICON.device) + '<div><b>' + esc(s.update ? 'Update ' + s.name : s.browser ? 'Works in ' + s.browser : 'Works on a computer') + '</b><small>' + esc(s.reason) + '</small></div></li>';
     }).join('');
     var d = h('<dialog class="lp-sheet ls-gate" aria-labelledby="ls-gate-h"><div class="lp-sheet-in" tabindex="-1"></div></dialog>');
     d.firstChild.innerHTML =
@@ -995,7 +1005,10 @@
     var reasons = r.status === 'ok' ? (r.reasons.length ? r.reasons : []) : r.reasons;
     /* Short form here; the full sentence is in "Works better in" and in the gate. */
     var named = r.suggest.filter(function (s) { return s.browser; }).map(function (s) { return s.browser; });
-    var sugText = named.length ? 'Works in ' + joinAnd(named) + ' on ' + env().deviceWord + '.' : r.suggest.length ? 'Works on a computer.' : '';
+    var upd = r.suggest.filter(function (s) { return s.update; })[0];
+    var comp = r.suggest.some(function (s) { return s.device === 'computer'; });
+    var sugText = (upd ? 'Update ' + upd.name + ' to the latest version.' : '') +
+      (named.length ? (upd ? ' Also works in ' : 'Works in ') + joinAnd(named) + ' on ' + env().deviceWord + '.' : comp ? (upd ? ' Also works on a computer.' : 'Works on a computer.') : '');
     var sug = sugText ? '<p class="ls-row-sug">' + esc(sugText) + '</p>' : '';
     var name = d.url && !/^labs\//.test(d.url) ? '<a href="' + esc(BASE + d.url) + '">' + esc(r.name) + '</a>' : esc(r.name);
     return '<li class="ls-row ls-' + r.status + '" data-feature="' + esc(r.id) + '">' +

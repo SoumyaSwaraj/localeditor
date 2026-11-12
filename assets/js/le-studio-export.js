@@ -110,8 +110,11 @@
   }
   function supportNote(id) {
     var r = check(id);
-    if (r.status === 'unsupported') return 'Not available in this browser' + (r.suggest && r.suggest[0] ? ' — works in ' + r.suggest[0].browser : '') + '.';
-    return '';
+    if (r.status !== 'unsupported') return '';
+    var sug = r.suggest || [];
+    var upd = sug.filter(function (s) { return s.update; })[0];
+    var other = sug.filter(function (s) { return s.browser; })[0];
+    return 'Not available in this browser' + (upd ? ' — update ' + upd.name + ' to use it' : other ? ' — works in ' + other.browser : '') + '.';
   }
 
   /* ---------- Small helpers ---------- */
