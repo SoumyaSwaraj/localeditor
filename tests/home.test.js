@@ -1,9 +1,8 @@
 'use strict';
 /* Homepage: clean console, no sideways scroll, one primary action, a working tool directory,
-   dark ink on gold, and the shell entry points other engineers wire up. */
+   primary-action text that meets AA in both themes, and the shell entry points other engineers wire up. */
 const cases = {};
 const SIZES = ['desktop', 'phone', 'small'];
-const GOLD_INK = 'rgb(42, 31, 10)'; /* #2A1F0A */
 
 SIZES.forEach((vp) => {
   ['light', 'dark'].forEach((theme) => {
@@ -51,12 +50,12 @@ cases['tool search and chips filter the directory'] = async ({ browser, base, h 
   h.assert.noErrors(page);
 };
 
-cases['gold buttons use dark ink in both themes'] = async ({ browser, base, h }) => {
+cases['primary buttons meet AA contrast (4.5:1) in both themes'] = async ({ browser, base, h }) => {
   for (const theme of ['light', 'dark']) {
     const page = await h.open(browser, base, '/', 'desktop', { colorScheme: theme });
-    const inks = await page.evaluate(() => [...document.querySelectorAll('.btn-gold')].filter((b) => b.offsetParent !== null).map((b) => getComputedStyle(b).color));
-    h.assert(inks.length >= 2, 'Gold buttons found');
-    inks.forEach((c) => h.assert.equal(c, GOLD_INK, theme + ' gold ink'));
+    const inks = await h.inkContrast(page, '.btn-primary, .btn-gold');
+    h.assert(inks.length >= 2, 'Primary buttons found');
+    inks.forEach((c) => h.assert(c.ratio >= 4.5, theme + ' primary text ' + c.color + ' on ' + c.bg + ' is ' + c.ratio + ':1'));
     await page.context().close();
   }
 };

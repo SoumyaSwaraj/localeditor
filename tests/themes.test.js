@@ -1,42 +1,39 @@
 'use strict';
-/* Light and dark: console stays empty, gold buttons keep ink #2A1F0A, the theme toggle flips and persists. */
+/* Light and dark: console stays empty, the primary action's text meets WCAG AA (4.5:1) against its own background
+   (computed style; .btn-gold is the old name of .btn-primary), the theme toggle flips and persists. */
 const cases = {};
-const INK = 'rgb(42, 31, 10)';
+const h0 = require('./lib/harness');
 
-async function goldColours(page) {
-  return page.evaluate(() => [...document.querySelectorAll('.btn-gold, .btn.btn-gold, [class*="btn-gold"]')]
-    .filter((e) => e.offsetParent !== null || getComputedStyle(e).position === 'fixed')
-    .map((e) => ({ cls: e.className.toString().slice(0, 40), text: (e.innerText || e.getAttribute('aria-label') || '').trim().slice(0, 24), color: getComputedStyle(e).color, bg: getComputedStyle(e).backgroundImage !== 'none' ? 'gradient' : getComputedStyle(e).backgroundColor })));
-}
-const wrong = (list) => list.filter((g) => g.color !== INK);
+const primaryInks = (page) => h0.inkContrast(page, '.btn-primary:not(:disabled), .btn-gold:not(:disabled)');
+const wrong = (list) => list.filter((g) => g.ratio < 4.5);
 
 ['light', 'dark'].forEach((theme) => {
-  cases[theme + ': home page has no console errors and a gold call to action'] = async ({ browser, base, h }) => {
+  cases[theme + ': home page has no console errors and a primary call to action'] = async ({ browser, base, h }) => {
     const page = await h.openTheme(browser, base, '/', 'desktop', theme);
     await page.waitForTimeout(400);
     h.assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), theme, 'theme applied');
     h.assert.noErrors(page);
-    h.assert((await goldColours(page)).length >= 1, 'a gold button exists on the home page');
+    h.assert((await primaryInks(page)).length >= 1, 'a primary button exists on the home page');
   };
-  cases[theme + ': home page gold buttons compute to ink #2A1F0A (QA-009: site-wide --gold-ink is #2C220F)'] = async ({ browser, base, h }) => {
+  cases[theme + ': home page primary buttons meet AA contrast (4.5:1) by computed style'] = async ({ browser, base, h }) => {
     const page = await h.openTheme(browser, base, '/', 'desktop', theme);
     await page.waitForTimeout(400);
-    const g = await goldColours(page);
-    h.assert(g.length >= 1, 'a gold button exists on the home page');
-    h.assert(wrong(g).length === 0, 'gold buttons with the wrong colour: ' + JSON.stringify(wrong(g)));
+    const g = await primaryInks(page);
+    h.assert(g.length >= 1, 'a primary button exists on the home page');
+    h.assert(wrong(g).length === 0, 'primary buttons under 4.5:1: ' + JSON.stringify(wrong(g)));
   };
-  cases[theme + ': studio start screen and an open design have no console errors, gold buttons keep ink'] = async ({ browser, base, h }) => {
+  cases[theme + ': studio start screen and an open design have no console errors, primary buttons meet AA'] = async ({ browser, base, h }) => {
     const page = await h.openTheme(browser, base, '/studio/', 'desktop', theme);
     await page.waitForSelector('.sx-size-card');
-    let g = await goldColours(page);
-    h.assert(g.length >= 1 && wrong(g).length === 0, 'start screen gold: ' + JSON.stringify(wrong(g)));
+    let g = await primaryInks(page);
+    h.assert(g.length >= 1 && wrong(g).length === 0, 'start screen primary: ' + JSON.stringify(wrong(g)));
     await page.click('.sx-size-card');
     await page.waitForFunction(() => document.getElementById('sx-start').hidden);
     await h.addPhoto(page, h.PHOTO(0));
     for (const id of ['design', 'elements', 'text', 'adjust', 'filters', 'layers', 'projects', 'export']) {
       await h.openPanel(page, id);
-      g = await goldColours(page);
-      h.assert(wrong(g).length === 0, id + ' panel gold buttons: ' + JSON.stringify(wrong(g)));
+      g = await primaryInks(page);
+      h.assert(wrong(g).length === 0, id + ' panel primary buttons: ' + JSON.stringify(wrong(g)));
     }
     h.assert.noErrors(page);
   };
@@ -50,13 +47,13 @@ const wrong = (list) => list.filter((g) => g.color !== INK);
     h.assert(ratio >= 4.5, 'heading contrast ' + ratio.toFixed(2) + ' (' + r.fg + ' on ' + r.bg + ')');
     if (theme === 'dark') h.assert(lum(r.bg) < 0.2, 'dark theme has a dark body: ' + r.bg);
   };
-  cases[theme + ': PDF studio, convert-to-pdf and a tool page load without errors, gold keeps ink'] = async ({ browser, base, h }) => {
+  cases[theme + ': PDF studio, convert-to-pdf and a tool page load without errors, primary meets AA'] = async ({ browser, base, h }) => {
     for (const url of ['/pdf-studio/', '/convert-to-pdf/', '/json-formatter/']) {
       const page = await h.openTheme(browser, base, url, 'desktop', theme);
       await page.waitForTimeout(400);
       h.assert.noErrors(page);
-      const g = await goldColours(page);
-      h.assert(wrong(g).length === 0, url + ' gold buttons: ' + JSON.stringify(wrong(g)));
+      const g = await primaryInks(page);
+      h.assert(wrong(g).length === 0, url + ' primary buttons: ' + JSON.stringify(wrong(g)));
       await page.context().close();
     }
   };

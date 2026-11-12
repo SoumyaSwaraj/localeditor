@@ -39,7 +39,7 @@ Browser checks use the Cursor browser tools. An element-picker overlay sometimes
 - Licenses: MIT / ISC / BSD / Apache / OFL only. Record new rows in `assets/vendor/LICENSES.md`. One exception, decided by the owner on 12 November 2026: the optional camera RAW decoder module may be LGPL (or the best-covering decoder's licence), downloaded on demand, replaceable, with its licence shown to the user. See `docs/EXPERT-MODE.md`.
 - API keys live only in `localStorage` key `le-stock-keys`. Never log them. Never commit them.
 - Do not precache `assets/photos/collage/` or `assets/data/collages/` or `assets/data/withicons/` or `assets/fonts/library/`. `scripts/build.js` `ON_DEMAND` already excludes those. Collage and withicons JSON is stale-while-revalidate into `le-assets-v1` via the nested pattern `/\/assets\/data\/[\w\/-]+\.json$/`.
-- Gold buttons use dark ink `#2A1F0A`. A broad `button { color: inherit }` rule has overridden `.btn-gold` before. Check computed color, not just the class.
+- The primary action (`.btn-primary`; `.btn-gold` is its old name) has text that meets WCAG AA, 4.5:1, against its own background in both themes, verified by computed style (`h.inkContrast` in `tests/lib/harness.js`), not by a fixed hex. A broad `button { color: inherit }` rule has overridden the primary button before. Check computed colour, not just the class. Colours come from tokens (`docs/DESIGN.md`); gold and foil are retired.
 - `le-engine.js` must be `var LE = global.LE = global.LE || {}`. Assigning `{}` wipes every other module.
 
 ## What is already built

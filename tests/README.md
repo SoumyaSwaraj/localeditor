@@ -32,7 +32,8 @@ Prefer asserting on the scene document (`h.doc(page)`) over pixels. Test at desk
 | `shell.test.js` | studio shell (2.11): phone tabs + More, sheet snaps and scrubbing, toolbar priority/overflow, touch handles, export action, sticky actions, toasts, touch wording, coach marks, short laptops, keyboard menus and focus, contrast, object-URL caches |
 | `studio-monkey.test.js` | seeded random command sequences never throw or corrupt the document |
 | `site-pages.test.js` | all 31 tool/info pages: console, sideways scroll, title/h1/main |
-| `themes.test.js` | dark/light, console errors, gold button ink `#2A1F0A`, theme toggle |
+| `themes.test.js` | dark/light, console errors, primary-button text contrast ≥ 4.5:1 (computed), theme toggle |
+| `brand.test.js` | identity tokens: AA text pairs in both themes, primary contrast, focus rings, neutral editor chrome, no gold literals, icons and manifest |
 | `tools.test.js` | one happy path per representative tool, PDF studio, convert-to-PDF |
 
 `node tests/run.js <area>` runs one file (`node tests/run.js studio-phone`). `TEST_CASE="text"` narrows to cases whose name contains the text.
@@ -48,6 +49,6 @@ When the bug is fixed the case passes and the runner prints "known bug now passe
 `h.newDesign(browser, base, vp, 'Instagram post')` (blank design from a start-screen size card), `h.openPhotoDesign(...)` ("Open a photo" start), `h.addPhoto(page, file)`,
 `h.addLayers(page, [layer...])`, `h.layers`, `h.selection`, `h.select`, `h.rect/centerOf/handleBox` (screen geometry), `h.drag` (mouse) and `h.touchDrag` (CDP touch),
 `h.capture(page, action)` (wait for a download, returns `{ name, buf, size }`), `h.imageInfo(buf)` (png/jpeg/webp type and size), `h.pdfRead(browser, base, buf)` (pages, page sizes, text via the site's pdf.js),
-`h.openTheme(...)`, `h.key(page, key, {ctrl, shift})`, `h.savedProjects(page)`, `h.sameDoc(a, b)`, `h.PHOTO(n)` / `h.FIXTURE(name)` fixture paths.
+`h.openTheme(...)`, `h.inkContrast(page, selector)` (computed text/background contrast), `h.key(page, key, {ctrl, shift})`, `h.savedProjects(page)`, `h.sameDoc(a, b)`, `h.PHOTO(n)` / `h.FIXTURE(name)` fixture paths.
 
 `tests/qa/*.js` are measurement scripts for `docs/QA-REPORT.md` (phone walk-through screenshots, load and long-task timings). They are not run by `run.js`.

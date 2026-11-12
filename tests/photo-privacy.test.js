@@ -166,15 +166,14 @@ cases['page: batch report, clean all, zip download, share card, no outside reque
     total: document.getElementById('pp-total').textContent,
     maps: document.querySelectorAll('.pp-map').length, previews: document.querySelectorAll('.pp-preview img').length,
     ok: [...document.querySelectorAll('.pp-badge.is-none')].length, high: document.querySelectorAll('.pp-badge.is-high').length,
-    go: document.getElementById('pp-go').textContent, golds: document.querySelectorAll('.pp-app .btn-gold:not([hidden])').length,
-    ink: getComputedStyle(document.getElementById('pp-go')).color
+    go: document.getElementById('pp-go').textContent, golds: document.querySelectorAll('.pp-app .btn-gold:not([hidden])').length
   }));
   h.assert(/4 photos checked\. 3 show where they were taken/.test(shown.total), 'batch summary: ' + shown.total);
   h.assert.equal(shown.maps, 3, 'a small offline map for each photo with a location');
   h.assert.equal(shown.previews, 1, 'the hidden preview is shown');
   h.assert.equal(shown.ok, 1, 'the clean photo gets a calm nothing-found badge');
   h.assert.equal(shown.golds, 1, 'one gold action in the tool');
-  h.assert.equal(shown.ink, 'rgb(42, 31, 10)', 'gold button ink');
+  (await h.inkContrast(page, '#pp-go')).forEach((c) => h.assert(c.ratio >= 4.5, 'primary button text ' + c.color + ' on ' + c.bg + ' is ' + c.ratio + ':1'));
   await page.click('#pp-go');
   await page.waitForFunction(() => document.querySelectorAll('.pp-done').length === 4, null, { timeout: 15000 });
   const after = await page.evaluate(() => ({ go: document.getElementById('pp-go').textContent, lines: [...document.querySelectorAll('.pp-done-line')].map((n) => n.textContent), card: !document.getElementById('pp-cardbox').hidden }));
