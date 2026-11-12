@@ -46,13 +46,13 @@ Kept by the lead architect. Things reported by the team that are not yet assigne
 - **On-screen keyboard** may cover text being typed; scrolling the text above the keyboard is not built. Safe-area insets on notched phones are unchecked.
 
 ## Reported by agent mode (12 November 2026)
-- **First-run hints show during an agent session** and cover the activity panel; suppress them while agent mode is on.
+- ~~**First-run hints show during an agent session.**~~ Done: coach marks are off while agent mode is on.
 - **Consent is a screen gate only.** An agent that can click could press Allow itself; a browser cannot tell its click from a person's. The agent kit tells agents never to do this.
-- **Open format:** `notes` are not in `.ledesign.json` yet, so agent `state()` and `save()` do not carry them. A public `LE.design.parseLayer` would replace the agent module's round trip through a one-layer document.
+- ~~**Open format:** `notes`; `LE.design.parseLayer`.~~ Done: top-level `notes` in `.ledesign.json` and the schema; `LE.design.parseLayer` and `layerToLong`, used by the agent module.
 - **Undo:** batches that add, remove or switch pages clear the page's undo history; they can only be undone from the activity feed. "Undo this change" is selective only while the touched layers are unchanged, otherwise it offers "Undo back to here".
-- **Lint is blind to text over photos and gradients**, so contrast problems there are not reported to agents.
+- ~~**Lint is blind to text over photos and gradients.**~~ Done: `LE.design.lintRendered` (and an `opts.sample` hook on `lint`). The agent module still calls plain `lint`; switching its self-check to `lintRendered` is the agent owner's call (it costs one low-resolution render per page).
 - **One agent session at a time.**
-- **`llms.txt`** needs an agent mode section (text supplied in the agent mode report; the page generator owns the file).
+- ~~**`llms.txt`** agent mode section.~~ Done, with the agent guide, format specs, agent kit and schema now deployed at their repository paths.
 
 ## Never verified in this build environment
 Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen readers, the Android share sheet, real AWS (deploy, CloudFront function, headers policy), and every stock API (Pixabay, Pexels, Openverse, Unsplash are all tested against mocked responses).
