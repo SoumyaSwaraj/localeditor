@@ -427,7 +427,9 @@ cases['studio: nothing under assets/js/fx/ loads until a document needs it, and 
   await page.waitForFunction(() => window.LE.fx && window.LE.fx.draw);
   const got = await fetched();
   ['le-fx.js', 'le-fx-gl.js', 'le-fx-basic.js'].forEach((f) => h.assert(got.indexOf(f) >= 0, f + ' loads on demand: ' + got));
-  h.assert(got.indexOf('le-fx-analyze.js') < 0, 'analysis waits for its first call');
+  /* docs/FX-AUTHORING.md: the statistics code loads with the renderer when a registered effect declares needs: ['stats'] (dehaze does). */
+  const statsAtLoad = await page.evaluate(() => window.LE.fx.list().some((id) => window.LE.fx.get(id).needs.indexOf('stats') >= 0));
+  h.assert(statsAtLoad || got.indexOf('le-fx-analyze.js') < 0, 'analysis waits for its first call');
   await page.evaluate(() => window.LE.fx.analyze(window.LEStudio.scene));
   h.assert((await fetched()).indexOf('le-fx-analyze.js') >= 0, 'analysis loaded on first use');
   h.assert.noErrors(page);
