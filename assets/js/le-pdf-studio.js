@@ -330,6 +330,14 @@
     opts = opts || {};
     files = [].slice.call(files || []);
     if (!files.length) return 0;
+    /* Device support: one check for the batch (opening PDFs, or converting Office files); invisible when ok. */
+    var sup = LE.support && LE.support.gate ? LE.support : null;
+    var supId = files.some(function (f) { return !isPdfFile(f) && !isImageFile(f); }) ? 'pdf.convert-office' : 'pdf.open';
+    if (sup) {
+      var goOn = false;
+      await sup.gate(supId, { title: supId === 'pdf.open' ? 'Open PDF' : 'Convert to PDF', run: function () { goOn = true; } });
+      if (!goOn) return 0;
+    }
     await LE.pdf.ready();
     var pr = files.length > 1 || !isPdfFile(files[0]) ? progress(files.length > 1 ? 'Adding files' : 'Opening ' + files[0].name, false) : null;
     var newRefs = [];
@@ -345,10 +353,13 @@
         newRefs = newRefs.concat(refsFor(doc));
       } catch (err) {
         say((f.name ? f.name + ': ' : '') + (err && err.message ? err.message : 'could not be opened'), 4200);
+        /* A damaged or unsupported file says nothing about the device; running out of memory does. */
+        if (sup && /memory|allocation|RangeError/i.test(String((err && (err.name + ' ' + err.message)) || err))) sup.reportFailure(supId, err);
       }
       await frame();
     }
     if (pr) pr.end();
+    if (sup && newRefs.length) sup.reportSuccess(supId);
     if (!newRefs.length) return 0;
     var wasEmpty = !S.pages.length;
     var at = opts.at == null ? S.pages.length : clamp(opts.at, 0, S.pages.length);

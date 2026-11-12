@@ -335,3 +335,29 @@
   .pg-hubs:not(.pg-hubs-sm) .pg-hub small, .pg-hubs:not(.pg-hubs-sm) .pg-hub .pg-row-arrow { display: none; }
   .pg-hubs:not(.pg-hubs-sm) .pg-hub b { font-size: 14.5px; line-height: 1.3; }
 }
+
+/* ==========================================================================
+   Product-page composition for hubs and feature pages (every theme but Lapis, which keeps pass 2):
+   one hero with the launch action, "what it does" as tiles, numbered step cards, a privacy line,
+   the FAQ as an inset grouped list, related tools as tiles. Same generated markup.
+   ========================================================================== */
+:root:not([data-skin="lapis"]) .pg-how { gap: var(--s-12); padding-top: var(--s-20); }
+:root:not([data-skin="lapis"]) .pg-how .pg-label { border: 0; padding: 0; margin: 0 0 var(--s-4); font-size: var(--text-xl); font-weight: var(--h2-weight); letter-spacing: var(--h2-tracking); color: var(--ink); text-transform: none; }
+:root:not([data-skin="lapis"]) .pg-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--s-3); }
+:root:not([data-skin="lapis"]) .pg-checks li { grid-template-columns: 1fr; gap: var(--s-2); padding: var(--s-5); border: var(--hair-w) solid var(--card-border); border-radius: var(--card-radius); background: var(--surface); box-shadow: var(--card-shadow); font-weight: 560; }
+:root:not([data-skin="lapis"]) .pg-checks svg { width: 22px; height: 22px; color: var(--accent); }
+:root:not([data-skin="lapis"]) .pg-steps { display: grid; gap: var(--s-3); }
+:root:not([data-skin="lapis"]) .pg-steps li { padding: var(--s-4) var(--s-5); border: var(--hair-w) solid var(--card-border); border-radius: var(--card-radius); background: var(--surface); box-shadow: var(--card-shadow); align-items: center; }
+:root:not([data-skin="lapis"]) .pg-steps li::before { border: 0; background: var(--primary); color: var(--on-primary); }
+@media (min-width: 980px) {
+  :root:not([data-skin="lapis"]) .pg-how { grid-template-columns: minmax(0, 1fr); }
+  :root:not([data-skin="lapis"]) .pg-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  :root:not([data-skin="lapis"]) .pg-steps li { grid-template-columns: 1fr; align-items: start; min-height: 150px; align-content: start; }
+}
+:root:not([data-skin="lapis"]) .pg-privacy { border: 0; background: var(--selected-bg); border-radius: var(--r-xl); }
+:root:not([data-skin="lapis"]) .pg-privacy-ic { background: var(--surface); color: var(--private); }
+:root:not([data-skin="lapis"]) .pg-faq .faq { background: var(--list-bg); border-radius: var(--list-radius); padding: 0 var(--list-pad); border: var(--hair-w) solid var(--list-border); }
+:root:not([data-skin="lapis"]) .pg-faq .faq details:first-child { border-top: 0; }
+:root:not([data-skin="lapis"]) .pg-faq.hp-faq .faq { border-bottom: var(--hair-w) solid var(--list-border); }
+:root:not([data-skin="lapis"]) .pg-group .pg-list { border: 0; gap: var(--s-3); }
+:root:not([data-skin="lapis"]) .pg-group .pg-row { border: var(--hair-w) solid var(--card-border); border-radius: var(--card-radius); background: var(--surface); box-shadow: var(--card-shadow); padding: var(--s-2) var(--s-3) var(--s-2) var(--s-4); }

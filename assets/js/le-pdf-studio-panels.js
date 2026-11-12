@@ -139,6 +139,7 @@
   function toggle(label, checked, onChange, hint) {
     var w = el('label', 'ps-toggle');
     var i = inputEl('checkbox');
+    i.setAttribute('role', 'switch');
     i.checked = !!checked;
     w.appendChild(i);
     w.appendChild(el('span', 'ps-toggle-ui'));
@@ -2304,6 +2305,11 @@
     pop.appendChild(el('h3', 'ps-sec-title', 'Appearance'));
     var theme = btn('ps-opt', '<strong>Switch light / dark</strong><small>Pages stay white so colors stay true</small>', { 'data-theme-toggle': '' });
     pop.appendChild(theme);
+    if (LE.appearance) {
+      var more = btn('ps-opt', '<strong>Theme and mode…</strong><small>Clear, Lapis, Graphite, Paper or Contrast · light, dark or auto</small>', { 'data-ps-appearance': '' });
+      more.addEventListener('click', function () { pop.hidden = true; LE.appearance.open(); });
+      pop.appendChild(more);
+    }
     pop.hidden = false;
     var r = anchor.getBoundingClientRect();
     pop.style.top = Math.min(global.innerHeight - pop.offsetHeight - 8, r.bottom + 8) + 'px';

@@ -204,7 +204,8 @@
 
   /* ---------- Capabilities ----------
      Each: { kind: 'browser' | 'device' | 'site', test (sync, cheap or computed once on first use), async (lazy,
-     run by probe()), inferred (no feature test exists; answered from the platform), can, lack }.
+     run by probe()), inferred (no feature test exists; answered from the platform), live (a cheap test of a global
+     that can change after load: connection, display mode, a polyfill or a test stub; never cached), can, lack }.
      `can` completes "Chrome on this phone can …"; `lack` is the plain sentence shown when it is missing. */
   var WASM_SIMD = [0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11];
   var WASM_THREADS = [0, 97, 115, 109, 1, 0, 0, 0, 1, 4, 1, 96, 0, 0, 3, 2, 1, 0, 5, 4, 1, 3, 1, 1, 10, 11, 1, 9, 0, 65, 0, 254, 16, 2, 0, 26, 11];
@@ -234,9 +235,9 @@
     'worker': { kind: 'browser', test: function () { return typeof Worker === 'function'; }, can: 'do heavy work in the background', lack: 'This browser cannot do heavy work in the background, so the page may pause while it works.' },
     'offscreen-canvas': { kind: 'browser', test: function () { if (typeof OffscreenCanvas !== 'function') return false; try { return !!new OffscreenCanvas(1, 1).getContext('2d'); } catch (e) { return false; } }, can: 'draw images in the background', lack: 'This browser cannot draw images in the background.' },
     'compression-stream': { kind: 'browser', test: function () { if (typeof CompressionStream === 'undefined' || typeof DecompressionStream === 'undefined') return false; try { new CompressionStream('deflate-raw'); new DecompressionStream('deflate-raw'); return true; } catch (e) { return false; } }, can: 'compress links and files', lack: 'This browser cannot compress data, so share links are longer and some project files cannot be opened.' },
-    'web-share': { kind: 'browser', test: function () { return typeof navigator.share === 'function'; }, can: 'open the share menu', lack: 'This browser cannot open the share menu.' },
+    'web-share': { live: true, kind: 'browser', test: function () { return typeof navigator.share === 'function'; }, can: 'open the share menu', lack: 'This browser cannot open the share menu.' },
     'web-share-files': {
-      kind: 'browser',
+      live: true, kind: 'browser',
       test: function () {
         if (typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function' || typeof File !== 'function') return false;
         try { return !!navigator.canShare({ files: [new File(['x'], 'probe.png', { type: 'image/png' })] }); } catch (e) { return false; }
@@ -244,7 +245,7 @@
       can: 'share images to other apps', lack: 'This browser cannot share images to other apps.'
     },
     'clipboard-write-image': {
-      kind: 'browser',
+      live: true, kind: 'browser',
       test: function () {
         if (!navigator.clipboard || typeof navigator.clipboard.write !== 'function' || typeof window.ClipboardItem !== 'function') return false;
         if (typeof ClipboardItem.supports === 'function') { try { return !!ClipboardItem.supports('image/png'); } catch (e) { return null; } }
@@ -252,21 +253,21 @@
       },
       can: 'copy images to the clipboard', lack: 'This browser cannot copy images to the clipboard.'
     },
-    'clipboard-read': { kind: 'browser', test: function () { return !!(navigator.clipboard && typeof navigator.clipboard.read === 'function'); }, can: 'paste images from the clipboard', lack: 'This browser cannot paste images from the clipboard.' },
-    'media-recorder': { kind: 'browser', test: function () { return typeof window.MediaRecorder === 'function'; }, can: 'record video', lack: 'This browser cannot record video.' },
-    'media-recorder-mp4': { kind: 'browser', test: function () { var M = window.MediaRecorder; if (typeof M !== 'function') return false; if (typeof M.isTypeSupported !== 'function') return null; return M.isTypeSupported('video/mp4') || M.isTypeSupported('video/mp4;codecs=avc1'); }, can: 'save videos as MP4', lack: 'This browser cannot save videos as MP4.' },
-    'media-recorder-webm': { kind: 'browser', test: function () { var M = window.MediaRecorder; if (typeof M !== 'function') return false; if (typeof M.isTypeSupported !== 'function') return null; return M.isTypeSupported('video/webm') || M.isTypeSupported('video/webm;codecs=vp9') || M.isTypeSupported('video/webm;codecs=vp8'); }, can: 'save videos as WebM', lack: 'This browser cannot save videos as WebM.' },
-    'canvas-capture-stream': { kind: 'browser', test: function () { return typeof HTMLCanvasElement === 'function' && typeof HTMLCanvasElement.prototype.captureStream === 'function'; }, can: 'turn a design into a video', lack: 'This browser cannot turn a design into a video.' },
-    'webcodecs-video-encoder': { kind: 'browser', test: function () { return typeof window.VideoEncoder === 'function'; }, can: 'make videos quickly', lack: 'This browser cannot make videos quickly, so video export is slower.' },
+    'clipboard-read': { live: true, kind: 'browser', test: function () { return !!(navigator.clipboard && typeof navigator.clipboard.read === 'function'); }, can: 'paste images from the clipboard', lack: 'This browser cannot paste images from the clipboard.' },
+    'media-recorder': { live: true, kind: 'browser', test: function () { return typeof window.MediaRecorder === 'function'; }, can: 'record video', lack: 'This browser cannot record video.' },
+    'media-recorder-mp4': { live: true, kind: 'browser', test: function () { var M = window.MediaRecorder; if (typeof M !== 'function') return false; if (typeof M.isTypeSupported !== 'function') return null; return M.isTypeSupported('video/mp4') || M.isTypeSupported('video/mp4;codecs=avc1'); }, can: 'save videos as MP4', lack: 'This browser cannot save videos as MP4.' },
+    'media-recorder-webm': { live: true, kind: 'browser', test: function () { var M = window.MediaRecorder; if (typeof M !== 'function') return false; if (typeof M.isTypeSupported !== 'function') return null; return M.isTypeSupported('video/webm') || M.isTypeSupported('video/webm;codecs=vp9') || M.isTypeSupported('video/webm;codecs=vp8'); }, can: 'save videos as WebM', lack: 'This browser cannot save videos as WebM.' },
+    'canvas-capture-stream': { live: true, kind: 'browser', test: function () { return typeof HTMLCanvasElement === 'function' && typeof HTMLCanvasElement.prototype.captureStream === 'function'; }, can: 'turn a design into a video', lack: 'This browser cannot turn a design into a video.' },
+    'webcodecs-video-encoder': { live: true, kind: 'browser', test: function () { return typeof window.VideoEncoder === 'function'; }, can: 'make videos quickly', lack: 'This browser cannot make videos quickly, so video export is slower.' },
     'webcodecs-h264': {
       kind: 'browser',
       test: function () { return typeof window.VideoEncoder === 'function' && typeof VideoEncoder.isConfigSupported === 'function' ? null : false; },
       async: function () { return VideoEncoder.isConfigSupported({ codec: 'avc1.42001f', width: 640, height: 480, bitrate: 1e6, framerate: 30 }).then(function (r) { return !!(r && r.supported); }); },
       can: 'make MP4 videos quickly', lack: 'This browser cannot make MP4 videos quickly.'
     },
-    'camera': { kind: 'browser', test: function () { return !!(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function'); }, can: 'use the camera', lack: 'This browser cannot use the camera here.' },
-    'file-system-access': { kind: 'browser', test: function () { return typeof window.showSaveFilePicker === 'function' && typeof window.showOpenFilePicker === 'function'; }, can: 'save straight back to a file you opened', lack: 'This browser cannot save straight back to a file you opened; it saves a new copy instead.' },
-    'directory-picker': { kind: 'browser', test: function () { return typeof window.showDirectoryPicker === 'function'; }, can: 'open a folder and keep it in sync', lack: 'This browser cannot open a folder and keep it in sync.' },
+    'camera': { live: true, kind: 'browser', test: function () { return !!(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function'); }, can: 'use the camera', lack: 'This browser cannot use the camera here.' },
+    'file-system-access': { live: true, kind: 'browser', test: function () { return typeof window.showSaveFilePicker === 'function' && typeof window.showOpenFilePicker === 'function'; }, can: 'save straight back to a file you opened', lack: 'This browser cannot save straight back to a file you opened; it saves a new copy instead.' },
+    'directory-picker': { live: true, kind: 'browser', test: function () { return typeof window.showDirectoryPicker === 'function'; }, can: 'open a folder and keep it in sync', lack: 'This browser cannot open a folder and keep it in sync.' },
     'launch-queue': { kind: 'browser', test: function () { return 'launchQueue' in window; }, can: 'receive files when the app opens', lack: 'This browser cannot hand files to LocalEditor when it opens.' },
     'file-handling': {
       kind: 'browser', inferred: true,
@@ -306,7 +307,7 @@
     'service-worker': { kind: 'browser', test: function () { return 'serviceWorker' in navigator && !!navigator.serviceWorker; }, can: 'run the app with no connection', lack: 'This browser cannot run LocalEditor with no connection.' },
     'persistent-storage': { kind: 'browser', test: function () { return !!(navigator.storage && typeof navigator.storage.persist === 'function'); }, can: 'protect saved work from automatic clean-up', lack: 'This browser cannot protect saved work from automatic clean-up.' },
     'storage-estimate': { kind: 'browser', test: function () { return !!(navigator.storage && typeof navigator.storage.estimate === 'function'); }, can: 'say how much space is free', lack: 'This browser does not say how much space is free.' },
-    'eyedropper': { kind: 'browser', test: function () { return typeof window.EyeDropper === 'function'; }, can: 'pick colours from anywhere on screen', lack: 'This browser can only pick colours from inside the page.' },
+    'eyedropper': { live: true, kind: 'browser', test: function () { return typeof window.EyeDropper === 'function'; }, can: 'pick colours from anywhere on screen', lack: 'This browser can only pick colours from inside the page.' },
     'webgpu': {
       kind: 'browser',
       test: function () { return navigator.gpu && typeof navigator.gpu.requestAdapter === 'function' ? null : false; },
@@ -344,7 +345,7 @@
     'createimagebitmap': { kind: 'browser', test: function () { return typeof window.createImageBitmap === 'function'; }, can: 'open photos quickly', lack: 'This browser opens photos more slowly.' },
     'avif-encode': { kind: 'browser', lazy: true, test: function () { return encodes('image/avif'); }, can: 'save AVIF images', lack: 'This browser cannot save AVIF images.' },
     'webp-encode': { kind: 'browser', lazy: true, test: function () { return encodes('image/webp'); }, can: 'save WebP images', lack: 'This browser cannot save WebP images; it saves PNG instead.' },
-    'install-prompt': { kind: 'browser', test: function () { return 'onbeforeinstallprompt' in window || !!(window.__lePwaEarly && window.__lePwaEarly.prompt); }, can: 'install with one tap', lack: 'This browser has no one-tap install, so installing takes a few steps from its menu.' },
+    'install-prompt': { live: true, kind: 'browser', test: function () { return 'onbeforeinstallprompt' in window || !!(window.__lePwaEarly && window.__lePwaEarly.prompt); }, can: 'install with one tap', lack: 'This browser has no one-tap install, so installing takes a few steps from its menu.' },
     'installable': {
       kind: 'browser', inferred: true,
       test: function () {
@@ -362,8 +363,8 @@
     'cpu-cores': { kind: 'device', test: function () { var n = cpuCores(); return n == null ? null : n >= 4; }, can: 'work on several things at once', lack: function () { return cap1(env().deviceWord) + ' has fewer than 4 processor cores, so heavy work is slower.'; } },
     'secure-context': { kind: 'site', test: function () { return window.isSecureContext === true; }, can: 'use protected features', lack: 'This page is not on a secure connection, so some features are switched off.' },
     'in-app-browser': { kind: 'site', inferred: true, test: function () { return env().inApp; }, can: '', lack: 'This is an app’s built-in browser, which switches some features off.' },
-    'standalone': { kind: 'site', test: function () { return mq('(display-mode: standalone)') || mq('(display-mode: minimal-ui)') || mq('(display-mode: fullscreen)') || mq('(display-mode: window-controls-overlay)') || navigator.standalone === true; }, can: 'run as an installed app', lack: 'LocalEditor is not installed on this device.' },
-    'online': { kind: 'site', inferred: true, test: function () { return navigator.onLine !== false; }, can: 'reach the internet', lack: 'You are offline. This needs a connection.' },
+    'standalone': { live: true, kind: 'site', test: function () { return mq('(display-mode: standalone)') || mq('(display-mode: minimal-ui)') || mq('(display-mode: fullscreen)') || mq('(display-mode: window-controls-overlay)') || navigator.standalone === true; }, can: 'run as an installed app', lack: 'LocalEditor is not installed on this device.' },
+    'online': { live: true, kind: 'site', inferred: true, test: function () { return navigator.onLine !== false; }, can: 'reach the internet', lack: 'You are offline. This needs a connection.' },
     'canvas-2d': { kind: 'browser', test: function () { return !!canvas2d(); }, can: 'draw images', lack: 'This browser cannot draw images.' },
     'canvas-filter': { kind: 'browser', test: function () { var c = canvas2d(); if (!c || !('filter' in c)) return false; c.filter = 'blur(2px)'; return c.filter === 'blur(2px)'; }, can: 'blur and filter quickly', lack: 'This browser draws blur and filters a simpler way, so they look slightly different.' },
     'path2d': { kind: 'browser', test: function () { return typeof window.Path2D === 'function'; }, can: 'draw shapes and masks', lack: 'This browser cannot draw shapes and masks.' },
@@ -397,6 +398,7 @@
   function has(cap) {
     if (own(overrides, cap)) return overrides[cap];
     if (!CAPS[cap]) return null;
+    if (CAPS[cap].live && !CAPS[cap].async) return runSync(cap);
     if (own(results, cap)) return results[cap];
     var v = runSync(cap);
     /* Inferred answers can change once le-pwa arrives, so they are not cached until it has. */
@@ -514,7 +516,7 @@
     { id: 'studio.pdf-export', name: 'Multi-page PDF export', group: 'Photo studio', url: 'studio/', needs: ['canvas-2d'], wants: ['fetch'], memoryMB: 400 },
     { id: 'studio.projects', name: 'Projects and version history', group: 'Photo studio', url: 'studio/', needs: ['indexeddb'], wants: ['compression-stream', 'persistent-storage', 'storage-estimate'], note: 'Designs are saved in this browser only.' },
     { id: 'studio.collage', name: 'Collage', group: 'Photo studio', url: 'studio/?tool=collage', needs: ['canvas-2d', 'fetch'], wants: ['intersection-observer', 'cache-storage'], memoryMB: 400 },
-    { id: 'studio.recipes', name: 'Recipes and batch', group: 'Photo studio', url: 'recipes/', needs: ['canvas-2d'], wants: ['compression-stream', 'web-share-files'], memoryMB: 400, note: 'Batch runs one photo at a time to save memory.' },
+    { id: 'studio.recipes', name: 'Recipes and batch', group: 'Photo studio', url: 'recipes/', needs: ['canvas-2d'], wants: ['compression-stream'], memoryMB: 400, note: 'Batch runs one photo at a time to save memory. Results download as a zip.' },
     { id: 'studio.background', name: 'Background photo editing', group: 'Photo studio', url: 'studio/', needs: ['canvas-2d'], wants: ['canvas-filter'], memoryMB: 300 },
     { id: 'studio.stock', name: 'Stock photo search', group: 'Photo studio', url: 'studio/', needs: ['online', 'fetch'], wants: ['createimagebitmap'], note: 'Needs a connection. Searches go to the photo provider you choose.' },
     { id: 'studio.eyedropper', name: 'Pick a colour from the screen', group: 'Photo studio', url: 'studio/', needs: [], wants: ['eyedropper'], note: 'Without it you can still pick colours from your design.' },
@@ -566,6 +568,15 @@
 
   /* ---------- History and remembered choices ---------- */
   function history(id) { var hst = local().history[id]; return hst || null; }
+  /* A cancel, a lost connection or a failed download says nothing about whether this device can run the feature,
+     so gate() does not record those (an error can also opt out with err.deviceFailure === false). */
+  function isDeviceFailure(err) {
+    if (!err) return true;
+    if (err.deviceFailure === false) return false;
+    if (err.deviceFailure === true) return true;
+    if (err.name === 'AbortError' || err.cancelled) return false;
+    return !/^(cancelled|canceled|abort|offline|download|network|unsupported|quota|consent|declined)$/.test(String(err.code || ''));
+  }
   function reportFailure(id, error) {
     if (typeof id !== 'string') return;
     var s = local();
@@ -618,6 +629,7 @@
     return 'This browser does not say whether it can ' + c.can + '.';
   }
 
+  function engineOf(os, b) { return os === 'ios' || b === 'safari' ? 'webkit' : b === 'firefox' ? 'gecko' : 'blink'; }
   function suggestFor(def, missing) {
     var e = env();
     var caps = missing.filter(suggestable);
@@ -635,6 +647,15 @@
       return caps.every(function (c) { return matrixValue(c, e.os, b) === true; });
     });
     var can = joinAnd(caps.map(function (c) { return CAPS[c].can; }).filter(Boolean));
+    /* The table says the current version of this browser can do it, but the live test says no: this copy is
+       out of date (or the feature is switched off). Say so; browsers on the same engine would fail the same way. */
+    var curName = BROWSER_NAMES[e.browser];
+    var outdated = !!curName && caps.every(function (c) { return matrixValue(c, e.os, e.browser) === true; });
+    if (outdated) {
+      var upd = e.os === 'ios' ? e.osName : curName;
+      out.push({ browser: null, update: true, name: upd, reason: 'The current version of ' + curName + ' can ' + (can || 'run ' + def.name.toLowerCase()) + '. Update ' + upd + ' to the latest version, then try again.' });
+      names = names.filter(function (b) { return engineOf(e.os, b) !== e.engine; });
+    }
     if (e.os === 'ios') {
       /* Every iOS browser uses Safari's engine, so another browser cannot help; say where it does work. */
       var desk = ['windows', 'mac', 'chromeos'].some(function (os) {
@@ -695,8 +716,8 @@
       }
     }
     var past = history(id);
-    if (past && past.ok) {
-      /* It has worked here: that beats any estimate. */
+    if (past && past.ok && !missing.length) {
+      /* It has worked here: that beats any estimate (but not an API that is missing now). */
       status = 'ok';
       tone = null;
       reasons = ['This has worked on ' + e.deviceWord + ' before.'];
@@ -719,6 +740,8 @@
   var LABELS = { ok: 'Runs well here', limited: 'Works, with limits', slow: 'May be slow here', unknown: 'Might work here', unsupported: 'Not available in this browser', failed: 'Did not work last time' };
 
   function capsOf(id) { var d = defs[id]; return d ? d.needs.concat(d.wants) : []; }
+  /* No async probe of this feature is still to run. */
+  function settled(id) { return capsOf(id).every(function (c) { return own(overrides, c) || !CAPS[c] || !CAPS[c].async || probed[c]; }); }
   function checkAsync(id) { return probeAll(capsOf(id)).then(function () { return check(id); }); }
   function checkAll() { return features().map(function (d) { return check(d.id); }); }
 
@@ -728,7 +751,14 @@
     opts = opts || {};
     var run = typeof opts.run === 'function' ? opts.run : function () {};
     function go() {
-      return new Promise(function (resolve) { resolve(run()); }).then(null, function (err) { reportFailure(id, err); throw err; });
+      return new Promise(function (resolve) { resolve(run()); }).then(null, function (err) { if (isDeviceFailure(err)) reportFailure(id, err); throw err; });
+    }
+    var fallback = opts.fallback && typeof opts.fallback.run === 'function' ? opts.fallback : null;
+    /* Already known to be fine: run in this same task, so APIs that need the tap (clipboard, eyedropper, share)
+       still see the user gesture. */
+    if (settled(id)) {
+      var now = check(id);
+      if (now.status === 'ok' || (now.canForce && now.forced)) return go();
     }
     return checkAsync(id).then(function (r) {
       if (r.status === 'ok' || (r.canForce && r.forced)) return go();
@@ -737,6 +767,8 @@
           if (choice === 'run') {
             if (r.canForce) rememberForce(id, device);
             go().then(resolve, reject);
+          } else if (choice === 'fallback' && fallback) {
+            new Promise(function (res) { res(fallback.run(r)); }).then(resolve, reject);
           } else {
             if (typeof opts.onCancel === 'function') { try { opts.onCancel(r); } catch (e) { console.warn(e); } }
             resolve(undefined);
@@ -764,11 +796,15 @@
   function showGate(r, opts, done) {
     if (openGate && openGate.open) { try { openGate.close(); } catch (e) {} }
     var title = opts.title || r.name;
+    var fb = opts.fallback && typeof opts.fallback.run === 'function' && opts.fallback.label ? String(opts.fallback.label).slice(0, 60) : '';
+    /* The feature's own way round (e.g. "Download instead") is the safest choice when it cannot run here. */
+    var fbPrimary = !!fb && (r.status === 'unsupported' || !r.canForce);
+    var fbBtn = fb ? '<button type="button" class="lp-btn' + (fbPrimary ? ' lp-primary' : '') + '" data-ls-fallback>' + esc(fb) + '</button>' : '';
     var sub = r.label === LABELS.failed ? 'It did not work last time on ' + env().deviceWord + '.' : r.label === LABELS.slow ? 'It may be slow on ' + env().deviceWord + '.' : HEAD[r.status] || '';
     var primaryRuns = r.status === 'limited' || (r.status === 'unknown' && r.canForce);
     var runLabel = r.status === 'limited' && r.label !== LABELS.failed ? 'Continue' : 'Try anyway';
     var sug = r.suggest.map(function (s) {
-      return '<li>' + (s.browser ? ICON.browser : ICON.device) + '<div><b>' + esc(s.browser ? 'Works in ' + s.browser : 'Works on a computer') + '</b><small>' + esc(s.reason) + '</small></div></li>';
+      return '<li>' + (s.update ? ICON.refresh : s.browser ? ICON.browser : ICON.device) + '<div><b>' + esc(s.update ? 'Update ' + s.name : s.browser ? 'Works in ' + s.browser : 'Works on a computer') + '</b><small>' + esc(s.reason) + '</small></div></li>';
     }).join('');
     var d = h('<dialog class="lp-sheet ls-gate" aria-labelledby="ls-gate-h"><div class="lp-sheet-in" tabindex="-1"></div></dialog>');
     d.firstChild.innerHTML =
@@ -780,9 +816,11 @@
         (r.canForce ? '<label class="ls-remember"><input type="checkbox" data-ls-never> <span>Don’t ask again on this device</span></label>' : '') +
       '</div>' +
       '<div class="lp-actions">' +
-        (r.canForce ? (primaryRuns ?
-          '<button type="button" class="lp-btn" data-ls-cancel>Not now</button><button type="button" class="lp-btn lp-primary" data-ls-run>' + runLabel + '</button>' :
-          '<button type="button" class="lp-btn" data-ls-run>Try anyway</button><button type="button" class="lp-btn lp-primary" data-ls-cancel>Not now</button>') :
+        (fbPrimary ?
+          (r.canForce ? '<button type="button" class="lp-btn" data-ls-run>Try anyway</button>' : '') + '<button type="button" class="lp-btn" data-ls-cancel>Not now</button>' + fbBtn :
+        r.canForce ? (primaryRuns ?
+          '<button type="button" class="lp-btn" data-ls-cancel>Not now</button>' + fbBtn + '<button type="button" class="lp-btn lp-primary" data-ls-run>' + runLabel + '</button>' :
+          '<button type="button" class="lp-btn" data-ls-run>Try anyway</button>' + fbBtn + '<button type="button" class="lp-btn lp-primary" data-ls-cancel>Not now</button>') :
           '<button type="button" class="lp-btn lp-primary" data-ls-cancel>OK</button>') +
       '</div>';
     document.body.appendChild(d);
@@ -794,6 +832,7 @@
       if (!t) return;
       if (t.hasAttribute('data-ls-close') || t.hasAttribute('data-ls-cancel')) d.close();
       else if (t.hasAttribute('data-ls-run')) { choice = 'run'; d.close(); }
+      else if (t.hasAttribute('data-ls-fallback')) { choice = 'fallback'; d.close(); }
       else if (t.hasAttribute('data-ls-copylink')) copyText(location.href.split('#')[0], 'Link copied. Paste it into the other browser.');
     });
     d.addEventListener('close', function () {
@@ -985,7 +1024,10 @@
     var reasons = r.status === 'ok' ? (r.reasons.length ? r.reasons : []) : r.reasons;
     /* Short form here; the full sentence is in "Works better in" and in the gate. */
     var named = r.suggest.filter(function (s) { return s.browser; }).map(function (s) { return s.browser; });
-    var sugText = named.length ? 'Works in ' + joinAnd(named) + ' on ' + env().deviceWord + '.' : r.suggest.length ? 'Works on a computer.' : '';
+    var upd = r.suggest.filter(function (s) { return s.update; })[0];
+    var comp = r.suggest.some(function (s) { return s.device === 'computer'; });
+    var sugText = (upd ? 'Update ' + upd.name + ' to the latest version.' : '') +
+      (named.length ? (upd ? ' Also works in ' : 'Works in ') + joinAnd(named) + ' on ' + env().deviceWord + '.' : comp ? (upd ? ' Also works on a computer.' : 'Works on a computer.') : '');
     var sug = sugText ? '<p class="ls-row-sug">' + esc(sugText) + '</p>' : '';
     var name = d.url && !/^labs\//.test(d.url) ? '<a href="' + esc(BASE + d.url) + '">' + esc(r.name) + '</a>' : esc(r.name);
     return '<li class="ls-row ls-' + r.status + '" data-feature="' + esc(r.id) + '">' +

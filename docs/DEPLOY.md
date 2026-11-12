@@ -58,7 +58,7 @@ After a deploy, open the site, then open it again: installed copies show **"A ne
 
 Content types the CLI would get wrong are set explicitly: `manifest.webmanifest` and `manifest-*.webmanifest` → `application/manifest+json`, `*.wasm` → `application/wasm`, `*.onnx` → `application/octet-stream`, `*.mjs` → `text/javascript`, `*.leworkflow` → `application/vnd.localeditor.workflow+json`, `*.leproject` → `application/vnd.localeditor.project+zip`, graphics data → `application/json`.
 
-Never uploaded: `scripts/`, `tests/`, `docs/`, `infra/`, Markdown files, `.git`, `.claude`, `node_modules`, `assets/models/local/` (evaluation downloads and model sources).
+Never uploaded: `scripts/`, `tests/`, `docs/`, `infra/`, Markdown files, `.git`, `.claude`, `node_modules`, `assets/models/local/` (evaluation downloads and model sources). Exceptions, published as `text/markdown` at their repository paths because `llms.txt` links them for agents: `docs/AGENT-GUIDE.md`, `docs/FORMAT-DESIGN.md`, `docs/FORMAT-WORKFLOW.md`, `docs/FORMAT-PDF-WORKFLOW.md` and `agent-kit/*`; plus `schema/*.json` (the design schema's `$id` URL).
 
 ### Large background-remover models (`assets/models/pro/`)
 

@@ -82,7 +82,7 @@ CLEAR = derive(LAPIS,
   '--btn-weight': '590', '--btn-size': '15px', '--field-radius': '10px', '--seg-radius': '9px', '--seg-inner-radius': '7px', '--chip-radius': '999px', '--card-radius': '18px', '--sheet-radius': '26px',
   '--bar-filter': 'saturate(1.8) blur(20px)', '--sheet-filter': 'saturate(1.8) blur(24px)',
   '--ease': 'cubic-bezier(0.25, 0.1, 0.25, 1)', '--ease-out': 'cubic-bezier(0.32, 0.72, 0, 1)', '--ease-in-out': 'cubic-bezier(0.42, 0, 0.58, 1)', '--ease-spring': 'cubic-bezier(0.2, 0.9, 0.25, 1.06)',
-  '--dur-1': '150ms', '--dur-2': '250ms', '--dur-3': '350ms', '--dur-4': '480ms',
+  '--dur-1': '150ms', '--dur-2': '250ms', '--dur-3': '350ms', '--dur-4': '350ms',
  },
  light={
   '--bg': '#F5F5F7', '--bg-2': '#EDEDF0', '--surface': '#FFFFFF', '--surface-2': '#F5F5F7', '--surface-3': '#E8E8ED', '--surface-glass': 'rgba(255, 255, 255, 0.72)',
@@ -129,7 +129,7 @@ GRAPHITE = derive(CLEAR,
   '--btn-radius': '6px', '--btn-weight': '560', '--btn-size': '14px', '--field-radius': '4px', '--seg-radius': '6px', '--seg-inner-radius': '4px', '--chip-radius': '4px', '--card-radius': '8px', '--sheet-radius': '10px',
   '--bar-filter': 'none', '--sheet-filter': 'none',
   '--ease': 'cubic-bezier(0.2, 0, 0, 1)', '--ease-out': 'cubic-bezier(0.2, 0, 0, 1)', '--ease-spring': 'cubic-bezier(0.2, 0, 0, 1)',
-  '--dur-1': '90ms', '--dur-2': '150ms', '--dur-3': '220ms', '--dur-4': '320ms',
+  '--dur-1': '90ms', '--dur-2': '150ms', '--dur-3': '220ms', '--dur-4': '300ms',
  },
  light={
   '--bg': '#EFEFEF', '--bg-2': '#E6E6E6', '--surface': '#FFFFFF', '--surface-2': '#F4F4F4', '--surface-3': '#E4E4E4', '--surface-glass': '#FFFFFF',
@@ -173,7 +173,7 @@ PAPER = derive(CLEAR,
   '--accent-font': 'inherit', '--accent-style': 'italic', '--accent-weight': '400', '--accent-color': 'inherit', '--accent-tracking': 'inherit',
   '--r-sm': '8px', '--r-md': '12px', '--r-lg': '16px', '--r-xl': '22px', '--btn-radius': '999px', '--field-radius': '8px', '--seg-radius': '10px', '--seg-inner-radius': '8px', '--card-radius': '16px', '--sheet-radius': '22px',
   '--bar-filter': 'saturate(1.2) blur(16px)', '--sheet-filter': 'none',
-  '--dur-1': '160ms', '--dur-2': '280ms', '--dur-3': '380ms',
+  '--dur-1': '160ms', '--dur-2': '260ms', '--dur-3': '340ms',
  },
  light={
   '--bg': '#F6F1E7', '--bg-2': '#EEE7D9', '--surface': '#FFFCF6', '--surface-2': '#F3ECDF', '--surface-3': '#E8DFCE', '--surface-glass': 'rgba(255, 252, 246, 0.82)',
@@ -277,6 +277,30 @@ for _t in (GRAPHITE, CONTRAST):
     _t['light'].update({'--pop-bg': 'var(--surface)', '--pop-border': 'var(--border)'}); _t['dark'].update({'--pop-bg': 'var(--surface)', '--pop-border': 'var(--border)'})
 GRAPHITE['light'].update({'--side': '#F7F7F7', '--side-2': '#EDEDED', '--side-text': '#161616', '--side-strong': '#000000', '--side-dim': '#4A4A4A', '--side-active': 'rgba(0, 0, 0, 0.08)', '--side-hover': 'rgba(0, 0, 0, 0.06)', '--side-line': 'rgba(0, 0, 0, 0.12)', '--side-accent': '#000000', '--side-accent-icon': '#000000', '--side-selected': 'rgba(0, 0, 0, 0.08)', '--side-selected-edge': 'transparent', '--side-selected-ink': '#000000'})
 CONTRAST['light'].update({'--side': '#FFFFFF', '--side-2': '#F0F0F0', '--side-text': '#000000', '--side-strong': '#000000', '--side-dim': '#1F1F1F', '--side-active': '#DCE6FF', '--side-hover': 'rgba(0, 0, 0, 0.08)', '--side-line': '#000000', '--side-accent': '#0035A8', '--side-accent-icon': '#0035A8', '--side-selected': '#DCE6FF', '--side-selected-edge': '#0035A8', '--side-selected-ink': '#0035A8'})
+# Grouped (inset) lists: settings, storage, downloads, install chooser
+for _m in ('light', 'dark'):
+    LAPIS[_m].update({'--group-bg': 'var(--surface)', '--list-bg': 'transparent', '--list-border': 'var(--line)', '--list-pad': '0px', '--list-last-line': 'var(--line)'})
+    for _t in (CLEAR, PAPER):
+        _t[_m].update({'--group-bg': 'var(--bg)', '--list-bg': 'var(--surface)', '--list-border': 'transparent', '--list-pad': '16px', '--list-last-line': 'transparent'})
+    for _t in (GRAPHITE, CONTRAST):
+        _t[_m].update({'--group-bg': 'var(--surface)', '--list-bg': 'var(--surface)', '--list-border': 'var(--border)', '--list-pad': '14px', '--list-last-line': 'transparent'})
+LAPIS['shared'].update({'--list-radius': '16px', '--card-radius-sm': '10px', '--list-frame': 'transparent'})
+for _t in (CLEAR, PAPER): _t['shared']['--list-frame'] = 'transparent'
+for _t in (GRAPHITE, CONTRAST): _t['shared']['--list-frame'] = 'var(--border)'
+CLEAR['shared'].update({'--list-radius': '12px', '--card-radius-sm': '12px'}); PAPER['shared'].update({'--list-radius': '12px', '--card-radius-sm': '12px'})
+GRAPHITE['shared'].update({'--list-radius': '6px', '--card-radius-sm': '6px'}); CONTRAST['shared'].update({'--list-radius': '10px', '--card-radius-sm': '10px'})
+# Slider and tab-bar legibility (pass 4)
+for _t in (CLEAR, PAPER):
+    _t['shared'].update({'--thumb': '26px', '--thumb-shadow': '0 0 0 1px rgba(0, 0, 0, 0.4), 0 3px 8px rgba(0, 0, 0, 0.2)', '--tab-label': '11px'})
+GRAPHITE['shared'].update({'--tab-label': '11px'}); CONTRAST['shared'].update({'--tab-label': '12px'}); LAPIS['shared'].update({'--tab-label': '10.5px'})
+for _t, l, d in ((LAPIS, '#5884F8', '#5884F8'), (CLEAR, 'var(--primary)', '#3A85EA'), (GRAPHITE, '#EDEDED', '#EDEDED'), (PAPER, '#5C86B3', '#5C86B3'), (CONTRAST, '#8AB4FF', '#8AB4FF')):
+    _t['light']['--slider-fill-dark'] = l; _t['dark']['--slider-fill-dark'] = d
+for _t in (CLEAR, PAPER, GRAPHITE, CONTRAST):
+    for _m in ('light', 'dark'):
+        _t[_m].update({'--tb-primary-bg': 'var(--selected-bg)', '--tb-primary-ink': 'var(--accent)', '--tb-primary-shadow': 'none'})
+for _t in (CLEAR, PAPER, GRAPHITE, CONTRAST):
+    for _m in ('light', 'dark'):
+        _t[_m].update({'--chip-on-bg': 'var(--selected-bg)', '--chip-on-edge': 'var(--selected-edge)', '--chip-on-ink': 'var(--accent)', '--chip-on-sub': 'var(--muted)'})
 THEMES = [('clear', 'Clear', CLEAR), ('lapis', 'Lapis', LAPIS), ('graphite', 'Graphite', GRAPHITE), ('paper', 'Paper', PAPER), ('contrast', 'Contrast', CONTRAST)]
 
 def block(sel, d, extra=''):

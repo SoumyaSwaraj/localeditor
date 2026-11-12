@@ -1,17 +1,20 @@
 'use strict';
-/* Export downloads (PNG/JPG/WebP/PDF), projects (autosave, reopen, .leproject round trip, versions, delete). */
+/* Export downloads (PNG/JPG/WebP/PDF), projects (autosave, reopen, .leproject round trip, versions, delete).
+   Ported to the rebuilt export panel (le-studio-export.js: tabs Image · Every size · Slides · Replay, sticky actions):
+   the primary Download is `.sxe-actions [data-act="download"]` on the Image tab. */
 const cases = {};
+const DOWNLOAD = '#sx-panel-body .sxe-actions [data-act="download"]';
 
 async function exportPage(browser, base, h, file) {
   const page = await h.openPhotoDesign(browser, base, 'desktop', file || h.PHOTO(0));
   return page;
 }
 async function download(page, h, format, scale) {
-  await h.openPanel(page, 'export');
+  await h.openPanel(page, 'export', { tab: 'image' });
   await page.getByRole('button', { name: format, exact: true }).click();
   if (scale) await page.locator('.sx-chip', { hasText: new RegExp('^' + scale + '×') }).click();
   await page.waitForTimeout(150);
-  return h.capture(page, () => page.locator('#sx-panel-body [data-act="download"]').click());
+  return h.capture(page, () => page.locator(DOWNLOAD).click());
 }
 
 /* ---------- export ---------- */
@@ -61,15 +64,15 @@ cases['export a 3-page design as one PDF with 3 pages, and as a ZIP of images'] 
   await page.waitForTimeout(400);
   await page.evaluate(() => { window.LEStudio.addPage(true); });
   await page.waitForTimeout(400);
-  await h.openPanel(page, 'export');
+  await h.openPanel(page, 'export', { tab: 'image' });
   await page.getByRole('button', { name: 'PDF', exact: true }).click();
   await page.getByText(/All 3 pages/).click();
-  const r = await h.capture(page, () => page.locator('#sx-panel-body [data-act="download"]').click(), 60000);
+  const r = await h.capture(page, () => page.locator(DOWNLOAD).click(), 60000);
   const info = await h.pdfRead(browser, base, r.buf);
   h.assert.equal(info.pages, 3, 'PDF has 3 pages');
   await page.getByRole('button', { name: 'PNG', exact: true }).click();
   await page.getByText(/All 3 pages/).click();
-  const z = await h.capture(page, () => page.locator('#sx-panel-body [data-act="download"]').click(), 60000);
+  const z = await h.capture(page, () => page.locator(DOWNLOAD).click(), 60000);
   h.assert(/\.zip$/.test(z.name) && z.buf.slice(0, 2).toString() === 'PK', 'a zip: ' + z.name);
   h.assert((z.buf.toString('latin1').match(/-page-\d\.png/g) || []).length >= 3, 'three page images inside the zip');
 };
@@ -85,15 +88,15 @@ cases['Ctrl+E opens the export panel and the estimate line shows size and weight
 cases['the Download button in the header opens Export and a download works'] = async ({ browser, base, h }) => {
   const page = await exportPage(browser, base, h);
   await page.click('#sx-head .sx-download');
-  await page.waitForSelector('#sx-panel-body [data-act="download"]');
-  const r = await h.capture(page, () => page.locator('#sx-panel-body [data-act="download"]').click());
+  await page.waitForSelector(DOWNLOAD);
+  const r = await h.capture(page, () => page.locator(DOWNLOAD).click());
   h.assert(r.size > 1000, 'something downloaded');
 };
 cases['export file name field sets the downloaded name'] = async ({ browser, base, h }) => {
   const page = await exportPage(browser, base, h);
-  await h.openPanel(page, 'export');
+  await h.openPanel(page, 'export', { tab: 'image' });
   await page.locator('#sx-panel-body input.sx-input[maxlength="80"]').fill('my launch post');
-  const r = await h.capture(page, () => page.locator('#sx-panel-body [data-act="download"]').click());
+  const r = await h.capture(page, () => page.locator(DOWNLOAD).click());
   h.assert(/^my[-_ ]launch[-_ ]post\.png$/i.test(r.name), 'name ' + r.name);
 };
 
@@ -194,8 +197,24 @@ cases['delete a design from Your designs removes it from the list'] = async ({ b
   await page.locator('#sx-pop button', { hasText: 'Delete' }).click();
   const confirm = page.locator('#sx-modal button', { hasText: /Delete/ });
   await confirm.first().waitFor({ state: 'visible', timeout: 5000 }).then(() => confirm.first().click(), () => {});
-  await page.waitForFunction(() => window.LE.project.list().then((l) => l.length === 0), null, { timeout: 8000 });
+  /* The old waitForFunction here never waited (it does not await a Promise), so the check raced the delete. */
+  await h.waitForAsync(page, () => window.LE.project.list().then((l) => l.length === 0), null, 8000);
   h.assert.equal((await page.evaluate(() => window.LE.project.list())).length, 0, 'gone from the ledger');
+};
+cases['a late autosave of a deleted design does not bring it back'] = async ({ browser, base, h }) => {
+  const page = await projectPage(browser, base, h);
+  await h.savedProjects(page);
+  const n = await page.evaluate(async () => {
+    const P = window.LE.project, p = window.LEStudio.S.project;
+    const late = P.save(JSON.parse(JSON.stringify(p)));   /* an autosave already in flight */
+    await P.remove(p.id);
+    await late;
+    await P.save(JSON.parse(JSON.stringify(p)));          /* a debounced one firing after the delete */
+    await P.snapshot(p.id, '');
+    return { list: (await P.list()).length, versions: (await P.versions(p.id)).length };
+  });
+  h.assert.equal(n.list, 0, 'gone from the ledger');
+  h.assert.equal(n.versions, 0, 'no versions written for it');
 };
 cases['import of a corrupt .leproject shows a message and does not crash the studio'] = async ({ browser, base, h }) => {
   const page = await h.open(browser, base, '/studio/', 'desktop');

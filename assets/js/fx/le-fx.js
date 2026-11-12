@@ -25,7 +25,7 @@
     if (FX.UI.controls.indexOf(name) < 0 && FX.UI.controls.length < 48) { FX.UI.controls.push(name); revision++; }
   };
   /* Effect packs loaded with the renderer. Feature teams add their pack name here (assets/js/fx/le-fx-<name>.js). */
-  var PACKS = ['basic', 'grade', 'retouch'];
+  var PACKS = ['basic', 'develop', 'grade', 'retouch', 'creative', 'relight', 'composite'];
 
   var BAD = { __proto__: 1, constructor: 1, prototype: 1 };
   var BLENDS = ['normal', 'multiply', 'screen', 'overlay', 'soft-light', 'hard-light', 'darken', 'lighten', 'difference', 'color', 'luminosity'];

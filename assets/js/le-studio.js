@@ -12,6 +12,14 @@
     });
     return out;
   }
+  /* For hooks where every module contributes markup (toolbar-add): all non-empty strings, in registration order. */
+  function fireAll(name, a, b) {
+    var out = '';
+    (HOOKS[name] || []).forEach(function (f) {
+      try { var r = f(ctx, a, b); if (typeof r === 'string') out += r; } catch (err) { console.error(err); }
+    });
+    return out;
+  }
 
   function byId(id) { return document.getElementById(id); }
   var root = byId('sx');
@@ -694,7 +702,10 @@
       if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v)) pick(v, true);
     });
     var eye = custom.querySelector('[data-eye]');
-    if (eye) eye.onclick = function () { new window.EyeDropper().open().then(function (r) { pick(r.sRGBHex, true); }).catch(function () {}); };
+    if (eye) eye.onclick = function () {
+      var go = function () { return new window.EyeDropper().open().then(function (r) { pick(r.sRGBHex, true); if (LE.support) LE.support.reportSuccess('studio.eyedropper'); }); };
+      (LE.support && LE.support.gate ? LE.support.gate('studio.eyedropper', { title: 'Pick a colour from the screen', run: go }) : go()).catch(function () {});
+    };
     var none = custom.querySelector('[data-none]');
     if (none) none.onclick = function () { pick(o.none === 'null' ? null : { type: 'none' }, true); };
     body.appendChild(custom);
@@ -1119,7 +1130,7 @@
         tb('replaceAll', 'swap', 'Replace colours & fonts', { text: 'Replace all', pri: 3 }) + tb('pagesPanel', 'pages', 'Pages', { pri: 3 }) + '<span class="sx-grow"></span>' + tb('compareHold', 'compare', 'Hold to compare', { cls: 'sx-hold', pri: 3 }) +
         tb('tbMore', 'more', 'More', { pri: 0, hidden: true, popup: 'menu' }) : '<span class="sx-tb-label">' + ic('shield') + 'Private by design — nothing leaves this device</span>';
     }
-    html += fire('toolbar-add', kind, l) || '';
+    html += fireAll('toolbar-add', kind, l);
     var custom = fire('toolbar', kind, l);
     if (typeof custom === 'string') html = custom + (/data-cmd="(tbMore|more)"/.test(custom) ? '' : tb('tbMore', 'more', 'More', { pri: 0, hidden: true, popup: 'menu' }));
     /* Same toolbar as before (an autosave, a re-select): leave the DOM alone so keyboard focus and hover stay put. */
@@ -1297,6 +1308,7 @@
   var INGEST_CEIL = { older: 4096, modern: 6000, desktop: 8000 };
   var INGEST_UP = { older: 'modern', modern: 'desktop', desktop: 'huge' };
   var REENCODE_BYTES = 25 * 1024 * 1024;
+  var LARGE_PX = 24e6;   /* 24 megapixels and up count as "large" for the device-support check */
   function ingestPolicy() {
     var mode = (LE.perf && typeof LE.perf.mode === 'function') ? LE.perf.mode() : 'auto';
     var pm = (LE.perf && typeof LE.perf.previewMax === 'function') ? LE.perf.previewMax() : 2400;
@@ -1334,7 +1346,19 @@
     var pol = ingestPolicy();
     var tooBig = function () { return new Error('That photo is too large for this browser.'); };
     var name = file.name || 'photo';
+    var large = false;
     return decode(file, name).then(function (canvas) {
+      /* Device support: a very large photo is where memory runs out first. Ask (via LE.support) only when the
+         verdict is not ok; a cancel releases the decoded pixels. */
+      if (!canvas || canvas.width * canvas.height < LARGE_PX || !(LE.support && LE.support.gate)) return canvas;
+      large = true;
+      var ran = false;
+      return LE.support.gate('studio.large-photos', { title: 'Open a large photo', run: function () { ran = true; return canvas; } }).then(function (cv) {
+        if (ran) return cv;
+        try { canvas.width = 1; canvas.height = 1; } catch (e) {}
+        var err = new Error('The photo was not opened.'); err.cancelled = true; throw err;
+      });
+    }).then(function (canvas) {
       if (!canvas || !canvas.width) throw new Error('Could not read that image.');
       var edge = Math.max(canvas.width, canvas.height);
       var shrink = edge > pol.trigger;
@@ -1371,8 +1395,12 @@
         S.mem[meta.id] = { meta: meta, canvas: pair.canvas };
         scene.addAsset(meta.id, pair.canvas);
         if (S.project) S.project.assets[meta.id] = meta;
+        if (large && LE.support) LE.support.reportSuccess('studio.large-photos');
         return meta;
       });
+    }).then(null, function (err) {
+      if (large && LE.support && !(err && err.cancelled) && !/too large for this browser/.test(String(err && err.message))) LE.support.reportFailure('studio.large-photos', err);
+      throw err;
     });
   }
   function assetMeta(rec, canvas) {
@@ -1890,7 +1918,9 @@
   }
   function safeName(n) { return String(n || 'design').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase().slice(0, 60) || 'design'; }
   function download(blob, name) {
-    if (window.IT && IT.download) { IT.download(blob, name); return; }
+    /* One toast system in the studio: its own toast says it started; callers then replace it with
+       "Downloaded 1.5 MB". The site-wide "Download started" would be a second, duplicate message. */
+    if (window.IT && IT.download) { IT.download(blob, name, { quiet: true }); toast('Download started'); return; }
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = name;
@@ -1901,7 +1931,7 @@
   function syncProject() {
     var p = S.project;
     if (!p) return;
-    if (!S.preview) p.pages[p.activePage] = doc();
+    if (!S.preview) { var pid = p.pages[p.activePage] && p.pages[p.activePage].id; p.pages[p.activePage] = doc(); if (pid) p.pages[p.activePage].id = pid; }
     var st = studio();
     st.baseId = baseLayer() ? S.baseId : null;
     if (!st.baseId) S.baseId = null;
@@ -2027,6 +2057,8 @@
   /* ctx.coach(i) shows mark i if it is the next one due; ctx.coach('off') turns guidance off for good. */
   function coachMark(i) {
     if (i === 'off') { lsSet(COACH_KEY, 'done'); hideCoach(); return; }
+    /* Never over agent mode (its banner and activity panel sit where the marks point); 'hide' clears one now. */
+    if (i === 'hide' || document.documentElement.classList.contains('sxa-on')) { clearTimeout(S.coachWait); if (S.coachEl) hideCoach(); return; }
     if (S.coachEl || coachStep() !== i || !COACH[i] || !S.project || S.editing) return;
     if (!E.toast.hidden) { clearTimeout(S.coachWait); S.coachWait = setTimeout(function () { coachMark(i); }, 2800); return; }
     var t = COACH[i].target();
@@ -2082,6 +2114,7 @@
     var cur = p.pages[p.activePage];
     var d = dup ? remapIds(clone(cur)) : LE.project.blankPage(cur.width, cur.height, clone(cur.background && cur.background.type === 'color' ? cur.background : { type: 'color', color: '#ffffff' }));
     S.pageThumbs[p.activePage] = artboard(160);
+    if (d) delete d.id;   /* a page id names one page; the copy starts without one */
     p.pages.splice(p.activePage + 1, 0, d);
     loadPage(p.activePage + 1);
     markDirty();
@@ -2515,6 +2548,7 @@
       case 'tbMore': openPop(el, '<div class="sx-menu">' + overflowHtml() + '</div>', { cls: 'sx-pop-menu' }); break;
       case 'textDone': if (scene._commitEdit) scene._commitEdit(true); else keyEvent('Escape'); break;
       default:
+        if (name === 'rawOpen' || name === 'hdrMerge' || name === 'rawLicence') closePop();
         if (PANELS._cmds && PANELS._cmds[name]) PANELS._cmds[name](ctx, arg, el, e);
         else if (PANELS._cmd) PANELS._cmd(ctx, name, arg, el, e);
     }
@@ -2616,10 +2650,14 @@
     html += '<button type="button" data-cmd="alignMenu">' + ic('alC') + 'Align…</button><button type="button" data-cmd="flipMenu">' + ic('flip') + 'Flip…</button><button type="button" data-cmd="dup">' + ic('copy') + 'Duplicate<kbd>Ctrl D</kbd></button><button type="button" data-cmd="del" class="is-danger">' + ic('trash') + 'Delete<kbd>Del</kbd></button></div>';
     openPop(el, html, { cls: 'sx-pop-menu' });
   }
+  /* Commands the camera RAW hook registers (assets/js/raw/le-raw-studio.js); absent when that file is not loaded. */
+  function rawCmd(name) { return !!(PANELS && PANELS._cmds && PANELS._cmds[name]); }
   function fileMenu(el) {
     openPop(el, '<div class="sx-menu">' +
       '<button type="button" data-cmd="newDesign">' + ic('plus') + 'New design</button>' +
       '<button type="button" data-cmd="openPhoto">' + ic('image') + 'Add photos…<kbd>Ctrl O</kbd></button>' +
+      (rawCmd('rawOpen') ? '<button type="button" data-cmd="rawOpen">' + ic('image') + 'Open RAW photo…</button>' : '') +
+      (rawCmd('hdrMerge') ? '<button type="button" data-cmd="hdrMerge">' + ic('layers') + 'Merge to HDR…</button>' : '') +
       '<button type="button" data-cmd="projects">' + ic('projects') + 'Your designs</button><hr>' +
       '<button type="button" data-cmd="checkpoint"' + (S.project ? '' : ' disabled') + '>' + ic('save') + 'Save a version<kbd>Ctrl S</kbd></button>' +
       '<button type="button" data-cmd="history">' + ic('history') + 'Version history</button>' +
@@ -2637,6 +2675,7 @@
       '<button type="button" data-cmd="settings">' + ic('gauge') + 'Performance</button>' +
       '<button type="button" data-theme-toggle>' + ic('moon') + (document.documentElement.getAttribute('data-theme') === 'dark' ? 'Light mode' : 'Dark mode') + '</button>' +
       '<button type="button" data-cmd="shortcuts">' + ic('keyboard') + 'Shortcuts<kbd>?</kbd></button>' +
+      (rawCmd('rawLicence') ? '<button type="button" data-cmd="rawLicence">' + ic('file') + 'Camera RAW support · licence</button>' : '') +
       '<a href="../recipes/">' + ic('recipes') + 'Recipe library</a><a href="../">' + ic('apps') + 'All tools</a></div>', { cls: 'sx-pop-menu' });
   }
   function zoomMenu(el) {
@@ -2917,6 +2956,20 @@
   document.addEventListener('visibilitychange', function () { if (document.hidden) flushSave(); });
   window.addEventListener('pagehide', flushSave);
 
+  /* A photo the person added, as opposed to a working mask (cut-out masks are assets named "background-*",
+     the convention the cut-out module documents, and are referenced from layer.cutout.asset). Every photo picker
+     (collage slots, replace, uploads) should list only these. Takes an asset id or an asset meta object. */
+  function isUserPhoto(a) {
+    var p = S.project;
+    var id = typeof a === 'string' ? a : a && a.id;
+    var m = typeof a === 'string' ? (p && p.assets && p.assets[a]) || (S.mem[a] && S.mem[a].meta) : a;
+    if (!m || !id) return false;
+    if (/^background-/.test(m.name || '') || m.role === 'mask') return false;
+    var asMask = function (l) { return !!(l && l.cutout && l.cutout.asset === id); };
+    if (scene.layers().some(asMask)) return false;
+    return !(p && (p.pages || []).some(function (pg) { return (pg.layers || []).some(asMask); }));
+  }
+
   /* ---------- Context for panels ---------- */
   var ctx = {
     S: S, scene: scene, LE: LE, E: E, ic: ic, esc: esc, h: h, ui: ui, clamp: clamp, clone: clone, debounce: debounce, fmtBytes: fmtBytes,
@@ -2927,7 +2980,7 @@
     openModal: openModal, closeModal: closeModal, colorPop: colorPop, cmd: cmd, docColors: docColors, addRecent: addRecent,
     addText: addText, addLayers: addLayers, addShape: addShape, addSvg: addSvg, shapeList: shapeList, shapeSpec: shapeSpec, isOpenShape: isOpenShape,
     placeImage: placeImage, applyMask: applyMask, setBackground: setBackground, setAsBackground: setAsBackground, coverCrop: coverCrop, rememberEl: rememberEl,
-    pickFiles: pickFiles, addFiles: addFiles, ingest: ingest, replaceImage: replaceImage, openReplace: openReplace, thumbUrl: thumbUrl, mem: S.mem, startCrop: startCrop, cropRatio: cropRatio, startTextEdit: startTextEdit,
+    pickFiles: pickFiles, addFiles: addFiles, ingest: ingest, isUserPhoto: isUserPhoto, replaceImage: replaceImage, openReplace: openReplace, thumbUrl: thumbUrl, mem: S.mem, startCrop: startCrop, cropRatio: cropRatio, startTextEdit: startTextEdit,
     size: {
       preview: previewSize, commit: commitSize, cancel: cancelPreview, apply: applySizeNow, reset: resetSize, revert: revertSize, compare: compareSizes, compute: computeResize,
       source: resizeSource, opts: sizeOpts, setChain: function (v) { S.chain = !!v; }, chain: function () { return S.chain; }

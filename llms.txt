@@ -53,6 +53,16 @@ Key facts:
 - [UUID Generator](https://localeditor.net/uuid-generator/): Bulk-generate UUID v4 and v7 and validate UUIDs.
 - [Device Check](https://localeditor.net/device-check/): See which features work on this device and browser, and which browser unlocks more.
 
+## Agent mode
+
+A coding agent (Claude Code, Cursor, Codex, OpenCode, Antigravity and others) can make and edit designs live in the person's own browser tab: batches of operations through `window.LEAgent`, each one undo step, while the person watches and can pause, take over or leave notes. Nothing is uploaded.
+
+- [Agent guide](https://localeditor.net/docs/AGENT-GUIDE.md): read once before driving the studio.
+- [Studio in agent mode](https://localeditor.net/studio/): open `https://localeditor.net/studio/?agent=1`; the person taps "Turn on agent mode".
+- [Agent kit](https://localeditor.net/agent-kit/README.md): drop-in instruction files for Claude Code, Codex/OpenCode, Cursor and Gemini.
+- [Design file format](https://localeditor.net/docs/FORMAT-DESIGN.md) and its [JSON Schema](https://localeditor.net/schema/design-1.json): `.ledesign.json`, the plain file an agent can write.
+- [Recipe workflows](https://localeditor.net/docs/FORMAT-WORKFLOW.md) and [PDF workflows](https://localeditor.net/docs/FORMAT-PDF-WORKFLOW.md).
+
 ## Find by need
 
 - [Photo and design](https://localeditor.net/photo/): Edit photos, make collages and posts.

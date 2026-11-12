@@ -160,8 +160,13 @@ cases['Share hands files to the share sheet when it can, and falls back to downl
   h.assert.equal(await page.getAttribute('#sx-panel-body .sxe-actions .btn-gold', 'data-act'), 'download', 'Download is gold without share');
   h.assert(await page.isVisible('#sx-panel-body [data-act="share"]'), 'Share still visible');
   await page.click('#sx-panel-body [data-act="share"]');
-  await page.waitForSelector('.sx-modal-card [data-fallback]');
-  const f = await grab(page, () => page.click('.sx-modal-card [data-fallback]'));
+  /* LE.support owns the "not available" sheet; the export's own way round is an action on it. */
+  const FB = '.ls-gate[open] [data-ls-fallback]';
+  await page.waitForSelector(FB);
+  h.assert(/Download instead/.test(await page.textContent(FB)), 'fallback is labelled Download instead');
+  h.assert(await page.$eval(FB, (b) => b.classList.contains('lp-primary')), 'Download instead is the primary action when Share cannot run');
+  h.assert.equal(await page.$$eval('.sx-modal-card', (m) => m.filter((x) => x.offsetParent).length), 0, 'only one sheet explains it');
+  const f = await grab(page, () => page.click(FB));
   h.assert.equal(dims(f.buf).type, 'png', 'fallback downloaded the PNG');
   const api = await page.evaluate(() => LEStudioExport.share(window.LEStudio, [new Blob(['x'], { type: 'image/png' })]));
   h.assert.equal(api, 'unsupported');

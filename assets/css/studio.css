@@ -216,7 +216,7 @@
 .sx-tb:hover:not(:disabled) { background: var(--surface-2); }
 .sx-tb:active:not(:disabled) { transform: scale(0.95); }
 .sx-tb[aria-pressed="true"] { background: var(--brand-soft); color: var(--ink); box-shadow: inset 0 0 0 1.5px rgba(63, 103, 217, 0.75); }
-.sx-tb.is-primary { background: var(--foil); color: var(--gold-ink); box-shadow: var(--glow-gold); padding: 0 14px; }
+.sx-tb.is-primary { background: var(--tb-primary-bg, var(--foil)); color: var(--tb-primary-ink, var(--gold-ink)); box-shadow: var(--tb-primary-shadow, var(--glow-gold)); padding: 0 14px; }
 .sx-tb.sx-tb-chip { border: 1px solid var(--border); padding: 0 12px; }
 .sx-tb-sep { width: 1px; height: 24px; background: var(--border); margin: 0 5px; flex: none; }
 .sx-tb-label { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: var(--muted); padding: 0 6px; flex: none; }
@@ -299,6 +299,7 @@
 .sx-slider.is-bi input[type="range"]::-webkit-slider-runnable-track {
   background:
     linear-gradient(90deg, transparent 0 min(var(--t), var(--z)), var(--primary) min(var(--t), var(--z)) max(var(--t), var(--z)), transparent max(var(--t), var(--z))),
+    linear-gradient(var(--border-strong), var(--border-strong)) calc(var(--z) - 1px) 0 / 2px 100% no-repeat,
     var(--surface-3);
 }
 .sx input[type="range"]::-webkit-slider-thumb, .sx-pop input[type="range"]::-webkit-slider-thumb, .sx-modal input[type="range"]::-webkit-slider-thumb {
@@ -384,11 +385,11 @@ select.sx-input { padding-right: 28px; }
 }
 .sx-chip small { font-size: 11px; color: var(--faint); font-weight: 600; }
 .sx-chip:hover:not(:disabled) { border-color: var(--border-hover); }
-.sx-chip[aria-pressed="true"] { background: var(--obsidian); border-color: var(--obsidian); color: #fff; }
-.sx-chip[aria-pressed="true"] small { color: #E6EEFF; }
+.sx-chip[aria-pressed="true"] { background: var(--chip-on-bg, var(--obsidian)); border-color: var(--chip-on-edge, var(--obsidian)); color: var(--chip-on-ink, #fff); }
+.sx-chip[aria-pressed="true"] small { color: var(--chip-on-sub, #E6EEFF); }
 .sx-chip:disabled { opacity: 0.4; cursor: default; }
-:root[data-theme="dark"] .sx-chip[aria-pressed="true"] { background: var(--champagne); border-color: var(--champagne); color: var(--gold-ink); }
-:root[data-theme="dark"] .sx-chip[aria-pressed="true"] small { color: #E6EEFF; }
+:root[data-theme="dark"] .sx-chip[aria-pressed="true"] { background: var(--chip-on-bg, var(--champagne)); border-color: var(--chip-on-edge, var(--champagne)); color: var(--chip-on-ink, var(--gold-ink)); }
+:root[data-theme="dark"] .sx-chip[aria-pressed="true"] small { color: var(--chip-on-sub, #E6EEFF); }
 
 .sx-tabs-row { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin: 0 -18px; padding: 0 14px; overflow-x: auto; scrollbar-width: none; }
 .sx-tabs-row::-webkit-scrollbar { display: none; }
@@ -908,8 +909,8 @@ select.sx-input { padding-right: 28px; }
 :root[data-theme="dark"] .sx { --surface-2: color-mix(in srgb, #fff 4%, var(--surface)); --surface-3: color-mix(in srgb, #fff 8%, var(--surface)); }
 :root[data-theme="dark"] .sx-stage { background: var(--stage, var(--bg)); }
 :root[data-theme="dark"] .sx-tb[aria-pressed="true"] { background: rgba(63, 103, 217, 0.16); }
-:root[data-theme="dark"] .sx input[type="range"]::-webkit-slider-runnable-track { background: linear-gradient(90deg, #5884F8 0 var(--t), var(--surface-3) var(--t) 100%); }
-:root[data-theme="dark"] .sx-slider.is-bi input[type="range"]::-webkit-slider-runnable-track { background: linear-gradient(90deg, transparent 0 min(var(--t), var(--z)), #5884F8 min(var(--t), var(--z)) max(var(--t), var(--z)), transparent max(var(--t), var(--z))), var(--surface-3); }
+:root[data-theme="dark"] .sx input[type="range"]::-webkit-slider-runnable-track { background: linear-gradient(90deg, var(--slider-fill-dark, #5884F8) 0 var(--t), var(--surface-3) var(--t) 100%); }
+:root[data-theme="dark"] .sx-slider.is-bi input[type="range"]::-webkit-slider-runnable-track { background: linear-gradient(90deg, transparent 0 min(var(--t), var(--z)), var(--slider-fill-dark, #5884F8) min(var(--t), var(--z)) max(var(--t), var(--z)), transparent max(var(--t), var(--z))), linear-gradient(var(--border-strong), var(--border-strong)) calc(var(--z) - 1px) 0 / 2px 100% no-repeat, var(--surface-3); }
 :root[data-theme="dark"] .sx-combo-art { background: #252525; color: #F1F1F1; }
 :root[data-theme="dark"] .sx-combo.is-dark .sx-combo-art { background: #0E0E0E; }
 :root[data-theme="dark"] .sx-link { color: #81A6FE; }
@@ -1042,6 +1043,8 @@ select.sx-input { padding-right: 28px; }
 .sx .sx-tb.is-primary, .sx-rail-btn[aria-pressed="true"] .sx-rail-ic {
   color: var(--gold-ink-strong) !important;
 }
+/* The toolbar's own primary (Done, Apply) is tinted, not filled, where a theme asks: the header Download stays the only filled button. */
+.sx .sx-tb.is-primary.is-primary { color: var(--tb-primary-ink, var(--gold-ink-strong)) !important; }
 .sx .btn-gold, .sx-pop .btn-gold, .sx-modal .btn-gold, .sx-download.btn {
   background: var(--primary);
   border-color: var(--primary-edge);
@@ -1600,6 +1603,7 @@ select.sx-input { padding-right: 28px; }
   /* Tab bar: four primary tools + More, all on screen, no sideways scroll. */
   .sx-tabs { overflow: hidden; scroll-snap-type: none; justify-content: space-around; }
   .sx-tabs .sx-rail-btn { flex: 1 1 0; min-width: 0; min-height: 54px; }
+  .sx-tabs .sx-rail-btn { font-size: var(--tab-label, 10.5px) !important; }
   .sx-tabs .sx-rail-lb { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 
   /* Sheet snaps. */

@@ -96,7 +96,7 @@ COMMON=(--only-show-errors --no-progress)
 [ "$DRY" = 1 ] && COMMON=(--dryrun)
 
 # Never uploaded: tooling, tests, docs, repo files.
-NEVER=(--exclude ".git/*" --exclude ".claude/*" --exclude "node_modules/*" --exclude "scripts/*" --exclude "tests/*" --exclude "tools/*" --include "tools/index.html" --exclude "assets/js/expert/mock-fx.js"
+NEVER=(--exclude ".git/*" --exclude ".claude/*" --exclude "node_modules/*" --exclude "scripts/*" --exclude "tests/*" --exclude "tools/*/*" --exclude "assets/js/expert/mock-fx.js"
        --exclude "docs/*" --exclude "infra/*" --exclude "*.md" --exclude ".gitignore" --exclude ".nojekyll" --exclude "*.DS_Store"
        --exclude "assets/models/local/*")   # evaluation downloads and model sources (scripts/fetch-models.js), never shipped
 
@@ -141,6 +141,14 @@ pass "$CC_CODE" "application/vnd.localeditor.project+zip" "*.leproject"
 # 6. Pages and site files: always revalidate. The three app manifests (docs/INSTALL.md) need their own type.
 pass "$CC_PAGE" "application/manifest+json" "manifest.webmanifest" "manifest-*.webmanifest"
 pass "$CC_PAGE" "" "*.html" "robots.txt" "sitemap.xml" "llms.txt" "*.ico"
+# 6b. Published guides for people and agents, at their repository paths (llms.txt links them): the agent guide, the
+#     format specs and the agent kit as plain Markdown, and the JSON Schema at its $id URL. The includes come after
+#     NEVER on purpose, so only these Markdown files are let through; every other docs/ and *.md file stays private.
+echo "-- $CC_PAGE (text/markdown): agent guide, format specs, agent kit"
+run "${AWS[@]}" "${VERB[@]}" . "$DEST" --exclude "*" "${NEVER[@]}" --include "docs/AGENT-GUIDE.md" --include "docs/FORMAT-DESIGN.md" \
+  --include "docs/FORMAT-WORKFLOW.md" --include "docs/FORMAT-PDF-WORKFLOW.md" --include "agent-kit/*" \
+  --cache-control "$CC_PAGE" --content-type "text/markdown; charset=utf-8" "${COMMON[@]}"
+pass "$CC_PAGE" "application/schema+json" "schema/*.json"
 # 7. The service worker last: browsers check it for updates and it must point at files that exist.
 pass "$CC_PAGE" "text/javascript; charset=utf-8" "sw.js"
 

@@ -441,6 +441,16 @@ Key facts:
 
 ${CATS.map((c) => `## ${c.name}\n\n${TOOLS.filter((t) => t.cat === c.id).map((t) => `- [${t.name}](${SITE}${t.slug}/): ${t.desc}`).join('\n')}`).join('\n\n')}
 
+## Agent mode
+
+A coding agent (Claude Code, Cursor, Codex, OpenCode, Antigravity and others) can make and edit designs live in the person's own browser tab: batches of operations through \`window.LEAgent\`, each one undo step, while the person watches and can pause, take over or leave notes. Nothing is uploaded.
+
+- [Agent guide](${SITE}docs/AGENT-GUIDE.md): read once before driving the studio.
+- [Studio in agent mode](${SITE}studio/): open \`${SITE}studio/?agent=1\`; the person taps "Turn on agent mode".
+- [Agent kit](${SITE}agent-kit/README.md): drop-in instruction files for Claude Code, Codex/OpenCode, Cursor and Gemini.
+- [Design file format](${SITE}docs/FORMAT-DESIGN.md) and its [JSON Schema](${SITE}schema/design-1.json): \`.ledesign.json\`, the plain file an agent can write.
+- [Recipe workflows](${SITE}docs/FORMAT-WORKFLOW.md) and [PDF workflows](${SITE}docs/FORMAT-PDF-WORKFLOW.md).
+
 ## Optional
 
 - [About & privacy](${SITE}about/): how the tools work and how to install them.
@@ -472,7 +482,8 @@ if(!window.caches)return;[].forEach.call(document.querySelectorAll('#le-off-link
 
 /* ---------- Service worker ---------- */
 /* Never shipped to the precache: build tooling, docs, tests, infra. */
-const SKIP = ['scripts', 'node_modules', 'tests', 'docs', 'infra', 'sw.js', 'README.md', 'CLAUDE.md', 'llms.txt', 'robots.txt', 'sitemap.xml', 'og.png'];
+/* agent-kit, agent-demo (a Node script) and schema are for agents and editors, not for the offline app. */
+const SKIP = ['scripts', 'node_modules', 'tests', 'docs', 'infra', 'sw.js', 'README.md', 'CLAUDE.md', 'llms.txt', 'robots.txt', 'sitemap.xml', 'og.png', 'agent-kit', 'agent-demo', 'schema'];
 function walk(dir, out = []) {
   for (const f of fs.readdirSync(dir)) {
     if (f.startsWith('.') || SKIP.includes(f)) continue;
@@ -482,7 +493,7 @@ function walk(dir, out = []) {
   return out;
 }
 /* Downloaded on request and owned by a runtime cache (listed in the storage manager), never precached. */
-const ON_DEMAND = /^assets\/js\/expert\/mock-fx\.js$|^tools\/(?!index\.html$)|^agent-kit\/|^examples\/|^assets\/vendor\/raw-decoder\/|^assets\/js\/raw\/|^assets\/fonts\/originals\/|^assets\/vendor\/tesseract\/|^assets\/vendor\/pdf-lib-crypt|^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/fonts\/(cjk|previews)\/|^assets\/data\/fonts-(cjk|details)\.json$|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
+const ON_DEMAND = /^assets\/js\/expert\/mock-fx\.js$|^tools\/(?!index\.html$)|^agent-kit\/|^examples\/|^assets\/vendor\/raw-decoder\/|^assets\/js\/raw\/(?!le-raw-studio\.js$)|^assets\/fonts\/originals\/|^assets\/vendor\/tesseract\/|^assets\/vendor\/pdf-lib-crypt|^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/fonts\/(cjk|previews)\/|^assets\/data\/fonts-(cjk|details)\.json$|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
 /* If one of these fails to download, the new version is not installed (the old one keeps working). */
 const CRITICAL = ['./', './offline.html', './studio/', './assets/js/app.js', './assets/css/app.css', './assets/js/le-pwa.js', './assets/css/le-pwa.css', './manifest.webmanifest'];
 
