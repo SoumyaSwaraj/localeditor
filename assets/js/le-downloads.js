@@ -887,7 +887,8 @@
   function pageSignal() {
     var p = location.pathname.replace(/\/index\.html$/, '/').replace(/\/+$/, '');
     var slug = p.split('/').filter(Boolean).slice(-2).join('/') || 'home';
-    used('page:' + slug);
+    /* Only pages that need a download count (nothing is written on an ordinary visit, so an erased browser stays empty). */
+    if (groupOf('page:' + slug)) used('page:' + slug);
     var tool = new URLSearchParams(location.search).get('tool');
     if (tool) used('studio.' + tool);
   }
