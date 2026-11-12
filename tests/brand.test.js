@@ -142,7 +142,7 @@ cases['no retired gold, foil or amethyst literals in CSS or inline styles'] = as
   /* Every page's theme-color and inline styles, and the newer shell scripts (agent, link, downloads, Expert). */
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).forEach((e) => {
     const p = path.join(d, e.name);
-    if (e.isDirectory()) { if (!/^(node_modules|vendor|labs|\.git|tests|tools|fixtures|scripts)$/.test(e.name)) walk(p); }
+    if (e.isDirectory()) { if (!/^(node_modules|vendor|labs|\.git|\.claude|tests|tools|fixtures|scripts)$/.test(e.name)) walk(p); }
     else if (e.name.endsWith('.html')) scan(p, (l) => /style=|<style|theme-color|le-mark|\{[^}]*(color|background|border)/.test(l) && OLD.test(l));
   });
   walk(ROOT);
