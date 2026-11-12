@@ -345,6 +345,13 @@
     if (Array.isArray(c.order)) out.order = c.order.slice(0, 60).map(function (id) { return word(String(id == null ? '' : id), 40); });
     return out;
   }
+  /* Carousel meta (doc.carousel): the page is N slides of slideWidth side by side. */
+  function carouselOf(c) {
+    if (!c || typeof c !== 'object' || Array.isArray(c)) return null;
+    var n = Math.round(Number(c.slides)), w = Number(c.slideWidth);
+    if (!(n >= 1) || !(w >= 1) || !isFinite(w)) return null;
+    return { v: 1, slides: Math.min(n, 20), slideWidth: Math.round(clamp(w, 1, 20000) * 100) / 100 };
+  }
   /* Keeps a crop's centre and zoom when the photo moves into a frame of another shape. */
   function refitCrop(crop, iw, ih, W, H) {
     crop = crop || { x: 0, y: 0, w: 1, h: 1 };
@@ -1012,7 +1019,8 @@
       height: this._doc.height,
       background: this._doc.background,
       layers: this._doc.layers,
-      collage: this._doc.collage || undefined
+      collage: this._doc.collage || undefined,
+      carousel: this._doc.carousel || undefined
     });
   };
   P._histInfo = function () {
@@ -1060,6 +1068,7 @@
     this._doc.background = data.background || { type: 'color', color: '#ffffff' };
     this._doc.layers = data.layers || [];
     if (data.collage) this._doc.collage = collageOf(data.collage); else delete this._doc.collage;
+    if (carouselOf(data.carousel)) this._doc.carousel = carouselOf(data.carousel); else delete this._doc.carousel;
     this._clearBitmaps();
     this._jobs = {};
     var self = this;
@@ -1125,6 +1134,7 @@
       self._doc.layers.push(normalize(layer, self, true));
     });
     if (collageOf(doc.collage)) this._doc.collage = collageOf(doc.collage);
+    if (carouselOf(doc.carousel)) this._doc.carousel = carouselOf(doc.carousel);
     this._sel = [];
     this._hist = { undo: [], redo: [], key: null, base: null, pushed: false };
     this._clearBitmaps();
@@ -1884,6 +1894,15 @@
     ctx.strokeStyle = 'rgba(23,19,31,.16)';
     ctx.lineWidth = 1 / this._zoom;
     ctx.strokeRect(0, 0, this._doc.width, this._doc.height);
+    var car = this._doc.carousel;
+    if (car && car.slides > 1) {
+      ctx.strokeStyle = 'rgba(116,87,240,.85)';
+      ctx.lineWidth = 1.5 / this._zoom;
+      ctx.setLineDash([6 / this._zoom, 5 / this._zoom]);
+      for (var si = 1; si < car.slides; si++) {
+        ctx.beginPath(); ctx.moveTo(car.slideWidth * si, 0); ctx.lineTo(car.slideWidth * si, this._doc.height); ctx.stroke();
+      }
+    }
     ctx.restore();
     if (this._bgEdit) this._drawBgFrame(ctx);
   };
@@ -3959,6 +3978,7 @@
   LE.Scene.EXTENDED_ADJUST = true;
   LE.Scene.blank = blank;
   LE.Scene.collageOf = collageOf;
+  LE.Scene.carouselOf = carouselOf;
   LE.Scene.refitCrop = refitCrop;
   LE.Scene.backgroundSpec = bgSpec;
   LE.Scene.backgroundPlacement = function (bg, W, H, sw, sh) { return bgPlace(bgSpec(bg), W, H, sw, sh); };
