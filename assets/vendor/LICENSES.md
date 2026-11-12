@@ -96,10 +96,13 @@ Icon JSON is the Iconify collection format. Lucide’s license is ISC. Phosphor 
 
 ## Models
 
-Downloaded only when the user asks (background remover, labs/bg-remove; see `docs/research/background-remover.md`). Cached in Cache Storage `le-models-v1`.
+Downloaded only when the user asks (studio background remover, `assets/js/le-bgremove.js`; see `docs/research/background-remover.md`). Never precached. Cached in Cache Storage `le-models-v1`; the person can remove each one from the studio chooser or the storage manager.
 
 | Name | License | Files | Source |
 |---|---|---|---|
 | U²-Net `u2netp` (4.7 MB ONNX export) | Apache-2.0 (code and weights, Xuebin Qin) | `assets/models/u2netp.onnx`; licence text `assets/vendor/licenses/u2net-LICENSE.txt` | https://github.com/xuebinqin/U-2-Net · ONNX from https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx (rembg, MIT) |
+| U²-Net `u2net`, 8-bit ("More detail", 44,212,603 bytes, sha256 `4259d8dc46943e2881462fe8ac9657a18dad67cb7dfe0890d4f66e3d2b5fdfee`) | Apache-2.0 (derived from the Apache-2.0 weights; carries the same notice) | `assets/models/u2net-int8.onnx`; licence text `assets/vendor/licenses/u2net-LICENSE.txt` | Source fp32 `u2net.onnx` (175,997,641 bytes, sha256 `8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491`) from https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx (ONNX export of https://github.com/xuebinqin/U-2-Net weights), quantised by LocalEditor with onnxruntime `quantize_dynamic(weight_type=QUInt8)` |
+| U²-Net `u2net_human_seg`, 8-bit ("People and portraits", 44,212,602 bytes, sha256 `1a971f94f2a294387837ae5dd7d013e8043f528ec196cb83f84e32fe55e27a58`) | Apache-2.0 (derived, same notice) | `assets/models/u2net_human_seg-int8.onnx`; licence text `assets/vendor/licenses/u2net-LICENSE.txt` | Source fp32 `u2net_human_seg.onnx` (175,997,641 bytes, sha256 `01eb6a29a5c4d8edb30b56adad9bb3a2a0535338e480724a213e0acfd2d1c73c`) from https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net_human_seg.onnx, quantised the same way |
+| Chooser example images | LocalEditor (made from pool photos, see `assets/data/collages/photos.json` for their CC licences and credits: arch-01, books-02, people-07) | `assets/img/cutout/*.jpg` | rendered by the background remover |
 
-Training-data note: u2netp is trained on DUTS-TR, a research saliency dataset with no stated licence. The Apache-2.0 grant covers the weights; the dataset provenance is an unresolved residual risk that the owner should accept knowingly.
+Training-data note: u2netp and u2net are trained on DUTS-TR; u2net_human_seg on the Supervisely Person dataset. u2netp is trained on DUTS-TR, a research saliency dataset with no stated licence. The Apache-2.0 grant covers the weights; the dataset provenance is an unresolved residual risk that the owner should accept knowingly.

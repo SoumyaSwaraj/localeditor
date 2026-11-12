@@ -786,7 +786,7 @@
       html = '<span class="sx-tb-label">' + ic('resize') + 'Previewing size</span>';
     } else if (kind === 'image') {
       var repl = (l && (l.slot || !l.src)) ? 'Replace photo' : 'Replace';
-      html = tb('adjust', 'adjust', 'Edit photo', { text: true }) + tb('filters', 'filters', 'Filters', { text: true }) + tb('effects', 'sparkle', 'Effects', { text: true }) + SEP +
+      html = tb('adjust', 'adjust', 'Edit photo', { text: true }) + tb('filters', 'filters', 'Filters', { text: true }) + tb('effects', 'sparkle', 'Effects', { text: true }) + (fire('photo-tools', l) || '') + SEP +
         tb('crop', 'crop', 'Crop', { text: true }) + tb('flipMenu', 'flip', 'Flip', { text: true }) + tb('replace', 'replace', repl, { text: repl, cls: (l && l.slot) ? 'is-primary' : '' }) + common(l) + tb('more', 'more', 'More options');
     } else if (kind === 'text') {
       var fam = l.font || 'Plus Jakarta Sans';
@@ -1709,7 +1709,7 @@
   function applyMask(maskId) {
     var l = one();
     if (l && l.type === 'image') { patch(l.id, { mask: maskId, radius: maskId === 'rounded-rectangle' ? Math.min(l.w, l.h) * 0.12 : l.radius }, gesture()); return; }
-    var ids = Object.keys(S.project ? S.project.assets : {});
+    var ids = Object.keys(S.project ? S.project.assets : {}).filter(function (id) { return !/^background-/.test((S.project.assets[id] || {}).name || ''); });
     if (!ids.length) { toast('Upload a photo first, then pick a frame.'); pickFiles('add'); return; }
     var id = ids[ids.length - 1];
     var c = center();

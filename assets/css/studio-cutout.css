@@ -1,1 +1,160 @@
-/* LocalEditor: studio cut-out styles. */
+/* LocalEditor: studio cut-out (background remover, Beta) and thumbnail kit. Prefix: sxc-. Tokens from app.css. */
+
+.sxc-lead { margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: var(--muted); text-wrap: pretty; }
+.sxc-beta {
+  display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: var(--r-pill, 999px);
+  border: 1px solid var(--border); color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; vertical-align: 1px;
+}
+
+/* First run: one decision. Options live behind "Other quality options". */
+.sxc-ask { margin: 0 0 12px; }
+.sxc-ask h3 { margin: 0 0 6px; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+.sxc-ask-p { margin: 0 0 12px; font-size: 13.5px; line-height: 1.5; color: var(--muted); text-wrap: pretty; min-height: 3em; }
+.sxc-ask .btn-gold, .sxc-tk-go .btn-gold { color: var(--gold-ink, #2A1F0A); }
+.sxc-other { margin: 4px 0 0; border-top: 1px solid var(--line); }
+.sxc-other > summary, .sxc-about > summary {
+  display: flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; list-style: none;
+  font-size: 13.5px; font-weight: 650; color: var(--ink);
+}
+.sxc-other > summary::-webkit-details-marker, .sxc-about > summary::-webkit-details-marker { display: none; }
+.sxc-other > summary::after, .sxc-about > summary::after {
+  content: ""; width: 7px; height: 7px; margin-left: 2px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px); transition: transform var(--dur-1, 120ms) var(--ease, ease);
+}
+.sxc-other[open] > summary::after, .sxc-about[open] > summary::after { transform: rotate(-135deg) translateY(-1px); }
+.sxc-other > summary:focus-visible, .sxc-about > summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 6px; }
+
+/* Option cards */
+.sxc-models { display: grid; gap: 10px; padding-bottom: 6px; }
+.sxc-opt { border: 1px solid var(--border); border-radius: var(--r-md, 14px); background: var(--surface); overflow: hidden; }
+.sxc-opt:has(.sxc-pick[aria-checked="true"]) { border-color: var(--amethyst); box-shadow: 0 0 0 1px var(--amethyst); }
+.sxc-pick {
+  display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; align-items: start; width: 100%; padding: 12px; text-align: left;
+  border: 0; background: transparent; color: var(--ink); cursor: pointer; font: inherit;
+}
+.sxc-pick[aria-checked="true"] { background: var(--accent-soft); }
+.sxc-pick:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; border-radius: var(--r-md, 14px); }
+.sxc-ex { display: block; width: 92px; height: auto; aspect-ratio: 294 / 144; border-radius: 6px; object-fit: cover; background: var(--surface-2); }
+.sxc-otext { display: grid; gap: 4px; min-width: 0; }
+.sxc-ohead { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.sxc-ohead b { font-size: 14.5px; font-weight: 700; }
+.sxc-rec { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 99px; background: var(--ink); color: var(--surface); font-size: 11px; font-weight: 700; }
+.sxc-obest { font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+.sxc-ometa { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; font-size: 12px; font-weight: 650; color: var(--ink); }
+.sxc-q { display: inline-flex; align-items: center; gap: 6px; }
+.sxc-dots { display: inline-flex; gap: 3px; }
+.sxc-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--surface-3, var(--border)); box-shadow: inset 0 0 0 1px var(--border-hover); }
+.sxc-dots i.on { background: var(--amethyst); box-shadow: none; }
+.sxc-speed { color: var(--muted); font-weight: 600; }
+.sxc-odl { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.sxc-odl.is-ready { color: var(--ok); font-weight: 650; }
+.sxc-verdict { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 650; color: var(--faint); }
+.sxc-verdict::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.sxc-verdict.is-ok { color: var(--ok); }
+.sxc-verdict.is-warn { color: var(--warn); }
+.sxc-verdict.is-err { color: var(--err); }
+.sxc-orow { display: flex; flex-wrap: wrap; align-items: center; gap: 0 12px; padding: 0 12px 4px; }
+.sxc-link {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer;
+  font: inherit; font-size: 12.5px; font-weight: 650; color: var(--accent);
+}
+.sxc-link:hover span { text-decoration: underline; }
+.sxc-link:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 4px; }
+.sxc-about { flex-basis: 100%; }
+.sxc-about > summary { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.sxc-about dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 0 0 10px; font-size: 12px; line-height: 1.45; }
+.sxc-about dt { color: var(--faint); }
+.sxc-about dd { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+@media (max-width: 380px) {
+  .sxc-pick { grid-template-columns: 80px minmax(0, 1fr); gap: 10px; }
+  .sxc-ex { width: 80px; }
+}
+
+.sxc-more { margin-top: 6px; }
+
+/* Errors */
+.sxc-alert { margin: 0 0 14px; padding: 12px 14px; border-radius: var(--r-md, 14px); border: 1px solid var(--border); background: var(--surface-2); }
+.sxc-alert strong { display: block; font-size: 14px; margin-bottom: 4px; }
+.sxc-alert p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.sxc-alert-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.sxc-alert-act:empty { display: none; }
+
+/* Progress */
+.sxc-progress { display: grid; justify-items: center; gap: 10px; padding: 18px 4px 14px; text-align: center; }
+.sxc-run-art { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; background: var(--surface-2); color: var(--ink); }
+.sxc-run-art .sx-ic { width: 26px; height: 26px; }
+.sxc-stage { margin: 0; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; min-height: 1.4em; }
+.sxc-bar { position: relative; width: 100%; height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.sxc-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: inherit; background: var(--amethyst); transition: width var(--dur-2, 200ms) var(--ease, ease); }
+.sxc-bar.is-busy i { width: 34%; animation: sxc-slide 1.15s var(--ease, ease) infinite; }
+@keyframes sxc-slide { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+@media (prefers-reduced-motion: reduce) { .sxc-bar.is-busy i { animation: none; width: 100%; opacity: 0.45; } }
+
+/* After a cut-out */
+.sxc-donehead { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.sxc-donehead .sx-note { margin: 0; }
+.sxc-seg { width: 100%; }
+.sxc-seg button { flex: 1; }
+.sxc-tools { display: flex; gap: 8px; margin: 12px 0 4px; }
+.sxc-tools .btn { flex: 1; justify-content: center; }
+.sxc-retry { display: flex; flex-wrap: wrap; gap: 6px; }
+.sxc-retry:empty { display: none; }
+.sxc-colors { margin-top: 10px; }
+.sxc-put { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.sxc-put .sx-chip { min-height: 40px; }
+.sxc-foot { margin-top: 6px; }
+
+/* Entry card inside Edit photo / Effects */
+.sxc-entry {
+  display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 10px 10px 10px 14px;
+  border: 1px solid var(--border); border-radius: var(--r-md, 14px); background: var(--surface);
+}
+.sxc-entry-txt { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.sxc-entry-txt b { font-size: 14px; font-weight: 700; }
+.sxc-entry-txt small { font-size: 12px; color: var(--muted); }
+.sxc-entry .btn { flex: none; min-height: 44px; }
+
+/* Brush overlay (Refine) */
+.sxc-brush { position: absolute; inset: 0; z-index: 4; touch-action: none; cursor: none; }
+.sxc-brush canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.sxc-size { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 8px; flex: none; font-size: 12.5px; font-weight: 650; color: var(--muted); }
+.sx .sxc-size input[type="range"] { width: 110px; min-width: 0; flex: none; margin: 0; padding: 0; accent-color: var(--amethyst); }
+@media (max-width: 767px) {
+  .sxc-size { padding: 0 4px; gap: 0; }
+  .sxc-size span { display: none; }
+  .sx .sxc-size input[type="range"] { width: 70px; height: 44px; }
+  .sx-tool .sxc-tb span { white-space: nowrap; }
+}
+
+/* Thumbnail kit */
+.sxc-tk-photos { margin-bottom: 4px; }
+.sxc-tk-add { display: grid; place-items: center; color: var(--muted); border: 1.5px dashed var(--border-hover); background: var(--surface); }
+.sxc-tk-add .sx-ic { width: 22px; height: 22px; }
+.sxc-tk-head { width: 100%; font-size: 16px; }
+.sxc-tk-go { display: grid; gap: 8px; justify-items: center; }
+.sxc-tk-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sxc-tk-card {
+  display: grid; gap: 6px; padding: 0; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; font: inherit; min-width: 0;
+}
+.sxc-tk-art {
+  display: block; aspect-ratio: 16 / 9; border-radius: var(--r-xs, 6px); overflow: hidden; background: var(--surface-2);
+  box-shadow: 0 0 0 1px var(--line); transition: transform var(--dur-1, 120ms) var(--ease, ease), box-shadow var(--dur-1, 120ms) var(--ease, ease);
+}
+.sxc-tk-card:hover .sxc-tk-art { box-shadow: 0 0 0 2px var(--amethyst); }
+.sxc-tk-card:active .sxc-tk-art { transform: scale(0.98); }
+.sxc-tk-card:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: var(--r-xs, 6px); }
+.sxc-tk-canvas { display: block; width: 100%; height: 100%; }
+.sxc-tk-card small { font-size: 12px; font-weight: 600; color: var(--muted); line-height: 1.3; }
+
+/* While refining: hide the floating mini toolbar; on phones Cancel / Done float over the canvas so the toolbar fits 360 px. */
+.sx.is-cutbrush .sx-mini { display: none !important; }
+.sxc-brushbar { display: none; }
+@media (max-width: 767px) {
+  .sx-tool .sxc-wide { display: none; }
+  .sxc-brushbar {
+    position: absolute; left: 8px; right: 8px; top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 6px; border-radius: var(--r-pill, 999px); background: var(--surface); box-shadow: var(--shadow); cursor: default; z-index: 2;
+  }
+  .sxc-brushbar .btn { min-height: 44px; }
+  .sxc-brushbar-t { font-size: 13px; font-weight: 700; color: var(--muted); }
+}

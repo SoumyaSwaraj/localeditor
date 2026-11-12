@@ -882,7 +882,7 @@
       var ag = grid('sx-grid-3 sx-thumbs');
       all.querySelector('.sx-sec-body').appendChild(ag);
       body.appendChild(all);
-      var inDesign = c.S.project ? Object.keys(c.S.project.assets || {}) : [];
+      var inDesign = c.S.project ? Object.keys(c.S.project.assets || {}).filter(function (id) { return !/^background-/.test((c.S.project.assets[id] || {}).name || ''); }) : [];
       if (!inDesign.length) mine.hidden = true;
       function thumb(id, name) {
         var t = c.h('<button type="button" class="sx-thumb" aria-label="Add ' + c.esc(name || 'photo') + ' to the design" title="' + c.esc(name || '') + '"><img alt=""></button>');
@@ -899,7 +899,7 @@
       }
       inDesign.forEach(function (id) { mg.appendChild(thumb(id, (c.S.project.assets[id] || {}).name)); });
       LE.project.assets().then(function (list) {
-        list = list.filter(function (a) { return inDesign.indexOf(a.id) < 0; });
+        list = list.filter(function (a) { return inDesign.indexOf(a.id) < 0 && !/^background-removal-mask/.test(a.name || ''); });
         if (!list.length) { all.querySelector('.sx-sec-body').appendChild(note(c, inDesign.length ? 'Photos from your other designs appear here.' : 'No uploads yet.')); return; }
         list.slice(0, 60).forEach(function (a) { ag.appendChild(thumb(a.id, a.name)); });
       });
@@ -1318,7 +1318,7 @@
       var s3 = c.ui.section('Photo background');
       var b3 = s3.querySelector('.sx-sec-body');
       var gg = grid('sx-grid-4 sx-thumbs');
-      Object.keys(c.S.project.assets || {}).forEach(function (id) {
+      Object.keys(c.S.project.assets || {}).filter(function (id) { return !/^background-/.test((c.S.project.assets[id] || {}).name || ''); }).forEach(function (id) {
         var t = c.h('<button type="button" class="sx-thumb" aria-label="Use as background"><img alt=""></button>');
         c.thumbUrl(id).then(function (u) { if (u) t.querySelector('img').src = u; });
         t.onclick = function () { c.setBackground({ type: 'image', src: id, fit: 'cover', color: '#ffffff' }); c.toast('Photo set as page background'); };
@@ -1806,7 +1806,7 @@
   };
 
   /* ---------- Apps ---------- */
-  var APPS = [
+  var APPS = P._apps = [
     ['collage', 'Collage', 'grid', 'Layouts, spacing & styles'], ['watermark', 'Watermark', 'stamp', 'Text or logo, tiled'], ['meme', 'Meme', 'meme', 'Top & bottom captions'],
     ['palette', 'Palette', 'palette', 'Extract brand colors'], ['metadata', 'Metadata', 'metadata', 'EXIF & location'], ['compare', 'Before / after', 'compare', 'Side-by-side image'],
     ['batch', 'Batch', 'batch', 'Apply a look to many'], ['upscale', 'Upscale', 'upscale', 'Bigger exports'], ['contact', 'Contact sheet', 'sheet', 'All uploads on one page']
@@ -1825,7 +1825,7 @@
         return;
       }
       if (!o.back) c.S.panelOpts.back = 'apps';
-      var fn = APP_RENDER[o.app];
+      var fn = APP_RENDER[o.app] || (P._appRender || {})[o.app];
       if (fn) fn(c, body, o);
     }
   };
@@ -1845,7 +1845,7 @@
       body.appendChild(c.ui.slider({ label: 'Opacity', min: 5, max: 100, value: st.opacity, fmt: function (v) { return v + '%'; }, onInput: function (v) { st.opacity = v; } }));
       var sw = c.ui.swatchBtn(st.color, 'Color', function (b) { c.colorPop(b, { value: st.color, onChange: function (v) { st.color = v; c.paintSwatch(sw.querySelector('i'), v); } }); });
       body.appendChild(sw);
-      var ids = Object.keys(c.S.project.assets || {});
+      var ids = Object.keys(c.S.project.assets || {}).filter(function (id) { return !/^background-/.test((c.S.project.assets[id] || {}).name || ''); });
       if (ids.length) {
         var ls = c.ui.section('Logo (optional)');
         var g = grid('sx-grid-4 sx-thumbs');
@@ -1998,7 +1998,7 @@
     },
     contact: function (c, body) {
       if (needProject(c, body)) return;
-      var ids = Object.keys(c.S.project.assets || {});
+      var ids = Object.keys(c.S.project.assets || {}).filter(function (id) { return !/^background-/.test((c.S.project.assets[id] || {}).name || ''); });
       var cols = 3;
       body.appendChild(c.ui.slider({ label: 'Columns', min: 1, max: 6, value: cols, onInput: function (v) { cols = v; } }));
       body.appendChild(btn(c, 'Download contact sheet', 'sheet', 'btn btn-gold sx-block', function () {

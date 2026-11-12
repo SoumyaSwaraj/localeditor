@@ -554,6 +554,11 @@
       if (recipeMark) l.adjust.recipe = recipeMark;
       l.filter = src.filter && typeof src.filter.name === 'string' && /^[a-z-]{1,30}$/.test(src.filter.name) ? { name: src.filter.name, intensity: clamp(num(src.filter.intensity, 100), 0, 100) } : null;
       l.removeBg = src.removeBg && typeof src.removeBg === 'object' ? { color: safeColor(src.removeBg.color) || '#ffffff', tolerance: clamp(num(src.removeBg.tolerance, 28), 0, 255) } : null;
+      var cut = src.cutout && typeof src.cutout === 'object' && !Array.isArray(src.cutout) ? src.cutout : null;
+      if (cut && idOk(cut.asset, 80)) {
+        var ol = cut.outline && typeof cut.outline === 'object' && num(cut.outline.width, 0) > 0 ? { color: safeColor(cut.outline.color) || '#ffffff', width: clamp(num(cut.outline.width, 0), 0, 200) } : null;
+        l.cutout = { asset: cut.asset, enabled: cut.enabled !== false, model: typeof cut.model === 'string' && /^[\w.-]{1,40}$/.test(cut.model) ? cut.model : '', feather: clamp(num(cut.feather, 0), 0, 50), refine: cut.refine === 'none' ? 'none' : 'guided', version: 1, outline: ol };
+      }
     } else if (l.type === 'text') {
       l.text = str(src.text, LIMITS.text, 'Text');
       l.font = typeof src.font === 'string' && /^[\w \-]{1,80}$/.test(src.font) ? src.font : 'Plus Jakarta Sans';
@@ -784,7 +789,7 @@
     out.activePage = clamp(Math.round(num(raw.activePage, 0)), 0, out.pages.length - 1);
     (Array.isArray(raw.sizeHistory) ? raw.sizeHistory.slice(-LIMITS.history) : []).forEach(function (e) { var s = sizeEntry(e, errors); if (s) out.sizeHistory.push(s); });
     out.pages.forEach(function (p) {
-      p.layers.forEach(function (l) { if (l.type === 'image' && l.src && !assetsOut[l.src]) errors.push('A photo in this project is missing.'); });
+      p.layers.forEach(function (l) { if (l.type === 'image' && l.src && !assetsOut[l.src]) errors.push('A photo in this project is missing.'); if (l.cutout && !assetsOut[l.cutout.asset]) { delete l.cutout; errors.push('A background-removal mask was missing, so that photo shows its full background.'); } });
     });
     return { ok: true, errors: errors, project: out };
   }
