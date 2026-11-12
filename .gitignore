@@ -11,3 +11,4 @@ node_modules/
 
 # OCR language packs fetched by scripts/fetch-ocr-data.js (the English pack is committed)
 /assets/models/ocr/more/
+__pycache__/
