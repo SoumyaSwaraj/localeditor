@@ -529,7 +529,9 @@
   hook('photo-tools', function (c, l) {
     if (!l || l.type !== 'image') return '';
     var label = l.cutout ? 'Cut-out' : 'Remove BG';
-    return '<button type="button" class="sx-tb has-text sxc-tb" data-cmd="cutout" aria-label="' + (l.cutout ? 'Cut-out options' : 'Remove background (Beta)') + '" title="' + (l.cutout ? 'Cut-out options' : 'Remove background (Beta)') + '"' + (l.cutout ? ' aria-pressed="true"' : '') + '>' + c.ic('cutout') + '<span>' + label + '</span></button>';
+    /* Icon only on phones, so the button does not push Filters into More at 360 px; the name stays in aria-label. */
+    var phone = typeof c.isPhone === 'function' && c.isPhone();
+    return '<button type="button" class="sx-tb' + (phone ? '' : ' has-text') + ' sxc-tb" data-cmd="cutout" aria-label="' + (l.cutout ? 'Cut-out options' : 'Remove background (Beta)') + '" title="' + (l.cutout ? 'Cut-out options' : 'Remove background (Beta)') + '"' + (l.cutout ? ' aria-pressed="true"' : '') + '>' + c.ic('cutout') + (phone ? '' : '<span>' + label + '</span>') + '</button>';
   });
 
   /* ---------- refine brush ---------- */

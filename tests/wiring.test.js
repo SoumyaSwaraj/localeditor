@@ -107,4 +107,23 @@ cases['multi-page PDF export runs straight through when ok; PDF studio open expl
   h.assert.noErrors(ps);
 };
 
+cases['phone 360 px: the remover is icon-only, so Filters stays on the photo toolbar'] = async ({ browser, base, h }) => {
+  const page = await h.studioWithSample(browser, base, 'small');
+  await page.evaluate(() => {
+    const c = window.LEStudio;
+    const img = c.scene.layers().find((l) => l.type === 'image');
+    c.scene.select([img.id]);
+    c.renderToolbar();
+  });
+  await page.waitForTimeout(400);
+  const r = await page.evaluate(() => {
+    const vis = (sel) => { const b = document.querySelector('#sx-tool ' + sel); return !!(b && !b.hidden && b.offsetParent && b.getBoundingClientRect().right <= innerWidth + 1); };
+    const cut = document.querySelector('#sx-tool .sxc-tb');
+    return { filters: vis('[data-cmd="filters"]'), cut: vis('.sxc-tb'), text: cut ? cut.textContent.trim() : null, label: cut && cut.getAttribute('aria-label') };
+  });
+  h.assert(r.filters, 'Filters is on the toolbar at 360 px: ' + JSON.stringify(r));
+  h.assert(r.cut && r.text === '' && /Remove background/.test(r.label), 'remover button is icon-only with its name in aria-label: ' + JSON.stringify(r));
+  h.assert.noErrors(page);
+};
+
 module.exports = cases;
