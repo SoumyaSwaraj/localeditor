@@ -77,7 +77,13 @@
         return Promise.resolve(run()).catch(function (err) { c.toast((err && err.message) || 'That did not work here. Nothing was changed.'); });
       } catch (err) { c.toast((err && err.message) || 'That did not work here. Nothing was changed.'); return Promise.resolve(); }
     }
-    if (LE.support && typeof LE.support.gate === 'function') return LE.support.gate(id, { title: title, run: safe, fallback: fallback });
+    /* LE.support owns the verdict and the sheet (with our fallback as an action); its gate records a run that
+       throws, so the error reaches it first and is explained here afterwards. */
+    if (LE.support && typeof LE.support.gate === 'function') {
+      return LE.support.gate(id, { title: title, run: run, fallback: fallback }).then(null, function (err) {
+        c.toast((err && err.message) || 'That did not work here. Nothing was changed.');
+      });
+    }
     var r = check(id);
     if (r.status === 'ok' || r.status === 'limited') return safe();
     var box = c.h('<div class="sxe-gate"></div>');
@@ -148,7 +154,7 @@
   /* Shares when the browser can, otherwise downloads (one file, or a zip for several). */
   function shareOrDownload(c, items, zipName) {
     return share(c, items, { title: c.S.project && c.S.project.name }).then(function (r) {
-      if (r === 'shared') { c.toast('Shared'); return r; }
+      if (r === 'shared') { c.toast('Shared'); if (LE.support && LE.support.reportSuccess) LE.support.reportSuccess('export.share'); return r; }
       if (r === 'cancelled') return r;
       var msg = r === 'unsupported' ? 'Sharing files is not available here, so it was downloaded instead.' : 'Sharing did not work, so it was downloaded instead.';
       var done = items.length === 1 ? Promise.resolve(c.download(items[0].blob, items[0].name)) : zipOf(items).then(function (z) { c.download(z, zipName || base(c) + '.zip'); });
@@ -174,6 +180,7 @@
     catch (e) { write = png.then(function (b) { return navigator.clipboard.write([new window.ClipboardItem({ 'image/png': b })]); }); }
     return write.then(function () {
       c.toast('Copied as PNG — paste it into any app');
+      if (LE.support && LE.support.reportSuccess) LE.support.reportSuccess('export.copy');
       return true;
     }, function (err) {
       var why = err && err.name === 'NotAllowedError' ? 'the browser blocked clipboard access' : 'this browser refused the image';
