@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LE stock test</title>
+<style>
+  body { margin: 0; padding: 16px; background: #E7E5EB; color: #110F17; font-family: "Segoe UI", sans-serif; }
+  h1 { font-size: 22px; font-weight: 650; margin: 0 0 12px; }
+  #status { padding: 10px 12px; background: #fff; border-radius: 10px; }
+  #status.bad { background: #F8D5DE; }
+  #status.ok { background: #D9F3E8; }
+  section { margin-top: 18px; }
+  canvas, img { background: #fff; border-radius: 12px; max-width: 100%; }
+  pre { white-space: pre-wrap; background: #fff; border-radius: 12px; padding: 12px; font-size: 12px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+  figure { margin: 0; }
+  figcaption { font-size: 12px; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<h1>LocalEditor stock</h1>
+<div id="status">Running…</div>
+<section class="row">
+  <figure>
+    <figcaption>Empty photo slot</figcaption>
+    <canvas id="placeholder" width="200" height="140"></canvas>
+  </figure>
+  <figure>
+    <figcaption>Masked slot</figcaption>
+    <canvas id="masked" width="200" height="140"></canvas>
+  </figure>
+  <figure>
+    <figcaption>Compressed</figcaption>
+    <img id="compressed" alt="Compressed preview" width="320">
+  </figure>
+</section>
+<pre id="report"></pre>
+<script src="../assets/js/le-engine.js"></script>
+<script src="../assets/js/le-stock.js"></script>
+<script src="../assets/js/le-objects.js"></script>
+<script src="../assets/js/le-project.js"></script>
+<script>
+(function () {
+  var status = document.getElementById('status');
+  var report = { ok: false, errors: [], rewrite: {}, compress: null, placeholder: null, sanitize: null, openverse: null, imported: null, cors: [] };
+  window.__LE_STOCK_TEST__ = report;
+
+  function fail(msg) { report.errors.push(msg); }
+  function finish() {
+    report.ok = report.errors.length === 0;
+    window.__LE_STOCK_TEST__ = report;
+    status.textContent = report.ok ? 'Passed' : ('Failed: ' + report.errors.join(' | '));
+    status.className = report.ok ? 'ok' : 'bad';
+    document.getElementById('report').textContent = JSON.stringify(report, null, 2);
+  }
+
+  function rewriteTests() {
+    if (!LE.stock || typeof LE.stock.sizedImportUrl !== 'function') {
+      fail('LE.stock missing');
+      return;
+    }
+    var ids = LE.stock.providers().map(function (p) { return p.id; });
+    report.rewrite.providers = ids.join(',');
+    if (ids.join(',') !== 'pixabay,pexels,openverse') fail('providers ' + ids.join(','));
+
+    var big = LE.stock.sizedImportUrl({
+      provider: 'openverse',
+      importUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4d/Cat_November_2010-1a.jpg',
+      thumb: 'https://api.openverse.org/v1/images/abc/thumb/',
+      filesize: 8000000
+    }, 1600);
+    var expectBig = 'https://commons.wikimedia.org/wiki/Special:FilePath/Cat_November_2010-1a.jpg?width=1600';
+    report.rewrite.commons = big;
+    if (big !== expectBig) fail('commons rewrite ' + big);
+
+    var spaced = LE.stock.sizedImportUrl({
+      provider: 'openverse',
+      importUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/My%20Cat.jpg',
+      filesize: 5000000
+    }, 1000);
+    report.rewrite.spaced = spaced;
+    if (spaced !== 'https://commons.wikimedia.org/wiki/Special:FilePath/My%20Cat.jpg?width=1000') fail('spaced rewrite ' + spaced);
+
+    var unknown = LE.stock.sizedImportUrl({
+      provider: 'openverse',
+      importUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4d/Cat_November_2010-1a.jpg',
+      thumb: 'https://api.openverse.org/v1/images/abc/thumb/',
+      filesize: null
+    }, 1600);
+    report.rewrite.unknown = unknown;
+    if (unknown !== 'https://api.openverse.org/v1/images/abc/thumb/') fail('unknown size should use thumb');
+
+    var pixabay = LE.stock.sizedImportUrl({
+      provider: 'pixabay',
+      importUrl: 'https://pixabay.com/get/large.jpg',
+      filesize: 9000000
+    }, 1600);
+    if (pixabay !== 'https://pixabay.com/get/large.jpg') fail('pixabay url changed');
+
+    var thumb = LE.stock.sizedImportUrl({
+      provider: 'openverse',
+      importUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/320px-Cat_November_2010-1a.jpg',
+      filesize: 80000
+    }, 1600);
+    if (thumb.indexOf('320px-') < 0) fail('small commons thumb was rewritten');
+
+    var heavyThumb = LE.stock.sizedImportUrl({
+      provider: 'openverse',
+      importUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/320px-Cat_November_2010-1a.jpg',
+      filesize: 5000000
+    }, 1600);
+    if (heavyThumb !== expectBig) fail('heavy thumb ' + heavyThumb);
+    report.rewrite.ok = report.errors.length === 0;
+  }
+
+  function placeholderTests() {
+    var host = document.createElement('div');
+    host.style.cssText = 'width:480px;height:320px;position:absolute;left:-9999px;top:0';
+    document.body.appendChild(host);
+    var scene = new LE.Scene({ el: host, width: 480, height: 320 });
+    var id = scene.add({ type: 'image', src: '', x: 10, y: 10, w: 200, h: 140, slot: { id: 'a', label: 'Photo 1', photo: 'people-01' } });
+    var layer = scene._find(id);
+    if (!layer.slot || layer.slot.id !== 'a' || layer.slot.photo !== 'people-01') fail('slot dropped on add');
+    var badId = scene.add({ type: 'image', src: '', w: 200, h: 140, maskPath: 'M0 0 <scr' + 'ipt>alert(1)</scr' + 'ipt>' });
+    if (scene._find(badId).maskPath) fail('invalid maskPath kept');
+    var canvas = document.getElementById('placeholder');
+    var ctx = canvas.getContext('2d');
+    scene._paintImage(ctx, layer, {});
+    var fill = ctx.getImageData(24, 24, 1, 1).data;
+    var center = ctx.getImageData(100, 70, 1, 1).data;
+    var edge = ctx.getImageData(1, 8, 1, 1).data;
+    var opaque = fill[3] > 200 && fill[0] > 180;
+    var marked = center[0] < fill[0] - 15 || edge[0] < fill[0] - 10;
+    report.placeholder = { fill: [fill[0], fill[1], fill[2], fill[3]], center: [center[0], center[1], center[2], center[3]], edge: [edge[0], edge[1], edge[2], edge[3]] };
+    if (!opaque) fail('placeholder fill missing');
+    if (!marked) fail('placeholder plus or dash missing');
+
+    var maskId = scene.add({ type: 'image', src: '', w: 200, h: 140, maskPath: 'M0 0 L100 0 L0 140 Z' });
+    var masked = scene._find(maskId);
+    if (!masked.maskPath) fail('valid maskPath dropped');
+    var mc = document.getElementById('masked');
+    var mctx = mc.getContext('2d');
+    scene._paintImage(mctx, masked, {});
+    var inside = mctx.getImageData(20, 20, 1, 1).data;
+    var outside = mctx.getImageData(170, 40, 1, 1).data;
+    report.placeholder.inside = [inside[0], inside[3]];
+    report.placeholder.outside = [outside[0], outside[3]];
+    if (inside[3] < 200) fail('mask did not paint inside');
+    if (outside[3] > 20) fail('mask did not clip outside');
+  }
+
+  function sanitizeTests() {
+    if (!LE.project || !LE.project.validate) { report.sanitize = 'skipped'; return; }
+    var id = new Array(65).join('a');
+    var raw = {
+      schema: 'localeditor.project', v: 1, id: 'dtest', name: 'T',
+      pages: [{
+        v: 1, width: 400, height: 300, background: { type: 'color', color: '#ffffff' },
+        layers: [
+          {
+            id: 'l1', type: 'image', name: 'Slot', x: 0, y: 0, w: 100, h: 80, src: id,
+            slot: { id: 'a', label: 'Photo 1', photo: 'people-01', evil: '<script>' },
+            maskPath: 'M0 0 L100 0 L100 80 Z', mask: 'none'
+          },
+          {
+            id: 'l2', type: 'image', name: 'Bad', x: 0, y: 0, w: 40, h: 40, src: '',
+            maskPath: 'M0 0 <scr' + 'ipt>alert(1)</scr' + 'ipt>'
+          }
+        ]
+      }],
+      assets: {}
+    };
+    raw.assets[id] = {
+      type: 'image/jpeg', name: 'c.jpg', width: 100, height: 80, bytes: 10,
+      source: {
+        provider: 'openverse', photographer: 'Ada', pageUrl: 'https://example.com/a',
+        license: 'cc0', attribution: 'Photo by Ada', token: 'secret'
+      }
+    };
+    var check = LE.project.validate(raw);
+    if (!check.ok) { fail('validate ' + (check.errors && check.errors[0])); return; }
+    var layer = check.project.pages[0].layers[0];
+    var bad = check.project.pages[0].layers[1];
+    var source = check.project.assets[id].source;
+    report.sanitize = {
+      slot: layer.slot, maskPath: layer.maskPath, badMask: bad && bad.maskPath || null,
+      source: source
+    };
+    if (!layer.slot || layer.slot.id !== 'a' || layer.slot.label !== 'Photo 1' || layer.slot.photo !== 'people-01') fail('sanitize slot');
+    if (layer.slot.evil) fail('slot kept extra field');
+    if (layer.maskPath !== 'M0 0 L100 0 L100 80 Z') fail('sanitize maskPath');
+    if (bad && bad.maskPath) fail('sanitize kept bad mask');
+    if (!source || source.provider !== 'openverse' || source.photographer !== 'Ada' || source.token) fail('sanitize source');
+    if (source.pageUrl !== 'https://example.com/a') fail('sanitize pageUrl');
+  }
+
+  function paintSource(canvas) {
+    var ctx = canvas.getContext('2d');
+    var g = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    g.addColorStop(0, '#f4d7a1');
+    g.addColorStop(0.45, '#7457f0');
+    g.addColorStop(1, '#1d7a63');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    var i;
+    for (i = 0; i < 80; i++) {
+      ctx.fillStyle = 'rgba(23,19,31,' + (0.08 + (i % 5) * 0.04) + ')';
+      ctx.fillRect((i * 97) % canvas.width, (i * 53) % canvas.height, 180, 120);
+    }
+  }
+
+  function compressTests() {
+    var maxEdge = LE.perf.previewMax();
+    var source = document.createElement('canvas');
+    source.width = 4000;
+    source.height = 3000;
+    paintSource(source);
+    return LE.toBlob(source, 'image/jpeg', 0.82).then(function (beforeBlob) {
+      return LE.stock.compress(source).then(function (out) {
+        report.compress = {
+          previewMax: maxEdge,
+          before: { width: 4000, height: 3000, jpegBytes: beforeBlob.size, pixelBytes: 4000 * 3000 * 4 },
+          after: { width: out.width, height: out.height, bytes: out.blob.size, type: out.type }
+        };
+        if (Math.max(out.width, out.height) !== maxEdge) fail('compressed edge ' + out.width + 'x' + out.height + ' expected ' + maxEdge);
+        if (out.type !== 'image/jpeg') fail('compressed type ' + out.type);
+        if (!(out.blob.size < beforeBlob.size)) fail('compressed jpeg was not smaller');
+        document.getElementById('compressed').src = URL.createObjectURL(out.blob);
+        var tiny = document.createElement('canvas');
+        tiny.width = 200;
+        tiny.height = 120;
+        paintSource(tiny);
+        return LE.toBlob(tiny, 'image/jpeg', 0.82);
+      });
+    }).then(function (small) {
+      return LE.stock.compress(small).then(function (again) {
+        report.compress.skipBytes = small.size;
+        report.compress.skipSame = again.blob === small;
+        if (again.blob !== small) fail('small jpeg was re-encoded');
+      });
+    });
+  }
+
+  function openverseTests() {
+    return LE.stock.search('cat', { provider: 'openverse', page: 1, perPage: 20 }).then(function (res) {
+      var hit = res.hits && res.hits[0];
+      report.openverse = {
+        ok: !!(hit && hit.thumb && hit.provider === 'openverse'),
+        page: res.page,
+        total: res.total,
+        count: res.hits ? res.hits.length : 0,
+        license: hit ? hit.license : '',
+        attribution: hit ? hit.attribution : '',
+        thumbHost: hit && hit.thumb ? (hit.thumb.split('/')[2] || '') : '',
+        limit: res.limit || null
+      };
+      if (!res.hits || !res.hits.length) fail('openverse returned no hits');
+      else if (hit.provider !== 'openverse') fail('openverse provider');
+      else if (!hit.thumb) fail('openverse thumb missing');
+      else if (!hit.license) fail('openverse license missing');
+      if (!hit) return null;
+      var sized = LE.stock.sizedImportUrl(hit, LE.perf.previewMax());
+      report.openverse.importHost = sized ? (sized.split('/')[2] || '') : '';
+      return LE.stock.importHit(hit).then(function (imported) {
+        report.imported = {
+          ok: true,
+          bytes: imported.blob.size,
+          width: imported.width,
+          height: imported.height,
+          type: imported.type,
+          source: imported.source
+        };
+        if (imported.blob.size > 2 * 1024 * 1024) fail('imported hit is over 2 MB');
+        if (!imported.source || !imported.source.attribution) fail('import missing attribution');
+      }).catch(function (err) {
+        var msg = err && err.message ? err.message : String(err);
+        report.imported = { ok: false, error: msg, status: err && err.status || 0 };
+        report.cors.push(msg);
+        fail('importHit ' + msg);
+      });
+    }).catch(function (err) {
+      var msg = err && err.message ? err.message : String(err);
+      report.openverse = { ok: false, error: msg, status: err && err.status || 0 };
+      if (!err || !err.status) report.cors.push(msg);
+      fail('openverse ' + msg);
+    });
+  }
+
+  try { rewriteTests(); } catch (e) { fail('rewrite ' + e.message); }
+  try { placeholderTests(); } catch (e2) { fail('placeholder ' + (e2 && e2.message)); }
+  try { sanitizeTests(); } catch (e3) { fail('sanitize ' + (e3 && e3.message)); }
+  compressTests().then(openverseTests).then(finish, function (err) {
+    fail(err && err.message ? err.message : String(err));
+    finish();
+  });
+})();
+</script>
+</body>
+</html>

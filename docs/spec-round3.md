@@ -1,0 +1,32 @@
+# Round 3 contract (assets agent implements; studio agents consume — feature-detect)
+
+## withicons (MIT, https://withicons.com, npm @withicons/core 0.6.0 — 1000 icons × 34 styles)
+Styles (ids lowercase-kebab): line, solid, duo, suite, bento, dock, brutal, bauhaus, clay, glass, liquid, chrome, soft-3d, luxe, skeuo, kawaii, plush, sticker, gloss, pastel, pixel, retro, sketch, engrave, blueprint, anime, gothic, coquette, utsav, rangoli, halloween, christmas, lunar-new-year, valentine. Groups: essentials, product, 3d-glass, playful, artistic, holidays.
+
+Data: `assets/data/withicons/index.json` (≤ ~250 KB: names, tags/keywords, categories, style records with group/description/colorful/default `vars`/byte size/count, and the 8 LocalEditor brand palettes — no per-icon palette table) + one lazy pack per style `assets/data/withicons/<style>.json` (sanitized SVG bodies only) + `assets/data/withicons/palettes.json` (shared per-icon palette table, compact deduped hex/name/id dictionaries). `palettes.json` is not part of `load('withicons')`.
+
+API (added to LE.assets, existing APIs unchanged):
+- `LE.assets.iconStyles()` → `[{ id, name, group, description, colorful, count, bytes, palettes:[paletteId], defaultPalette, loaded, offline }]` (sync after `LE.assets.load('withicons')` loads index.json)
+- `LE.assets.loadStyle(styleId, onProgress) → Promise` (fetch pack; memory + Cache Storage le-assets-v1)
+- `LE.assets.isStyleOffline(styleId) → Promise<bool>`, `LE.assets.saveStyleOffline(styleId|'all', onProgress)`, `LE.assets.removeStyleOffline(styleId)` (free space), `LE.assets.styleUsage() → Promise<{[styleId]: bytes}>`. `saveStyleOffline('all')` also caches `palettes.json` in `le-assets-v1`.
+- ids: `withicons:<style>/<name>` e.g. `withicons:clay/bike`. `LE.assets.search(q, {set:'withicons', style, limit})` searches names/tags across the index (does not need the pack loaded); results include `{id, set:'withicons', style, name, tags}`.
+- `LE.assets.svg(id, { color, palette, colors, strokeWidth, size })` — synchronous. `color` for single-colour styles (line/solid/sketch/blueprint/engrave/pixel…), `palette` (palette id) or explicit `colors` array for colourful styles — recolour mirrors withicons (CSS vars mapped to roles ink, c1–c4, tint, accent, shadow, shine, edge). Brand ids and `'default'` work without the per-icon table. An icon-specific palette id (for example `classic-red`) is applied only after `loadIconPalettes()` has resolved; otherwise the SVG keeps the style's baked fallbacks. `LE.assets.image(id, size, opts)` returns a Promise and, for an icon-specific palette id, loads `palettes.json` first.
+- `LE.assets.iconPalettes(key?)` → `[{ id, name, colors:[...] }]`, synchronous. No argument: the 8 brand palettes (Amethyst, Champagne Gold, Rose, Sapphire, Jade, Copper, Obsidian, Pearl). A style id: that style's default (from its `vars`) plus the 8 brand palettes. An icon name: that icon's package palettes plus brand when the table is already loaded, otherwise brand only. Studio style pickers keep calling this with a style id and do not fetch `palettes.json`.
+- `LE.assets.loadIconPalettes(name?)` → `Promise<palette[]>`. Fetches `assets/data/withicons/palettes.json` once (memory + Cache Storage `le-assets-v1`) the first time icon-specific palettes are needed, then resolves to `iconPalettes(name)`.
+- Svg layers in LE.Scene: store `{ assetId, color, palette, colors }` — studios pass the resolved svg string via the existing `svg` field when needed (LE.Scene's `svg` + `color` fields already exist).
+
+## Rich colour library
+- `LE.assets.colorSets()` → `[{ id, name, group, colors:[hex...] }]` ≥ 60 curated sets: brand (LocalEditor 10-tone), neutrals/greys ramps, warm, cool, pastel, earthy, jewel tones, neon/vivid, monochrome ramps per hue (11-step tailwind-like for 12 hues), vintage, Scandinavian, ocean, forest, desert, sunset, candy, coffee, wedding/blush, corporate/navy, Indian festive (Diwali/Holi), seasonal (spring/summer/autumn/winter), Material-like, accessible high-contrast pairs.
+- `LE.assets.gradients()` → `[{ id, name, group, type:'linear'|'radial'|'conic'|'mesh', angle, stops:[{color, at}] , css }]` ≥ 80 (aurora, sunset, ocean, peach, mint, gold foil, chrome, holographic, duotones, soft mesh blends). Mesh = layered radial gradients (css string + stops for canvas reconstruction).
+- `LE.assets.patterns()` → `[{ id, name, group, svg(tileSize, fg, bg) → markup, tile }]` ≥ 30 tintable seamless patterns (dots, polka, grid, graph paper, stripes, diagonal, chevron, waves, scallops, checker, gingham, houndstooth-like, terrazzo, confetti, stars, hearts, plus, triangles, hexagons, cross-hatch, noise/grain, paper texture, linen, rangoli motif, memphis).
+- `LE.assets.textures()` optional: tiny procedurally generated textures (grain/paper/canvas/concrete) as functions that draw onto a canvas.
+
+Background types available to LE.Scene: color, gradient (linear/radial; conic/mesh → studios rasterize to an asset image if the engine lacks them), image, pattern (studios rasterize a pattern tile to an image asset and use `{type:'image', fit:'tile'?}` — if the engine lacks tiling, render the full background bitmap at page size).
+
+## Shared toolbox design brief (both studios)
+"World-class" panel design: Linear/Figma/Canva/Arc-level polish in the LocalEditor language.
+- Panels: 12px radius inner cards, 1px hairline borders (rgba(17,15,23,.08); dark rgba(255,255,255,.08)), section headers with small uppercase 11px eyebrow + 600 title, consistent 16px gutters, 8px grid, sticky search with soft inset field, segmented controls with sliding thumb animation, chips with pressed state, swatches as 28px rounded squares with inner ring + checkmark when active, hover lift 1px + shadow, focus-visible rings in amethyst.
+- Sliders: label left, numeric value chip right (editable on click), double-click to reset, tick for default; consistent across panels.
+- Color picker: popover with tabs Solid / Gradient / Palettes, HSV square + hue + alpha, hex/rgb input, eyedropper (EyeDropper API when available), Document colors, Recent, Brand kit, full colour sets library with search.
+- Empty/loading states with skeleton shimmer; tiles fade-in; panel slide 220ms cubic-bezier(.2,.8,.2,1); respect prefers-reduced-motion.
+- Contrast: all text/icon on gold buttons must meet WCAG AA (use dark ink #2A1F0A on --foil; never pale text on gold). Disabled states clearly distinct. Check both themes.
