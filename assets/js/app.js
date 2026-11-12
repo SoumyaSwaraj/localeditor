@@ -6,7 +6,7 @@
   try {
     var saved = localStorage.getItem('le-theme') || localStorage.getItem('it-theme');
     if (saved) root.setAttribute('data-theme', saved);
-    else if (!root.getAttribute('data-theme')) root.setAttribute('data-theme', 'light');
+    else if (!root.getAttribute('data-theme')) root.setAttribute('data-theme', window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   } catch (e) {}
   document.body.classList.add('le-ready');
 
@@ -128,8 +128,10 @@
   IT.baseName = function (name) { return (name || 'file').replace(/\.[^.]+$/, ''); };
 
   var TOOLS = [
-    ['Studio', 'studio/', 'The full editor: crop, color, text, recipes, export'],
-    ['Recipes', 'recipes/', 'Apply a shared editing recipe'],
+    ['Photo studio', 'studio/', 'Layers, text, collages, filters, every social size'],
+    ['PDF studio', 'pdf-studio/', 'Sign, fill, annotate, merge and reorder pages'],
+    ['Convert to PDF', 'convert-to-pdf/', 'Word, Excel, PowerPoint, images and text to PDF'],
+    ['Recipes', 'recipes/', 'Apply, edit and share a list of photo edits'],
     ['Image compressor', 'image-compressor/', 'Shrink a photo for the web or email'],
     ['Image resizer', 'image-resizer/', 'Change pixel size or use a social preset'],
     ['Image converter', 'image-converter/', 'JPG, PNG, WebP'],
@@ -169,7 +171,8 @@
     ['UUID', 'uuid-generator/', 'Generate IDs'],
     ['Favicon', 'favicon-generator/', 'App icons from an image'],
     ['Lorem ipsum', 'lorem-ipsum-generator/', 'Placeholder text'],
-    ['Image to Base64', 'image-to-base64/', 'Data URLs']
+    ['Image to Base64', 'image-to-base64/', 'Data URLs'],
+    ['Privacy and install', 'about/', 'How LocalEditor keeps files on this device']
   ];
 
   function base() {
@@ -194,8 +197,9 @@
     pdf: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>',
     office: '<path d="M4 7h16M4 12h16M4 17h10"/>',
     search: '<circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/>',
-    moon: '<path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"/>',
-    menu: '<path d="M5 7h14M5 12h14M5 17h14"/>',
+    moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    close: '<path d="M6 6l12 12M18 6 6 18"/>',
     compress: '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>',
     crop: '<path d="M6 3v14a2 2 0 0 0 2 2h13"/><path d="M18 21V8a2 2 0 0 0-2-2H3"/>',
     resize: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
@@ -205,81 +209,80 @@
     grid: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
     shield: '<path d="M12 3 5 6v5c0 4.5 3 8.2 7 10 4-1.8 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/>',
     download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+    storage: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+    merge: '<path d="M8 6h10a2 2 0 0 1 2 2v12"/><rect x="2" y="2" width="12" height="16" rx="2"/>',
+    qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 17h4v4h-4"/>',
     pdfstudio: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="m9.5 17 4.8-4.8a1.3 1.3 0 0 1 1.8 1.8L11.3 18.8 9 19.3z"/>',
     convert: '<path d="M4 7h11l-3-3M20 17H9l3 3"/><path d="M17 4h3v6M7 20H4v-6"/>',
-    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>'
   };
 
+  function mark() {
+    return '<span class="le-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><defs><linearGradient id="le-foil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3CC7C"/><stop offset="1" stop-color="#E2B15A"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#le-foil)"/><circle cx="16" cy="16" r="7.5" fill="none" stroke="#2A1F0A" stroke-width="1.9"/><circle cx="16" cy="16" r="2" fill="#2A1F0A"/></svg></span>';
+  }
+
+  function isCurrent(href) {
+    var slug = here();
+    if (href.indexOf('?') >= 0 || href.indexOf('#') >= 0) return false;
+    var s = href.replace(/\/$/, '');
+    return s ? s === slug : !slug;
+  }
+
+  /* The drawer: the whole menu, at every width. */
   function sideHTML() {
     var b = base();
-    var slug = here();
-    function item(href, name, ic) {
-      var slugPart = href.replace(/\/$/, '').replace(/^\.\.\//, '');
-      var current = slugPart === slug || (href.indexOf('?') < 0 && slug && href.replace(/\/$/, '') === slug);
-      if (!slug && (href === '' || href === './')) current = true;
-      return '<a class="item" href="' + b + href + '"' + (current ? ' aria-current="page"' : '') + '>' + icon(ICONS[ic] || ICONS.image) + name + '</a>';
+    function item(href, name, ic, note) {
+      return '<a class="item" href="' + b + href + '"' + (isCurrent(href) ? ' aria-current="page"' : '') + '>' + icon(ICONS[ic] || ICONS.image) + '<span>' + name + '</span>' + (note ? '<small>' + note + '</small>' : '') + '</a>';
     }
     return '' +
-      '<a class="le-brand" href="' + b + '">' +
-        '<span class="le-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><defs><linearGradient id="le-foil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F8E3AE"/><stop offset=".55" stop-color="#E2B15A"/><stop offset="1" stop-color="#B9832F"/></linearGradient></defs><rect width="32" height="32" rx="10" fill="url(#le-foil)"/><path d="M6 6h20" stroke="#fff" stroke-opacity=".5" stroke-width="1"/><circle cx="16" cy="16" r="7.5" fill="none" stroke="#2C220F" stroke-width="1.8"/><circle cx="16" cy="16" r="3.6" fill="none" stroke="#2C220F" stroke-width="1.2" stroke-opacity=".55"/><circle cx="16" cy="16" r="1.6" fill="#2C220F"/><circle cx="21.5" cy="10.5" r="1.3" fill="#fff" fill-opacity=".85"/></svg></span>' +
-        '<span><strong>LocalEditor</strong><em>Private image studio</em></span></a>' +
-      '<nav class="le-nav" aria-label="Primary">' +
-        '<div class="le-label">Create</div>' +
+      '<div class="le-side-head">' +
+        '<a class="le-brand" href="' + (b || './') + '">' + mark() + '<span><strong>LocalEditor</strong><em>Private design studio</em></span></a>' +
+        '<button class="le-icon" type="button" data-menu-close aria-label="Close menu">' + icon(ICONS.close) + '</button>' +
+      '</div>' +
+      '<nav class="le-nav" aria-label="All sections">' +
+        '<div class="le-label">Studios</div>' +
         item('', 'Home', 'home') +
         item('studio/', 'Photo studio', 'studio') +
         item('pdf-studio/', 'PDF studio', 'pdfstudio') +
         item('convert-to-pdf/', 'Convert to PDF', 'convert') +
         item('recipes/', 'Recipes', 'recipes') +
-        '<div class="le-label">Start here</div>' +
-        item('image-compressor/', 'Compress', 'compress') +
-        item('image-cropper/', 'Crop', 'crop') +
-        item('image-resizer/', 'Resize', 'resize') +
-        item('image-filters/', 'Filters', 'filters') +
-        item('studio/?tool=background', 'Background', 'background') +
+        '<div class="le-label">Popular tools</div>' +
+        item('image-compressor/', 'Compress image', 'compress') +
+        item('image-resizer/', 'Resize image', 'resize') +
+        item('merge-pdf/', 'Merge PDF', 'merge') +
         item('studio/?tool=collage', 'Collage', 'collage') +
-        '<div class="le-label">Library</div>' +
-        item('#image', 'All image tools', 'grid') +
-        item('#pdf', 'PDF tools', 'pdf') +
-        item('#office', 'Office tools', 'office') +
+        item('#tools', 'Every tool', 'grid', '35') +
+        '<div class="le-promise">' + icon(ICONS.shield) + '<span><strong>Nothing is uploaded</strong>Your photos and PDFs are edited by this browser and stay on this device.</span></div>' +
       '</nav>' +
       '<div class="le-side-foot">' +
-        '<div class="le-promise">' + icon(ICONS.shield) + '<span><strong>Private by design</strong>Photos never leave this device.</span></div>' +
-        '<button type="button" class="le-install">' + icon(ICONS.download) + 'Install for offline use</button>' +
-        '<a class="quiet" href="' + b + 'about/">Privacy</a>' +
+        '<button type="button" class="le-row" data-le-install>' + icon(ICONS.download) + '<span>Install app</span><small>Works offline</small></button>' +
+        '<button type="button" class="le-row" data-le-storage>' + icon(ICONS.storage) + '<span>Storage on this device</span></button>' +
+        '<button type="button" class="le-row" data-theme-toggle>' + icon(ICONS.moon) + '<span data-theme-label>Dark theme</span></button>' +
+        '<a class="le-row" href="' + b + 'about/">' + icon(ICONS.info) + '<span>Privacy and about</span></a>' +
       '</div>';
   }
 
+  /* The header: brand, sections, search, theme, menu and the one primary action. */
   function topHTML() {
     var b = base();
-    var slug = here();
-    var names = {
-      'image-compressor': 'Compress', 'image-resizer': 'Resize', 'image-converter': 'Convert',
-      'image-cropper': 'Crop', 'rotate-flip-image': 'Rotate', 'watermark-image': 'Watermark',
-      'image-to-base64': 'Base64', 'color-picker': 'Palette', 'favicon-generator': 'Favicon',
-      'image-filters': 'Filters', 'merge-pdf': 'Merge PDF', 'split-pdf': 'Split PDF',
-      'jpg-to-pdf': 'JPG to PDF', 'pdf-to-jpg': 'PDF to JPG', 'rotate-pdf': 'Rotate PDF',
-      'organize-pdf': 'Organize PDF', 'add-page-numbers': 'Page numbers', 'watermark-pdf': 'Watermark PDF',
-      'word-counter': 'Word counter', 'case-converter': 'Case', 'text-diff': 'Compare',
-      'lorem-ipsum-generator': 'Lorem ipsum', 'qr-code-generator': 'QR code', 'password-generator': 'Password',
-      'json-formatter': 'JSON', 'base64-encoder': 'Base64 text', 'hash-generator': 'Hash',
-      'unit-converter': 'Units', 'color-converter': 'Color', 'uuid-generator': 'UUID', 'about': 'Privacy', 'convert-to-pdf': 'Convert to PDF'
-    };
-    var title = names[slug] || 'This tool';
-    var homeCurrent = !slug;
+    function link(href, name) {
+      return '<a href="' + b + href + '"' + (isCurrent(href) ? ' aria-current="page"' : '') + '>' + name + '</a>';
+    }
     return '' +
-      '<button class="le-icon le-menu" type="button" data-menu aria-label="Open menu" aria-expanded="false">' + icon(ICONS.menu) + '</button>' +
-      '<nav class="le-pills" aria-label="Sections">' +
-        '<a href="' + b + '"' + (homeCurrent ? ' aria-current="page"' : '') + '>Overview</a>' +
-        '<a href="' + b + 'studio/"' + (slug === 'studio' ? ' aria-current="page"' : '') + '>Photo</a>' +
-        '<a href="' + b + 'pdf-studio/"' + (slug === 'pdf-studio' ? ' aria-current="page"' : '') + '>PDF</a>' +
-        '<a href="' + b + 'recipes/"' + (slug === 'recipes' ? ' aria-current="page"' : '') + '>Recipes</a>' +
-        (slug && slug !== 'studio' && slug !== 'pdf-studio' && slug !== 'recipes' ? '<a href="" aria-current="page">' + escapeHtml(title) + '</a>' : '') +
+      '<a class="le-brand" href="' + (b || './') + '" aria-label="LocalEditor home">' + mark() + '<span><strong>LocalEditor</strong></span></a>' +
+      '<nav class="le-links" aria-label="Sections">' +
+        link('studio/', 'Photo studio') +
+        link('pdf-studio/', 'PDF studio') +
+        link('convert-to-pdf/', 'Convert') +
+        link('recipes/', 'Recipes') +
+        '<a href="' + b + '#tools">All tools</a>' +
       '</nav>' +
       '<span class="spacer"></span>' +
-      '<span class="le-status"><i aria-hidden="true"></i>On this device</span>' +
-      '<button class="le-icon" type="button" data-search aria-label="Search tools">' + icon(ICONS.search) + '</button>' +
-      '<button class="le-icon" type="button" data-theme-toggle aria-label="Switch color theme">' + icon(ICONS.moon) + '</button>' +
-      '<a class="le-avatar" href="' + b + 'about/" aria-label="About LocalEditor">LE</a>';
+      '<button class="le-search" type="button" data-search aria-label="Search tools">' + icon(ICONS.search) + '<span>Search tools</span><kbd>/</kbd></button>' +
+      '<button class="le-icon" type="button" data-theme-toggle aria-label="Switch to dark theme"><span class="le-theme-icon-light">' + icon(ICONS.moon) + '</span><span class="le-theme-icon-dark">' + icon(ICONS.sun) + '</span></button>' +
+      '<button class="le-icon le-menu" type="button" data-menu aria-label="Open menu" aria-expanded="false" aria-controls="le-drawer">' + icon(ICONS.menu) + '</button>' +
+      '<a class="btn btn-gold btn-sm le-cta" href="' + b + 'studio/">Open studio</a>';
   }
 
   function escapeHtml(s) {
@@ -288,18 +291,32 @@
     });
   }
 
+  function syncTheme() {
+    var dark = root.getAttribute('data-theme') === 'dark';
+    document.querySelectorAll('[data-theme-toggle]').forEach(function (b) {
+      if (b.classList.contains('le-icon')) b.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+    });
+    document.querySelectorAll('[data-theme-label]').forEach(function (s) { s.textContent = dark ? 'Light theme' : 'Dark theme'; });
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta && !document.body.classList.contains('sx-body') && !document.body.classList.contains('ps-body') && !document.body.classList.contains('cv-body')) {
+      meta.setAttribute('content', dark ? '#0F0E13' : '#F7F6F3');
+    }
+  }
+
   function mountShell() {
     var sideSlot = document.querySelector('.le-side[data-fill]');
     var topSlot = document.querySelector('.le-top[data-fill]');
-    if (sideSlot) sideSlot.innerHTML = sideHTML();
+    if (sideSlot) { sideSlot.innerHTML = sideHTML(); sideSlot.id = sideSlot.id || 'le-drawer'; }
     if (topSlot) topSlot.innerHTML = topHTML();
-    if (document.body.classList.contains('le-built') || document.querySelector('.le-app')) return;
+    if (document.body.classList.contains('le-built') || document.querySelector('.le-app')) { afterMount(); return; }
     var main = document.getElementById('main');
     if (!main) return;
     var app = document.createElement('div');
     app.className = 'le-app';
     var side = document.createElement('aside');
     side.className = 'le-side';
+    side.id = 'le-drawer';
+    side.setAttribute('aria-label', 'Menu');
     side.innerHTML = sideHTML();
     var wrap = document.createElement('div');
     wrap.className = 'le-main';
@@ -312,39 +329,51 @@
     scrim.className = 'le-scrim';
     scrim.type = 'button';
     scrim.hidden = true;
+    scrim.tabIndex = -1;
     scrim.setAttribute('data-scrim', '');
     scrim.setAttribute('aria-label', 'Close menu');
     var skip = document.querySelector('.skip');
     if (skip && skip.nextSibling) document.body.insertBefore(app, skip.nextSibling);
     else document.body.insertBefore(app, document.body.firstChild);
-    app.appendChild(side);
     app.appendChild(wrap);
     wrap.appendChild(top);
     wrap.appendChild(content);
     content.appendChild(main);
     var footer = document.querySelector('.site-footer');
     if (footer) content.appendChild(footer);
+    app.appendChild(side);
     document.body.appendChild(scrim);
+    afterMount();
   }
 
+  function afterMount() {
+    syncTheme();
+    initDirectory();
+    /* app.js sets a fixed theme-color after mounting; correct it once that has run. */
+    setTimeout(syncTheme, 0);
+  }
+
+  var lastFocus = null;
   function setMenu(open) {
+    var side = document.querySelector('.le-side');
+    if (open === document.body.classList.contains('le-menu-open')) return;
     document.body.classList.toggle('le-menu-open', open);
     var scrim = document.querySelector('[data-scrim]');
     if (scrim) scrim.hidden = !open;
-    var btn = document.querySelector('[data-menu]');
-    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.querySelectorAll('[data-menu]').forEach(function (btn) { btn.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+    if (open) {
+      lastFocus = document.activeElement;
+      var first = side && (side.querySelector('[aria-current="page"]') || side.querySelector('a, button'));
+      if (first) setTimeout(function () { first.focus({ preventScroll: true }); }, 30);
+    } else if (lastFocus && lastFocus.focus) {
+      lastFocus.focus({ preventScroll: true });
+      lastFocus = null;
+    }
   }
 
-  var deferred;
-  window.addEventListener('beforeinstallprompt', function (e) {
-    e.preventDefault();
-    deferred = e;
-    document.querySelectorAll('.install-btn').forEach(function (b) { b.classList.add('show'); });
-  });
-
   document.addEventListener('click', function (e) {
-    if (e.target.closest('[data-menu]')) { setMenu(true); return; }
-    if (e.target.closest('[data-scrim]')) { setMenu(false); return; }
+    if (e.target.closest('[data-menu]')) { setMenu(!document.body.classList.contains('le-menu-open')); return; }
+    if (e.target.closest('[data-scrim], [data-menu-close]')) { setMenu(false); return; }
     if (e.target.closest('.le-nav a')) setMenu(false);
 
     var themeBtn = e.target.closest('[data-theme-toggle]');
@@ -352,17 +381,7 @@
       var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
       try { localStorage.setItem('le-theme', next); } catch (err) {}
-      return;
-    }
-
-    var install = e.target.closest('.install-btn, .le-install');
-    if (install) {
-      if (deferred) {
-        deferred.prompt();
-        deferred.userChoice.finally(function () { deferred = null; });
-      } else {
-        IT.say('In the browser menu, choose Install or Add to Home Screen');
-      }
+      syncTheme();
       return;
     }
 
@@ -371,6 +390,16 @@
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') setMenu(false);
+    if (e.key === 'Tab' && document.body.classList.contains('le-menu-open')) {
+      var side = document.querySelector('.le-side');
+      var items = side ? [].slice.call(side.querySelectorAll('a[href], button:not([disabled])')).filter(function (el) { return el.offsetParent !== null; }) : [];
+      if (items.length) {
+        var firstEl = items[0], lastEl = items[items.length - 1];
+        if (!side.contains(document.activeElement)) { e.preventDefault(); firstEl.focus(); }
+        else if (e.shiftKey && document.activeElement === firstEl) { e.preventDefault(); lastEl.focus(); }
+        else if (!e.shiftKey && document.activeElement === lastEl) { e.preventDefault(); firstEl.focus(); }
+      }
+    }
     var tag = (e.target && e.target.tagName) || '';
     var typing = /INPUT|TEXTAREA|SELECT/.test(tag) || (e.target && e.target.isContentEditable);
     if (!typing && (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'))) {
@@ -379,13 +408,63 @@
     }
   });
 
+  /* Homepage tool directory: [data-tool-dir] holds a search field, category chips and groups of links. */
+  function initDirectory() {
+    var dir = document.querySelector('[data-tool-dir]');
+    if (!dir || dir._le) return;
+    dir._le = true;
+    var input = dir.querySelector('[data-dir-search]');
+    var chips = [].slice.call(dir.querySelectorAll('[data-dir-cat]'));
+    var groups = [].slice.call(dir.querySelectorAll('[data-dir-group]'));
+    var empty = dir.querySelector('[data-dir-empty]');
+    var status = dir.querySelector('[data-dir-status]');
+    var cat = 'all';
+    function apply() {
+      var words = (input ? input.value : '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+      var total = 0;
+      groups.forEach(function (g) {
+        var inCat = cat === 'all' || g.getAttribute('data-dir-group') === cat;
+        var n = 0;
+        [].slice.call(g.querySelectorAll('li')).forEach(function (li) {
+          var a = li.querySelector('[data-k]');
+          var hay = a ? a.getAttribute('data-k') : '';
+          var ok = inCat && words.every(function (w) { return hay.indexOf(w) >= 0; });
+          li.hidden = !ok;
+          if (ok) n++;
+        });
+        g.hidden = n === 0;
+        var count = g.querySelector('.hp-dir-label span');
+        if (count) count.textContent = n;
+        total += n;
+      });
+      if (empty) {
+        empty.hidden = total > 0;
+        var q = empty.querySelector('[data-dir-query]');
+        if (q) q.textContent = input ? input.value.trim() : '';
+      }
+      if (status) status.textContent = total + (total === 1 ? ' tool' : ' tools') + ' shown';
+    }
+    if (input) input.addEventListener('input', apply);
+    chips.forEach(function (c) {
+      c.addEventListener('click', function () {
+        cat = c.getAttribute('data-dir-cat');
+        chips.forEach(function (o) { o.setAttribute('aria-pressed', o === c ? 'true' : 'false'); });
+        apply();
+      });
+    });
+    apply();
+  }
+
   var dialog;
   function openSearch() {
+    setMenu(false);
     if (!dialog) {
       dialog = document.createElement('dialog');
       dialog.className = 'le-dialog';
-      dialog.innerHTML = '<form method="dialog"><input type="search" placeholder="Search tools" aria-label="Search tools" autocomplete="off"><ul></ul><p class="empty-search hidden">No tools match.</p></form>';
+      dialog.setAttribute('aria-label', 'Search tools');
+      dialog.innerHTML = '<form method="dialog"><input type="search" placeholder="Search tools and studios" aria-label="Search tools" autocomplete="off" enterkeyhint="go"><ul></ul><p class="empty-search hidden">No tools match.</p></form>';
       document.body.appendChild(dialog);
+      dialog.addEventListener('click', function (e) { if (e.target === dialog) dialog.close(); });
       var input = dialog.querySelector('input');
       input.addEventListener('input', function () { paintSearch(input.value); });
       input.addEventListener('keydown', function (e) {
@@ -398,9 +477,10 @@
           i = e.key === 'ArrowDown' ? Math.min(links.length - 1, i + 1) : Math.max(0, i - 1);
           links[i].setAttribute('aria-selected', 'true');
           links[i].scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'Enter' && i >= 0) {
+        } else if (e.key === 'Enter') {
           e.preventDefault();
-          links[i].click();
+          if (i < 0 && links.length) i = 0;
+          if (i >= 0) links[i].click();
         }
       });
     }
