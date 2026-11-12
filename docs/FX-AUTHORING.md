@@ -193,6 +193,10 @@ passes: function (g, p) {
 - Colour: 8-bit sRGB in, linear or display-referred floating point inside, 8-bit out with ordered dithering. `LE.fx.apply(canvas, { colorSpace: 'display-p3' })` returns a Display-P3 canvas where the browser supports it; the studio's compositor is sRGB, so the scene path stays sRGB.
 - A lost WebGL context: renders fall back to the picture without GPU effects, `LE.fx.stamp()` changes, and scenes redraw with effects when the context returns.
 
+### Why the renderer runs on the main thread
+
+The compositor (`LE.Scene`) is a 2D canvas on the main thread, and adjustment layers, groups and scene-reading effects need their result inside the frame being drawn, so that part must be synchronous. The bench also runs the unchanged renderer in a worker on an `OffscreenCanvas` (`node tools/fx-bench/run.js --worker`): on the sandbox's software GL a 2 MP typical stack took the same time either way (about 1.7 s) but blocked the main thread for 1.8 s on the main thread and under 1 ms from the worker. So a worker is a clear win for responsiveness wherever rendering is slow (software GL, weak phones) and no win in latency. The cached photo-layer stage is already promise-based behind one function (`LE.fx.layer`), so it can move to a worker later without changing this contract; the draw-time part cannot. Hardware numbers will decide whether that is worth a second GL context.
+
 ## Public API besides the registry
 
 | Call | Use |
