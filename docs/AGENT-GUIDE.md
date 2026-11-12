@@ -64,6 +64,8 @@ Every response carries `rev`, `paused` and `pending: { notes, openNotes, interru
 | `apply(ops, { label, ifRev, partial, whenPaused, wait })` | One batch, one undo step. `{ ok, applied, errors: [{ op, path, code, message }], summary, changed, problems, warnings, rev }`. |
 | `find(query)` | `"the title"`, `"all photos"`, `"photo slots"`, `"background"`, a word, or `{ id, name, type, text, page }`. |
 | `catalog(kind, q, { offset, limit })` | `fonts`, `icons` (needs `q`), `shapes`, `recipes`, `makers`, `collages` (`q` = a photo count → layouts; a style id → its templates), `sizes`, `patterns`, `filters`. Paged: `{ items, total, next }`. |
+| `catalog("fx", q)` | Expert effects. No `q`: a paged index `{ id, name, group, section, summary }`. `q` = an effect id: that effect in full (`effect.params` with ranges and defaults, `effect.agent.tips`, `effect.agent.example`). `"schema"`: blends, mask kinds, limits. `"actions"`: auto and import/export helpers. Any other word searches. Returns a promise (the renderer loads on first use). |
+| `analyze(target?, { region, kinds })` | Numbers to grade by, for the page or one layer (id or name): histogram and percentiles, clipping, a white-balance estimate with a suggested temperature and tint, saturation, sharpness, dominant hues. `{ ok, target, stats }`. |
 | `check()` | `{ clean, problems: [{ page, layer, kind, message, fix }] }`. Kinds: `overflow`, `clipped`, `off-page`, `low-contrast`, `missing-image`, `unknown-font`. |
 | `export({ format, scale, download })` | `png`/`jpeg`/`webp`/`pdf` as a data URL, or the person's normal download with `download: true`. |
 | `notes({ status })`, `resolveNote(id, reply)` | The person's notes; mark one done with a short reply. |
@@ -98,8 +100,26 @@ Every operation is `{ "op": "<name>", … }`. Layers are addressed by `id` (a un
 | `text.replace` | `{ "op": "text.replace", "find": "2025", "replace": "2026", "page": "all" }` | Plain text, case-insensitive unless `matchCase`. |
 | `image.fill` | `{ "op": "image.fill", "id": "hero", "src": "data:image/jpeg;base64,…" }` | `src`: a `data:image/…` URI (best); an `https://` URL (the person is asked, naming the host); a relative path (the person picks the file). |
 | `rename` | `{ "op": "rename", "name": "Launch post" }` | |
+| `fx.add` | `{ "op": "fx.add", "layer": "hero", "entry": { "type": "exposure", "p": { "ev": 0.4 } } }` | Adds an effect to the layer's stack (`index` optional; the first entry runs first). Types and parameters: `catalog("fx")`. The result carries the new entry `id`. |
+| `fx.update` | `{ "op": "fx.update", "layer": "hero", "id": "exposure", "p": { "ev": 0.2 }, "amount": 0.8 }` | `id` is the entry id, or its type when the layer has one of that kind. `p` is merged; `on`, `amount` (0–1), `blend`, `mask` can be set. |
+| `fx.remove` / `fx.reorder` | `{ "op": "fx.reorder", "layer": "hero", "id": "grain", "index": 0 }` | |
+| `mask.set` | `{ "op": "mask.set", "layer": "hero", "fx": "gaussian-blur", "mask": { "parts": [{ "kind": "radial", "cx": 0.5, "cy": 0.4, "rx": 0.3, "ry": 0.3, "feather": 0.5, "invert": true }] } }` | Limits one effect to an area; without `fx` it is the layer's own mask. `mask: null` clears. Kinds: `catalog("fx", "schema")`. |
+| `adjust.add` | `{ "op": "adjust.add", "fx": [{ "type": "contrast", "p": { "amount": 15 } }], "name": "Grade", "above": "hero" }` | An adjustment layer: its stack applies to everything beneath it (`clip: true`: only the layer below; `x y w h` for part of the page). |
+| `transform.set` | `{ "op": "transform.set", "layer": "hero", "quad": [[0, 40], [1000, 0], [1000, 800], [0, 760]] }` | Perspective: four corners in page units, clockwise from top left. `quad: null` clears. |
 
 Layer fields are the open design format: `docs/FORMAT-DESIGN.md` (and `schema/design-1.json`). In short: `x`/`y` take numbers, `"50%"`, `left`/`center`/`right` (`top`/`center`/`bottom`); `w`/`h` take numbers or percentages; text takes `font weight size color align lineHeight letterSpacing uppercase stroke background fit:"shrink"`; images take `src` or `slot: true`, `radius border mask adjust filter recipe`; shapes take `shape fill stroke radius`; icons are `{ "type": "icon", "icon": "lucide:sun" }`.
+
+### Expert effects
+
+Effects are non-destructive: the picture is never changed, the layer carries a list (`fx`) that is drawn each time. They work on any layer and export at full size.
+
+1. `analyze("hero")` first: it tells you what is wrong (clipped highlights, a colour cast, flat contrast) in numbers.
+2. `catalog("fx")` for what exists; `catalog("fx", "<id>")` before you use an effect, for its parameter names and ranges. Unknown parameters are ignored with a warning, values are clamped.
+3. Apply a few entries in one batch, in the order a photographer works: white balance, exposure, contrast and tone, colour, then detail and effects. One batch is one undo step for the person.
+4. `state({ image: true })` to look, then `fx.update` by type (`"id": "exposure"`) to refine. Prefer changing an entry to stacking a second one of the same kind.
+5. Limit an effect to an area with `mask.set` (linear and radial gradients, luminance and colour ranges, the subject, a face area when the photo has a face map).
+
+Limits: 32 entries per layer, 8 mask parts. Effect names in a design made elsewhere that this copy does not know are kept and skipped, never dropped.
 
 ### Errors
 

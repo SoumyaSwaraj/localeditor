@@ -1940,15 +1940,6 @@
       if (o[key] != null) { hit = findLayer(W, String(o[key]), op.page, path + '/' + key, B); pi = hit.page; o[key] = hit.layer.id; }
       else if (name === 'adjust.add') pi = pageIndex(W, op.page, path + '/page');
       else throw err('invalid', '"' + name + '" needs "layer": the id or name of a layer.', path + '/layer');
-      /* An entry may be named by its type when that is unambiguous. */
-      ['id', 'fx'].forEach(function (k) {
-        if (!hit || typeof o[k] !== 'string' || (k === 'id' && !/^fx\.(update|remove|reorder)$/.test(name)) || (k === 'fx' && name !== 'mask.set')) return;
-        var st = Array.isArray(hit.layer.fx) ? hit.layer.fx : [];
-        if (st.some(function (e) { return e.id === o[k]; })) return;
-        var same = st.filter(function (e) { return e.type === o[k]; });
-        if (same.length === 1) o[k] = same[0].id;
-        else if (same.length > 1) throw err('invalid', 'The layer has ' + same.length + ' "' + o[k] + '" effects. Use an entry id: ' + same.map(function (e) { return e.id; }).join(', ') + '.', path + '/' + k);
-      });
       return fxLoad(path).then(function (fx) {
         var r = fx.ops.apply(W.pages[pi], o);
         if (!r.ok) throw err('invalid', r.errors[0].message + (name === 'fx.add' && r.errors[0].code === 'unknown-type' ? ' See catalog("fx").' : ''), path + (r.errors[0].path || ''));
@@ -1959,6 +1950,16 @@
       });
     };
   });
+  /* A page resized with its content: lengths that effects keep in document pixels (blur radii, mask blurs) follow. */
+  var resizeBase = OPS['page.resize'];
+  OPS['page.resize'] = function (W, op, path) {
+    var pi = pageIndex(W, op.page, path + '/page'), page = W.pages[pi], w0 = page.width, h0 = page.height;
+    var out = resizeBase(W, op, path);
+    var expert = op.scaleContent !== false && layerList(page).filter(function (l) { return Array.isArray(l.fx) || l.layerMask; });
+    if (!expert || !expert.length) return out;
+    var k = (Math.abs(page.width / w0) + Math.abs(page.height / h0)) / 2;
+    return fxLoad(path).then(function (fx) { expert.forEach(function (l) { fx.rescale(l, k); }); return out; }, function () { return out; });
+  };
   /* LEAgent.analyze(target?, { region, kinds }): the numbers to grade by. target: nothing or "page" (the whole page), or a layer id or name. */
   function analyze(target, o) {
     if (isObj(target) && !o) { o = target; target = o.target != null ? o.target : o.layer; }

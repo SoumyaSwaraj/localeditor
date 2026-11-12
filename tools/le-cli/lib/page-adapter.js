@@ -217,7 +217,11 @@
   }
   function apply(input) {
     if (!cur) return Promise.resolve({ ok: false, code: 'no-session', errors: [{ path: '', message: 'No design is open.' }] });
-    return expandMakes(input.ops).then(function (ops) { return applyExpanded(Object.assign({}, input, { ops: ops, original: input.ops })); });
+    return expandMakes(input.ops).then(function (ops) {
+      /* Expert operations need the effect registry, which loads on first use. */
+      var expert = [].concat(isObj(ops) && Array.isArray(ops.ops) ? ops.ops : ops).some(function (o) { return isObj(o) && /^(fx\.|mask\.set$|adjust\.add$|transform\.set$)/.test(String(o.op)); });
+      return (expert && LE.fxBoot ? LE.fxBoot.load().catch(function () {}) : Promise.resolve()).then(function () { return applyExpanded(Object.assign({}, input, { ops: ops, original: input.ops })); });
+    });
   }
   function applyExpanded(input) {
     var A = agent();
@@ -360,6 +364,8 @@
   function catalog(input) {
     var kind = input.kind, q = input.query || '';
     var lim = input.limit || 60;
+    /* Expert effects: the index, one effect in full by id, "schema" or "actions" (LEAgent.catalog("fx")). */
+    if (kind === 'fx' || kind === 'effects') return Promise.resolve(window.LEAgent.catalog('fx', q, { limit: lim }));
     if (kind === 'fonts') return Promise.resolve({ ok: true, items: LE.fonts.list().filter(function (f) { return match(q, [f.family, f.category]); }).map(function (f) { return { family: f.family, category: f.category, weights: f.weights, italic: !!f.italic }; }) });
     if (kind === 'shapes') return Promise.resolve({ ok: true, items: LE.assets.shapes().filter(function (s) { return match(q, [s.id, s.name, s.group]); }).map(function (s) { return { id: s.id, name: s.name, params: s.params ? Object.keys(s.params) : undefined }; }) });
     if (kind === 'recipes') return Promise.resolve({ ok: true, items: (LE.recipes.builtins || []).map(function (r) { return { id: r.metadata.id, name: r.metadata.name, description: r.metadata.description || '', tags: r.metadata.tags || [] }; }).filter(function (r) { return match(q, [r.id, r.name, r.description, (r.tags || []).join(' ')]); }) });
@@ -384,7 +390,7 @@
         return { ok: true, items: hits.slice(0, lim).map(function (h) { return { id: h.id || ((h.set || '') + ':' + (h.name || '')), name: h.name || h.label || '', set: h.set }; }) };
       });
     }
-    return Promise.resolve({ ok: false, code: 'invalid', errors: [{ path: '/kind', message: 'Catalogues: fonts, icons, shapes, recipes, makers, layouts, sizes.' }] });
+    return Promise.resolve({ ok: false, code: 'invalid', errors: [{ path: '/kind', message: 'Catalogues: fonts, icons, shapes, recipes, makers, layouts, sizes, fx.' }] });
   }
   function make(input) {
     return LE.makers.build(input.id, input.values || {}, { style: input.style, size: input.size }).then(function (r) {

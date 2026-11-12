@@ -94,7 +94,7 @@ cases['adjustment layers, perspective and precise errors; a failed operation cha
   const png = await photo(page);
   await page.evaluate((op) => LEAgent.apply([op, { op: 'add', layer: { id: 'label', type: 'text', text: 'Hello', x: 100, y: 760, size: 80 } }]), HERO(png));
   let r = await page.evaluate(() => LEAgent.apply([
-    { op: 'adjust.add', fx: [{ type: 'saturation', p: { amount: -40 } }], name: 'Muted', above: 'Beach photo' },
+    { op: 'adjust.add', fx: [{ type: 'saturation', p: { saturation: -40 } }], name: 'Muted', above: 'Beach photo' },
     { op: 'transform.set', layer: 'hero', quad: [[90, 130], [990, 90], [990, 690], [90, 650]] }
   ]));
   h.assert(r.ok && r.results[0].added && r.results[0].added.length === 1, 'adjust.add and transform.set: ' + JSON.stringify(r).slice(0, 400));
@@ -123,6 +123,12 @@ cases['adjustment layers, perspective and precise errors; a failed operation cha
   h.assert(ids.length === 2 && amb.ok === false && ids.every((id) => amb.errors[0].message.indexOf(id) >= 0), 'ambiguous type lists the entry ids: ' + JSON.stringify(amb.errors));
   const byId = await page.evaluate((id) => LEAgent.apply([{ op: 'fx.remove', layer: 'hero', id }]), ids[0]);
   h.assert(byId.ok, 'removal by entry id');
+  /* Resizing the page with its content carries pixel lengths along. */
+  await page.evaluate(() => LEAgent.apply([{ op: 'fx.add', layer: 'hero', entry: { id: 'soft', type: 'gaussian-blur', p: { radius: 12 } } }]));
+  const size0 = await page.evaluate(() => { const d = LEStudio.scene.toJSON(); return [d.width, d.height]; });
+  const rs = await page.evaluate((sz) => LEAgent.apply([{ op: 'page.resize', width: sz[0] * 2, height: sz[1] * 2 }]), size0);
+  const soft = await page.evaluate(() => LEStudio.scene.toJSON().layers[0].fx.find((e) => e.id === 'soft').p.radius);
+  h.assert(rs.ok && soft === 24, 'page.resize with content doubles a 12 px blur: ' + soft + ' ' + JSON.stringify(rs).slice(0, 200));
   /* Typed commands reach the same operations. */
   const cmd = await page.evaluate(() => LEAgent.command({ op: 'fx.update', layer: 'hero', id: 'exposure', p: { ev: 0.3 } }));
   h.assert(cmd.ok, 'command() runs an expert operation: ' + JSON.stringify(cmd).slice(0, 200));
@@ -169,7 +175,7 @@ cases['headless: a design with effects loads, takes expert operations, and expor
     const plain = await mean((await LEAgent.export({ format: 'png' })).dataUrl);
     const loaded = await LEAgent.load(design([{ type: 'exposure', p: { ev: 1 } }]));
     const fromFile = await mean((await LEAgent.export({ format: 'png' })).dataUrl);
-    const ap = await LEAgent.apply([{ op: 'fx.update', layer: 'hero', id: 'exposure', p: { ev: -1.5 } }, { op: 'fx.add', layer: 'hero', entry: { type: 'saturation', p: { amount: -100 } } }]);
+    const ap = await LEAgent.apply([{ op: 'fx.update', layer: 'hero', id: 'exposure', p: { ev: -1.5 } }, { op: 'fx.add', layer: 'hero', entry: { type: 'saturation', p: { saturation: -100 } } }]);
     const exported = await LEAgent.export({ format: 'png' });
     const afterOps = await mean(exported.dataUrl);
     const saved = await LEAgent.save({ images: 'embed' });
@@ -183,6 +189,55 @@ cases['headless: a design with effects loads, takes expert operations, and expor
   h.assert(out.pages[0].layers[0].fx.length === 2 && out.pages[0].layers[0].fx[0].type === 'exposure' && out.pages[0].layers[0].fx[0].p.ev === -1.5, 'the saved design carries the stack: ' + JSON.stringify(out.pages[0].layers[0].fx));
   h.assert(page.errors.length === 0, page.errors.join('\n'));
   await ctx.close();
+};
+
+/* The command line takes the same operations (through LE.link.applyOps in a headless page) and renders the effects. */
+cases['command line: fx operations are applied to the file, the render shows them, catalog fx lists and describes'] = async ({ h }) => {
+  const fs = require('fs'), os = require('os'), path = require('path'), { spawn } = require('child_process');
+  const BIN = path.join(__dirname, '..', 'tools', 'le-cli', 'bin', 'localeditor.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'le-cli-fx-'));
+  fs.mkdirSync(path.join(dir, 'tmp'));
+  const run = (args, input, binary) => new Promise((resolve, reject) => {
+    const c = spawn(process.execPath, [BIN].concat(args), { cwd: dir, env: Object.assign({}, process.env, { LE_BROWSER: require('playwright').chromium.executablePath(), TMPDIR: path.join(dir, 'tmp'), LE_NO_OPEN: '1' }), stdio: ['pipe', 'pipe', 'pipe'] });
+    const out = [], err = [];
+    c.stdout.on('data', (d) => out.push(d)); c.stderr.on('data', (d) => err.push(d));
+    const timer = setTimeout(() => { c.kill('SIGKILL'); reject(new Error('localeditor ' + args.join(' ') + ' timed out')); }, 110000);
+    c.on('close', (code) => { clearTimeout(timer); const stdout = Buffer.concat(out); let json = null; try { json = JSON.parse(stdout.toString('utf8')); } catch (e) { /* not JSON */ } resolve({ code, stdout: binary ? stdout : stdout.toString('utf8'), stderr: Buffer.concat(err).toString('utf8'), json }); });
+    c.stdin.end(input || '');
+  });
+  const mean = (png) => { const { PNG } = (() => { try { return require('pngjs'); } catch (e) { return {}; } })(); if (!PNG) return null; const im = PNG.sync.read(png); let sum = 0; for (let i = 0; i < im.data.length; i += 4) sum += im.data[i] + im.data[i + 1] + im.data[i + 2]; return sum / (im.data.length / 4) / 3; };
+  try {
+    const f = 'graded.ledesign.json';
+    let r = await run(['new', f, '--size', '400x300', '--json']);
+    h.assert.equal(r.code, 0, 'new: ' + r.stderr);
+    r = await run(['apply', f, '-', '--json'], JSON.stringify([{ op: 'page.background', background: '#000000' }, { op: 'add', layer: { id: 'block', type: 'shape', shape: 'rectangle', fill: '#808080', x: 0, y: 0, w: 400, h: 300 } }]));
+    h.assert.equal(r.code, 0, 'apply shapes: ' + r.stdout.slice(0, 300) + r.stderr);
+    r = await run(['render', f, '-o', 'before.png']);
+    h.assert.equal(r.code, 0, 'render: ' + r.stderr);
+    r = await run(['apply', f, '-', '--json'], JSON.stringify([
+      { op: 'fx.add', layer: 'block', entry: { type: 'exposure', p: { ev: 1 } } },
+      { op: 'fx.add', layer: 'block', entry: { type: 'contrast', p: { amount: 10 } } },
+      { op: 'fx.update', layer: 'block', id: 'contrast', p: { amount: 0 } },
+      { op: 'mask.set', layer: 'block', fx: 'exposure', mask: { parts: [{ kind: 'linear', x0: 0, y0: 0.5, x1: 1, y1: 0.5, feather: 0 }] } }
+    ]));
+    h.assert.equal(r.code, 0, 'apply fx: ' + r.stdout.slice(0, 600) + r.stderr);
+    h.assert(r.json.written && r.json.applied === 4, 'four expert operations applied and written: ' + JSON.stringify(r.json).slice(0, 300));
+    const doc = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+    const block = doc.pages[0].layers.find((l) => l.id === 'block');
+    h.assert(Array.isArray(block.fx) && block.fx.length === 2 && block.fx[0].type === 'exposure' && block.fx[0].p.ev === 1 && block.fx[0].mask && block.fx[1].p.amount === 0, 'the file carries the stack: ' + JSON.stringify(block.fx).slice(0, 400));
+    r = await run(['render', f, '-o', 'after.png']);
+    h.assert.equal(r.code, 0, 'render with effects: ' + r.stderr);
+    const a = fs.readFileSync(path.join(dir, 'before.png')), b = fs.readFileSync(path.join(dir, 'after.png'));
+    h.assert(a.length > 100 && b.length > 100 && !a.equals(b), 'the render changed');
+    const ma = mean(a), mb = mean(b);
+    if (ma != null) h.assert(mb > ma * 1.15, 'the render is brighter with the exposure effect: ' + ma + ' to ' + mb);
+    r = await run(['apply', f, '-', '--json'], JSON.stringify([{ op: 'fx.add', layer: 'block', entry: { type: 'no-such-effect' } }]));
+    h.assert(r.code === 1 && /Unknown effect type/.test(r.stdout + r.stderr), 'an unknown effect is refused: ' + (r.stdout + r.stderr).slice(0, 300));
+    r = await run(['catalog', 'fx', '--json']);
+    h.assert(r.code === 0 && r.json.items.length >= 20 && r.json.items.every((e) => e.id && e.summary), 'catalog fx lists the index: ' + r.stdout.slice(0, 200));
+    r = await run(['catalog', 'fx', 'exposure', '--json']);
+    h.assert(r.code === 0 && r.json.effect && r.json.effect.params.ev.max === 5, 'catalog fx exposure describes one effect: ' + r.stdout.slice(0, 200));
+  } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* best effort */ } }
 };
 
 module.exports = cases;
