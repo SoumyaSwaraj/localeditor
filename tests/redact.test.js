@@ -5,6 +5,7 @@
 /* Sample studio with a photo, and a line of text over it, at known places. Returns the page. */
 async function setup(h, browser, base, vp) {
   const page = await h.studioWithSample(browser, base, vp || 'desktop');
+  await h.need(page, ['privacy']);
   await page.evaluate(async () => {
     const c = window.LEStudio;
     c.scene.remove(c.scene.layers().filter((l) => l.type !== 'image').map((l) => l.id));

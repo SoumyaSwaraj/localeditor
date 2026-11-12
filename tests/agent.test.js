@@ -12,6 +12,7 @@ async function ready(page) {
 }
 async function studio(browser, base, h, vp, url, opts) {
   const page = await h.open(browser, base, url || '/studio/', vp || 'desktop', opts);
+  await h.need(page, ['agentui']);
   await ready(page);
   return page;
 }
@@ -638,6 +639,7 @@ cases['phone: banner fits 360 px with 44 px targets, no sideways scroll, panel t
 
 cases['dark theme: banner and panel use tokens (readable text)'] = async ({ browser, base, h }) => {
   const page = await h.openTheme(browser, base, '/studio/', 'desktop', 'dark');
+  await h.need(page, ['agentui']);
   await ready(page);
   const p = page.evaluate(() => LEAgent.begin({ name: 'Dark agent', task: 'Night mode' }));
   await page.click('.sxa-ask [data-yes]');

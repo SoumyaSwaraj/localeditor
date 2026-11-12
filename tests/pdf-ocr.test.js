@@ -11,6 +11,7 @@ const ENGINE_RE = /\/tesseract\/|traineddata/;   /* the engine, its worker and l
 
 async function studioWithScan(h, browser, base, viewport) {
   const page = await h.open(browser, base, '/pdf-studio/', viewport || 'desktop');
+  await h.need(page, ['ocr']);
   const b64 = fs.readFileSync(h.FIXTURE('scanned.pdf')).toString('base64');
   await page.evaluate(async (b) => {
     const bin = atob(b); const u = new Uint8Array(bin.length); for (let i = 0; i < u.length; i++) u[i] = bin.charCodeAt(i);

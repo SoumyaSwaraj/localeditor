@@ -7,6 +7,7 @@ const ready = (page) => page.waitForFunction(() => window.LE && LE.support && LE
 
 cases['toolbar-add: every module contributes to the photo toolbar (redact and a second module)'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['agentui', 'design']);
   await page.evaluate(() => {
     const hooks = window.LEStudioPanels._hooks;
     (hooks['toolbar-add'] = hooks['toolbar-add'] || []).push((c, kind) => (kind === 'image' ? '<button type="button" class="sx-tb" data-cmd="wiringTest" aria-label="Wiring test">W</button>' : ''));
@@ -24,6 +25,7 @@ cases['toolbar-add: every module contributes to the photo toolbar (redact and a 
 
 cases['photo pickers never offer a cut-out mask (ctx.isUserPhoto; collage builder and stock-free uploads)'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['agentui', 'design']);
   const r = await page.evaluate(async () => {
     const c = window.LEStudio;
     const cv = document.createElement('canvas'); cv.width = 64; cv.height = 64;
@@ -55,6 +57,7 @@ cases['photo pickers never offer a cut-out mask (ctx.isUserPhoto; collage builde
 cases['large photo: invisible when ok; when not, LE.support explains and "Not now" leaves nothing behind'] = async ({ browser, base, h }) => {
   const file = await h.makeJpeg(browser, base, 6000, 4000);
   const page = await h.open(browser, base, '/studio/', 'desktop');
+  await h.need(page, ['agentui', 'design']);
   await page.waitForFunction(() => window.LEStudio && window.LEStudio.scene);
   await ready(page);
   /* Not ok: a device that cannot hold very large canvases. */
@@ -80,6 +83,7 @@ cases['large photo: invisible when ok; when not, LE.support explains and "Not no
 
 cases['multi-page PDF export runs straight through when ok; PDF studio open explains a limit, then Continue opens'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['agentui', 'design']);
   await ready(page);
   await page.evaluate(() => { LE.support.forget(); window.LEStudio.addPage(true); });
   await page.waitForTimeout(300);
@@ -109,6 +113,7 @@ cases['multi-page PDF export runs straight through when ok; PDF studio open expl
 
 cases['phone 360 px: the remover is icon-only, so Filters stays on the photo toolbar'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'small');
+  await h.need(page, ['agentui', 'design']);
   await page.evaluate(() => {
     const c = window.LEStudio;
     const img = c.scene.layers().find((l) => l.type === 'image');
@@ -128,6 +133,7 @@ cases['phone 360 px: the remover is icon-only, so Filters stays on the photo too
 
 cases['first-run coach marks never show while agent mode is on'] = async ({ browser, base, h }) => {
   const page = await h.newDesign(browser, base, 'desktop', 'Instagram post');
+  await h.need(page, ['agentui', 'design']);
   await page.waitForSelector('.sx-coach.is-on', { timeout: 8000 });
   /* Agent mode turns on (?agent=1 → the person allows): the visible mark goes, and no later mark appears. */
   await page.evaluate(() => { const done = LEAgent.begin({ name: 'Test agent', task: 'Coach check', wait: 4000 }); window.__begin = done; });
@@ -144,6 +150,7 @@ cases['first-run coach marks never show while agent mode is on'] = async ({ brow
 
 cases['agent page ids live on the pages: they survive the person deleting and reordering pages in the studio'] = async ({ browser, base, h }) => {
   const page = await h.newDesign(browser, base, 'desktop', 'Instagram post');
+  await h.need(page, ['agentui', 'design']);
   await page.waitForFunction(() => window.LEAgent && window.LEStudio && window.LEStudio.S.project);
   await page.evaluate(() => window.LEStudio.coach('off'));
   const p = page.evaluate(() => LEAgent.begin({ name: 'Test agent', task: 'Page ids' }));

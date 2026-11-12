@@ -283,6 +283,9 @@ cases['a Design-only install works offline for the studio, a PDF link degrades p
     await page.context().setOffline(true);
     await page.goto(base + '/studio/?app=design', { waitUntil: 'load' });
     await page.waitForFunction(() => !!(window.LEStudio && window.LEStudio.scene), null, { timeout: 20000 });
+    /* Modules that load on demand (docs/LOADING.md) come from this device too. */
+    const offMods = await page.evaluate(() => LE.modules.needAll(LE.modules.list().map((m) => m.id)).then(() => LE.modules.list().filter((m) => !m.loaded).map((m) => m.id), (e) => 'failed: ' + e.message));
+    h.assert(Array.isArray(offMods) && !offMods.length, 'every deferred studio module loads offline: ' + JSON.stringify(offMods));
     await page.goto(base + '/pdf-studio/', { waitUntil: 'load' });
     const t = await page.textContent('body');
     h.assert(/not on this device yet/i.test(t) && /The PDF studio is not kept offline on this device/.test(t), 'the PDF studio says politely that it is not kept here: ' + t.slice(0, 300));

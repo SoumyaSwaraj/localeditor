@@ -9,12 +9,14 @@ const cases = {};
 
 async function studio(browser, base, h, vp, url) {
   const page = await h.open(browser, base, url || '/studio/', vp || 'desktop');
+  await h.need(page, ['design']);
   await page.waitForFunction(() => window.LEStudio && window.LE && window.LE.design);
   return page;
 }
 
 cases['link round trip keeps the template and turns photos into empty slots'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);
   const r = await page.evaluate(async (carousel) => {
     const c = window.LEStudio;
     const b = c.baseLayer();
@@ -94,6 +96,7 @@ cases['opening a #d= link shows the shared-template sheet and applies only on co
   }, EX('youtube-thumbnail.ledesign.json'));
   // A person with a design already open.
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);
   const before = await page.evaluate(() => ({ id: window.LEStudio.S.project.id, n: window.LEStudio.scene.layers().length }));
   await page.evaluate((p) => { location.hash = 'd=' + p; }, link);
   await page.waitForSelector('.sxd-sheet .sxd-preview canvas');

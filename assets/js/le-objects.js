@@ -15,7 +15,8 @@
         for (var i = 0; i < nodes.length; i++) {
           if (nodes[i].getAttribute('data-le-src') === src || nodes[i].src === src) { found = nodes[i]; break; }
         }
-        function fail() { reject(new Error('Could not load ' + src)); }
+        /* A failure is not kept: the tag goes and the next call asks the network again (docs/LOADING.md). */
+        function fail() { delete lazyLoads[src]; if (script.parentNode) script.parentNode.removeChild(script); reject(new Error('Could not load ' + src)); }
         if (found && found.getAttribute('data-le-loaded') === '1') { resolve(); return; }
         var script = found || document.createElement('script');
         script.async = true;

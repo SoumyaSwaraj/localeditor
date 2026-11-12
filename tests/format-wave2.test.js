@@ -5,6 +5,7 @@ const cases = {};
 
 async function studio(browser, base, h, vp) {
   const page = await h.open(browser, base, '/studio/', vp || 'desktop');
+  await h.need(page, ['design', 'export', 'privacy', 'cutout', 'makers']);
   await page.waitForFunction(() => window.LEStudio && window.LE && window.LE.design);
   return page;
 }

@@ -5,6 +5,7 @@
 
 async function studio(h, browser, base, vp) {
   const page = await h.open(browser, base, '/studio/', vp || 'desktop');
+  await h.need(page, ['makers', 'design']);
   page.outside = [];
   page.on('request', (r) => { const u = r.url(); if (!u.startsWith(base) && !/^(data|blob):/.test(u)) page.outside.push(u); });
   await page.waitForFunction(() => window.LEStudio && window.LEStudioMakers && window.LE.makers);

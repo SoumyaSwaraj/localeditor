@@ -62,6 +62,7 @@ const cases = {};
 
 cases['every old format downloads a real file of the right type and pixel size, with no metadata'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['export', 'design']);
   const d = await h.doc(page);
   for (const [format, scale, type] of [['png', 1, 'png'], ['jpeg', 1, 'jpeg'], ['webp', 1, 'webp'], ['png', 2, 'png'], ['jpeg', 0.5, 'jpeg']]) {
     await setOpts(page, { format, scale, pages: 'current', transparent: false });
@@ -81,6 +82,7 @@ cases['every old format downloads a real file of the right type and pixel size, 
 
 cases['transparent PNG leaves the background out; PDF of all pages and the pages zip still work'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['export', 'design']);
   await page.evaluate(() => { const c = window.LEStudio; c.newDesign(400, 300, 'Clear test'); c.addText({ text: 'Hi', size: 40 }); });
   await page.waitForTimeout(300);
   await setOpts(page, { format: 'png', scale: 1, transparent: true, pages: 'current' });
@@ -113,6 +115,7 @@ cases['transparent PNG leaves the background out; PDF of all pages and the pages
 
 cases['Copy image puts a PNG on the clipboard, and a refusal is explained'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop', { permissions: ['clipboard-read', 'clipboard-write'] });
+  await h.need(page, ['export', 'design']);
   await setOpts(page, { format: 'jpeg', scale: 1 });
   await page.click('#sx-panel-body .sxe-row:has-text("Copy image")');
   await page.waitForFunction(() => /Copied/.test(document.getElementById('sx-toast').textContent), null, { timeout: 15000 });
@@ -139,6 +142,7 @@ cases['Copy image puts a PNG on the clipboard, and a refusal is explained'] = as
 
 cases['Share hands files to the share sheet when it can, and falls back to download otherwise'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'phone');
+  await h.need(page, ['export', 'design']);
   await page.evaluate(() => {
     window.__shared = [];
     navigator.canShare = (d) => !!(d && d.files && d.files.length);
@@ -176,6 +180,7 @@ cases['Share hands files to the share sheet when it can, and falls back to downl
 
 cases['Every size: a zip of N correctly sized, correctly named images; the open page is untouched'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['export', 'design']);
   await page.evaluate(() => window.LEStudio.lsSet('le-studio-export-sizes', { ids: ['ig-post', 'ig-story', 'yt-thumb'], custom: [], format: 'jpeg' }));
   const before = JSON.stringify(await h.doc(page));
   await h.openPanel(page, 'export', { tab: 'sizes' });
@@ -223,6 +228,7 @@ cases['Every size: a zip of N correctly sized, correctly named images; the open 
 
 cases['phone: every export tab fits 360 px with the primary action in reach'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'small');
+  await h.need(page, ['export', 'design']);
   for (const tab of ['image', 'sizes', 'slides', 'replay']) {
     await h.openPanel(page, 'export', { tab });
     await page.waitForTimeout(300);
@@ -238,6 +244,7 @@ cases['phone: every export tab fits 360 px with the primary action in reach'] = 
 
 cases['template link row appears when the share dialog exists'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['export', 'design']);
   await page.evaluate(() => { window.LE.design = window.LE.design || {}; window.__opened = 0; window.LE.design.openShare = () => { window.__opened++; }; window.LEStudio.openPanel('export', { tab: 'image' }); });
   await page.waitForTimeout(200);
   await page.click('#sx-panel-body .sxe-row:has-text("Share as template link")');

@@ -129,6 +129,7 @@ cases['share links round-trip and reject tampering'] = async ({ browser, base, h
 
 cases['save look, edit, export and import round trip'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['recipes']);
   const r = await page.evaluate(async () => {
     const S = window.LEStudio;
     const img = S.targetImage();
@@ -177,6 +178,7 @@ cases['save look, edit, export and import round trip'] = async ({ browser, base,
 ['desktop', 'phone'].forEach((vp) => {
   cases['studio apply, strength, remove and undo (' + vp + ')'] = async ({ browser, base, h }) => {
     const page = await h.studioWithSample(browser, base, vp);
+    await h.need(page, ['recipes']);
     await h.openPanel(page, 'recipes');
     await page.waitForFunction(() => document.querySelectorAll('.sxr-card.has-art').length >= 4, null, { timeout: 15000 });
     const before = await h.doc(page);
@@ -218,6 +220,7 @@ cases['save look, edit, export and import round trip'] = async ({ browser, base,
 
 cases['batch from a recipe card makes a zip with every photo'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['recipes']);
   await h.openPanel(page, 'recipes');
   await page.click('.sxr-card[data-id="noir"] .sxr-more');
   await page.click('.sxr-menu-item:has-text("many photos")');

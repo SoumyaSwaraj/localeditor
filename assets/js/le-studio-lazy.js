@@ -58,9 +58,20 @@
   /* Agent mode and live links: never warmed; ?agent, #ops=, ?link=, a session to resume, headless mode, the File menu entry
      or a call on window.LEAgent loads them. */
   var agentNow = function () { if (window.LE_AGENT_HEADLESS === true) return true; try { var s = JSON.parse(ss('le-agent') || 'null'); return !!(s && s.session); } catch (e) { return false; } };
-  M.defer({ id: 'agent', src: JS + 'le-agent.js', label: 'agent mode', deps: ['design'], param: ['agent'], hash: /(?:^#|[#&])ops=/, when: agentNow, cmds: ['agentMode'] });
-  M.defer({ id: 'agentui', src: JS + 'le-studio-agent.js', css: CSS + 'studio-agent.css', label: 'agent mode', deps: ['agent'], param: ['agent'], hash: /(?:^#|[#&])ops=/, when: agentNow, retool: true });
+  M.defer({ id: 'agent', src: JS + 'le-agent.js', label: 'agent mode', deps: ['design'], param: ['agent'], hash: /(?:^#|[#&])ops=/, when: agentNow });
+  M.defer({ id: 'agentui', src: JS + 'le-studio-agent.js', css: CSS + 'studio-agent.css', label: 'agent mode', deps: ['agent'], param: ['agent'], hash: /(?:^#|[#&])ops=/, when: agentNow, cmds: ['agentMode'], retool: true });
   M.defer({ id: 'link', src: JS + 'le-link.js', label: 'live link', deps: ['design', 'agentui'], param: ['link'] });
+
+  /* Exports go through the Download module (print pages in millimetres, carousels); ctx.exportImage waits for it once. */
+  (P._hooks.init = P._hooks.init || []).push(function (c) {
+    var core = c.exportImage;
+    if (typeof core !== 'function') return;
+    c.exportImage = function () {
+      var self = this, a = arguments;
+      if (M.loaded('export')) return core.apply(self, a);
+      return M.need('export').then(function () { return c.exportImage.apply(self, a); }, function () { return core.apply(self, a); });
+    };
+  });
 
   /* ---------- Registration data that stays in the core ---------- */
   if (P._apps && !P._apps.some(function (a) { return a[0] === 'thumbnail'; })) P._apps.splice(0, 0, ['thumbnail', 'Thumbnail', 'thumb', 'Cut-out + bold title, 1280×720']);
