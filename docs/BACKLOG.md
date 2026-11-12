@@ -86,3 +86,15 @@ Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen
 - One language per run; no blur or glare warning at capture; HEIC only where the browser decodes it.
 - The "make searchable" offer bar and the Protect panel can both show at once on desktop.
 - `/licenses/` scrolls sideways at 390 and 360 px (generated page; also makes the `tools` phone sweep fail once it gets past its timeout).
+
+## Owner decisions raised 12 Nov (themes, install)
+
+- Theme names: Clear (default), Lapis, Graphite, Paper, Contrast. Logo now uses the new tint `#0369DA` (was Lapis). Paper has warm editor chrome. Lapis keeps the earlier homepage layout. Contrast is suggested, not forced, when the device asks for more contrast.
+- Installed app names: "LocalEditor", "LE Design", "LE PDF". Per-app icon badges not made.
+- Install and offline-per-app are verified in desktop Chromium only; Safari, iOS and Android behaviour is assumed.
+- Deploy: republish the CloudFront Function (`infra/cloudfront/viewer-request.js`, POST to `/pdf-studio/`), see `docs/DEPLOY.md` 4b.
+
+## Expert — open after X1
+
+- Selective colour is two entries until the parameter limit is raised; hue curves show R/G/B tabs; LUT input space has no log encodings; Kelvin is relative to D65 on rendered sRGB (RAW has its own).
+- Never measured on a real GPU or a phone (sandbox has software rendering only): run `node tools/fx-bench/run.js --headed` on hardware.
