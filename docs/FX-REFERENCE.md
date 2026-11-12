@@ -103,6 +103,8 @@ Compresses the range of scene-referred data before the filmic curve. Local and f
 | `saturation` | −100–100 | 0 | |
 | `halo` | 0–100 | 50 | halo control: more edge-aware, smaller radius |
 
+Base radius: 0.6–2.5 % of the picture's long side on RAW and HDR layers (the same look at any resolution); elsewhere that of a 3000-pixel picture, in document pixels.
+
 Familiar equivalent: the tone-mapping stage of HDR tools ("Strength/Compression, Detail, Highlights, Shadows, Saturation, Halo
 control") and of exposure-fusion tools. Halo at a 10-stop step edge with halo 80 and strength 70: under 26/255 within 30 px
 (tested).

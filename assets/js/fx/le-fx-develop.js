@@ -419,8 +419,8 @@
   /* ================================================================== develop.tonemap */
   /* Model (scene-linear in, scene-linear out, so develop.basic's filmic curve still comes last):
    *   L = log2(Y). Base B = edge-aware smooth of L: a guided filter (He, Sun, Tang 2010) computed at quarter resolution and applied at
-   *   full resolution through its linear coefficients ("fast guided filter", He and Sun 2015), radius rho = (0.6 % to 4 %) of the
-   *   picture's long side; Halo control raises the edge-awareness (smaller eps) and lowers the radius.
+   *   full resolution through its linear coefficients ("fast guided filter", He and Sun 2015), radius rho = (0.6 % to 2.5 %) of the
+   *   picture's long side (a 3000-pixel picture is assumed off RAW/HDR layers); Halo control raises the edge-awareness (smaller eps) and lowers the radius.
    *   local:  L' = g + (B - g) * (1 - 0.85 s) * (1 + 0.5 hl [B > g] - 0.5 sh [B < g]) + (L - B) * (1 + d)
    *   fusion: five virtual exposures, -2k, -k, 0, +k, +2k stops with k = 1.2 + 1.8 s, are weighted per pixel by how well exposed the BASE would be in each
    *           (Gaussian around display value 0.5, sigma 0.2, Mertens et al. 2007), giving a smooth local gain; detail is kept.
@@ -438,11 +438,12 @@
     '  return vec4(o * s.a, s.a); }'
   ].join('\n');
   var TM_GLOBAL = 'uniform vec2 $k; vec3 $fx(vec3 c){ float Y = max(dot(c, vec3(0.2126, 0.7152, 0.0722)), 1e-7); float L = log2(Y); float g = log2(0.18); vec3 o = c * exp2(g + (L - g) * $k.x - L); float Yo = dot(o, vec3(0.2126, 0.7152, 0.0722)); return vec3(Yo) + (o - vec3(Yo)) * $k.y; }';
-  /* The base radius follows the picture (its long side: injected on RAW/HDR layers, else the layer box), so preview and export agree. */
-  function tmPlan(p, box) {
+  /* The base radius is a fraction of the picture's long side on RAW and HDR layers (injected as `extent`), so the look is the same at
+     any resolution; elsewhere it is that of a 3000-pixel picture, in document pixels. Either way radius() and passes() agree. */
+  function tmPlan(p) {
     var s = p.strength / 100;
     if (!s && !p.detail && !p.highlights && !p.shadows && !p.saturation) return null;
-    var longSide = p.extent || (box ? Math.max(box.w, box.h) : 6000), halo = p.halo / 100;
+    var longSide = p.extent || 3000, halo = p.halo / 100;
     return { mode: p.method, s: s, rho: longSide * (0.025 - 0.019 * halo), eps: Math.pow(0.9 - 0.75 * halo, 2), detail: p.detail / 100, hl: p.highlights / 100, sh: p.shadows / 100, sat: 1 + p.saturation / 100 };
   }
   FX.register({
@@ -458,12 +459,12 @@
       extent: { type: 'number', min: 0, max: 100000, default: 0, step: 1, label: 'extent', help: 'Set by a RAW or HDR layer (long side in document pixels); leave it out.', ui: { hidden: true } }
     },
     radius: function (p, sc) {
-      var q = tmPlan(p, null); if (!q || q.mode === 'global') return 0;
+      var q = tmPlan(p); if (!q || q.mode === 'global') return 0;
       return Math.ceil(2 * M.blurReach(q.rho * sc)) + 8;
     },
     draft: function (p) { return p; },
     passes: function (g, p) {
-      var q = tmPlan(p, g.box);
+      var q = tmPlan(p);
       if (!q) return;
       if (q.mode === 'global' || !g.float) { g.color(TM_GLOBAL, { k: [1 - 0.6 * q.s, q.sat] }); return; }
       var src = g.source;

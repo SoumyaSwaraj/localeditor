@@ -56,7 +56,10 @@
       chain = chain.then(function () {
         say('Opening ' + f.name + '…', { ms: 60000 });
         var placed = null;
-        return module().then(function () {
+        /* E7: the device check (with "Try anyway") before the optional camera module is fetched and run; DNG opens with our own reader
+           and needs no question (it works at half size on small devices). */
+        var gate = !/\.dng$/i.test(f.name) && LE.support && LE.support.gate ? function (run) { return LE.support.gate('raw.camera', { title: 'Camera RAW support', run: run, onCancel: function () { } }); } : function (run) { return run(); };
+        return gate(module).then(function () {
           return LE.raw.open(f, {
             onPreview: function (pv) {
               var c = ctx(); if (!c || !c.S.project || !pv || Math.max(pv.width, pv.height) < 800) return;

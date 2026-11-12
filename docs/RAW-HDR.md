@@ -129,6 +129,7 @@ rawLib().then(function () { return { formats: LE.raw.formats(), presets: LE.raw.
 | `studio/index.html` | one `<script>` for `le-raw-studio.js` after `le-studio.js` |
 | `tools/dng-synth/dng-synth.js` | `writeDNG({ shutter: [n, d] })` writes the exposure time (for bracket tests) |
 | `tests/fx.test.js` | the section list in the registry case now has every section of `docs/EXPERT-UI.md` (it lacked Detail) |
+| `assets/js/expert/expert.js` | the develop panel sorts registrations inside a section by `ui.order` (as `docs/FX-AUTHORING.md` says), so Develop comes first in Light; one sort key and a 1-line helper |
 
 Not changed: `le-project.js`, `le-fx-gl.js`, `le-studio*.js`. The float-source provider is a registry in the pack
 (`LE.fx.sources.register(kind, provider)`), and the pack wraps `LE.fx.layer`: for a RAW/HDR layer it develops the float data, then
