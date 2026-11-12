@@ -50,6 +50,31 @@ Key facts:
 - [Color Converter](https://localeditor.net/color-converter/): HEX, RGB, HSL, CMYK conversion with contrast checker.
 - [UUID Generator](https://localeditor.net/uuid-generator/): Bulk-generate UUID v4 and v7 and validate UUIDs.
 
+## Find by need
+
+- [Photo and design](https://localeditor.net/photo/): Edit photos, make collages and posts.
+- [PDF and documents](https://localeditor.net/pdf/): Sign, fill, merge and convert PDFs.
+- [Privacy tools](https://localeditor.net/privacy-tools/): Hidden photo data, storage and offline use.
+- [Social and creators](https://localeditor.net/social/): Posts, stories and collages for every platform.
+- [Small business](https://localeditor.net/business/): Brand kit, product photos and signed PDFs.
+- [Teachers](https://localeditor.net/teachers/): Worksheets, forms and classroom displays.
+- [Office work](https://localeditor.net/office/): Confidential PDFs: sign, merge, watermark.
+- [Every tool](https://localeditor.net/tools/): Every single-step tool on one page.
+
+## Features
+
+- [Collage maker](https://localeditor.net/collage-maker/): Layouts and styles with a slot for every photo.
+- [Photo backgrounds](https://localeditor.net/photo-backgrounds/): Crop, blur and dim a photo behind your design.
+- [Recipes and batch editing](https://localeditor.net/batch-edit/): One look, applied to many photos.
+- [Sizes for every platform](https://localeditor.net/social-media-sizes/): Instagram, story, YouTube and more, ready to go.
+- [Photo editor](https://localeditor.net/photo-editor/): Crop, light, colour and filters.
+- [Text and fonts](https://localeditor.net/add-text-to-photo/): Titles and captions in dozens of typefaces.
+- [Brand kit](https://localeditor.net/brand-kit/): Your colours, fonts and logos in every design.
+- [PDF studio](https://localeditor.net/pdf-editor/): Sign, fill, annotate and reorder pages.
+- [Convert to PDF](https://localeditor.net/word-to-pdf/): Office files, images and text into PDFs.
+- [Install and offline use](https://localeditor.net/install/): Home screen app that works offline.
+- [Storage manager](https://localeditor.net/storage-manager/): What the app keeps here, and a clear button.
+
 ## Optional
 
 - [About & privacy](https://localeditor.net/about/): how the tools work and how to install them.
