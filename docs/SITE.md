@@ -25,7 +25,7 @@ Short, lowercase, hyphenated, one level deep, never renamed once live.
 
 - **Hubs**: `/photo/`, `/pdf/`, `/privacy-tools/`, `/social/`, `/business/`, `/teachers/`, `/office/`, `/tools/`.
 - **Feature pages**: named after what people search for, at the top level so a feature can belong to several hubs with one canonical URL: `/collage-maker/`, `/photo-backgrounds/`, `/batch-edit/`, `/social-media-sizes/`, `/photo-editor/`, `/add-text-to-photo/`, `/brand-kit/`, `/pdf-editor/`, `/word-to-pdf/`, `/install/`, `/storage-manager/`.
-- **Tool pages built by hand** (`/photo-privacy/`, `/device-check/`, the 30 tools) are entries of kind `tool` with a `launch` URL and no `url`: they are listed, never generated.
+- **Tool pages built by hand** (`/photo-privacy/`, `/device-check/`, the single-step tools) are entries of kind `tool` with a `launch` URL and no `url`: they are listed, never generated. Both are also in `TOOLS` in `scripts/build.js`, which is what the tool directory, `llms.txt`'s tool lists, the about page and the header search read; the homepage directory (`index.html`) is edited by hand, so add a tool there too.
 
 ## Entry schema
 
@@ -45,6 +45,8 @@ Short, lowercase, hyphenated, one level deep, never renamed once live.
   "launch": "studio/?tool=collage",  // root-relative URL that opens the tool at this feature
   "launchLabel": "Make a collage",   // the one gold button
   "panel": "apps", "panelOpts": { "app": "collage" },  // studio panel the launch must open (tested)
+  "job": "redact",                   // PDF studio only: the job inside the panel (security: send, reveal, safety, redact, find; bulk: protect, merge, split, watermark, compress)
+  "maker": "quote",                  // quick makers only: launch is studio/?make=<maker>; the test checks the form that opens
   "action": "install",               // optional: install | storage; the button opens that dialog in place
   "secondary": { "href": "…", "label": "…" },          // optional ghost button
   "art": "collage",                  // hero composition, see ART in build-pages.js
@@ -63,6 +65,16 @@ Hubs (`category`, `audience`) also take `eyebrow`, `audience` (who it is for), a
 
 `tool:<slug>` refers to an entry in `TOOLS` in `scripts/build.js`, so a tool added there appears on `/tools/` at the next build.
 
+## Deep links: what a launch URL must do
+
+A feature page is only useful if its button opens the feature itself, and `tests/pages.test.js` opens every launch URL in a browser and checks it. Add the deep link first, then the data.
+
+**Photo studio**: `studio/?tool=<id>`. `TOOL_MAP` in `assets/js/le-studio.js` maps an id to a panel id, or to `[panel, options]` (the options are what `openPanel(id, opts)` receives: `{ app }` for Apps, `{ tab }` for Design and Download). Current ids beyond the original set: `brand`, `cutout` (`remove-background`), `redact`, `thumbnail`, `make` (`makers`), `export-sizes`, `carousel` (`slides`), `replay`, `share`, `design-file`. Quick makers are not panels: `studio/?make=<id>` opens that maker's form (quote, review, receipt, milestone, palette, film).
+
+**PDF studio**: `pdf-studio/?panel=<id>&job=<job>`. A panel that needs a document leaves the open-file prompt on screen with a short message, and continues to the panel (and job) once a file is chosen. Panels that work without a file (`bulk`, `convert`) open at once. An unknown panel or job is ignored. The jobs are `PS.security.go(view)` for Protect and `PS.bulk.open(id)` for Bulk; `job=find` opens Hide information for good with the Find sensitive data box open.
+
+The tests are `tests/pages.test.js` (every launch in `site.json`) and `tests/deep-links.test.js` (the table of ids and the edge cases).
+
 ## Adding a category or feature
 
 Add an entry, run the build, read the page at 360 px and 1440 px in both themes, run `node tests/run.js pages`. A new hub also appears in the drawer, the homepage list, the footer and search automatically.
@@ -72,6 +84,10 @@ Add an entry, run the build, read the page at 360 px and 1440 px in both themes,
 - No invented numbers, ratings or testimonials.
 - Never claim legal compliance (GDPR, HIPAA, FERPA or any certification). Say what the design does (files stay on the device) and that the reader's organisation decides whether that is enough.
 - Never mention a `soon` feature on a live page, including in FAQ answers ("coming soon" counts). The tests check every page for every soon title.
+
+## Checklist when a feature ships
+
+1. Deep link works (above). 2. Entry flipped, wording checked against the module and its tests: real behaviour, real limits, no numbers that are not in the code, no compliance claims. 3. `node scripts/build.js`. 4. `node tests/run.js pages deep-links`. 5. Commit the generated pages, `assets/js/app.js`, `index.html` and `llms.txt`; leave `sw.js` and `sitemap.xml` to integration.
 
 ## Offline
 
