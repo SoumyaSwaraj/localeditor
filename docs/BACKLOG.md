@@ -101,6 +101,8 @@ Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen
 
 ## Left after the 12 Nov merges
 
+Paused by the owner on 12 Nov (do not start until asked): X7 (cross-pack tests, real-hardware timing, Expert looks as recipes); on-canvas tools for patch and red-eye with the liquify freeze overlay; the Wave 3 remainder (brand file, design-as-code and a GitHub Action, embed viewer, consent handshake).
+
 Not started:
 - X7: cross-pack tests, real-hardware timing (`node tools/fx-bench/run.js --headed` on a real GPU and a phone), Expert looks as shareable recipes (recipes v2).
 - On-canvas tools for patch and red-eye; a live freeze overlay for liquify.
