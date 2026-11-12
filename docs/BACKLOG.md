@@ -27,7 +27,6 @@ Kept by the lead architect. Things reported by the team that are not yet assigne
 - **PDF security:** scrub, redact and make-safe refuse encrypted files until they are unlocked first (unlock now exists in the bulk tools; wire the two together). The older Edit → Redact tool still rasterises without a verify pass; point it at Protect.
 - **PDF passwords:** not verified in Adobe Reader, macOS Preview or Chrome's viewer. 200 protected files take about 45 s on desktop.
 - **Studio:** `brand` has no `?tool=` deep link. Done at integration: `toolbar-add` concatenates every module; layer shadows scale with zoom and export scale; `ctx.isUserPhoto` keeps masks out of collage pickers (the cut-out module's own `photoIds` still uses its name test).
-- **Site data:** `photo-privacy` is a live tool in `scripts/build.js` but `soon` in `assets/data/site.json`; `tests/pages.test.js` has a `KNOWN-BUG:` case that passes once it is flipped.
 - **Export:** wide carousels on phones are split in bands, so a photo or gradient background can show a seam. The replay timeline is session-only.
 - **Redact:** "Apply permanently" does not cover photo backgrounds; version history may still hold the original photo.
 - **Makers:** style chips have no previews; story sizes leave empty space in a few styles.
