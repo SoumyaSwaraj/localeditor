@@ -49,7 +49,7 @@
     inputs: [
       { key: 'kind', label: 'For', type: 'choice', default: 'baby', options: Object.keys(KINDS).map(function (k) { return { id: k, name: KINDS[k].name }; }) },
       { key: 'start', label: 'Start date', type: 'date', hint: 'Birthday, adoption day, first date, last drink, first day at work' },
-      { key: 'asOf', label: 'As of', type: 'date', hint: 'Today when left empty' },
+      { key: 'asOf', label: 'As of', type: 'date', today: true, hint: 'Today when left empty' },
       { key: 'headline', label: 'Headline', type: 'text', max: 40, placeholder: '6 months today', hint: 'Leave empty to count from the start date' },
       { key: 'name', label: 'Name', type: 'text', max: 40, placeholder: 'Arlo' },
       { key: 'note', label: 'Note', type: 'text', max: 80, placeholder: 'Our little sunshine' },

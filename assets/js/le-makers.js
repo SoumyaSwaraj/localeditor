@@ -67,7 +67,8 @@
     return m;
   }
   function list() {
-    return order.map(function (id) {
+    var rank = function (id) { var i = FILES.indexOf(id); return i < 0 ? 999 : i; };
+    return order.slice().sort(function (a, b) { return rank(a) - rank(b); }).map(function (id) {
       var m = registry[id];
       return { id: m.id, name: m.name, category: m.category, summary: m.summary, keywords: m.keywords.slice(), sizes: clone(m.sizes), styles: clone(m.styles), inputs: clone(m.inputs), sample: clone(m.sample) };
     });

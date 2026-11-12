@@ -1808,7 +1808,8 @@
   var APPS = [
     ['collage', 'Collage', 'grid', 'Layouts, spacing & styles'], ['watermark', 'Watermark', 'stamp', 'Text or logo, tiled'], ['meme', 'Meme', 'meme', 'Top & bottom captions'],
     ['palette', 'Palette', 'palette', 'Extract brand colors'], ['metadata', 'Metadata', 'metadata', 'EXIF & location'], ['compare', 'Before / after', 'compare', 'Side-by-side image'],
-    ['batch', 'Batch', 'batch', 'Apply a look to many'], ['upscale', 'Upscale', 'upscale', 'Bigger exports'], ['contact', 'Contact sheet', 'sheet', 'All uploads on one page']
+    ['batch', 'Batch', 'batch', 'Apply a look to many'], ['upscale', 'Upscale', 'upscale', 'Bigger exports'], ['contact', 'Contact sheet', 'sheet', 'All uploads on one page'],
+    ['make', 'Make', 'wand', 'A form in, a finished design out']
   ];
   P.apps = {
     title: function (c, o) { var a = APPS.filter(function (x) { return x[0] === o.app; })[0]; return a ? a[1] : 'Apps'; }, eyebrow: 'Extra tools',
