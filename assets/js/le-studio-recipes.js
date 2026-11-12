@@ -63,7 +63,7 @@
   }
   /* The layer's look without the applied recipe. */
   function baseLook(layer) {
-    var a = Object.assign({}, (layer && layer.adjust) || {});
+    var a = clean(layer && layer.adjust);
     var m = marker(layer);
     delete a.recipe;
     var filter = layer && layer.filter ? clone(layer.filter) : null;
@@ -82,7 +82,7 @@
   }
   /* The layer's full look as it is drawn now. */
   function fullLook(layer) {
-    var a = Object.assign({}, (layer && layer.adjust) || {});
+    var a = clean(layer && layer.adjust);
     delete a.recipe;
     return { adjust: a, filter: layer && layer.filter ? clone(layer.filter) : null };
   }
@@ -111,15 +111,31 @@
     return { adjust: a, filter: filter, skipped: L.skipped, notices: prep.notices };
   }
   function lookKey(layer) { return layer ? layer.id + '|' + JSON.stringify(layer.adjust || {}) + JSON.stringify(layer.filter || null) : 'none'; }
+  /* The layered editor deep-merges patches, so keys that go away are written as null and the
+     recipe marker is cleared before it is replaced. Both writes share one undo step. */
+  function setLook(c, id, adjust, filter, key) {
+    var cur = c.L(id);
+    var old = (cur && cur.adjust) || {};
+    var next = Object.assign({}, adjust);
+    Object.keys(old).forEach(function (k) { if (!(k in next)) next[k] = null; });
+    key = key || c.gesture();
+    if (old.recipe && typeof old.recipe === 'object') c.patch(id, { adjust: { recipe: null } }, key);
+    c.patch(id, { adjust: next, filter: filter || null }, key);
+  }
+  function clean(a) {
+    var out = {};
+    Object.keys(a || {}).forEach(function (k) { if (a[k] != null) out[k] = a[k]; });
+    return out;
+  }
   function applyTo(c, layer, wf, strength, key) {
     var res = combine(baseLook(layer), wf, strength);
-    c.patch(layer.id, { adjust: res.adjust, filter: res.filter }, key);
+    setLook(c, layer.id, res.adjust, res.filter, key);
     ST.lastLook = lookKey(c.L(layer.id));
     return res;
   }
   function removeFrom(c, layer) {
     var b = baseLook(layer);
-    c.patch(layer.id, { adjust: b.adjust, filter: b.filter });
+    setLook(c, layer.id, b.adjust, b.filter);
     ST.lastLook = lookKey(c.L(layer.id));
   }
   function applyFresh(c, layer, wf, strength) {

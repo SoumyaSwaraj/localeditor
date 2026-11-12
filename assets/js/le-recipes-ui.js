@@ -409,7 +409,7 @@
     box.innerHTML = '<p class="rx-muted">Making a private link…</p>';
     R.encodeLink(wf, { base: new URL(ROOT + 'recipes/', location.href).href }).then(function (link) {
       box.innerHTML = '<p class="rx-muted">The recipe travels after the <b>#</b>, which browsers never send to a server. No photo is included.</p>' +
-        '<div class="rx-linkrow"><input class="input" readonly aria-label="Recipe link" value="' + esc(link.url) + '"><button type="button" class="btn btn-gold btn-sm" id="rx-copy">' + icon('copy') + '<span>Copy link</span></button></div>' +
+        '<div class="rx-linkrow"><input class="input" readonly aria-label="Recipe link" value="' + esc(link.url) + '"><button type="button" class="btn btn-sm" id="rx-copy">' + icon('copy') + '<span>Copy link</span></button></div>' +
         '<div class="rx-row">' + (navigator.share ? '<button type="button" class="btn btn-sm" id="rx-native">' + icon('share') + '<span>Share…</span></button>' : '') + '</div>' +
         (link.url.length <= 1200 && window.qrcode ? '<div class="rx-qr">' + qrSvg(link.url) + '<small>Scan to open this recipe on a phone</small></div>' : '');
       var input = box.querySelector('input');
@@ -448,7 +448,7 @@
     box.className = 'rx-shared';
     box.innerHTML = '<div class="rx-shared-art"><img alt=""></div><div class="rx-shared-text"><p class="kicker">Shared with you</p><h2>' + esc(wf.metadata.name) + '</h2>' +
       '<p>' + esc(wf.metadata.description || (wf.steps.length + ' steps')) + '</p>' +
-      '<div class="rx-row"><button type="button" class="btn btn-gold btn-sm" id="rx-shared-open">Preview</button>' +
+      '<div class="rx-row"><button type="button" class="btn btn-ink btn-sm" id="rx-shared-open">Preview</button>' +
       '<button type="button" class="btn btn-sm" id="rx-shared-save"' + (saved ? ' disabled' : '') + '>' + icon(saved ? 'check' : 'save') + '<span>' + (saved ? 'Saved on this device' : 'Save to this device') + '</span></button>' +
       '<button type="button" class="btn btn-sm" id="rx-shared-studio">' + icon('studio') + '<span>Open in studio</span></button></div></div>';
     $('rx-shared-open').addEventListener('click', function (e) { openDetail(wf, 'shared', e.currentTarget); });
