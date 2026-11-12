@@ -67,7 +67,7 @@ Input types and what `validate` accepts:
 
 | type | Value | Limits |
 |---|---|---|
-| `text` | string, one line (newlines become spaces) | `max` (default 80) |
+| `text` | string, one line (newlines become spaces) | `max` (default 80); optional `pattern` (a RegExp source string the whole value must match), `patternHint` (the error shown when it does not) and `worst` (a valid longest example that `cases()` uses instead of filler text) |
 | `longtext` | string, newlines kept | `max` (default 600), `maxLines` (default 12) |
 | `photo` | asset id `^[\w:.-]{1,80}$` | |
 | `photos` | array of asset ids | `max` (default 4) |
@@ -104,7 +104,22 @@ Layout: `env.box`, `env.inset(box, t, r, b, l)`, `env.centre(w, h, box)`, `env.g
 
 Dates (`env.date`): `parse`, `iso`, `format(date, 'D MMMM YYYY')` (tokens `YYYY YY MMMM MMM MM M DD D dddd ddd`, `[literal]`), `diff(a, b)` → `{ years, months, days, totalMonths, totalWeeks, totalDays, sign }` with month-end clamping (31 Jan + 1 month = 28/29 Feb), `describe(a, b)` → "2 years, 3 months", `addMonths`, `daysIn`, `leap`, `today`.
 
-`env.warn(kind, message, layer)` adds to the build's warnings.
+`env.warn(kind, message, layer)` adds to the build's warnings. A warning of kind `input` with `layer` set to an input key shows as a note under that field in the form (the invitation uses it for "this link is long", the Wi-Fi sign for a password of the wrong length).
+
+`env.page(bg, { w, h })` gives a page its own size. Without the second argument a page takes the chosen size.
+
+### Multi-page makers
+
+`build` may return up to 8 pages (the event kit returns an invitation, a story, a banner and name-tag sheets). The first page must have the chosen size (the tests check it); the others may use `env.page(bg, { w, h })`. In the studio:
+
+- Making inserts every page after the current one; the first is shown.
+- The pages share one `doc.maker`. Edit details on any of them remakes the whole run (neighbouring pages with the same id, style, size and values), even when the page count changes.
+- Studio history is per page, so the current page is replaced through history and the rest of the run in the project; one undo (or redo) on that page swaps the whole run back. Switching page ends that link, like any page history.
+- The form preview shows all pages side by side.
+
+### QR codes
+
+Use `env.qr(text, { quiet: 4, color: '#111111', background: '#FFFFFF', level: 'M' })`: dark on light only, the standard four-module quiet zone, and put it on a white tile when the page is dark. Keep it at least about a quarter of the page width so it scans from a phone screen and from print. Build the payload in a pure function the maker exposes (`LE.makers.payPayload`, `LE.makers.wifiPayload`) so tests can assert it exactly; `tests/makers.test.js` also reads every code back from the rendered page with a decoder vendored for tests (`tests/lib/jsQR.js`). Never fetch anything for a code and never invent its contents: without the person's ID or link, draw an empty, labelled code box.
 
 ## The pipeline and the public API
 

@@ -419,9 +419,12 @@
         if (token !== F.token) return null;
         return M.build(F.m.id, vals, { style: F.style, size: F.size, images: imgs }).then(function (out) {
           if (token !== F.token) return null;
+          notes(F, out.warnings);
           var box = F.canvas.getBoundingClientRect();
           var dpr = Math.min(2, window.devicePixelRatio || 1);
-          return M.renderPage(out.pages[0], { images: imgs, maxEdge: Math.max(320, Math.round(Math.max(box.width, box.height) * dpr)) });
+          var edge = Math.max(320, Math.round(Math.max(box.width, box.height) * dpr));
+          if (out.pages.length < 2) return M.renderPage(out.pages[0], { images: imgs, maxEdge: edge });
+          return Promise.all(out.pages.map(function (pg) { return M.renderPage(pg, { images: imgs, maxEdge: edge }); })).then(strip);
         });
       }).then(function (cv) {
         if (!cv || token !== F.token) return;
@@ -436,6 +439,26 @@
         if (err && err.errors) showErrors(F, err.errors.filter(function (e) { return !e.required; }));
       });
     }, ms == null ? 180 : ms);
+  }
+
+  /* Several pages side by side, one height, as one preview canvas. */
+  function strip(list) {
+    var hh = 600, gap = 24, w = 0;
+    list.forEach(function (c) { w += Math.round(c.width * hh / c.height) + gap; });
+    var out = document.createElement('canvas');
+    out.width = Math.max(1, w - gap); out.height = hh;
+    var g = out.getContext('2d'), x = 0;
+    list.forEach(function (c) { var cw = Math.round(c.width * hh / c.height); g.drawImage(c, x, 0, cw, hh); x += cw + gap; });
+    return out;
+  }
+  /* Build warnings of kind 'input' (layer = an input key) show as a note under that field, e.g. "this link is long". */
+  function notes(F, warnings) {
+    F.form.querySelectorAll('.mk-note').forEach(function (n) { n.remove(); });
+    (warnings || []).forEach(function (w) {
+      if (w.kind !== 'input') return;
+      var f = F.form.querySelector('.mk-field[data-key="' + String(w.layer).replace(/[^\w-]/g, '') + '"]');
+      if (f) f.insertBefore(el('<small class="mk-hint mk-note" role="status">' + esc(w.message) + '</small>'), f.querySelector('.mk-err'));
+    });
   }
 
   /* ---------- Making ---------- */
@@ -458,12 +481,11 @@
         return M.build(m.id, finalVals, { style: F.style, size: F.size, images: imgs });
       });
     }).then(function (out) {
-      var page = normalize(out.pages[0]);
-      page.maker.sig = M.signature(page.layers);
+      var pages = out.pages.map(function (pg) { pg = normalize(pg); pg.maker.sig = M.signature(pg.layers); return pg; });
       var edit = F.edit;
       close();
-      place(c, page, out.name, edit);
-      return page;
+      place(c, pages, out.name, edit);
+      return pages[0];
     }).catch(function (err) {
       btn.disabled = false;
       btn.textContent = F.edit ? 'Remake page' : 'Make it';
@@ -472,19 +494,74 @@
     });
   }
   /* New design, or the current page when it is empty or being remade, or a new page after it. Never overwrites work. */
-  function place(c, page, name, edit) {
+  function place(c, pages, name, edit) {
+    var page = pages[0];
+    ST.multi = null;
+    var old = edit && c.S.project ? c.scene.toJSON().maker : null;
     if (!c.S.project) c.newDesign(page.width, page.height, name);
     else if (!edit && c.scene.layers().length) c.addPage(false);
     if (c.hideStart) c.hideStart();
-    c.replaceDoc(page, true);
     var p = c.S.project;
-    photoIdsOfPage(page).forEach(function (id) { if (c.mem[id] && p) p.assets[id] = c.mem[id].meta; });
+    var multi = pages.length > 1 || (old && runOf(p, old).length > 1);
+    if (multi) page = placeMany(c, pages, old);
+    else c.replaceDoc(page, true);
+    pages.forEach(function (pg) { photoIdsOfPage(pg).forEach(function (id) { if (c.mem[id] && p) p.assets[id] = c.mem[id].meta; }); });
     c.scene.select([]);
     c.fit();
     c.markDirty();
     if (c.renderFoot) c.renderFoot();
-    c.toast(edit ? 'Page remade' : 'Made. Tap any part to edit it.', { action: { label: 'Edit details', fn: function () { editDetails(c); } } });
+    c.toast(edit ? (pages.length > 1 ? pages.length + ' pages remade' : 'Page remade') : (pages.length > 1 ? 'Made ' + pages.length + ' pages. Tap any part to edit it.' : 'Made. Tap any part to edit it.'), { action: { label: 'Edit details', fn: function () { editDetails(c); } } });
   }
+  /* Multi-page makers (an event kit): the pages one make produced sit next to each other and carry the same doc.maker.
+     Remaking replaces that whole run; the current page is replaced through history, the others in the project, and
+     one undo (or redo) on the current page swaps the whole run back, because studio history is per page. */
+  function sameMake(a, b) { return !!(a && b && a.id === b.id && a.style === b.style && a.size === b.size && JSON.stringify(a.values) === JSON.stringify(b.values)); }
+  function runOf(p, meta) {
+    var i = p.activePage, a = i, b = i;
+    if (!sameMake(p.pages[i] && p.pages[i].maker, meta)) return [i];
+    while (a > 0 && sameMake(p.pages[a - 1].maker, meta)) a--;
+    while (b < p.pages.length - 1 && sameMake(p.pages[b + 1].maker, meta)) b++;
+    var out = [];
+    for (var k = a; k <= b; k++) out.push(k);
+    return out;
+  }
+  function docKey(d) { return M.signature(d.layers) + '|' + JSON.stringify(d.maker || null) + '|' + d.width + 'x' + d.height; }
+  function placeMany(c, pages, old) {
+    c.syncProject();
+    var p = c.S.project;
+    var before = { pages: clone(p.pages), active: p.activePage, key: docKey(p.pages[p.activePage]) };
+    var run = old ? runOf(p, old) : [p.activePage];
+    var start = run[0], pos = Math.min(p.activePage - start, pages.length - 1);
+    var fresh = pages.slice();
+    fresh[pos] = p.pages[p.activePage];
+    p.pages.splice.apply(p.pages, [start, run.length].concat(fresh));
+    p.activePage = start + pos;
+    c.replaceDoc(pages[pos], true);
+    c.syncProject();
+    c.S.pageThumbs = {};
+    ST.multi = { project: p, before: before, after: { pages: clone(p.pages), active: p.activePage, key: docKey(p.pages[p.activePage]) }, state: 'after' };
+    return pages[pos];
+  }
+  function swapRun(c, to) {
+    var R = ST.multi, p = c.S.project, snap = R[to];
+    var cur = c.scene.toJSON();
+    p.pages = clone(snap.pages);
+    p.pages[snap.active] = cur;
+    p.activePage = snap.active;
+    R.state = to;
+    c.S.pageThumbs = {};
+    if (c.renderFoot) c.renderFoot();
+    c.markDirty();
+  }
+  (H.change = H.change || []).push(function (c) {
+    var R = ST.multi;
+    if (!R || !c.S.project) return;
+    if (c.S.project !== R.project) { ST.multi = null; return; }
+    var key = docKey(c.scene.toJSON());
+    if (R.state === 'after' && key === R.before.key && key !== R.after.key) swapRun(c, 'before');
+    else if (R.state === 'before' && key === R.after.key && key !== R.before.key) swapRun(c, 'after');
+  });
+  (H.page = H.page || []).push(function () { ST.multi = null; });
   function photoIdsOfPage(d) {
     var out = [];
     (d.layers || []).forEach(function (l) { if (l.type === 'image' && l.src) out.push(l.src); });

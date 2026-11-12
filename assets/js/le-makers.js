@@ -112,6 +112,8 @@
         var mx = maxOf(inp, inp.type === 'text' ? 80 : 600);
         if (s.length > mx) return { error: label + ' is too long (' + s.length + ' of ' + mx + ' characters).' };
         if (inp.type === 'longtext' && s.split('\n').length > (inp.maxLines || 12)) return { error: label + ' has too many lines.' };
+        /* pattern: an optional RegExp (or source string) the whole value must match; patternHint says what is expected. */
+        if (s && inp.pattern && !(inp.pattern instanceof RegExp ? inp.pattern : new RegExp(inp.pattern)).test(s)) return { error: inp.patternHint || (label + ' is not in the expected format.') };
         return { value: s || undefined };
       }
       case 'photo':
@@ -682,9 +684,13 @@
       aspect: W / H, tall: H / W > 1.5, portrait: H / W > 1.1 && H / W <= 1.5, square: Math.abs(H / W - 1) < 0.1,
       type: { display: Math.round(132 * k), h1: Math.round(92 * k), h2: Math.round(64 * k), h3: Math.round(46 * k), body: Math.round(36 * k), small: Math.round(28 * k), caption: Math.round(22 * k) },
       random: rnd, seed: seed,
-      page: function (bg) {
+      /* own: { w, h } gives this page its own size (multi-page makers whose pages differ, e.g. an invitation and a
+         print sheet); without it the page takes the chosen size. */
+      page: function (bg, own) {
         var background = typeof bg === 'string' ? { type: 'color', color: bg } : (bg || { type: 'color', color: '#FFFFFF' });
-        return { v: 1, width: W, height: H, background: background, layers: [] };
+        var pg = { v: 1, width: W, height: H, background: background, layers: [] };
+        if (own && own.w > 0 && own.h > 0) { pg.width = Math.round(own.w); pg.height = Math.round(own.h); pg.ownSize = true; }
+        return pg;
       },
       fit: fit, text: text, shape: shape, rect: rect, line: line, ellipse: function (spec) { return shape('ellipse', spec); },
       star: function (spec) { return shape('star', Object.assign({ params: { points: 5, innerRatio: 0.45 } }, spec)); },
@@ -795,7 +801,8 @@
         if (!pages.length) throw new Error('Maker ' + id + ' made no pages.');
         var meta = { v: 1, id: m.id, style: style, size: size.id, values: v.values };
         pages.forEach(function (p) {
-          p.width = size.w; p.height = size.h;
+          if (!p.ownSize) { p.width = size.w; p.height = size.h; }
+          delete p.ownSize;
           var mm = clone(meta);
           mm.sig = signature(p.layers);
           p.maker = LE.Scene && LE.Scene.makerOf ? LE.Scene.makerOf(mm) : mm;
@@ -915,6 +922,12 @@
     var minimal = {}, worst = {};
     m.inputs.forEach(function (inp, i) {
       var t = inp.type;
+      if (inp.pattern) {
+        /* A patterned field cannot take filler text: its own longest valid example stands in. */
+        if (inp.worst != null) worst[inp.key] = inp.worst;
+        if (inp.required && inp.worst != null) minimal[inp.key] = inp.worst;
+        return;
+      }
       if (inp.required) {
         if (t === 'text' || t === 'longtext') minimal[inp.key] = 'Hi';
         else if (t === 'photo') minimal[inp.key] = photos[0] || 'missing-photo';
