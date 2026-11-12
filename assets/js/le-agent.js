@@ -292,7 +292,10 @@
   /* Parses an open-format document (or a mini one) through LE.design.parse and pulls its assets into W. */
   function parseInto(W, doc, basePath, single, opts) {
     opts = opts || {};
-    return LE.design.parse(doc, { assets: W.assets, resolve: resolver() }).then(function (res) {
+    /* opts.layer: parse one layer with LE.design.parseLayer (paths come back relative to the layer). */
+    var parsed = opts.layer ? LE.design.parseLayer(opts.layer, { width: opts.page.width, height: opts.page.height, assets: W.assets }, { resolve: resolver() })
+      : LE.design.parse(doc, { assets: W.assets, resolve: resolver() });
+    return parsed.then(function (res) {
       if (!res.ok) {
         var e0 = res.errors[0] || { path: '', message: 'Not valid.' };
         throw err('invalid', e0.message, basePath + mapPath(e0.path, single), { errors: res.errors.slice(0, 12).map(function (e) { return { path: basePath + mapPath(e.path, single), message: e.message }; }) });
@@ -327,13 +330,7 @@
   }
   /* The long (open-format) form of one studio layer, for merging a patch onto. */
   function longForm(W, page, layer) {
-    var l = clone(layer);
-    delete l.groupId;
-    var st = {};
-    ['icons', 'qr', 'fx'].forEach(function (k) { if (W.studio[k] && W.studio[k][layer.id]) { st[k] = {}; st[k][layer.id] = W.studio[k][layer.id]; } });
-    var mini = { schema: LE.project.SCHEMA, v: LE.project.VERSION, name: 'x', kind: 'design', pages: [{ v: 1, width: page.width, height: page.height, background: { type: 'color', color: '#ffffff' }, layers: [l] }], activePage: 0, assets: W.assets, meta: { studio: st } };
-    var doc = JSON.parse(LE.design.stringify(mini, { images: 'ids' }).text);
-    return doc.pages[0].layers[0];
+    return LE.design.layerToLong(layer, { width: page.width, height: page.height, assets: W.assets, studio: W.studio });
   }
   function pageLong(W, pi) {
     var page = W.pages[pi];
@@ -462,8 +459,8 @@
     if (own(set, 'src') && !own(set, 'crop')) delete long.crop;
     if (set.type === 'icon') long.type = 'icon';
     long.id = layer.id;
-    return parseInto(W, miniDoc(page, [long]), path + '/set', 'self', { allowEmpty: B && B.allowEmpty }).then(function (r) {
-      var nl = r.project.pages[0].layers[0];
+    return parseInto(W, null, path + '/set', 'raw', { allowEmpty: B && B.allowEmpty, layer: long, page: page }).then(function (r) {
+      var nl = r.layer;
       var out = clone(layer);
       Object.keys(nl).forEach(function (k) { out[k] = nl[k]; });
       keys.forEach(function (k) { if (set[k] === null && k !== 'x' && k !== 'y' && k !== 'w' && k !== 'h') delete out[k]; });
