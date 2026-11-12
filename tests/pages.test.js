@@ -175,7 +175,7 @@ for (const [url, e] of pdfLaunches) {
   cases['launch ' + url + ' opens ' + e.panel + ' ' + e.job] = async ({ browser, base, h }) => {
     const q = new URL('http://x/' + url).searchParams;
     h.assert.equal(q.get('panel'), e.panel, url + ' panel in the URL');
-    h.assert.equal(q.get('job'), e.job, url + ' job in the URL');
+    h.assert.equal(q.get('job') || null, e.job || null, url + ' job in the URL');
     const page = await h.open(browser, base, '/' + url, 'desktop');
     await page.waitForFunction(() => window.PS && document.body.classList.contains('ps-ready'), null, { timeout: 15000 });
     await page.waitForLoadState('load');
@@ -196,6 +196,8 @@ for (const [url, e] of pdfLaunches) {
       if (e.job === 'find') h.assert.equal(await page.evaluate(() => !!PS.security.findOpen), true, url + ' find box open');
     } else if (e.panel === 'bulk') {
       await page.waitForSelector('.pb-work:not([hidden])[data-job="' + e.job + '"]', { timeout: 10000 });
+    } else if (e.panel === 'office') {
+      await page.waitForSelector('.po-work:not([hidden])[data-job="' + e.job + '"]', { timeout: 10000 });
     }
     h.assert.noErrors(page);
   };

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Relight photos and add depth effects on your device | LocalEditor</title>
+<meta name="description" content="Add a key, fill or rim light, light rays, depth fog and catchlights to a photo using a depth map made on your device. Nothing is uploaded.">
+<link rel="canonical" href="https://localeditor.net/relight/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="generator" content="scripts/build-pages.js">
+<meta name="theme-color" content="#FAFAFA">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LocalEditor">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LocalEditor">
+<meta property="og:title" content="Relight photos and add depth effects on your device">
+<meta property="og:description" content="Add a key, fill or rim light, light rays, depth fog and catchlights to a photo using a depth map made on your device. Nothing is uploaded.">
+<meta property="og:url" content="https://localeditor.net/relight/">
+<meta property="og:image" content="https://localeditor.net/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<link rel="stylesheet" href="../assets/css/pages.css">
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Relight and depth effects — LocalEditor","url":"https://localeditor.net/relight/","description":"Add a key, fill or rim light, light rays, depth fog and catchlights to a photo using a depth map made on your device. Nothing is uploaded.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Lights you place on the picture: sun, bulb or spot, with colour, softness, shine and shadows","Rim light that outlines a subject from behind","Light rays, depth fog and background dimming","Catchlights in the eyes","Depth blur that blurs by distance"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Expert mode","item":"https://localeditor.net/expert/"},{"@type":"ListItem","position":3,"name":"Relight and depth effects","item":"https://localeditor.net/relight/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How good is the depth map?","acceptedAnswer":{"@type":"Answer","text":"It is a small model’s estimate of relative distance, not a measurement. It separates a subject from the ground and the background well and gives faces and large objects a believable roundness. It is weaker on hair, thin things and flat walls, so keep light and relief settings moderate."}},{"@type":"Question","name":"How big is the download and how long does it take?","acceptedAnswer":{"@type":"Answer","text":"The depth model is about 16 MB and downloads once from this site. After that a map takes a few seconds on a computer and longer on a phone. It needs a fair amount of memory while it runs."}},{"@type":"Question","name":"Will it fix a badly lit photo?","acceptedAnswer":{"@type":"Answer","text":"It can add and shift light and soften light that is already there. It cannot remove hard shadows or bring back what was lost in dark or blown-out areas."}},{"@type":"Question","name":"Does it work on my phone?","acceptedAnswer":{"@type":"Answer","text":"It opens on a phone with a compact layout, but Expert mode is designed for a larger screen. The effects need WebGL 2, which most current phones and computers have; the Device check page shows what your browser supports."}}]}]}</script>
+</head>
+<body class="le-built pg-body">
+<a class="skip" href="#main">Skip to content</a>
+<div class="le-app">
+  <aside class="le-side" data-fill aria-label="Menu"></aside>
+  <div class="le-main">
+    <header class="le-top" data-fill></header>
+    <main id="main" class="le-content">
+      <div class="pg">
+        <nav class="pg-crumbs" aria-label="Breadcrumb"><ol><li><a href="../">Home</a></li><li><a href="../expert/">Expert mode</a></li><li aria-current="page">Relight and depth effects</li></ol></nav>
+        <section class="pg-hero" aria-labelledby="pg-title">
+          <div class="pg-hero-copy">
+            <p class="eyebrow">Relight and depth effects</p>
+            <h1 id="pg-title">Add light to a photo <em>after you have taken it.</em></h1>
+            <p class="pg-lead">The app estimates how far away each part of a photo is, then uses that to add a light that falls on the subject properly, a rim light that outlines it, rays of light through a scene, fog that thickens with distance, and catchlights in eyes.</p>
+            <div class="hp-cta">
+              <a class="btn btn-gold btn-lg" href="../studio/?mode=expert">Open Expert mode<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+              
+            </div>
+            <p class="hp-kicker pg-kicker"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Free</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>No account</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Nothing uploaded</span></p>
+          </div>
+          <figure class="pg-art pg-art-edit" aria-hidden="true"><div class="pg-edit"><div class="pg-edit-photo"><img src="../assets/img/home/still-01.webp" width="560" height="374" alt="" loading="lazy" decoding="async"><span class="pg-crop"><i></i><i></i><i></i><i></i></span></div><div class="pg-edit-ctl"><span><b>Brightness</b><i style="--v:58%"></i></span><span><b>Warmth</b><i style="--v:66%"></i></span><span><b>Contrast</b><i style="--v:54%"></i></span></div></div></figure>
+        </section>
+        <section class="pg-how" aria-label="What it does and how it works">
+          <div>
+            <h2 class="pg-label">What it does</h2>
+            <ul class="pg-checks">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Lights you place on the picture: sun, bulb or spot, with colour, softness, shine and shadows</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Rim light that outlines a subject from behind</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Light rays, depth fog and background dimming</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Catchlights in the eyes</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Depth blur that blurs by distance</span></li>
+            </ul>
+          </div>
+          <div>
+            <h2 class="pg-label">How it works</h2>
+            <ol class="pg-steps">
+              <li><span>Open the studio in Expert mode, add a photo and choose the Light tool.</span></li>
+              <li><span>Choose Depth map. The app makes one on your device. Then add a light and drag it into place.</span></li>
+              <li><span>Set its colour and softness, add a second light if you like, then download.</span></li>
+            </ol>
+          </div>
+        </section>
+        <section class="pg-privacy" aria-labelledby="pg-privacy-title">
+          <span class="pg-privacy-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <div>
+            <h2 id="pg-privacy-title">Your files stay on this device</h2>
+            <p>Photos are edited by your browser on this device, using your graphics hardware. The depth map comes from a small model that downloads from this site once, runs on your device and is listed in the storage manager. Nothing you edit is sent anywhere.</p>
+          </div>
+        </section>
+        <section class="hp-section hp-faq pg-faq" aria-labelledby="pg-faq-title">
+          <div class="hp-head">
+            <p class="eyebrow">Questions</p>
+            <h2 id="pg-faq-title">Short, honest answers.</h2>
+            <p>More on the <a href="../about/">privacy and install page</a>.</p>
+          </div>
+          <div class="faq">
+            <details><summary>How good is the depth map?</summary><p>It is a small model’s estimate of relative distance, not a measurement. It separates a subject from the ground and the background well and gives faces and large objects a believable roundness. It is weaker on hair, thin things and flat walls, so keep light and relief settings moderate.</p></details>
+            <details><summary>How big is the download and how long does it take?</summary><p>The depth model is about 16 MB and downloads once from this site. After that a map takes a few seconds on a computer and longer on a phone. It needs a fair amount of memory while it runs.</p></details>
+            <details><summary>Will it fix a badly lit photo?</summary><p>It can add and shift light and soften light that is already there. It cannot remove hard shadows or bring back what was lost in dark or blown-out areas.</p></details>
+            <details><summary>Does it work on my phone?</summary><p>It opens on a phone with a compact layout, but Expert mode is designed for a larger screen. The effects need WebGL 2, which most current phones and computers have; the Device check page shows what your browser supports.</p></details>
+          </div>
+        </section>
+        <section class="pg-group" aria-labelledby="pg-rel-title">
+          <h2 class="pg-label" id="pg-rel-title">Goes well with</h2>
+          <ul class="pg-list">
+          <li class="pg-row">
+            <a class="pg-row-main" href="../portrait-retouching/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><span><b>Portrait retouching</b><small>Frequency separation, blemishes, skin, dodge and burn</small></span></a>
+            <a class="pg-row-go" href="../studio/?mode=expert" aria-label="Open Portrait retouching">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../creative-effects/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><circle cx="15" cy="15" r="5.5"/></svg></span><span><b>Film and creative effects</b><small>Film grain, bloom, lens blur and light leaks</small></span></a>
+            <a class="pg-row-go" href="../studio/?mode=expert" aria-label="Open Film and creative effects">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../colour-grading/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></span><span><b>Colour grading</b><small>Curves, hue bands, colour wheels and LUTs</small></span></a>
+            <a class="pg-row-go" href="../studio/?mode=expert" aria-label="Open Colour grading">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../product-shadows/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16l-1.2 10.2a2 2 0 0 1-2 1.8H7.2a2 2 0 0 1-2-1.8z"/><path d="M8.5 9V7a3.5 3.5 0 0 1 7 0v2"/></svg></span><span><b>Product shadows and reflections</b><small>Contact and cast shadows, reflections, clean edges</small></span></a>
+            <a class="pg-row-go" href="../studio/?mode=expert" aria-label="Open Product shadows and reflections">Open</a>
+          </li>
+          </ul>
+        </section>
+        <p class="pg-also">Part of <a href="../expert/">Expert mode</a>, <a href="../photographers/">Photographers</a> and <a href="../social/">Social and creators</a>.</p>
+        <section class="hp-close pg-close" aria-labelledby="pg-close-title">
+          <h2 id="pg-close-title">Relight and depth effects, <em>on this device.</em></h2>
+          <p>Add lights, rim light, light rays and depth fog. It opens in this browser and keeps your files on this device.</p>
+          <div class="hp-cta"><a class="btn btn-gold btn-lg" href="../studio/?mode=expert">Open Expert mode</a></div>
+        </section>
+        <footer class="hp-foot pg-foot">
+          <div class="hp-foot-top">
+            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><path d="M256 0C51 0 0 51 0 256s51 256 256 256 256-51 256-256S461 0 256 0z" fill="#0369DA"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
+            <nav aria-label="Footer">
+              <a href="../studio/">Photo studio</a>
+              <a href="../pdf-studio/">PDF studio</a>
+              <a href="../recipes/">Recipes</a>
+              <a href="../about/">Privacy</a>
+              <button type="button" data-le-install>Install</button>
+              <button type="button" data-le-storage>Storage</button>
+              <a href="../llms.txt">llms.txt</a>
+            </nav>
+          </div>
+          <nav class="pg-foot-hubs" aria-label="Browse by need">
+              <a href="../photo/">Photo and design</a>
+              <a href="../pdf/">PDF and documents</a>
+              <a href="../expert/">Expert mode</a>
+              <a href="../photographers/">Photographers</a>
+              <a href="../social/">Social and creators</a>
+              <a href="../sellers/">Online sellers</a>
+              <a href="../business/">Small business</a>
+              <a href="../office/">Office work</a>
+              <a href="../teachers/">Teachers</a>
+              <a href="../privacy-tools/">Privacy tools</a>
+              <a href="../ai-agents/">For AI agents</a>
+              <a href="../tools/">Every tool</a>
+          </nav>
+          <p>&copy; 2026 LocalEditor. Files stay on your device.</p>
+        </footer>
+      </div>
+    </main>
+  </div>
+</div>
+<button class="le-scrim" type="button" data-scrim hidden tabindex="-1" aria-label="Close menu"></button>
+<script src="../assets/js/app.js"></script>
+</body>
+</html>

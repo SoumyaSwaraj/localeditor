@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Blend modes, masks and match colour for compositing | LocalEditor</title>
+<meta name="description" content="Combine photos with 27 blend modes, masks, adjustment layers, match colour and light wrap in Expert mode. On your device, nothing is uploaded.">
+<link rel="canonical" href="https://localeditor.net/compositing/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="generator" content="scripts/build-pages.js">
+<meta name="theme-color" content="#FAFAFA">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LocalEditor">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LocalEditor">
+<meta property="og:title" content="Blend modes, masks and match colour for compositing">
+<meta property="og:description" content="Combine photos with 27 blend modes, masks, adjustment layers, match colour and light wrap in Expert mode. On your device, nothing is uploaded.">
+<meta property="og:url" content="https://localeditor.net/compositing/">
+<meta property="og:image" content="https://localeditor.net/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<link rel="stylesheet" href="../assets/css/pages.css">
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Compositing and blend modes — LocalEditor","url":"https://localeditor.net/compositing/","description":"Combine photos with 27 blend modes, masks, adjustment layers, match colour and light wrap in Expert mode. On your device, nothing is uploaded.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["27 blend modes, with fill opacity and blend-if ranges","Masks: brush, linear and radial gradients, brightness range, colour range, subject and depth","Match colour, ambient light and light wrap to join a subject to a background","Adjustment layers that affect everything beneath them","Mesh warp and displace to bend a layer onto a curved surface"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Expert mode","item":"https://localeditor.net/expert/"},{"@type":"ListItem","position":3,"name":"Compositing and blend modes","item":"https://localeditor.net/compositing/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a mask?","acceptedAnswer":{"@type":"Answer","text":"A mask says where an effect or a layer shows. White shows it, black hides it, and grey is in between. You can paint one with a brush, draw a gradient, or select by brightness or colour."}},{"@type":"Question","name":"Does Match colour get the match exactly?","acceptedAnswer":{"@type":"Answer","text":"It measures the average colour and spread of the subject and the background and moves one towards the other. That gives a close start. Fine-tune by eye."}},{"@type":"Question","name":"Do depth and subject masks need anything extra?","acceptedAnswer":{"@type":"Answer","text":"A subject mask comes from the background remover. A depth mask needs a depth map: choose the Light tool and its Depth map button to make one on your device, after a one-off download of about 16 MB from this site."}},{"@type":"Question","name":"Is the original photo kept?","acceptedAnswer":{"@type":"Answer","text":"Yes. Layers, masks and blend modes are settings in your design, so you can change or remove any of them."}}]}]}</script>
+</head>
+<body class="le-built pg-body">
+<a class="skip" href="#main">Skip to content</a>
+<div class="le-app">
+  <aside class="le-side" data-fill aria-label="Menu"></aside>
+  <div class="le-main">
+    <header class="le-top" data-fill></header>
+    <main id="main" class="le-content">
+      <div class="pg">
+        <nav class="pg-crumbs" aria-label="Breadcrumb"><ol><li><a href="../">Home</a></li><li><a href="../expert/">Expert mode</a></li><li aria-current="page">Compositing and blend modes</li></ol></nav>
+        <section class="pg-hero" aria-labelledby="pg-title">
+          <div class="pg-hero-copy">
+            <p class="eyebrow">Compositing and blend modes</p>
+            <h1 id="pg-title">Blend photos together <em>so they look like one picture.</em></h1>
+            <p class="pg-lead">Layer photos and make them agree. Choose from a full set of blend modes, mask by brush, gradient, brightness, colour or depth, match the colour and light of one photo to another, and warp a layer to fit a surface.</p>
+            <div class="hp-cta">
+              <a class="btn btn-gold btn-lg" href="../studio/?mode=expert">Open Expert mode<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+              
+            </div>
+            <p class="hp-kicker pg-kicker"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Free</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>No account</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Nothing uploaded</span></p>
+          </div>
+          <figure class="pg-art pg-art-edit" aria-hidden="true"><div class="pg-edit"><div class="pg-edit-photo"><img src="../assets/img/home/still-01.webp" width="560" height="374" alt="" loading="lazy" decoding="async"><span class="pg-crop"><i></i><i></i><i></i><i></i></span></div><div class="pg-edit-ctl"><span><b>Brightness</b><i style="--v:58%"></i></span><span><b>Warmth</b><i style="--v:66%"></i></span><span><b>Contrast</b><i style="--v:54%"></i></span></div></div></figure>
+        </section>
+        <section class="pg-how" aria-label="What it does and how it works">
+          <div>
+            <h2 class="pg-label">What it does</h2>
+            <ul class="pg-checks">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>27 blend modes, with fill opacity and blend-if ranges</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Masks: brush, linear and radial gradients, brightness range, colour range, subject and depth</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Match colour, ambient light and light wrap to join a subject to a background</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Adjustment layers that affect everything beneath them</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Mesh warp and displace to bend a layer onto a curved surface</span></li>
+            </ul>
+          </div>
+          <div>
+            <h2 class="pg-label">How it works</h2>
+            <ol class="pg-steps">
+              <li><span>Add your photos as layers in Expert mode and select the top one.</span></li>
+              <li><span>Set its blend mode in the Layers panel, or add Match colour from Compositing in the Develop panel.</span></li>
+              <li><span>Paint or draw a mask where the layer should show, then download.</span></li>
+            </ol>
+          </div>
+        </section>
+        <section class="pg-privacy" aria-labelledby="pg-privacy-title">
+          <span class="pg-privacy-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <div>
+            <h2 id="pg-privacy-title">Your files stay on this device</h2>
+            <p>Photos are edited by your browser on this device, using your graphics hardware. Nothing is uploaded, there is no account, and nothing is added to what you export.</p>
+          </div>
+        </section>
+        <section class="hp-section hp-faq pg-faq" aria-labelledby="pg-faq-title">
+          <div class="hp-head">
+            <p class="eyebrow">Questions</p>
+            <h2 id="pg-faq-title">Short, honest answers.</h2>
+            <p>More on the <a href="../about/">privacy and install page</a>.</p>
+          </div>
+          <div class="faq">
+            <details><summary>What is a mask?</summary><p>A mask says where an effect or a layer shows. White shows it, black hides it, and grey is in between. You can paint one with a brush, draw a gradient, or select by brightness or colour.</p></details>
+            <details><summary>Does Match colour get the match exactly?</summary><p>It measures the average colour and spread of the subject and the background and moves one towards the other. That gives a close start. Fine-tune by eye.</p></details>
+            <details><summary>Do depth and subject masks need anything extra?</summary><p>A subject mask comes from the background remover. A depth mask needs a depth map: choose the Light tool and its Depth map button to make one on your device, after a one-off download of about 16 MB from this site.</p></details>
+            <details><summary>Is the original photo kept?</summary><p>Yes. Layers, masks and blend modes are settings in your design, so you can change or remove any of them.</p></details>
+          </div>
+        </section>
+        <section class="pg-group" aria-labelledby="pg-rel-title">
+          <h2 class="pg-label" id="pg-rel-title">Goes well with</h2>
+          <ul class="pg-list">
+          <li class="pg-row">
+            <a class="pg-row-main" href="../product-shadows/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16l-1.2 10.2a2 2 0 0 1-2 1.8H7.2a2 2 0 0 1-2-1.8z"/><path d="M8.5 9V7a3.5 3.5 0 0 1 7 0v2"/></svg></span><span><b>Product shadows and reflections</b><small>Contact and cast shadows, reflections, clean edges</small></span></a>
+            <a class="pg-row-go" href="../studio/?mode=expert" aria-label="Open Product shadows and reflections">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../colour-grading/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></span><span><b>Colour grading</b><small>Curves, hue bands, colour wheels and LUTs</small></span></a>
+            <a class="pg-row-go" href="../studio/?mode=expert" aria-label="Open Colour grading">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../background-remover/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21c.8-4 3.6-6 7-6s6.2 2 7 6"/><path d="M3 3h3M18 3h3M3 3v3M21 3v3" /></svg></span><span><b>Background remover<span class="pg-beta">Beta</span></b><small>Cut out one clear subject on this device, with a brush for touch-ups</small></span></a>
+            <a class="pg-row-go" href="../studio/?tool=cutout" aria-label="Open Background remover">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../collage-maker/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/></svg></span><span><b>Collage maker</b><small>Layouts and styles with a slot for every photo</small></span></a>
+            <a class="pg-row-go" href="../studio/?tool=collage" aria-label="Open Collage maker">Open</a>
+          </li>
+          </ul>
+        </section>
+        <p class="pg-also">Part of <a href="../expert/">Expert mode</a>, <a href="../photographers/">Photographers</a> and <a href="../sellers/">Online sellers</a>.</p>
+        <section class="hp-close pg-close" aria-labelledby="pg-close-title">
+          <h2 id="pg-close-title">Compositing and blend modes, <em>on this device.</em></h2>
+          <p>Blend modes, masks, match colour and light wrap. It opens in this browser and keeps your files on this device.</p>
+          <div class="hp-cta"><a class="btn btn-gold btn-lg" href="../studio/?mode=expert">Open Expert mode</a></div>
+        </section>
+        <footer class="hp-foot pg-foot">
+          <div class="hp-foot-top">
+            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><path d="M256 0C51 0 0 51 0 256s51 256 256 256 256-51 256-256S461 0 256 0z" fill="#0369DA"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
+            <nav aria-label="Footer">
+              <a href="../studio/">Photo studio</a>
+              <a href="../pdf-studio/">PDF studio</a>
+              <a href="../recipes/">Recipes</a>
+              <a href="../about/">Privacy</a>
+              <button type="button" data-le-install>Install</button>
+              <button type="button" data-le-storage>Storage</button>
+              <a href="../llms.txt">llms.txt</a>
+            </nav>
+          </div>
+          <nav class="pg-foot-hubs" aria-label="Browse by need">
+              <a href="../photo/">Photo and design</a>
+              <a href="../pdf/">PDF and documents</a>
+              <a href="../expert/">Expert mode</a>
+              <a href="../photographers/">Photographers</a>
+              <a href="../social/">Social and creators</a>
+              <a href="../sellers/">Online sellers</a>
+              <a href="../business/">Small business</a>
+              <a href="../office/">Office work</a>
+              <a href="../teachers/">Teachers</a>
+              <a href="../privacy-tools/">Privacy tools</a>
+              <a href="../ai-agents/">For AI agents</a>
+              <a href="../tools/">Every tool</a>
+          </nav>
+          <p>&copy; 2026 LocalEditor. Files stay on your device.</p>
+        </footer>
+      </div>
+    </main>
+  </div>
+</div>
+<button class="le-scrim" type="button" data-scrim hidden tabindex="-1" aria-label="Close menu"></button>
+<script src="../assets/js/app.js"></script>
+</body>
+</html>

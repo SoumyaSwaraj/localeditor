@@ -23,8 +23,9 @@ Rolling back is the same in reverse: set it to `soon` and rebuild. The generator
 
 Short, lowercase, hyphenated, one level deep, never renamed once live.
 
-- **Hubs**: `/photo/`, `/pdf/`, `/privacy-tools/`, `/social/`, `/business/`, `/teachers/`, `/office/`, `/tools/`.
+- **Hubs** (twelve, in this order on the homepage, in the drawer and in the footer): `/photo/`, `/pdf/`, `/expert/` (Expert mode), `/photographers/`, `/social/` (social and creators), `/sellers/` (online sellers), `/business/`, `/office/`, `/teachers/`, `/privacy-tools/`, `/ai-agents/` (for AI agents), `/tools/`. Hub order is the order of the entries in `site.json`. A hub leads with 3 to 12 entries, a one-sentence promise and an honest privacy line; a hub can list another hub (the photo hub lists Expert mode).
 - **Feature pages**: named after what people search for, at the top level so a feature can belong to several hubs with one canonical URL: `/collage-maker/`, `/photo-backgrounds/`, `/batch-edit/`, `/social-media-sizes/`, `/photo-editor/`, `/add-text-to-photo/`, `/brand-kit/`, `/pdf-editor/`, `/word-to-pdf/`, `/install/`, `/storage-manager/`.
+- **Expert mode** is a hub plus nine feature pages (`/colour-grading/`, `/creative-effects/`, `/product-shadows/`, `/compositing/`, `/portrait-retouching/`, `/liquify/`, `/raw-develop/`, `/hdr-merge/`, `/relight/`). **AI agents** is a hub plus `/agent-mode/` and `/agent-cli/`; its guide, schema, `llms.txt` and agent-kit rows are `kind: tool` entries whose `launch` is the published file.
 - **Tool pages built by hand** (`/photo-privacy/`, `/device-check/`, the single-step tools) are entries of kind `tool` with a `launch` URL and no `url`: they are listed, never generated. Both are also in `TOOLS` in `scripts/build.js`, which is what the tool directory, `llms.txt`'s tool lists, the about page and the header search read; the homepage directory (`index.html`) is edited by hand, so add a tool there too.
 
 ## Entry schema
@@ -47,7 +48,8 @@ Short, lowercase, hyphenated, one level deep, never renamed once live.
   "panel": "apps", "panelOpts": { "app": "collage" },  // studio panel the launch must open (tested)
   "job": "redact",                   // PDF studio only: the job inside the panel (security: send, reveal, safety, redact, find; bulk: protect, merge, split, watermark, compress)
   "maker": "quote",                  // quick makers only: launch is studio/?make=<maker>; the test checks the form that opens
-  "action": "install",               // optional: install | storage; the button opens that dialog in place
+  "action": "install",               // optional: install | storage | appearance; the button opens that dialog in place (appearance renders a <button>, because the shell does not cancel a link)
+  "launchCheck": "expert",           // studio launches without a panel or maker: expert (?mode=expert) | agent (?agent=1) | file (a published file answers 200) | page (a page with an h1) | appearance
   "secondary": { "href": "…", "label": "…" },          // optional ghost button
   "art": "collage",                  // hero composition, see ART in build-pages.js
   "parents": ["photo"],              // category ids; the first live one is the breadcrumb
@@ -55,13 +57,15 @@ Short, lowercase, hyphenated, one level deep, never renamed once live.
   "does": ["…"],                     // features: 3 to 5 plain bullets
   "steps": ["…", "…", "…"],          // features: exactly 3
   "privacy": "…",                    // one honest paragraph
-  "faq": [["Question?", "Answer."]], // 2 to 4
+  "faq": [["Question?", "Answer."]], // 2 to 5
   "related": ["photo-editor", "tool:merge-pdf"],
   "keywords": ["…"]                  // search only, never shown
 }
 ```
 
 Hubs (`category`, `audience`) also take `eyebrow`, `audience` (who it is for), and `sections: [{ "title", "items": [ids] }]`. Put soon features in a section already: they stay hidden until flipped, then appear in place. A section with nothing live is left out. `"directory": true` (the every-tool hub) renders the filterable tool directory instead.
+
+Entries of kind `tool` that live in `site.json` (the quick makers, the studio quick tools, the agent guides) are listed on hubs and are searchable by their title, tagline and `keywords`; the ones built by `scripts/build.js` are searched through `TOOLS` as before.
 
 `tool:<slug>` refers to an entry in `TOOLS` in `scripts/build.js`, so a tool added there appears on `/tools/` at the next build.
 
@@ -71,9 +75,20 @@ A feature page is only useful if its button opens the feature itself, and `tests
 
 **Photo studio**: `studio/?tool=<id>`. `TOOL_MAP` in `assets/js/le-studio.js` maps an id to a panel id, or to `[panel, options]` (the options are what `openPanel(id, opts)` receives: `{ app }` for Apps, `{ tab }` for Design and Download). Current ids beyond the original set: `brand`, `cutout` (`remove-background`), `redact`, `thumbnail`, `make` (`makers`), `export-sizes`, `carousel` (`slides`), `replay`, `share`, `design-file`. Quick makers are not panels: `studio/?make=<id>` opens that maker's form (quote, review, receipt, milestone, palette, film).
 
-**PDF studio**: `pdf-studio/?panel=<id>&job=<job>`. A panel that needs a document leaves the open-file prompt on screen with a short message, and continues to the panel (and job) once a file is chosen. Panels that work without a file (`bulk`, `convert`) open at once. An unknown panel or job is ignored. The jobs are `PS.security.go(view)` for Protect and `PS.bulk.open(id)` for Bulk; `job=find` opens Hide information for good with the Find sensitive data box open.
+**Expert mode**: `studio/?mode=expert` (the Expert workspace opens at once and the choice is remembered on that device; the parameter is removed from the address). There is no deep link to a tool or an effect inside Expert, so every Expert page launches here and its steps say which section to open. **Agent mode**: `studio/?agent=1` (shows the explanation sheet; the person must press Turn on agent mode).
+
+**PDF studio**: `pdf-studio/?panel=<id>&job=<job>`. A panel that needs a document leaves the open-file prompt on screen with a short message, and continues to the panel (and job) once a file is chosen. Panels that work without a file (`bulk`, `convert`, `office`, `docs`, `scan`) open at once. An unknown panel or job is ignored. The jobs are `PS.security.go(view)` for Protect, `PS.bulk.open(id)` for Bulk, and the Office kit's own `deepJob` for `panel=office&job=details|compare|bundle|stamps|workflows|fingerprint`; `panel=scan&job=camera` opens the camera scanner; `panel=docs` (invoices, quotes, tables) opens its panel and has no job; `job=find` opens Hide information for good with the Find sensitive data box open.
 
 The tests are `tests/pages.test.js` (every launch in `site.json`) and `tests/deep-links.test.js` (the table of ids and the edge cases).
+
+## The audit
+
+`tests/site-pages.test.js` (cases starting "site data") and `tests/pages.test.js` together open every launch link in `site.json`:
+
+- studio and PDF studio launches must name what they open (`panel`, `maker` or `launchCheck`), and `pages.test.js` checks the panel, the app or tab, the maker form, the PDF job;
+- `launchCheck` launches (Expert, agent mode, published files, plain pages, the Appearance button) are opened and checked for an empty console;
+- titles are at most 75 characters with the suffix and descriptions 70 to 170, no hype words, no competitor or brand names;
+- a dozen layperson searches ("blur background", "remove spots", "scan to pdf", "raw", "wifi sign"…) find the page that answers them. When you add an entry, add the words people would type to its `keywords` and a row to `SEARCH` in that test.
 
 ## Adding a category or feature
 
@@ -83,6 +98,7 @@ Add an entry, run the build, read the page at 360 px and 1440 px in both themes,
 
 - No invented numbers, ratings or testimonials.
 - Never claim legal compliance (GDPR, HIPAA, FERPA or any certification). Say what the design does (files stay on the device) and that the reader's organisation decides whether that is enough.
+- No competitor or brand names in titles, copy or `keywords` (platform names used for sizes, such as Instagram and YouTube, are fine). Describe what is there: a feature that exists only through agents or the command line is described as that, never as a button.
 - Never mention a `soon` feature on a live page, including in FAQ answers ("coming soon" counts). The tests check every page for every soon title.
 
 ## Checklist when a feature ships

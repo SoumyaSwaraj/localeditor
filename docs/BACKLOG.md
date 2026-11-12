@@ -26,7 +26,7 @@ Kept by the lead architect. Things reported by the team that are not yet assigne
 ## Reported by wave 2 (12 November 2026)
 - ~~**Format:**~~ Done at integration: `carousel`, `maker`, `redact`, `cutout` in `.ledesign.json`, the schema and the docs; page ids live on the page. The schema is still not run through a JSON Schema validator (none is vendored); a test checks every key the studio writes for these fields is in it.
 - **PDF fonts (existing bug):** the vendored fontkit subsets the Inter WOFF wrongly (only some glyphs appear) and throws on IBM Plex Mono, so PDF studio exports using Inter are probably broken and Bates numbering falls back to a standard font.
-- **PDF studio deep links:** `pdf-studio/?panel=X` is parsed but nothing opens the panel, so feature pages cannot launch a PDF tool directly.
+- ~~**PDF studio deep links:**~~ Done: `?panel=<id>&job=<job>` opens panels and jobs (docs/SITE.md).
 - **PDF studio rail on phones:** eight tabs now; Export is partly off-screen at 360 px.
 - **PDF security:** scrub, redact and make-safe refuse encrypted files until they are unlocked first (unlock now exists in the bulk tools; wire the two together). The older Edit → Redact tool still rasterises without a verify pass; point it at Protect.
 - **PDF passwords:** not verified in Adobe Reader, macOS Preview or Chrome's viewer. 200 protected files take about 45 s on desktop.
@@ -54,8 +54,16 @@ Kept by the lead architect. Things reported by the team that are not yet assigne
 - **One agent session at a time.**
 - ~~**`llms.txt`** agent mode section.~~ Done, with the agent guide, format specs, agent kit and schema now deployed at their repository paths.
 
-## Site data pass 2 (not yet assigned)
-Built and merged but still marked "coming soon" or missing on the hubs and feature pages: the nine makers of set 2 (movie poster, album cover, front page, event kit, invitation with QR, scan-to-pay poster, Wi-Fi sign, app-store screenshots, link cards) and the seven print makers (calendar, chart, labels, stickers, photo book, zine, catalogue); PDF office tools (saved details, compare, bundle, stamps, workflows, fingerprint and `/verify/`); PDF documents (searchable-text convert, invoices, tables to spreadsheet); agent mode. Each needs a verified launch link and wording written from the code. Do this once fonts, the command line and expert mode have landed, in one pass.
+## Site data pass 2 (done 12 November 2026) and its follow-ups
+Done: every maker (25), the Expert family (hub plus nine pages), AI agents (hub, agent mode, command line), fonts, themes, install choices, the PDF office kit (compare, packs, stamps, workflows, fingerprint, saved details), invoices and tables, photographers and online sellers hubs, a launch audit in `tests/site-pages.test.js` and the layperson search test. See `docs/SITE.md`.
+
+Follow-ups for the owners of the code:
+- **Deep links worth adding** (none exist today, so every Expert page launches `studio/?mode=expert`): `studio/?mode=expert&tab=<develop|mask|layers|scopes>` (the workspace already has `openPanel('expert', { tab })`), `&tool=<heal|clone|dodge|liquify|light|brush|gradient>` and `&add=<effect id>` (adds that effect to the selected layer), `?open=raw` and `?open=hdr` (the File menu commands `rawOpen` and `hdrMerge`), `studio/?tool=appearance`, `pdf-studio/?panel=docs&job=<invoice|quote|tables|clients>`, and `?panel=office&job=` already exists.
+- **Agent operations for Expert** (`fx.add`, `fx.update`, `fx.remove`, `mask.set`, `map.generate`, `adjust.add`, `raw.open`, `hdr.merge`, `LEAgent.catalog('fx')`) are written up in `docs/EXPERT-MODE.md` and `docs/RAW-HDR.md` but `LEAgent.apply` answers "Unknown operation". The agent pages say so. Product staging presets (`LE.fx.composite.stage`) and the grading presets are reachable from page code only; Expert has no button for them.
+- **Published docs:** `docs/FX-REFERENCE.md`, `docs/AGENT-CLI.md`, `docs/RAW-HDR.md` are not in the deploy include list (`scripts/deploy.sh` 6b), so `llms.txt` and the agents hub cannot link them.
+- **Face map:** the only way to make one in the Expert UI is "Find faces" in the Liquify tool, and it loads `labs/maps/maps.js` rather than `assets/js/le-maps.js` (the Light tool's depth map uses the latter). Portrait tools for eyes, teeth and lips need it first. Check that `labs/` ships, and give the Retouch section its own button.
+- **No passport or ID photo size** exists in the sizes list (search for "passport photo" finds nothing, correctly).
+- **Home page copy** is hand-written and partly stale (background remover FAQ says "Not yet"; fonts "dozens"; pillars): replacement text was sent with the pass report.
 
 ## Light first load (L1) — not finished
 - The studio's blocking scripts are 496 KB gzip, over the 480 KB budget the loading test sets (marked as a known bug in `tests/loading.test.js`). The deferral mechanism exists (`LE.modules.defer`, `docs/LOADING.md`) but only the stock module uses it. Recipes, export, privacy, makers, cut-out, agent mode, the font picker and the originals list each need the small change described there. First paint did not get measurably faster yet.
@@ -75,7 +83,7 @@ Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen
 
 ## Makers set 3 — follow-ups
 
-- Site data: add Screenshot beautifier (`/studio/?make=beautify`), Photobooth strip (`?make=photobooth`), Recap collage (`?make=recap`) as live entries.
+- ~~Site data: add Screenshot beautifier, Photobooth strip, Recap collage as live entries.~~ Done (`/screenshot-beautifier/`, `/photobooth-strip/`, `/recap-collage/`).
 - Beautifier has no "original" aspect (a page takes its size's fixed pixels); resize after making is the workaround.
 - Shared photo × button in maker forms is 28 px (`studio-makers.css`), under the 44 px rule.
 - Preview shadows look heavier than export: the engine does not scale shadow blur with render scale (also on the integration list).

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Merge bracketed photos to HDR in your browser | LocalEditor</title>
+<meta name="description" content="Combine two to nine exposures into one picture with alignment and ghost removal, then tone-map it in Expert mode. Runs on your device.">
+<link rel="canonical" href="https://localeditor.net/hdr-merge/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="generator" content="scripts/build-pages.js">
+<meta name="theme-color" content="#FAFAFA">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LocalEditor">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LocalEditor">
+<meta property="og:title" content="Merge bracketed photos to HDR in your browser">
+<meta property="og:description" content="Combine two to nine exposures into one picture with alignment and ghost removal, then tone-map it in Expert mode. Runs on your device.">
+<meta property="og:url" content="https://localeditor.net/hdr-merge/">
+<meta property="og:image" content="https://localeditor.net/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<link rel="stylesheet" href="../assets/css/pages.css">
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"HDR merge — LocalEditor","url":"https://localeditor.net/hdr-merge/","description":"Combine two to nine exposures into one picture with alignment and ghost removal, then tone-map it in Expert mode. Runs on your device.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Merges two to nine photos, all RAW or all JPEG or PNG","Aligns frames that moved a little between shots, including a small rotation","Ghost removal at three strengths for people and clouds that moved","Two ways to merge: true HDR radiance, or exposure fusion","Tone mapping afterwards, with the merged picture kept as an ordinary image in your design"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Expert mode","item":"https://localeditor.net/expert/"},{"@type":"ListItem","position":3,"name":"HDR merge","item":"https://localeditor.net/hdr-merge/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does it work for handheld shots?","acceptedAnswer":{"@type":"Answer","text":"It handles small shifts and small rotations, up to about three degrees. A larger move, or a step sideways, can fail; a tripod, or exposure fusion with ghost removal turned high, works better then."}},{"@type":"Question","name":"How big can the merged picture be?","acceptedAnswer":{"@type":"Answer","text":"The merge is limited to about 8 megapixels on a computer, 5 on a mid-range device and 3 on an older one, because it needs a lot of memory. Larger photos are reduced for the merge."}},{"@type":"Question","name":"Can I use RAW brackets?","acceptedAnswer":{"@type":"Answer","text":"Yes. RAW frames are merged before white balance, so the result can be developed afterwards. Mixing RAW and JPEG frames in one merge is not allowed."}},{"@type":"Question","name":"Is this the same as the HDR look on one photo?","acceptedAnswer":{"@type":"Answer","text":"No. A single photo has less to merge. The tone mapping control can still give a single RAW photo an HDR-style look."}}]}]}</script>
+</head>
+<body class="le-built pg-body">
+<a class="skip" href="#main">Skip to content</a>
+<div class="le-app">
+  <aside class="le-side" data-fill aria-label="Menu"></aside>
+  <div class="le-main">
+    <header class="le-top" data-fill></header>
+    <main id="main" class="le-content">
+      <div class="pg">
+        <nav class="pg-crumbs" aria-label="Breadcrumb"><ol><li><a href="../">Home</a></li><li><a href="../expert/">Expert mode</a></li><li aria-current="page">HDR merge</li></ol></nav>
+        <section class="pg-hero" aria-labelledby="pg-title">
+          <div class="pg-hero-copy">
+            <p class="eyebrow">HDR merge</p>
+            <h1 id="pg-title">Merge bracketed photos <em>into one HDR picture.</em></h1>
+            <p class="pg-lead">Take the same scene at different exposures and merge them into one picture that keeps detail in the highlights and the shadows. The merge aligns the frames, can remove moving things, and then you tone-map the result in the same studio.</p>
+            <div class="hp-cta">
+              <a class="btn btn-gold btn-lg" href="../studio/?mode=expert">Open Expert mode<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+              
+            </div>
+            <p class="hp-kicker pg-kicker"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Free</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>No account</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Nothing uploaded</span></p>
+          </div>
+          <figure class="pg-art pg-art-edit" aria-hidden="true"><div class="pg-edit"><div class="pg-edit-photo"><img src="../assets/img/home/still-01.webp" width="560" height="374" alt="" loading="lazy" decoding="async"><span class="pg-crop"><i></i><i></i><i></i><i></i></span></div><div class="pg-edit-ctl"><span><b>Brightness</b><i style="--v:58%"></i></span><span><b>Warmth</b><i style="--v:66%"></i></span><span><b>Contrast</b><i style="--v:54%"></i></span></div></div></figure>
+        </section>
+        <section class="pg-how" aria-label="What it does and how it works">
+          <div>
+            <h2 class="pg-label">What it does</h2>
+            <ul class="pg-checks">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Merges two to nine photos, all RAW or all JPEG or PNG</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Aligns frames that moved a little between shots, including a small rotation</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Ghost removal at three strengths for people and clouds that moved</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Two ways to merge: true HDR radiance, or exposure fusion</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Tone mapping afterwards, with the merged picture kept as an ordinary image in your design</span></li>
+            </ul>
+          </div>
+          <div>
+            <h2 class="pg-label">How it works</h2>
+            <ol class="pg-steps">
+              <li><span>Open the studio in Expert mode and choose File, then Merge to HDR.</span></li>
+              <li><span>Pick the bracketed photos, two to nine, then wait while the merge runs on your device. You can cancel.</span></li>
+              <li><span>Adjust the tone mapping in the panel and download.</span></li>
+            </ol>
+          </div>
+        </section>
+        <section class="pg-privacy" aria-labelledby="pg-privacy-title">
+          <span class="pg-privacy-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <div>
+            <h2 id="pg-privacy-title">Your files stay on this device</h2>
+            <p>The merge runs in a background process in your browser on this device. Photos are never uploaded, and the merged picture is stored in your design on this device.</p>
+          </div>
+        </section>
+        <section class="hp-section hp-faq pg-faq" aria-labelledby="pg-faq-title">
+          <div class="hp-head">
+            <p class="eyebrow">Questions</p>
+            <h2 id="pg-faq-title">Short, honest answers.</h2>
+            <p>More on the <a href="../about/">privacy and install page</a>.</p>
+          </div>
+          <div class="faq">
+            <details><summary>Does it work for handheld shots?</summary><p>It handles small shifts and small rotations, up to about three degrees. A larger move, or a step sideways, can fail; a tripod, or exposure fusion with ghost removal turned high, works better then.</p></details>
+            <details><summary>How big can the merged picture be?</summary><p>The merge is limited to about 8 megapixels on a computer, 5 on a mid-range device and 3 on an older one, because it needs a lot of memory. Larger photos are reduced for the merge.</p></details>
+            <details><summary>Can I use RAW brackets?</summary><p>Yes. RAW frames are merged before white balance, so the result can be developed afterwards. Mixing RAW and JPEG frames in one merge is not allowed.</p></details>
+            <details><summary>Is this the same as the HDR look on one photo?</summary><p>No. A single photo has less to merge. The tone mapping control can still give a single RAW photo an HDR-style look.</p></details>
+          </div>
+        </section>
+        <section class="pg-group" aria-labelledby="pg-rel-title">
+          <h2 class="pg-label" id="pg-rel-title">Goes well with</h2>
+          <ul class="pg-list">
+          <li class="pg-row">
+            <a class="pg-row-main" href="../raw-develop/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg></span><span><b>Camera RAW develop</b><small>Open camera RAW files and develop them</small></span></a>
+            <a class="pg-row-go" href="../studio/?mode=expert" aria-label="Open Camera RAW develop">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../colour-grading/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></span><span><b>Colour grading</b><small>Curves, hue bands, colour wheels and LUTs</small></span></a>
+            <a class="pg-row-go" href="../studio/?mode=expert" aria-label="Open Colour grading">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../compositing/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="13" height="16" rx="2"/><path d="M8 2h11a2 2 0 0 1 2 2v15"/></svg></span><span><b>Compositing and blend modes</b><small>Blend modes, masks, match colour and light wrap</small></span></a>
+            <a class="pg-row-go" href="../studio/?mode=expert" aria-label="Open Compositing and blend modes">Open</a>
+          </li>
+          </ul>
+        </section>
+        <p class="pg-also">Part of <a href="../expert/">Expert mode</a> and <a href="../photographers/">Photographers</a>.</p>
+        <section class="hp-close pg-close" aria-labelledby="pg-close-title">
+          <h2 id="pg-close-title">HDR merge, <em>on this device.</em></h2>
+          <p>Merge two to nine exposures into one. It opens in this browser and keeps your files on this device.</p>
+          <div class="hp-cta"><a class="btn btn-gold btn-lg" href="../studio/?mode=expert">Open Expert mode</a></div>
+        </section>
+        <footer class="hp-foot pg-foot">
+          <div class="hp-foot-top">
+            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><path d="M256 0C51 0 0 51 0 256s51 256 256 256 256-51 256-256S461 0 256 0z" fill="#0369DA"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
+            <nav aria-label="Footer">
+              <a href="../studio/">Photo studio</a>
+              <a href="../pdf-studio/">PDF studio</a>
+              <a href="../recipes/">Recipes</a>
+              <a href="../about/">Privacy</a>
+              <button type="button" data-le-install>Install</button>
+              <button type="button" data-le-storage>Storage</button>
+              <a href="../llms.txt">llms.txt</a>
+            </nav>
+          </div>
+          <nav class="pg-foot-hubs" aria-label="Browse by need">
+              <a href="../photo/">Photo and design</a>
+              <a href="../pdf/">PDF and documents</a>
+              <a href="../expert/">Expert mode</a>
+              <a href="../photographers/">Photographers</a>
+              <a href="../social/">Social and creators</a>
+              <a href="../sellers/">Online sellers</a>
+              <a href="../business/">Small business</a>
+              <a href="../office/">Office work</a>
+              <a href="../teachers/">Teachers</a>
+              <a href="../privacy-tools/">Privacy tools</a>
+              <a href="../ai-agents/">For AI agents</a>
+              <a href="../tools/">Every tool</a>
+          </nav>
+          <p>&copy; 2026 LocalEditor. Files stay on your device.</p>
+        </footer>
+      </div>
+    </main>
+  </div>
+</div>
+<button class="le-scrim" type="button" data-scrim hidden tabindex="-1" aria-label="Close menu"></button>
+<script src="../assets/js/app.js"></script>
+</body>
+</html>

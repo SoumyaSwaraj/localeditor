@@ -152,7 +152,7 @@ function validate(site) {
     }
     ['headline', 'metaTitle', 'description', 'summary', 'privacy'].forEach((k) => { if (!e[k]) errs.push(e.id + ': needs ' + k); });
     if (e.description && e.description.length > 170) errs.push(e.id + ': description is over 170 characters');
-    if (!Array.isArray(e.faq) || e.faq.length < 2 || e.faq.length > 4) errs.push(e.id + ': needs 2 to 4 FAQ entries');
+    if (!Array.isArray(e.faq) || e.faq.length < 2 || e.faq.length > 5) errs.push(e.id + ': needs 2 to 5 FAQ entries');
     if (e.kind === 'feature') {
       if (!e.launch || !e.launchLabel) errs.push(e.id + ': needs launch and launchLabel');
       if (!Array.isArray(e.does) || e.does.length < 3 || e.does.length > 5) errs.push(e.id + ': needs 3 to 5 "does" bullets');
@@ -257,7 +257,12 @@ function faqLD(e) {
 
 /* The launch control. Install and storage open their dialogs in place; the href is the fallback. */
 function launchAttrs(e) {
-  return e.action === 'install' ? ' data-le-install' : e.action === 'storage' ? ' data-le-storage' : '';
+  return e.action === 'install' ? ' data-le-install' : e.action === 'storage' ? ' data-le-storage' : e.action === 'appearance' ? ' data-appearance' : '';
+}
+/* The Appearance dialog opens from a click on [data-appearance] and the shell does not cancel a link, so that launch is a button. */
+function launchEl(e, cls, rel, inner) {
+  if (e.action === 'appearance') return `<button type="button" class="${cls}"${launchAttrs(e)}>${inner}</button>`;
+  return `<a class="${cls}" href="${rel}${e.launch}"${launchAttrs(e)}>${inner}</a>`;
 }
 function badge(e) { return e.status === 'beta' ? '<span class="pg-beta">Beta</span>' : ''; }
 
@@ -266,7 +271,7 @@ function row(site, e, rel) {
   if (site.hasPage(e)) {
     return `<li class="pg-row">
             <a class="pg-row-main" href="${rel}${e.url}"><span class="hp-tool-ic">${svg(e.icon)}</span><span><b>${esc(e.title)}${badge(e)}</b><small>${esc(e.tagline)}</small></span></a>
-            <a class="pg-row-go" href="${rel}${e.launch}"${launchAttrs(e)} aria-label="Open ${esc(e.title)}">Open</a>
+            ${launchEl(e, 'pg-row-go', rel, 'Open').replace('>Open<', ' aria-label="Open ' + esc(e.title) + '">Open<')}
           </li>`;
   }
   return `<li class="pg-row">
@@ -345,7 +350,7 @@ function hubPage(site, e) {
     faqLD(e),
   ];
   const others = site.items(e.related).filter((r) => site.hasPage(r));
-  const cta = e.launch ? `<div class="hp-cta"><a class="btn btn-gold btn-lg" href="../${e.launch}"${launchAttrs(e)}>${esc(e.launchLabel)}${svg('arrow')}</a></div>` : '';
+  const cta = e.launch ? `<div class="hp-cta">${launchEl(e, 'btn btn-gold btn-lg', '../', esc(e.launchLabel) + svg('arrow'))}</div>` : '';
   return head(site, e, graph) + `        ${crumbs(trail)}
         <section class="pg-hero${e.art ? '' : ' pg-hero-plain'}" aria-labelledby="pg-title">
           <div class="pg-hero-copy">
@@ -369,7 +374,7 @@ function hubPage(site, e) {
 }
 
 function privacyTitle(e) {
-  return { teachers: 'Student details stay on this device', office: 'Confidential files never leave this device', business: 'Your customers’ files stay with you', social: 'Drafts stay private until you post', 'privacy-tools': 'Checked here, kept here' }[e.id] || 'Your files stay on this device';
+  return { teachers: 'Student details stay on this device', office: 'Confidential files never leave this device', business: 'Your customers’ files stay with you', social: 'Drafts stay private until you post', 'privacy-tools': 'Checked here, kept here', expert: 'Edited on this device, not on a server', photographers: 'Client photos stay on this device', sellers: 'Your products and customers stay with you', 'ai-agents': 'Nothing is sent from the page' }[e.id] || 'Your files stay on this device';
 }
 
 function hubCard(h, rel) {
@@ -433,7 +438,7 @@ function featurePage(site, e) {
             <h1 id="pg-title">${headline(e.headline)}</h1>
             <p class="pg-lead">${esc(e.summary)}</p>
             <div class="hp-cta">
-              <a class="btn btn-gold btn-lg" href="../${e.launch}"${launchAttrs(e)}>${esc(e.launchLabel)}${svg('arrow')}</a>
+              ${launchEl(e, 'btn btn-gold btn-lg', '../', esc(e.launchLabel) + svg('arrow'))}
               ${second}
             </div>
             <p class="hp-kicker pg-kicker"><span>${svg('check')}Free</span><span>${svg('check')}No account</span><span>${svg('check')}Nothing uploaded</span></p>
@@ -466,7 +471,7 @@ function featurePage(site, e) {
         <section class="hp-close pg-close" aria-labelledby="pg-close-title">
           <h2 id="pg-close-title">${esc(e.title)}, <em>on this device.</em></h2>
           <p>${esc(e.tagline)}. It opens in this browser and keeps your files on this device.</p>
-          <div class="hp-cta"><a class="btn btn-gold btn-lg" href="../${e.launch}"${launchAttrs(e)}>${esc(e.launchLabel)}</a></div>
+          <div class="hp-cta">${launchEl(e, 'btn btn-gold btn-lg', '../', esc(e.launchLabel))}</div>
         </section>` + tail(site);
 }
 
@@ -480,6 +485,9 @@ function replaceBlock(text, begin, end, body, file) {
 function appIndex(site) {
   const hubs = site.hubs.map((h) => [h.title, h.url, h.tagline, h.icon]);
   const pages = site.features.map((f) => [f.title, f.url, f.tagline, (f.keywords || []).join(' ')]);
+  /* Entries of kind tool that live in site.json (quick makers, studio tools, guides) are not in scripts/build.js TOOLS; search finds them too. */
+  const built = new Set(site.tools.map((t) => t.slug + '/'));
+  site.entries.filter((e) => e.kind === 'tool' && site.visible(e) && e.launch && !built.has(e.launch)).forEach((e) => pages.push([e.title, e.launch, e.tagline, (e.keywords || []).join(' ')]));
   return '\n  var HUBS = ' + JSON.stringify(hubs) + ';\n  var PAGES = ' + JSON.stringify(pages) + ';\n  ';
 }
 
