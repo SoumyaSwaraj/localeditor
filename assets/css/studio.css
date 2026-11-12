@@ -1644,3 +1644,16 @@ select.sx-input { padding-right: 28px; }
 @media (max-width: 380px) {
   .sx-download { padding: 0 12px !important; }
 }
+
+/* ---------- Simple | Expert switch (the expert workspace styles load with it: assets/css/expert.css) ---------- */
+.sx-mode { display: inline-flex; flex: none; padding: 3px; gap: 2px; border-radius: 11px; background: rgba(255, 255, 255, 0.07); margin-right: 6px; }
+.sx-mode button { height: 30px; padding: 0 11px; border: 0; border-radius: 8px; background: transparent; color: var(--side-dim); font-size: 12.5px !important; font-weight: 700; cursor: pointer; }
+.sx-mode button:hover { color: #fff; }
+.sx-mode button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.14); color: #fff; }
+.sx-xp-mark { color: var(--muted) !important; font-size: 12.5px !important; }
+.sx-mode-t { display: none; }
+@media (max-width: 767px) {
+  .sx-mode { display: none; }
+  .sx-mode-t { display: inline-grid; width: 36px !important; }
+  .sx-head .sx-mode-t[aria-pressed="true"] { background: rgba(226, 177, 90, 0.2); color: #F2D594; }
+}
