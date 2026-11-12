@@ -403,8 +403,10 @@ function walk(dir, out = []) {
   }
   return out;
 }
-/* Downloaded on request and owned by a runtime cache (listed in the storage manager), never precached. */
-const ON_DEMAND = /^assets\/vendor\/tesseract\/|^assets\/vendor\/pdf-lib-crypt|^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
+/* Downloaded on request and owned by a runtime cache (listed in the storage manager), never precached.
+   assets/js/fx/ (the expert effect renderer) is the exception to "owned by a runtime cache": the worker's app() handler stores
+   each of its files in the versioned app cache the first time it is fetched, so it works offline after its first use. */
+const ON_DEMAND = /^assets\/js\/fx\/|^tools\/fx-bench\/|^assets\/vendor\/tesseract\/|^assets\/vendor\/pdf-lib-crypt|^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
 /* If one of these fails to download, the new version is not installed (the old one keeps working). */
 const CRITICAL = ['./', './offline.html', './studio/', './assets/js/app.js', './assets/css/app.css', './assets/js/le-pwa.js', './assets/css/le-pwa.css', './manifest.webmanifest'];
 

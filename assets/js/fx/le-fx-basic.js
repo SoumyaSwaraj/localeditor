@@ -53,8 +53,8 @@
     var out = new Float32Array(n), sh = (p.shadows || 0) / 100, hi = (p.highlights || 0) / 100, wh = (p.whites || 0) / 100, bl = (p.blacks || 0) / 100, i;
     for (i = 0; i < n; i++) {
       var x = i / (n - 1), y = x;
-      y += sh * 0.28 * Math.pow(1 - x, 3) * x * 9.4815;
-      y += hi * 0.28 * Math.pow(x, 3) * (1 - x) * 9.4815;
+      y += sh * 0.22 * Math.pow(1 - x, 3) * x * 9.4815;
+      y += hi * 0.22 * Math.pow(x, 3) * (1 - x) * 9.4815;
       y += wh * 0.18 * x * x * (0.35 + 0.65 * x);
       y += bl * 0.18 * (1 - x) * (1 - x) * (0.35 + 0.65 * (1 - x));
       out[i] = M.clamp(y, 0, 1);

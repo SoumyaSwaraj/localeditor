@@ -324,6 +324,17 @@
       },
       can: 'use the graphics chip for effects', lack: 'This browser cannot use the graphics chip for effects.'
     },
+    'webgl-float': {
+      kind: 'device', lazy: true,
+      test: function () {
+        var gl = document.createElement('canvas').getContext('webgl2');
+        if (!gl) return false;
+        var ok = !!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'));
+        try { var x = gl.getExtension('WEBGL_lose_context'); if (x) x.loseContext(); } catch (e) {}
+        return ok;
+      },
+      can: 'render effects in high precision', lack: 'This device renders effects in 8-bit colour, so very smooth gradients can show faint steps.'
+    },
     'canvas-max-area': {
       kind: 'device', lazy: true,
       test: function () { return maxCanvas().area >= 32 * 1024 * 1024; },

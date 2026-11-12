@@ -471,7 +471,10 @@
   global.LE_FX_DEFS = { push: function (d) { try { FX.register(d); } catch (e) { if (global.console) console.warn('LE.fx: ' + e.message); } return 0; } };
   queue.forEach(function (d) { global.LE_FX_DEFS.push(d); });
 
-  FX.ready = Promise.all([load('gl')].concat(PACKS.map(load))).then(function () { return FX; });
+  FX.ready = Promise.all([load('gl')].concat(PACKS.map(load))).then(function () {
+    /* Effects that read whole-image statistics need the analysis code before the first render. */
+    return order.some(function (id) { return defs[id].needs.indexOf('stats') >= 0; }) ? load('analyze') : null;
+  }).then(function () { return FX; });
 
   /* Statistics load on first use. */
   FX.analyze = function (target, opts) {
