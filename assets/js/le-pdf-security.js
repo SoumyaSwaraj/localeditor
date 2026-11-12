@@ -3438,6 +3438,23 @@
       if (e.key === 'Escape' && SEC.drawing) { e.stopPropagation(); setDrawing(false); if (S.panel === 'security') render(); }
     }, true);
 
+    /* Boxes drawn here are only a preview until "Redact and verify". Save PDF must not look like it applied them. */
+    d.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-act="save"]');
+      if (!b || !countMarks().boxes || SEC.saveOk) return;
+      e.preventDefault(); e.stopPropagation();
+      var body = el('div', 'sec-confirm', '<p>' + esc(plural(countMarks().boxes, 'redaction box', 'redaction boxes')) + ' are not applied yet. Save PDF keeps everything under them.</p><p class="ps-note">To remove what is under the boxes, use Redact and verify.</p>');
+      PS.dialog({ title: 'Redaction not applied', body: body, ok: 'Redact and verify', cancel: 'Save without removing' }).then(function (ok) {
+        if (ok) { PS.openPanel('security'); go('redact'); doRedact(); return; }
+        if (d.getElementById('ps-dialog').returnValue === 'cancel') { SEC.saveOk = true; try { PS.save(); } finally { setTimeout(function () { SEC.saveOk = false; }, 0); } }
+      });
+    }, true);
+    var prevSaved = PS.onSaved;
+    PS.onSaved = function (x) {
+      if (prevSaved) { try { prevSaved(x); } catch (e) {} }
+      if (countMarks().boxes && !SEC.saveOk) say('Saved without redaction. Use Protect, then Redact and verify, to remove what is under the boxes.', 6000);
+    };
+
     /* ---------- panel registration and rail tab ---------- */
 
     PS.panels.security = {

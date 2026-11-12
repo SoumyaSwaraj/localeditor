@@ -457,5 +457,16 @@ module.exports = {
     h.assert(/ZULU/.test(result.orig), 'original changed');
     h.assert(await h.noOverflow(page), 'sideways scroll after redaction');
     h.assert.noErrors(page);
+  },
+
+  'Save PDF warns when redaction boxes are not applied yet': async ({ browser, base, h }) => {
+    const page = await studioWith(h, browser, base, 'desktop', 'redact');
+    await page.evaluate(() => PS.security.addMark(PS.S.pages[0].uid, SecFixtures.REDACT_BOXES.name));
+    await page.click('.ps-top [data-act="save"]');
+    await page.waitForSelector('#ps-dialog[open]');
+    const text = await page.textContent('#ps-dialog');
+    h.assert(/not applied yet/.test(text) && /Redact and verify/.test(text), 'dialog: ' + text);
+    await page.keyboard.press('Escape');
+    h.assert.noErrors(page);
   }
 };
