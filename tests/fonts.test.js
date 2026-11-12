@@ -75,6 +75,10 @@ module.exports = {
     const bad = reqs.filter((u) => isFont(u) || /fonts-(index|details|cjk)\.json|\/previews\//.test(u));
     h.assert(!bad.length, 'no font requests on first load: ' + bad.join(', '));
     h.assert(await page.evaluate(() => LE.fonts.list().length >= 200 && LE.fonts.css('Inter').indexOf('Inter') >= 0), 'names answer without the index');
+    /* LE.downloads asks for the size of "everything" synchronously when it lists the packs. */
+    h.assert(await page.evaluate(() => typeof LE.fonts.sizeOf('all') === 'number' && LE.fonts.sizeOf('all') > 25e6), 'sizeOf(all) is a number at once');
+    h.assert(await page.evaluate(() => LE.fonts.list({ source: 'localeditor' }).length === 20), 'originals registered without the index');
+    h.assert(!reqs.some((u) => /fonts-index\.json/.test(u)), 'still no index');
     await ctx.close();
   },
 
@@ -255,9 +259,11 @@ module.exports = {
       const { page, id } = await studioText(h, browser, base, vp, { text: 'Hello', font: 'Inter', size: 80 });
       await h.openPanel(page, 'fonts');
       await page.waitForSelector('.sf-row');
+      await page.waitForTimeout(600); /* the phone sheet animates in (transform) */
       h.assert(await h.noOverflow(page), vp + ' no sideways scroll');
-      const small = await page.evaluate(() => Array.from(document.querySelectorAll('.sf-pick, .sf-fav, .sf-search input, .sf-select select')).filter((n) => n.getBoundingClientRect().height && n.getBoundingClientRect().height < 44).length);
-      h.assert(small === 0, vp + ' 44px targets');
+      /* Layout size, not the painted box: offsetHeight ignores the sheet's transform. */
+      const small = await page.evaluate(() => Array.from(document.querySelectorAll('.sf-pick, .sf-fav, .sf-search input, .sf-select select')).filter((n) => n.offsetHeight && n.offsetHeight < 44).map((n) => n.className + ':' + n.offsetHeight));
+      h.assert(small.length === 0, vp + ' 44px targets: ' + small.join(', '));
       await page.fill('.sf-search input', 'pacif');
       await page.waitForTimeout(300);
       h.assert(await page.evaluate(() => document.querySelector('.sf-row .sf-pick').getAttribute('data-fam') === 'Pacifico'), 'search finds Pacifico');
@@ -299,25 +305,64 @@ module.exports = {
     await page.context().close();
   },
 
-  'LocalEditor originals appear when the manifest has them': async ({ browser, base, h }) => {
-    const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1440, height: 900 } });
-    const idx = INDEX();
-    const anton = idx.families.filter((f) => f.slug === 'anton')[0];
-    idx.families.push({ family: 'Test Original', slug: 'test-original', style: 'display', kind: 'impact', feel: ['urgent'], scripts: ['latin'], subsets: ['all'],
-      faces: ['400'], weights: [400], italic: false, rank: 999, bytes: 1000, rev: '', license: 'OFL-1.1', source: 'localeditor',
-      dir: 'assets/fonts/library/anton/', files: { 400: 'anton-latin-400.' + anton.rev + '.woff2' }, preview: anton.preview });
-    await ctx.route('**/assets/data/fonts-index.json', (rt) => rt.fulfill({ contentType: 'application/json', body: JSON.stringify(idx) }));
-    const page = await ctx.newPage();
-    page.errors = [];
-    await page.goto(base + '/studio/', { waitUntil: 'networkidle' });
-    await page.waitForFunction(() => window.LEStudio && window.LEStudio.scene);
-    await page.evaluate(() => window.LEStudio.newDesign(1080, 1080, 'x'));
+  'LocalEditor originals: their own view, descriptions, intent filter, real faces, PDF': async ({ browser, base, h }) => {
+    const { page, id } = await studioText(h, browser, base, 'desktop', { text: 'Hello', font: 'Inter', size: 80 });
     await h.openPanel(page, 'fonts');
+    await page.waitForSelector('.sf-row');
     await page.click('[data-view=originals]');
+    await page.waitForTimeout(400);
+    const rows = await page.evaluate(() => Array.from(document.querySelectorAll('.sf-pick')).map((b) => [b.getAttribute('data-fam'), b.querySelector('small').textContent]));
+    const LE_ORIG = await page.evaluate(() => LE.fontsOriginals.list().map((f) => f.family));
+    h.assert(await page.evaluate(() => document.querySelector('.sf-count').textContent) === '20 fonts', 'twenty originals in the view');
+    h.assert(rows.length >= 8 && rows.every((r) => LE_ORIG.indexOf(r[0]) >= 0), 'rows are originals: ' + rows.map((r) => r[0]));
+    const desc = await page.evaluate(() => LE.fontsOriginals.list().map((f) => f.description));
+    h.assert(rows.every((r) => desc.indexOf(r[1]) >= 0), 'description as subtitle');
+    await page.click('.sf-intents [data-intent=trust]');
     await page.waitForTimeout(300);
-    const names = await page.evaluate(() => Array.from(document.querySelectorAll('.sf-pick')).map((b) => b.getAttribute('data-fam')));
-    h.assert(names.length === 1 && names[0] === 'Test Original', 'originals view: ' + names);
-    h.assert(await page.evaluate(async () => { await LE.fonts.load('Test Original'); return document.fonts.check('40px "Test Original"', 'A'); }), 'loads from its own folder');
-    await ctx.close();
+    const trust = await page.evaluate(() => Array.from(document.querySelectorAll('.sf-pick')).map((b) => LE.fonts.find(b.getAttribute('data-fam')).intent));
+    h.assert(trust.length === 5 && trust.every((x) => x === 'trust'), 'intent filter: ' + trust);
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.sf-row .sf-name')).fontFamily.indexOf('Anchorline') >= 0 || /Northwall|Plainfield|Clearwell|Hearthbook/.test(getComputedStyle(document.querySelector('.sf-row .sf-name')).fontFamily));
+    await page.evaluate(() => window.LEStudioFonts.apply(window.LEStudio, 'Anchorline'));
+    await page.waitForTimeout(800);
+    h.assert((await h.doc(page)).layers.filter((l) => l.id === id)[0].font === 'Anchorline', 'applied');
+    h.assert(await page.evaluate(() => document.fonts.check('40px Anchorline', 'Hello')), 'real face loaded');
+    const pdf = await page.evaluate(async () => { const b = await LE.fonts.bytes('Anchorline', 700, false); const f = fontkit.create(b); return { glyphs: f.numGlyphs, w: f['OS/2'].usWeightClass }; }).catch((e) => ({ err: e.message }));
+    h.assert(pdf.glyphs > 50, 'PDF source for an original: ' + JSON.stringify(pdf));
+    h.assert.noErrors(page);
+    await page.context().close();
+  }
+  ,
+  'Convert to PDF makes real text with no connection after a first visit (PDF faces kept offline)': async ({ browser, base, h }) => {
+    const page = await h.open(browser, base, '/convert-to-pdf/', 'desktop');
+    page.setDefaultTimeout(60000);
+    await page.waitForFunction(() => window.LE && LE.lazy && LE.fonts && LE.fonts.keepPdfFaces);
+    /* What the first-idle / Basic-pack hook does, without waiting for idle. */
+    const kept = await page.evaluate(async () => { try { localStorage.removeItem('le-fonts-pdf-faces'); } catch (e) {} return LE.fonts.keepPdfFaces(); });
+    h.assert(kept === true, 'PDF faces kept');
+    const off = await page.evaluate(async () => Promise.all(LE.fonts.PDF_FACES.map((f) => LE.fonts.isOffline(f))));
+    h.assert(off.every(Boolean), 'all four saved: ' + off);
+    /* Second visit with the font files and the font index unreachable. */
+    await page.context().route('**/assets/fonts/library/**', (rt) => rt.abort());
+    await page.context().route('**/assets/data/fonts-index.json', (rt) => rt.abort());
+    const p2 = await page.context().newPage();
+    await p2.goto(base + '/convert-to-pdf/', { waitUntil: 'networkidle' });
+    await p2.waitForFunction(() => window.LE && LE.lazy);
+    const r = await p2.evaluate(async () => {
+      await LE.lazy('../assets/js/le-convert.js');
+      const res = await fetch('/scripts/fixtures/sample.md');
+      const out = await LE.convert.toPDF(new File([await res.arrayBuffer()], 'sample.md'), {});
+      if (!window.pdfjsLib) await LE.lazy('../assets/vendor/pdf.min.js');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '../assets/vendor/pdf.worker.min.js';
+      const d = await pdfjsLib.getDocument({ data: out.bytes.slice(0), isEvalSupported: false }).promise;
+      const pg = await d.getPage(1);
+      const tc = await pg.getTextContent();
+      const ops = await pg.getOperatorList();
+      const fonts = [];
+      ops.fnArray.forEach((fn, i) => { if (fn === pdfjsLib.OPS.setFont) { const f = pg.commonObjs.get(ops.argsArray[i][0]); fonts.push(f.name); } });
+      return { text: tc.items.map((x) => x.str).join(' ').slice(0, 200), fonts, warnings: out.warnings || [] };
+    });
+    h.assert(r.text.replace(/\s/g, '').length > 20, 'real text: ' + r.text);
+    h.assert(r.fonts.some((n) => /Jakarta|Lora|JetBrains|Manrope/i.test(n)), 'set in the library faces: ' + JSON.stringify(r.fonts) + ' ' + JSON.stringify(r.warnings));
+    await page.context().close();
   }
 };

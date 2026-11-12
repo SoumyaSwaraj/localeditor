@@ -11,7 +11,7 @@
   var H = P._hooks = P._hooks || {};
   var ROW = 56;
   var OVERSCAN = 6;
-  var state = { style: '', feel: '', script: '', view: 'all', q: '', scroll: 0 };
+  var state = { style: '', feel: '', script: '', view: 'all', q: '', scroll: 0, intent: '' };
   var pv = null;
   var told = {};
   var offlineSet = null;
@@ -191,7 +191,7 @@
     if (!window.caches) { c.toast('This browser cannot keep fonts for offline use.'); return; }
     if (typeof target === 'string' && FX.find(target)) { run(); return; }
     /* A collection or everything: one question at most, through the shared download policy. */
-    FX.sizeOf(target).then(function (bytes) {
+    Promise.resolve(FX.sizeOf(target)).then(function (bytes) {
       var name = target === 'all' ? 'All fonts' : Array.isArray(target) ? 'These fonts' : ((FX.collections().filter(function (x) { return x.id === target; })[0] || {}).name || 'Fonts') + ' fonts';
       return request('fonts-' + (Array.isArray(target) ? 'set' : target), name, bytes, 'Fonts that work with no connection');
     }).then(function (ok) { if (ok) run(); });
@@ -203,7 +203,7 @@
     var was = btn.textContent;
     FX.saveOffline(target, function (p) {
       btn.textContent = 'Saving… ' + Math.round(100 * p.loaded / Math.max(1, p.total)) + '%';
-    }).then(function (r) {
+    }, { track: true }).then(function (r) {
       offlineSet = null;
       c.toast(r.families.length === 1 ? r.families[0] + ' is saved on this device.' : r.families.length + ' fonts are saved on this device.');
       if (done) done(); else c.renderPanel(true);
@@ -223,6 +223,7 @@
 
   /* ---------- Rows ---------- */
   function metaLine(f) {
+    if (f.source === 'localeditor' && f.description) return f.description;
     var bits = [label('style', f.style)];
     if (f.wght) bits.push('Variable');
     else bits.push(f.weights.length === 1 ? '1 weight' : f.weights.length + ' weights');
@@ -305,7 +306,7 @@
       var f = { style: state.style || undefined, feel: state.feel || undefined, script: state.script || undefined, q: state.q || undefined };
       if (state.view === 'recent') return FX.recent().map(function (n) { return FX.list({ families: [n] })[0]; }).filter(Boolean).filter(matcher(f));
       if (state.view === 'favourites') f.favourites = true;
-      if (state.view === 'originals') f.source = 'localeditor';
+      if (state.view === 'originals') { f.source = 'localeditor'; if (state.intent) f.intent = state.intent; }
       if (state.view === 'design') f.families = designFamilies(c);
       var res = state.q ? FX.search(state.q).filter(matcher(f)) : FX.list(f);
       return res;
@@ -316,6 +317,16 @@
     }
     function draw() {
       extra.innerHTML = '';
+      if (state.view === 'originals') {
+        /* The four intents the originals were drawn for. */
+        var chips = c.h('<div class="sx-chips is-scroll sf-intents" role="group" aria-label="Made for"></div>');
+        [['', 'All'], ['attention', 'Attention'], ['trust', 'Trust'], ['positive', 'Positive feeling'], ['tension', 'Tension']].forEach(function (it) {
+          var b = c.h('<button type="button" class="sx-chip" data-intent="' + it[0] + '" aria-pressed="' + ((state.intent || '') === it[0]) + '">' + esc(it[1]) + '</button>');
+          b.onclick = function () { state.intent = it[0]; state.scroll = 0; draw(); };
+          chips.appendChild(b);
+        });
+        extra.appendChild(chips);
+      }
       if (state.view === 'saved') {
         offline().then(function (set) {
           rows = filtered().filter(function (x) { return set[x.family]; });
