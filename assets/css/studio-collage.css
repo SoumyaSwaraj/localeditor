@@ -160,6 +160,8 @@
 
 /* ---------- Stock ---------- */
 .sx-stock-provs { flex-wrap: wrap; overflow: visible; }
+.sx-stock-prov[aria-selected="true"], :root[data-theme="dark"] .sx-stock-prov[aria-selected="true"],
+.sx-rep-tabs button[aria-selected="true"], :root[data-theme="dark"] .sx-rep-tabs button[aria-selected="true"] { background: var(--ink); color: var(--surface); border-color: transparent; }
 .sx-stock-bar { align-items: flex-start; }
 .sx-stock-prov { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; }
 .sx-stock-badge { display: inline-grid; place-items: center; width: 16px; height: 16px; font-style: normal; opacity: 0.75; }
@@ -232,3 +234,5 @@
   .sx-cl-aspects { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sx-cl-layouts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+.sx-stock-root .btn-ink, .sx-stock-root .btn-ink .sx-ic { background: var(--ink); color: var(--surface); border-color: transparent; }
+.sx-stock-root .btn-ink:hover { opacity: 0.9; }

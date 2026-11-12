@@ -210,6 +210,18 @@ cases['double-click a cell to pan and zoom inside it; only the crop changes'] = 
   h.assert.noErrors(page);
 };
 
+cases['double-click on a cell still crops when the page background is a photo'] = async ({ browser, base, h }) => {
+  const page = await h.studioWithSample(browser, base, 'desktop');
+  const ids = await grid(page, 2);
+  await page.evaluate((src) => window.LEStudio.scene.setBackground({ type: 'image', src: src, fit: 'cover', color: '#ffffff' }), ids[1]);
+  await page.waitForTimeout(200);
+  const P0 = await cellCenter(page, (await h.doc(page)).collage.order[0]);
+  await page.mouse.dblclick(P0.x, P0.y);
+  await page.waitForTimeout(200);
+  h.assert.equal(await page.evaluate(() => window.LEStudio.scene.tool()), 'crop', 'cell crop wins');
+  h.assert.noErrors(page);
+};
+
 cases['pinch inside a cell on touch zooms the photo, not the page'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'phone');
   await grid(page, 2);

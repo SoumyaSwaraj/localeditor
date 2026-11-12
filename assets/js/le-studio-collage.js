@@ -1035,7 +1035,7 @@
       saved.appendChild(rm);
       row.appendChild(saved);
     }
-    var form = c.h('<form class="sx-stock-keyform"><input class="sx-input" type="password" autocomplete="off" spellcheck="false" aria-label="' + c.esc(p.name + ' ' + (p.keyLabel || 'key')) + '" placeholder="' + c.esc(cur ? 'Paste a new ' + (p.keyLabel || 'key') : 'Paste ' + (p.keyLabel || 'key')) + '"><button type="submit" class="btn btn-gold btn-sm">Save</button></form>');
+    var form = c.h('<form class="sx-stock-keyform"><input class="sx-input" type="password" autocomplete="off" spellcheck="false" aria-label="' + c.esc(p.name + ' ' + (p.keyLabel || 'key')) + '" placeholder="' + c.esc(cur ? 'Paste a new ' + (p.keyLabel || 'key') : 'Paste ' + (p.keyLabel || 'key')) + '"><button type="submit" class="btn btn-ink btn-sm">Save</button></form>');
     form.onsubmit = function (e) {
       e.preventDefault();
       var v = form.querySelector('input').value.trim();
@@ -1060,7 +1060,7 @@
     var box = c.h('<div class="sx-stock-key sx-stock-ov" data-provider="openverse"><div class="sx-stock-key-h"><b>Openverse</b><small>Optional · higher limit</small></div>' +
       '<ol class="sx-stock-steps"><li class="' + (step > 1 ? 'is-done' : 'is-on') + '">Register</li><li class="' + (step > 2 ? 'is-done' : step === 2 ? 'is-on' : '') + '">Verify email</li><li class="' + (step === 3 ? 'is-done' : '') + '">Connected</li></ol></div>');
     if (step === 1) {
-      var f = c.h('<form class="sx-stock-ovform"><label class="sx-field"><span>Email Openverse should verify</span><input class="sx-input" name="email" type="email" autocomplete="email" required value="' + c.esc(ov.email || '') + '"></label><button type="submit" class="btn btn-gold btn-sm">Register this device</button></form>');
+      var f = c.h('<form class="sx-stock-ovform"><label class="sx-field"><span>Email Openverse should verify</span><input class="sx-input" name="email" type="email" autocomplete="email" required value="' + c.esc(ov.email || '') + '"></label><button type="submit" class="btn btn-ink btn-sm">Register this device</button></form>');
       f.onsubmit = function (e) {
         e.preventDefault();
         var btn = f.querySelector('button');
@@ -1086,7 +1086,7 @@
     } else if (step === 2) {
       box.appendChild(c.h('<p class="sx-stock-verify">' + c.esc(stockState.verify || ('Openverse sent a link to ' + (ov.email || 'your inbox') + '. Open it, then connect.')) + ' Until then, search stays on the anonymous limit.</p>'));
       box.appendChild(c.h('<p class="sx-stock-saved">Client id <code>' + c.esc(tail(ov.clientId)) + '</code> · secret <code>' + c.esc(tail(ov.clientSecret)) + '</code></p>'));
-      var connect = c.h('<button type="button" class="btn btn-gold btn-sm">I verified it — connect</button>');
+      var connect = c.h('<button type="button" class="btn btn-ink btn-sm">I verified it — connect</button>');
       connect.onclick = function () {
         connect.disabled = true;
         api.tokenOpenverse().then(function (t) { if (t) c.toast('Openverse connected'); onChange(); })
@@ -1192,7 +1192,7 @@
     function state(title, text, actions, icon) {
       var n = c.h('<div class="sx-stock-state">' + (icon ? '<span class="sx-stock-state-ic">' + icon + '</span>' : '') + '<strong>' + c.esc(title) + '</strong><p>' + c.esc(text) + '</p><div class="sx-empty-act"></div></div>');
       (actions || []).forEach(function (a) {
-        var b = c.h('<button type="button" class="btn ' + (a.gold ? 'btn-gold' : 'btn-ghost') + ' btn-sm">' + c.esc(a.label) + '</button>');
+        var b = c.h('<button type="button" class="btn ' + (a.gold ? 'btn-ink' : 'btn-ghost') + ' btn-sm">' + c.esc(a.label) + '</button>');
         b.onclick = a.fn;
         n.querySelector('.sx-empty-act').appendChild(b);
       });
@@ -1281,7 +1281,8 @@
     run(true);
   }
   function hitButton(c, hit, opts) {
-    var lic = hit.license ? '<em>' + c.esc(hit.license) + '</em>' : '';
+    var licText = /^(by|by-[a-z-]+|cc0)$/i.test(hit.license || '') ? 'CC ' + hit.license.toUpperCase() : /^pdm$/i.test(hit.license || '') ? 'Public domain' : (hit.license || '');
+    var lic = licText ? '<em>' + c.esc(licText) + '</em>' : '';
     var b = c.h('<button type="button" class="sx-stock-hit"><span class="sx-stock-img"><img alt="" loading="lazy" referrerpolicy="no-referrer">' + lic + '</span><small>' + c.esc(hit.photographer || hit.provider || 'Photo') + '</small></button>');
     var img = b.querySelector('img');
     img.alt = hit.attribution || hit.photographer || 'Stock photo';
