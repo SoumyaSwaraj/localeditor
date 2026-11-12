@@ -579,7 +579,7 @@
       }
       body.appendChild(card0);
     }
-    var ask = el(c, '<div class="sxc-ask"><h3>Remove the background? <span class="sxc-beta">Beta</span></h3><p class="sxc-ask-p sxc-first">Works best with one clear subject.</p></div>');
+    var ask = el(c, '<div class="sxc-ask"><h3>Remove the background? <span class="sxc-beta">Beta</span></h3><p class="sxc-ask-p sxc-first">Works best with one clear subject. It runs on this device; your photo is never uploaded.</p></div>');
     var go = btn(c, 'Remove background', 'cutout', 'btn btn-gold sx-block sxc-go', function () { run(c, img.id); });
     ask.appendChild(go);
     body.appendChild(ask);

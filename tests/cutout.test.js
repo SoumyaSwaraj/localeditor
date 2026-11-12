@@ -59,7 +59,9 @@ cases['the model is not fetched until asked, then cached in le-models-v1'] = asy
   h.assert(!urls.some((u) => /\.onnx|\.wasm/.test(u) && !/\/models\/pro\//.test(u)), 'Model fetched before the button was pressed');
   await page.click('.sxc-go');
   h.assert(!(await page.$('.sxc-confirm')), 'A download within the automatic limit must not ask');
-  await page.waitForFunction(() => LEStudio.scene.layers().some((x) => x.cutout), null, { timeout: 90000 });
+  /* Downloaded quietly and kept (the run itself is covered by the next case; cancel it to keep this one quick). */
+  await page.evaluate(async (id) => { for (let i = 0; i < 400 && !(window.LE.bgRemove && await LE.bgRemove.isCached(id)); i++) await new Promise((r) => setTimeout(r, 200)); }, expected);
+  await page.evaluate(() => LEStudioCutout.cancel());
   const cached = await page.evaluate(async () => (await LE.bgRemove.cachedModels()).map((m) => m.id));
   h.assert(cached.indexOf(expected) >= 0, 'Model not cached: ' + cached.join(','));
   h.assert.noErrors(page);

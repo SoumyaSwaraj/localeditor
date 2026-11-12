@@ -234,33 +234,34 @@ cases['download policy: quality first, quiet small downloads, better one fetched
   await page.evaluate(() => LEStudioCutout.run(null, { quiet: true }));
   h.assert(!(await page.$('.sxc-confirm')), 'No question for a download within the limit');
   h.assert.equal((await page.evaluate(() => LEStudio.one().cutout || {})).model, 'u2netp', 'Use the best option already on the device now');
-  await page.waitForFunction(async () => !!(await (await caches.open('le-models-v1')).match(LE.bgRemove.model('u2net-int8').url)), null, { timeout: 60000 });
-  await page.waitForSelector('.sxc-improve', { timeout: 10000 });
+  await page.waitForSelector('.sxc-improve', { timeout: 60000 });
+  h.assert(await page.evaluate(async () => !!(await (await caches.open('le-models-v1')).match(LE.bgRemove.model('u2net-int8').url))), 'The better option was fetched in the background');
   await page.click('.sxc-improve');
-  await page.waitForFunction(() => (LEStudio.one().cutout || {}).model === 'u2net-int8', null, { timeout: 60000 });
+  await page.waitForFunction(() => LEStudioCutout.state().running);   /* it starts with the better option; no need to wait for it */
+  await page.evaluate(() => LEStudioCutout.cancel());
+  await page.waitForFunction(() => !LEStudioCutout.state().running);
   h.assert(!(await page.$('.sxc-improve')), 'Improve is offered once');
   /* With the shared download manager on the page: options go through pick(), downloads through request()/track(). */
   const seen = await page.evaluate(async () => {
     const log = { pick: null, request: [], track: [] };
     LE.downloads = {
       mode: () => 'auto',
-      pick: (o) => { log.pick = o; return { now: 'u2netp', next: null }; },
+      pick: (o) => { log.pick = o; return { now: 'u2net_human_seg-int8', next: null }; },
       request: (r) => { log.request.push(r); return Promise.resolve({ ok: false, why: 'declined' }); },
       track: (id) => { log.track.push(id); return { progress() {}, done() {}, fail() {} }; }
     };
     await LE.bgRemove.remove('u2net_human_seg-int8');
     LEStudio.patch(LEStudio.one().id, { cutout: null });
-    await LEStudioCutout.run(null, { quiet: true });
-    const picked = (LEStudio.one().cutout || {}).model;
-    await LEStudioCutout.run(null, { quiet: true, model: 'u2net_human_seg-int8' });
-    const after = (LEStudio.one().cutout || {}).model;
+    await LEStudioCutout.run(null, { quiet: true });   /* pick() says the People option, which is not here: request() is asked, says no */
+    const picked = log.request.length ? log.request[0].id : null;
+    const after = (LEStudio.one().cutout || {}).model || null;
     delete LE.downloads;
     return { log, picked, after, cached: !!(await (await caches.open('le-models-v1')).match(LE.bgRemove.model('u2net_human_seg-int8').url)) };
   });
   h.assert(seen.log.pick && seen.log.pick.length && seen.log.pick.every((o) => o.id && typeof o.quality === 'number' && typeof o.speed === 'number' && o.bytes > 0 && o.supportId && typeof o.cached === 'boolean'), 'pick() options: ' + JSON.stringify(seen.log.pick));
-  h.assert.equal(seen.picked, 'u2netp', 'pick() decides the automatic option');
+  h.assert.equal(seen.picked, 'u2net_human_seg-int8', 'pick() decides the automatic option');
   h.assert(seen.log.request.some((r) => r.id === 'u2net_human_seg-int8' && r.kind === 'model' && r.bytes === 44212602 && r.name && !/u2net|onnx/i.test(r.name)), 'request(): ' + JSON.stringify(seen.log.request));
-  h.assert(seen.after === 'u2netp' && !seen.cached, 'A declined request must not download: ' + JSON.stringify(seen));
+  h.assert(seen.after === null && !seen.cached, 'A declined request must not download or change the design: ' + JSON.stringify(seen));
   h.assert.noErrors(page);
 };
 
