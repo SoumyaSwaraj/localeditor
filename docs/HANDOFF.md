@@ -66,7 +66,7 @@ Files: `studio/index.html`, `assets/css/studio.css`, `assets/js/le-studio.js`, `
 
 Working and checked in light and dark, with zero console errors at the time:
 
-- Download button contrast 8.2:1 (ink `#2A1F0A` on gold).
+- Download is the primary button: white on Lapis `--primary`, 5.1:1 (identity refresh, November 2026; it was dark ink on gold before).
 - All 34 withicons styles, suggested palettes, style swap, offline save.
 - Backgrounds: solids, 84 gradients, 32 patterns, 5 textures.
 - Replace-all colours / fonts / styles across pages, one undo.
@@ -91,11 +91,11 @@ Script order in `pdf-studio/index.html` (all `defer`): app, engine, objects, fon
 In the code:
 
 - Sign panel: classic inks, brand inks, “More inks” from `LE.assets.colorSets()`, recents, and the colour picker. Placed signatures can be tinted.
-- Gold / Save PDF uses `--gold-ink: #2A1F0A`.
+- Save PDF is the primary button (`--primary` / `--on-primary`, 5.1:1); while the Export panel is open the header's Save PDF steps back to secondary.
 - Pen, marker, highlighter, and eraser keep their toolbar while drawing.
 - Page scroll on `.ps-app` is locked.
 
-Browser check (no further code changes): 53 named inks (24 classic, 7 brand, 22 from `colorSets()`) plus the colour picker. A placed signature recolored to metallic gold `#A67C00`. Save PDF, Use this signature, and Restore all compute to `#2A1F0A` in light and dark. At 390px the page does not overflow. Console stayed empty. The stray root `le-pdf-studio-panels.js` is gone.
+Browser check (no further code changes): 53 named inks (24 classic, 7 brand, 22 from `colorSets()`) plus the colour picker. A placed signature recolored to metallic gold `#A67C00`. Save PDF, Use this signature, and Restore all computed to the primary-button ink in light and dark. At 390px the page does not overflow. Console stayed empty. The stray root `le-pdf-studio-panels.js` is gone.
 
 Not retested in that pass: clicking an icon to confirm `loadIconPalettes`, the pen toolbar, scroll lock, and saving the PDF. Leave those unless a bug shows up.
 
@@ -141,7 +141,7 @@ Local ingest in `le-studio.js` (`ingestPolicy`) keeps the original pixels of a p
 
 `studio/index.html` loads `le-collage.js` then `le-studio-collage.js` after the panel scripts. `window.LEStudioCollage` exposes `renderCatalog`, `renderReplaceSheet`, `renderStock`, `applyTemplate`, `openReplace`.
 
-Checked in the browser: Design → Templates still has the 8 text layouts plus built-in collages. Selecting a slot shows **Replace photo** with **Uploads | This device | Stock photos**. Uploads → Stock, Openverse search `flower`, returned 20 photos. `rateLimit()` is not called until an Openverse token exists. Keys button uses ink `#2A1F0A`. No script errors. Screenshot: `studio-replace-stock-flower.png` under the Cursor screenshots temp folder.
+Checked in the browser: Design → Templates still has the 8 text layouts plus built-in collages. Selecting a slot shows **Replace photo** with **Uploads | This device | Stock photos**. Uploads → Stock, Openverse search `flower`, returned 20 photos. `rateLimit()` is not called until an Openverse token exists. Keys button uses the primary-button ink (then `#2A1F0A` on gold; now white on Lapis). No script errors. Screenshot: `studio-replace-stock-flower.png` under the Cursor screenshots temp folder.
 
 Not checked: importing a stock hit onto the canvas, the hover Replace chip at phone width, an attribution line on a selected stock photo. Apps → Collage is still the old six grids (grouped, so a cell is not its own slot) and has no Style collages entry. Leave those for the next session.
 

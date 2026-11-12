@@ -163,7 +163,7 @@
     cx.beginPath(); cx.arc(c0x, c0y, r * 0.5, 0, Math.PI * 2); cx.stroke();
     cx.beginPath(); cx.moveTo(c0x - r, c0y); cx.lineTo(c0x + r, c0y); cx.moveTo(c0x, c0y - r); cx.lineTo(c0x, c0y + r); cx.stroke();
     /* 75% colour targets */
-    [['R', 1, 0, 0, '#E5484D'], ['Y', 1, 1, 0, '#E2B15A'], ['G', 0, 1, 0, '#30A46C'], ['C', 0, 1, 1, '#3DB9CF'], ['B', 0, 0, 1, '#3E7BFA'], ['M', 1, 0, 1, '#C850C0']].forEach(function (t) {
+    [['R', 1, 0, 0, '#E5484D'], ['Y', 1, 1, 0, '#E3C93B'], ['G', 0, 1, 0, '#30A46C'], ['C', 0, 1, 1, '#3DB9CF'], ['B', 0, 0, 1, '#3E7BFA'], ['M', 1, 0, 1, '#C850C0']].forEach(function (t) {
       var R0 = t[1] * 0.75, G0 = t[2] * 0.75, B0 = t[3] * 0.75;
       var cb = -0.1687 * R0 - 0.3313 * G0 + 0.5 * B0, cr = 0.5 * R0 - 0.4187 * G0 - 0.0813 * B0;
       var x = c0x + cb * 2 * r, y = c0y - cr * 2 * r;
@@ -172,7 +172,7 @@
     });
     /* Skin-tone line */
     var a = S.skinAngle * Math.PI / 180;
-    cx.strokeStyle = 'rgba(242,213,148,.85)'; cx.setLineDash([4, 3]);
+    cx.strokeStyle = 'rgba(254,179,140,.85)'; cx.setLineDash([4, 3]);
     cx.beginPath(); cx.moveTo(c0x, c0y); cx.lineTo(c0x + Math.cos(a) * r, c0y - Math.sin(a) * r); cx.stroke(); cx.setLineDash([]);
     var t2 = S._v || (S._v = document.createElement('canvas'));
     t2.width = data.vs; t2.height = data.vs; t2.getContext('2d').putImageData(img, 0, 0);

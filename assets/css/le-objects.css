@@ -13,7 +13,7 @@
   outline: none;
 }
 .le-scene:focus-visible {
-  outline: 2px solid var(--amethyst, var(--primary));
+  outline: 2px solid var(--primary);
   outline-offset: -2px;
 }
 .le-scene .le-view {
@@ -57,7 +57,7 @@
 }
 .le-sel {
   display: none;
-  border: 1.5px solid var(--amethyst, var(--primary));
+  border: 1.5px solid var(--primary);
   z-index: 3;
 }
 .le-sel.is-on { display: block; }
@@ -70,7 +70,7 @@
 .le-crop.is-on { display: block; }
 .le-marquee {
   display: none;
-  border: 1px solid var(--amethyst, var(--primary));
+  border: 1px solid var(--primary);
   background: rgba(63, 103, 217, 0.14);
   z-index: 3;
 }
@@ -192,7 +192,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  border: 1px dashed var(--amethyst, var(--primary));
+  border: 1px dashed var(--primary);
   border-radius: 2px;
   background: transparent;
   color: var(--ink, #151515);

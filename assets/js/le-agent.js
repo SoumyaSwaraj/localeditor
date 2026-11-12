@@ -1072,7 +1072,7 @@
   }
 
   /* ---------- sessions, consent, pause ---------- */
-  var COLORS = ['#2F6BFF', '#17A37A', '#D07A45', '#E0668E'];
+  var COLORS = ['#B3510B', '#2F6BFF', '#D07A45', '#E0668E']; /* the first is the agent colour: Apricot 600, distinct from the blue of selection */
   function sessionInfo() {
     var s = A.session;
     return s ? { id: s.id, name: s.name, task: s.task, startedAt: s.startedAt, color: s.color, batches: s.batches } : null;

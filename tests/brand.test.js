@@ -95,6 +95,7 @@ const PAIRS = [['--on-primary', '--primary'], ['--on-primary', '--primary-hover'
       h.assert(chroma(c) < 0.006, 'surround ' + s + ' is not neutral: ' + c);
       greys.push(lum(c));
     }
+    h.assert(/rgba\(0, ?0, ?0, ?0\)|transparent/.test(await page.evaluate(() => window.LEStudio.scene._workspace)), 'the scene canvas paints no surround of its own (the CSS surround shows)');
     h.assert(greys[0] > greys[1] && greys[1] > greys[2], 'light > mid > dark surround: ' + greys.map((x) => x.toFixed(3)).join(', '));
     await page.evaluate(() => window.LE.surround.set('auto'));
     await h.openPanel(page, 'settings');
@@ -109,6 +110,25 @@ const PAIRS = [['--on-primary', '--primary'], ['--on-primary', '--primary-hover'
   };
 });
 
+cases['Expert: neutral chrome, mid-grey surround by default, Lapis only for "on"'] = async ({ browser, base, h }) => {
+  for (const theme of ['light', 'dark']) {
+    const page = await h.openTheme(browser, base, '/studio/', 'desktop', theme);
+    await page.waitForFunction(() => window.LEStudio && window.LEStudio.scene);
+    await page.evaluate(async () => { const r = await fetch('/assets/photos/collage/arch-02.jpg'); const b = await r.blob(); await window.LEStudio.newFromPhoto(new File([b], 'arch.jpg', { type: 'image/jpeg' })); });
+    await page.addScriptTag({ url: '/assets/js/expert/mock-fx.js' });
+    await page.evaluate(() => { ['webgl2', 'pointer-fine', 'device-memory-4gb'].forEach((c) => window.LE.support && window.LE.support.override(c, true)); window.LEStudio.mode('expert'); });
+    await page.waitForFunction(() => window.LE.expert && window.LE.expert.active());
+    await page.waitForTimeout(300);
+    const r = await page.evaluate(() => ['.sx-scene', '#xp-strip', '#xp-right', '.sx-head', '.xp-scope-plot'].map((q) => { const e = document.querySelector(q); return [q, e ? getComputedStyle(e).backgroundColor : null]; }));
+    r.forEach(([q, c]) => { if (c && !/, 0\)$/.test(c)) h.assert(chroma(c) < 0.006, theme + ' ' + q + ' has a hue cast: ' + c); });
+    h.assert.equal(r[0][1], 'rgb(115, 115, 115)', theme + ': Expert surround is mid grey by default');
+    const tool = await page.evaluate(() => { const b = document.querySelector('button.xp-tool[aria-pressed="true"]'); return b ? [getComputedStyle(b).backgroundColor, getComputedStyle(b).color] : null; });
+    if (tool) h.assert(ratio(tool[1], tool[0]) >= 3, 'active tool glyph contrast ' + tool.join(' on '));
+    h.assert.noErrors(page);
+    await page.context().close();
+  }
+};
+
 cases['no retired gold, foil or amethyst literals in CSS or inline styles'] = async ({ h }) => {
   const OLD = /#(E2B15A|F3CC7C|F2D594|2A1F0A|2C220F|C9963F|E9BE6A|B9832F|F8E3AE|F6D68E|E8BD6E|E7BA66|CBB78E|7457F0|8D74FF|6A4FE8|5B3FD9|4E36C9|A893FF|B3A1FF|141318|17131F|FBF8F3|F7F6F3|F7EFDC)\b|rgba?\(\s*(226,\s*177,\s*90|242,\s*213,\s*148|185,\s*131,\s*47|116,\s*87,\s*240|42,\s*31,\s*10)\b/i;
   const bad = [];
@@ -119,7 +139,16 @@ cases['no retired gold, foil or amethyst literals in CSS or inline styles'] = as
   const pages = [path.join(ROOT, 'index.html'), path.join(ROOT, 'offline.html'), path.join(ROOT, '404.html'), path.join(ROOT, 'studio', 'index.html'), path.join(ROOT, 'pdf-studio', 'index.html'),
     path.join(ROOT, 'scripts', 'build.js'), path.join(ROOT, 'scripts', 'build-pages.js'), path.join(ROOT, 'assets', 'js', 'app.js'), path.join(ROOT, 'assets', 'js', 'le-pwa.js')];
   pages.filter((f) => fs.existsSync(f)).forEach((f) => scan(f, (l) => /style=|Style\s*=|theme-color|theme_color|background_color/.test(l) && OLD.test(l)));
-  h.assert(bad.length === 0, 'old literals:\n' + bad.slice(0, 20).join('\n'));
+  /* Every page's theme-color and inline styles, and the newer shell scripts (agent, link, downloads, Expert). */
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).forEach((e) => {
+    const p = path.join(d, e.name);
+    if (e.isDirectory()) { if (!/^(node_modules|vendor|labs|\.git|tests|tools|fixtures|scripts)$/.test(e.name)) walk(p); }
+    else if (e.name.endsWith('.html')) scan(p, (l) => /style=|<style|theme-color|le-mark|\{[^}]*(color|background|border)/.test(l) && OLD.test(l));
+  });
+  walk(ROOT);
+  ['le-agent.js', 'le-studio-agent.js', 'le-link.js', 'le-downloads.js'].map((f) => path.join(ROOT, 'assets', 'js', f)).concat(fs.existsSync(path.join(ROOT, 'assets', 'js', 'expert')) ? fs.readdirSync(path.join(ROOT, 'assets', 'js', 'expert')).filter((f) => f.endsWith('.js')).map((f) => path.join(ROOT, 'assets', 'js', 'expert', f)) : [])
+    .filter((f) => fs.existsSync(f)).forEach((f) => scan(f, (l) => /style|Style\s*=|css|setProperty/.test(l) && OLD.test(l)));
+  h.assert(bad.length === 0, 'old literals: ' + bad.slice(0, 20).join(' | '));
 };
 
 cases['focus is visible (3:1) on buttons, fields, chips, segments and icon buttons'] = async ({ browser, base, h }) => {

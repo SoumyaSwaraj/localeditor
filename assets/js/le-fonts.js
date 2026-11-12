@@ -112,10 +112,50 @@
           byName[f.family.toLowerCase()] = c;
         }
       });
+      registered.forEach(function (m) { addMeta(m); });
       emit('index', { families: index.families.length });
       return index;
     }, function (err) { indexP = null; throw err; });
     return indexP;
+  }
+  /* register(list, { collection, source }): families whose files live outside the library (LocalEditor originals,
+     assets/js/le-fonts-originals.js). Kept in memory; list() and css() know them at once, and they join the index
+     when it loads. Registering never fetches anything. */
+  var registered = [];
+  function addMeta(m) {
+    if (!index || meta[m.family.toLowerCase()]) return;
+    index.families.push(m);
+    meta[m.family.toLowerCase()] = m;
+    meta[m.slug] = m;
+  }
+  function register(list, opts) {
+    opts = opts || {};
+    (list || []).forEach(function (e) {
+      if (!e || !e.family || byName[e.family.toLowerCase()] && meta[e.family.toLowerCase()]) return;
+      var slug = e.slug || e.family.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      var files = {}, faces = [], bytes = 0;
+      Object.keys(e.files || {}).forEach(function (w) {
+        var f = e.files[w];
+        files[w] = typeof f === 'string' ? f : f.woff2;
+        faces.push(String(w));
+        if (e.bytes && e.bytes[w]) bytes += Number(e.bytes[w].woff2 || e.bytes[w]) || 0;
+      });
+      var m = {
+        family: e.family, slug: slug, style: e.category || e.style || 'sans', kind: e.kind || 'original', feel: (e.feel || []).slice(0, 3),
+        scripts: e.scripts || ['latin'], subsets: ['all'], faces: faces, weights: (e.weights || faces.map(Number)).slice(), italic: false,
+        rank: 900 + registered.length, bytes: bytes || faces.length * 18 * 1024, rev: '', license: e.license || 'LocalEditor',
+        source: opts.source || e.source || 'localeditor', dir: '', files: files, intent: e.intent || '', description: e.description || '',
+        collection: opts.collection || e.collection || ''
+      };
+      registered.push(m);
+      if (!byName[m.family.toLowerCase()]) {
+        var c = { family: m.family, style: m.style, weights: m.weights, italic: false, cjk: false, variable: false };
+        core.push(c);
+        byName[m.family.toLowerCase()] = c;
+      }
+      addMeta(m);
+    });
+    emit('registered', { families: (list || []).map(function (e) { return e.family; }) });
   }
   function cjk() {
     if (cjkData) return Promise.resolve(cjkData);
@@ -402,12 +442,20 @@
   }
 
   /* ---------- Listing ---------- */
+  function regFind(name) {
+    var n = String(name || '').toLowerCase();
+    for (var i = 0; i < registered.length; i++) if (registered[i].family.toLowerCase() === n || registered[i].slug === n) return registered[i];
+    return null;
+  }
   function entry(c) {
-    var m = meta[c.family.toLowerCase()];
+    var m = meta[c.family.toLowerCase()] || regFind(c.family);
     var o = { family: c.family, category: c.style, style: c.style, weights: c.weights.slice(), italic: !!c.italic, preview: 'Aa', variable: !!c.variable, cjk: !!c.cjk };
     if (m) {
       o.slug = m.slug; o.kind = m.kind; o.feel = m.feel.slice(); o.scripts = m.scripts.slice(); o.rank = m.rank; o.bytes = m.bytes;
       o.license = m.license; o.source = m.source || 'google'; if (m.wght) o.wght = m.wght.slice();
+      if (m.intent) o.intent = m.intent;
+      if (m.description) o.description = m.description;
+      if (m.collection) o.collection = m.collection;
     }
     return o;
   }
@@ -417,6 +465,7 @@
     (m.scripts || []).forEach(function (s) { ids.push('script-' + s); });
     if (ESSENTIALS.indexOf(m.family) >= 0) ids.push('essentials');
     if (m.source === 'localeditor') ids.push('originals');
+    if (m.intent) ids.push('intent-' + m.intent);
     return ids;
   }
   /* list(filter): every family, or those matching { style, feel, script, collection, q, source }.
@@ -435,6 +484,7 @@
       if (filter.feel && (!f.feel || f.feel.indexOf(filter.feel) < 0)) return false;
       if (filter.script && (!f.scripts || f.scripts.indexOf(filter.script) < 0)) return false;
       if (filter.source && f.source !== filter.source) return false;
+      if (filter.intent && f.intent !== filter.intent) return false;
       if (filter.collection) { var m = find(f.family); if (!m || collectionIds(m).indexOf(filter.collection) < 0) return false; }
       if (favs && favs.indexOf(f.family) < 0) return false;
       if (recents && recents.indexOf(f.family) < 0) return false;
@@ -510,6 +560,8 @@
   function preview(family) {
     return ready().then(function () {
       var m = find(family);
+      /* Originals are 16–28 KB each: their names are drawn with the real regular face. */
+      if (m && m.source === 'localeditor' && !m.preview) return load(m.family, { weights: [400] }).then(function () { return quote(m.family); });
       if (!m || !m.preview) throw new Error('No preview for ' + family);
       var name = 'LEP ' + m.slug;
       if (previewDone[name]) return previewDone[name];
@@ -599,10 +651,17 @@
     return col ? col.families.map(find).filter(Boolean) : [];
   }
   /* Bytes a save would download (already saved files are not counted twice by saveOffline, but are here). */
+  /* Bytes a save would download. A number at once when it can be answered without the index ('all' always:
+     the total is generated into this file), else a Promise of the number. Never fetches the index for 'all'. */
+  var TOTAL = /*TOTAL*/33047252/*TOTAL_END*/;
   function sizeOf(target) {
-    return ready().then(function () { return targetFamilies(target).reduce(function (a, m) { return a + (m.bytes || 0); }, 0); });
+    if (target === 'all' && !index) return TOTAL + registered.reduce(function (a, m) { return a + m.bytes; }, 0);
+    if (index) return targetFamilies(target).reduce(function (a, m) { return a + (m.bytes || 0); }, 0);
+    return ready().then(function () { return sizeOf(target); });
   }
-  function saveOffline(target, onProgress) {
+  /* opts.track: show the shared download chip (the picker passes it; LE.downloads' own packs track themselves). */
+  function saveOffline(target, onProgress, opts) {
+    opts = opts || {};
     return ready().then(function () {
       var fams = targetFamilies(target);
       var pre = fams.some(function (m) { return m.cjk; }) ? Promise.all([cjk(), cjkAvailable()]).then(function (r) { return r[1]; }) : Promise.resolve([]);
@@ -615,7 +674,7 @@
           var totalBytes = fams.reduce(function (a, m) { return a + (m.bytes || 0); }, 0);
           /* Total bytes up front; already saved files are skipped, so an interrupted save resumes where it stopped. */
           var D = window.LE && window.LE.downloads;
-          var chip = D && D.track ? D.track('fonts-' + (typeof target === 'string' ? target : 'set'), { name: fams.length === 1 ? fams[0].family : fams.length + ' fonts', bytes: totalBytes }) : null;
+          var chip = opts.track && D && D.track ? D.track('fonts-' + (typeof target === 'string' ? target : 'set'), { name: fams.length === 1 ? fams[0].family : fams.length + ' fonts', bytes: totalBytes }) : null;
           if (onProgress) onProgress({ loaded: 0, total: total, bytes: 0, totalBytes: totalBytes, family: null });
           return caches.open(SAVED).then(function (saved) {
             return caches.open(CACHE).then(function (lib) {
@@ -761,18 +820,46 @@
   }
   function on(fn) { listeners.push(fn); return function () { listeners = listeners.filter(function (x) { return x !== fn; }); }; }
 
+  /* The faces the PDF converter, invoice maker and bulk tools set real text in. Kept offline quietly (about 548 KB):
+     when the Basic editor (or Everything) pack has finished, or on the first idle moment in automatic mode, so
+     Convert to PDF makes real text with no connection after a first visit. Once per device. */
+  var PDF_FACES = ['Plus Jakarta Sans', 'Lora', 'JetBrains Mono', 'Manrope'];
+  var pdfKeep = null;
+  function keepPdfFaces() {
+    if (pdfKeep) return pdfKeep;
+    if (!window.caches || lsGet('le-fonts-pdf-faces', 0)) return Promise.resolve(false);
+    pdfKeep = saveOffline(PDF_FACES).then(function () { lsSet('le-fonts-pdf-faces', Date.now()); return true; }, function () { pdfKeep = null; return false; });
+    return pdfKeep;
+  }
+  function wirePdfFaces() {
+    var D = window.LE && window.LE.downloads;
+    if (!D || !D.__real || lsGet('le-fonts-pdf-faces', 0)) return;
+    if (D.on) D.on('packs', function (list) {
+      if ((list || []).some(function (p) { return p.done && (p.id === 'basic' || p.id === 'basic+models' || p.id === 'all'); })) keepPdfFaces();
+    });
+    if (D.mode && D.mode() === 'auto') {
+      var go = function () {
+        if (navigator.onLine === false || (D.connection && D.connection().metered)) return;
+        if (window.requestIdleCallback) requestIdleCallback(function () { keepPdfFaces(); }, { timeout: 5000 }); else keepPdfFaces();
+      };
+      setTimeout(go, (D.LIMITS && D.LIMITS.idleMs ? D.LIMITS.idleMs : 4000) * 2);
+    }
+  }
+  if (document.readyState === 'complete') setTimeout(wirePdfFaces, 0);
+  else window.addEventListener('load', function () { setTimeout(wirePdfFaces, 0); });
+
   (window.LE_SUPPORT_DEFS = window.LE_SUPPORT_DEFS || []).push({ id: 'fonts.library', name: 'Font library', needs: ['fetch', 'font-loading'], wants: ['cache-storage'] });
 
   var LE = window.LE = window.LE || {};
   LE.fonts = {
     /* existing API */
-    list: list, load: load, isOffline: isOffline, saveAllOffline: saveAllOffline, css: css, bytes: bytes, previewCSS: previewCSS, ensurePreview: ensurePreview,
+    list: list, load: load, register: register, isOffline: isOffline, saveAllOffline: saveAllOffline, css: css, bytes: bytes, previewCSS: previewCSS, ensurePreview: ensurePreview,
     /* library */
     ready: ready, find: function (f) { var m = find(f); return m ? entry(byName[m.family.toLowerCase()] || m) : (byName[String(f || '').toLowerCase()] ? entry(byName[String(f).toLowerCase()]) : null); },
     search: search, collections: collections, recent: recent, favourites: favourites, setFavourite: setFavourite, pairs: pairs, details: details,
     preview: preview, previewName: previewName, sizeOf: sizeOf, saveOffline: saveOffline, keep: keep, removeOffline: removeOffline, usage: usage,
     missing: missing, prepare: prepare, fallbackFor: fallbackFamily, fallbacks: function (f) { return (fallbacks[f] || []).slice(); },
-    cjkAvailable: cjkAvailable, touch: touch, on: on, fmt: fmt,
+    cjkAvailable: cjkAvailable, touch: touch, on: on, fmt: fmt, keepPdfFaces: keepPdfFaces, PDF_FACES: PDF_FACES,
     labels: { style: STYLE_LABEL, feel: FEEL, script: SCRIPT_LABEL },
     caches: { used: CACHE, saved: SAVED },
     _files: function (f) { var m = find(f); return m ? filesOf(m) : []; }

@@ -999,7 +999,8 @@
     this._cropEl = crop;
     this._editor = editor;
     try {
-      var bg = getComputedStyle(document.documentElement).getPropertyValue('--bg');
+      /* With the design system's canvas surround (--stage), paint nothing: the scene's CSS background shows it and follows theme, surround and Expert. */
+      var root = getComputedStyle(document.documentElement), bg = root.getPropertyValue('--stage') ? 'rgba(0,0,0,0)' : root.getPropertyValue('--bg');
       if (bg && bg.trim()) this._workspace = bg.trim();
     } catch (e2) { /* keep default */ }
   };

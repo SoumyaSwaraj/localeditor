@@ -1003,19 +1003,19 @@
     if (doc.getElementById('le-link-chip')) return;
     var st = doc.createElement('style');
     st.textContent = '#le-link-chip{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;display:flex;gap:6px;align-items:center;' +
-      'background:var(--surface,#fff);color:var(--ink,#17131F);border:1px solid var(--line,rgba(23,19,31,.15));border-radius:999px;padding:4px 6px 4px 12px;' +
-      'font:600 13px/1.2 system-ui,sans-serif;box-shadow:0 4px 16px rgba(23,19,31,.12);max-width:calc(100vw - 24px)}' +
+      'background:var(--surface,#fff);color:var(--ink,#141414);border:1px solid var(--line,rgba(0,0,0,.15));border-radius:999px;padding:4px 6px 4px 12px;' +
+      'font:600 13px/1.2 system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.12);max-width:calc(100vw - 24px)}' +
       '#le-link-chip .dot{width:8px;height:8px;border-radius:50%;background:#8a8a8a;flex:none}#le-link-chip[data-s=ok] .dot{background:#2f9e5b}' +
-      '#le-link-chip[data-s=error] .dot{background:#c0392b}#le-link-chip[data-s=warn] .dot{background:#E0B354}#le-link-chip[data-s=sync] .dot{background:#3b82f6}' +
+      '#le-link-chip[data-s=error] .dot{background:#c0392b}#le-link-chip[data-s=warn] .dot{background:#D89C3F}#le-link-chip[data-s=sync] .dot{background:#5884F8}' +
       '#le-link-chip .msg{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}' +
-      '#le-link-chip button{min-height:36px;min-width:44px;border-radius:999px;border:1px solid var(--line,rgba(23,19,31,.15));background:transparent;color:inherit;font:inherit;cursor:pointer;padding:0 12px}' +
-      '#le-link-notes{position:fixed;left:12px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:61;width:min(340px,calc(100vw - 24px));background:var(--surface,#fff);color:var(--ink,#17131F);' +
-      'border:1px solid var(--line,rgba(23,19,31,.15));border-radius:14px;padding:12px;box-shadow:0 8px 28px rgba(23,19,31,.18);font:14px/1.4 system-ui,sans-serif}' +
-      '#le-link-notes textarea{width:100%;box-sizing:border-box;min-height:64px;border-radius:10px;border:1px solid var(--line,rgba(23,19,31,.2));padding:8px;font:inherit;background:transparent;color:inherit}' +
-      '#le-link-notes ul{list-style:none;margin:0 0 8px;padding:0;max-height:40vh;overflow:auto}#le-link-notes li{padding:6px 0;border-bottom:1px solid var(--line,rgba(23,19,31,.1))}' +
+      '#le-link-chip button{min-height:36px;min-width:44px;border-radius:999px;border:1px solid var(--line,rgba(0,0,0,.15));background:transparent;color:inherit;font:inherit;cursor:pointer;padding:0 12px}' +
+      '#le-link-notes{position:fixed;left:12px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:61;width:min(340px,calc(100vw - 24px));background:var(--surface,#fff);color:var(--ink,#141414);' +
+      'border:1px solid var(--line,rgba(0,0,0,.15));border-radius:14px;padding:12px;box-shadow:0 8px 28px rgba(0,0,0,.18);font:14px/1.4 system-ui,sans-serif}' +
+      '#le-link-notes textarea{width:100%;box-sizing:border-box;min-height:64px;border-radius:10px;border:1px solid var(--line,rgba(0,0,0,.2));padding:8px;font:inherit;background:transparent;color:inherit}' +
+      '#le-link-notes ul{list-style:none;margin:0 0 8px;padding:0;max-height:40vh;overflow:auto}#le-link-notes li{padding:6px 0;border-bottom:1px solid var(--line,rgba(0,0,0,.1))}' +
       '#le-link-notes li.done{opacity:.55;text-decoration:line-through}#le-link-notes .row{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}' +
-      '#le-link-notes button{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line,rgba(23,19,31,.2));background:transparent;color:inherit;font:600 14px system-ui,sans-serif;cursor:pointer}' +
-      '#le-link-notes button.primary{background:#E0B354;color:#2A1F0A;border-color:#E0B354}';
+      '#le-link-notes button{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line,rgba(0,0,0,.2));background:transparent;color:inherit;font:600 14px system-ui,sans-serif;cursor:pointer}' +
+      '#le-link-notes button.primary{background:var(--primary,#3F67D9);color:var(--on-primary,#fff);border-color:var(--primary,#3F67D9)}';
     doc.head.appendChild(st);
     var el = doc.createElement('div');
     el.id = 'le-link-chip';
