@@ -851,14 +851,14 @@
   --selection-ink: #161616;
   --warm: #EF8C57;
   --agent: #B3510B;
-  --side: #1F1F1F;
-  --side-2: #2A2A2A;
-  --side-text: #EDEDED;
-  --side-strong: #FFFFFF;
-  --side-dim: #A6A6A6;
-  --side-active: #3A3A3A;
-  --side-hover: rgba(255, 255, 255, 0.08);
-  --side-line: rgba(255, 255, 255, 0.1);
+  --side: #F7F7F7;
+  --side-2: #EDEDED;
+  --side-text: #161616;
+  --side-strong: #000000;
+  --side-dim: #4A4A4A;
+  --side-active: rgba(0, 0, 0, 0.08);
+  --side-hover: rgba(0, 0, 0, 0.06);
+  --side-line: rgba(0, 0, 0, 0.12);
   --inverse-bg: #1F1F1F;
   --inverse-text: #EDEDED;
   --inverse-strong: #FFFFFF;
@@ -907,11 +907,11 @@
   --warm-ink: #913F04;
   --warm-soft: #FFF4EF;
   --seg-on-ink: var(--ink);
-  --side-accent: #FFFFFF;
-  --side-accent-icon: #FFFFFF;
-  --side-selected: var(--side-active);
+  --side-accent: #000000;
+  --side-accent-icon: #000000;
+  --side-selected: rgba(0, 0, 0, 0.08);
   --side-selected-edge: transparent;
-  --side-selected-ink: #FFFFFF;
+  --side-selected-ink: #000000;
   --pop-bg: var(--surface);
   --pop-border: var(--border);
 }
@@ -1373,14 +1373,14 @@
   --selection-ink: #FFFFFF;
   --warm: #EF8C57;
   --agent: #B3510B;
-  --side: #000000;
-  --side-2: #1A1A1A;
-  --side-text: #FFFFFF;
-  --side-strong: #FFFFFF;
-  --side-dim: #E0E0E0;
-  --side-active: #333333;
-  --side-hover: rgba(255, 255, 255, 0.16);
-  --side-line: rgba(255, 255, 255, 0.5);
+  --side: #FFFFFF;
+  --side-2: #F0F0F0;
+  --side-text: #000000;
+  --side-strong: #000000;
+  --side-dim: #1F1F1F;
+  --side-active: #DCE6FF;
+  --side-hover: rgba(0, 0, 0, 0.08);
+  --side-line: #000000;
   --inverse-bg: #000000;
   --inverse-text: #FFFFFF;
   --inverse-strong: #FFFFFF;
@@ -1429,11 +1429,11 @@
   --warm-ink: #913F04;
   --warm-soft: #FFF4EF;
   --seg-on-ink: #FFFFFF;
-  --side-accent: #8AB4FF;
-  --side-accent-icon: #8AB4FF;
-  --side-selected: var(--side-active);
-  --side-selected-edge: #8AB4FF;
-  --side-selected-ink: #FFFFFF;
+  --side-accent: #0035A8;
+  --side-accent-icon: #0035A8;
+  --side-selected: #DCE6FF;
+  --side-selected-edge: #0035A8;
+  --side-selected-ink: #0035A8;
   --pop-bg: var(--surface);
   --pop-border: var(--border);
 }
@@ -2201,7 +2201,7 @@ button.chip:hover { border-color: var(--btn-hover-border); background: var(--btn
 .ap-mode { width: 100%; }
 .ap-hint { margin: 0; font-size: var(--text-sm); color: var(--muted); }
 .ap-hint .btn-link { min-height: 32px; display: inline; border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; font: inherit; font-weight: 650; }
-.ap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: var(--s-3); }
+.ap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: var(--s-3); }
 .ap-card { display: grid; gap: 4px; align-content: start; text-align: left; padding: 8px 8px 12px; min-height: var(--target); border-radius: var(--r-md); border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; font: inherit; transition: border-color var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease); }
 .ap-card:hover { border-color: var(--border-hover); }
 .ap-card[aria-checked="true"] { border-color: var(--selected-edge); box-shadow: 0 0 0 1px var(--selected-edge); }
