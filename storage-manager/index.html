@@ -12,7 +12,6 @@
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
-<link rel="preload" href="../assets/fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="LocalEditor">
 <meta property="og:type" content="website">
@@ -24,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
-<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Storage manager — LocalEditor","url":"https://localeditor.net/storage-manager/","description":"See everything LocalEditor stores in this browser, how much space each part uses, and clear any of it. Saved designs, fonts, offline files and downloads.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Lists saved designs, the offline app, fonts, graphics and downloads","Shows how much space each part takes","Clear one category or everything","Ask the browser to keep your saved work when space runs low"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Privacy tools","item":"https://localeditor.net/privacy-tools/"},{"@type":"ListItem","position":3,"name":"Storage manager","item":"https://localeditor.net/storage-manager/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Will clearing storage delete my designs?","acceptedAnswer":{"@type":"Answer","text":"Clearing saved work does. Clearing fonts or graphics only removes downloads, which come back when you use them again."}},{"@type":"Question","name":"Why would the browser delete my work?","acceptedAnswer":{"@type":"Answer","text":"Browsers can clear site data when the device is low on space. Asking for persistent storage makes that less likely, and saving a project file keeps a copy you control."}}]}]}</script>
 </head>
 <body class="le-built pg-body">
@@ -113,7 +112,7 @@
         </section>
         <footer class="hp-foot pg-foot">
           <div class="hp-foot-top">
-            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3F67D9"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
+            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><path d="M256 0C51 0 0 51 0 256s51 256 256 256 256-51 256-256S461 0 256 0z" fill="#0369DA"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
             <nav aria-label="Footer">
               <a href="../studio/">Photo studio</a>
               <a href="../pdf-studio/">PDF studio</a>

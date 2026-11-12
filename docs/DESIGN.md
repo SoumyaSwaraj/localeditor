@@ -2,9 +2,79 @@
 
 One page for everyone building UI. Tokens live in `assets/css/app.css` (section 1). The studios, tool pages, about, 404, recipes and convert pages all read them. **Never rename or remove a token or a shared class**; `studio.css` and `pdf-studio.css` depend on them. Add new ones instead. The evidence behind these choices, and its limits, is in `docs/research/interface-psychology.md`.
 
-## Identity
+## Themes (pass 3)
 
-**The mark ("Corner").** A bold, rounded **L** drawn as a crop corner, holding a warm **Apricot dot**: your picture, kept in your corner. It is an initial (L for Local), an editing gesture (the crop corner) and a promise (the thing you made stays put). White on a Lapis tile with a soft top-to-bottom gradient; one colour (`assets/icons/mark-mono.svg`, `currentColor`) wherever colour is not available.
+The interface has **five themes**. A theme is a **token set and nothing else**: type, colour, radii, separators, shadows, materials, motion, control shapes. Layout, markup and JS are shared. People choose in **Appearance** (the header's appearance button on site pages, the drawer, and Studio → Performance → Appearance in both studios), together with Light / Dark / Auto.
+
+| id | Name | Character | Interface type | Notes |
+|---|---|---|---|---|
+| `clear` | **Clear** (default) | Clarity, deference, depth: near-white grouped greys or true-dark layered greys, one blue tint, translucent bars and popovers, large soft radii, spring-like motion | System stack (below) | No attribute on `<html>` |
+| `lapis` | **Lapis** | The pass-2 design exactly: Lapis blue, Apricot, Plus Jakarta Sans, the serif accent in headlines | Plus Jakarta Sans (loads only when active) | Keeps the pass-2 homepage composition |
+| `graphite` | **Graphite** | Monochrome, compact, square, no translucency; for people who live in pro tools | System stack, smaller sizes | Primary action is ink (black / white) |
+| `paper` | **Paper** | Warm off-white, soft ink, calm, serif headlines; easy on the eyes for long PDF work | System stack + Instrument Serif headlines | The one theme whose chrome is warm (see below) |
+| `contrast` | **Contrast** | Black and white, 3 px focus rings, 112.5 % text, 48 px targets, no translucency, no shadows | System stack, heavier weights | Suggested (never forced) when the device asks for more contrast |
+
+**How a theme is applied.** `html[data-skin="<id>"]` (absent = Clear), orthogonal to `html[data-theme="light|dark"]`. Both are stored on this device (`localStorage['le-skin']`, `localStorage['le-theme']`; Auto = no `le-theme`) and applied **before the first frame**: the inline head snippet on the homepage, hubs, feature pages and both studios sets both attributes; on the other pages `app.js` sets them before it reveals the body (`body` stays hidden until `le-ready`). `<meta name="theme-color">` follows the theme live. The **installed app's manifest colours stay Clear's** (they cannot change per person). **Exports never change with the theme**: designs and PDFs render from the document. **Expert's image surround stays neutral mid grey in every theme.**
+
+**Cost.** All five theme blocks live in `app.css` (about 38 KB raw, about 4 KB gzip): one stylesheet, no extra request, no flash. A per-theme file would have needed a second blocking request or a flash of the default. Fonts are declared with `@font-face` and are only fetched when a theme's stack actually uses them.
+
+**Interface type stack (Clear, Graphite, Contrast; Paper for body):**
+`-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", Roboto, "Inter", "LE Inter", "Helvetica Neue", Arial, system-ui, sans-serif` (display: `"SF Pro Display"`, `"Segoe UI Variable Display"`). Apple devices get their system face, Windows Segoe UI, Android Roboto, all at **zero bytes**. Only systems with none of those (most Linux desktops; verified in Chromium on Linux) fetch **LE Inter** (OFL, variable, Latin, 73 KB woff2, `font-display: swap`, `assets/fonts/inter-latin.woff2`). We list the platform faces before Inter on purpose, so Windows and Android do not download Inter. We ship no SF font files.
+
+**Type scale (rem, so text scales):** caption 12 · footnote 13 · subhead 14–15 · body 16 desktop / 17 phone (`--text-md`, `--text-md-phone`) · lead 20 · title3 22 · title2 28 · title1 40 · display 56 · hero 72. Tight tracking at display sizes (`--hero-tracking`, `--h1-tracking`). The serif accent is retired from interface and marketing headlines in Clear (`h1 em` becomes a quieter second tone, `--accent-color`); Instrument Serif and Plus Jakarta Sans remain **content fonts** for designs and PDFs.
+
+### The theme contract (every theme defines all of these, light and dark)
+
+- **Type**: `--font`, `--font-display`, `--root-size`, `--text-xs … --text-5xl`, `--text-md-phone`, `--h1-weight`, `--h1-tracking`, `--h2-weight`, `--h2-tracking`, `--h3-weight`, `--hero-weight`, `--hero-tracking`, `--body-tracking`, `--eyebrow-case`, `--eyebrow-tracking`, `--eyebrow-weight`, `--accent-font`, `--accent-style`, `--accent-weight`, `--accent-color`, `--accent-tracking`, `--accent-size`, `--hero-accent-size`, `--start-title-font`, `--start-title-weight`, `--start-title-tracking`.
+- **Surfaces and text**: `--bg`, `--bg-2`, `--surface`, `--surface-2`, `--surface-3`, `--surface-glass`, `--fill`, `--fill-2`, `--ink`, `--text`, `--muted`, `--faint`, `--line`, `--border`, `--border-hover`, `--border-strong`.
+- **Tint**: `--primary`, `--primary-hover`, `--primary-active`, `--on-primary`, `--primary-edge`, `--accent`, `--accent-soft`, `--accent-softer`, `--selected-bg`, `--selected-edge`, `--focus-ring`, `--selection-bg`, `--selection-ink`, `--warm`, `--agent`.
+- **Status**: `--ok`, `--ok-fill`, `--private`, `--private-soft`, `--warn`, `--warn-soft`, `--err`, `--err-soft`, `--add-bg`, `--del-bg`, `--warm-ink`, `--warm-soft`.
+- **Editor chrome**: `--side`, `--side-2`, `--side-text`, `--side-strong`, `--side-dim`, `--side-active`, `--side-hover`, `--side-line`, `--side-accent`, `--side-accent-icon`, `--side-selected`, `--side-selected-edge`, `--side-selected-ink`.
+- **Inverse band and HUD**: `--inverse-bg`, `--inverse-text`, `--inverse-strong`, `--inverse-dim`, `--toast-bg`.
+- **Shape**: `--r-xs`, `--r-sm`, `--r-md`, `--r-lg`, `--r-xl`, `--r-pill`, `--btn-radius`, `--field-radius`, `--seg-radius`, `--seg-inner-radius`, `--chip-radius`, `--card-radius`, `--sheet-radius`, `--pop-radius`.
+- **Controls**: `--btn-bg`, `--btn-border`, `--btn-shadow`, `--btn-hover-bg`, `--btn-hover-border`, `--btn-weight`, `--btn-size`, `--btn-primary-shadow`, `--btn-primary-hover-shadow`, `--field-bg`, `--field-border`, `--seg-track`, `--seg-border`, `--seg-on`, `--seg-on-ink`, `--chip-bg`, `--chip-border`, `--card-border`, `--card-shadow`, `--thumb`, `--thumb-shadow`, `--target` (≥ 44 px), `--focus-w`, `--hair-w`.
+- **Materials**: `--bar-bg`, `--bar-solid`, `--bar-border`, `--bar-filter`, `--sheet-bg`, `--sheet-filter`, `--pop-bg`, `--pop-border`. Solid fallbacks apply automatically without `backdrop-filter` support and under `prefers-reduced-transparency`.
+- **Elevation and motion**: `--shadow-xs`, `--shadow-sm`, `--shadow`, `--shadow-lg`, `--ease`, `--ease-out`, `--ease-in-out`, `--ease-spring`, `--dur-1 … --dur-4`.
+
+**Adding a theme.** Add a dict to the theme table in `tools/themes/build.py` (the generator that writes the block between `THEMES:BEGIN` and `THEMES:END` in `app.css`; light and dark must define the same keys), add the id to `SKINS` in `app.js` (`LE.appearance.skins`) and to `SKINS` in `tests/brand.test.js`, then run `node tests/run.js brand`: every text/background pair must reach 4.5:1, rings and edges 3:1, `--target` ≥ 44 px, and every main surface must fit 360 and 1440 with no errors.
+
+**Rule for engineers (unchanged, one line):** use tokens and the documented components; never a literal colour, font or radius in a component.
+
+**Exceptions, on purpose.** (1) The product-page composition (centred hero, bento grid, inverse band) is written as `:root:not([data-skin="lapis"])` rules, so Lapis keeps its pass-2 homepage; it is layout, not colour, and could not be a token. (2) The system-style slider on tool pages is likewise not drawn in Lapis (Lapis keeps the native control). (3) **Paper is the only theme whose editor chrome is warm**; its canvas surround stays neutral, so colour judgement on the image is unaffected. Neutral-chrome tests cover Clear, Lapis, Graphite and Contrast.
+
+### Clear: component specs (the default)
+
+| Component | Spec |
+|---|---|
+| Primary button | Pill, tint fill `#0369DA` (white 5.2:1), no shadow, 44 px (52 large), weight 590 |
+| Secondary | Pill, grey fill `rgba(120,120,128,.12)`, no border, ink text |
+| Quiet / danger | No fill; danger text in `--err`, red fill on hover |
+| Text field | 10 px radius, white (light) / `#2C2C2E` (dark), hairline border, tint focus border and halo |
+| Segmented control | Grey track 9 px radius, selected segment white 7 px radius with a soft shadow (`#636366` in dark) |
+| Switch | Tint track, white knob (studios' `.sx-toggle`; tool pages use native checkboxes for now) |
+| Slider | 4 px track, 24 px white thumb with a layered shadow |
+| Cards | White on the grouped grey background, 18 px radius, no border, no shadow |
+| Bars | `rgba(245,245,247,.72)` with `saturate(1.8) blur(20px)`, hairline bottom (0.5 px on 2× screens) |
+| Popovers, appearance sheet | Translucent sheet material, 14 px / 26 px radius; never blurred over Expert's image or while the canvas is dragged |
+| Phone sheet | 26 px top radius, grabber, detents (peek / half / full), solid (it sits over the live canvas) |
+| Phone tab bar | Selected glyph gets a soft fill under its stroke, tint label |
+| Motion | `--ease-out: cubic-bezier(.32,.72,0,1)` for sheets and popovers, `--ease-spring` with a 6 % overshoot for small confirmations only, 150 / 250 / 350 ms; all off under reduced motion |
+| Icons | Our own 24 px line set (Lucide-style), 1.8 stroke; never SF Symbols |
+
+### Do / don't (all themes)
+
+| Do | Don't |
+|---|---|
+| One primary action per view; secondary is the grey pill | Two primaries side by side |
+| Let the photo or page be the hero; chrome recedes | Coloured chrome, gradients, glows |
+| Use materials only for things that float over content | Blur over the live canvas or Expert's image |
+| Keep Light / Dark / Auto and the theme separate | A theme that changes layout or exports |
+| Check every theme in light and dark at 360 and 1440 | Assume Clear's values in a component |
+| Name themes for how they feel | Use another company's names, fonts, symbols or artwork |
+
+## Identity (all themes)
+
+**The mark ("Corner").** A bold, rounded **L** drawn as a crop corner, holding a warm **Apricot dot**: your picture, kept in your corner. It is an initial (L for Local), an editing gesture (the crop corner) and a promise (the thing you made stays put). White on a superellipse tile in the default tint (`#3589ED` → `#0369DA`, pass 3), with dark (`icon-dark.svg`) and tinted (`icon-tinted.svg`) variants; one colour (`assets/icons/mark-mono.svg`, `currentColor`) wherever colour is not available.
 
 - Sources: `assets/icons/icon.svg` (rounded tile, 512 grid, tile radius 112), `maskable.svg` (full bleed, mark at 80 %), `mark-mono.svg`. PNGs, the social card and shortcut icons are generated from them by `node scripts/screenshots.js --icons-only`.
 - Geometry (512 grid): stroke 64, round caps; L from (176,140) down to a 40 px inner radius, out to (372,376); dot r 58 at (314,236). Keep at least 1/8 of the tile clear around the glyph.
@@ -14,7 +84,7 @@ One page for everyone building UI. Tokens live in `assets/css/app.css` (section 
 
 **Wordmark.** "LocalEditor" set in Plus Jakarta Sans 720, tracking −0.03em, one colour (`--ink`). No serif in the wordmark.
 
-## Principles
+## Principles (all themes)
 
 1. **Neutral grey does the work.** True greys (chroma 0) for page, surfaces, lines and text. People judge their own colours against the interface around them, so editor chrome never carries a hue.
 2. **One primary action per view.** Lapis blue `.btn-primary` (old name `.btn-gold`) is the one filled, coloured button: Open, Download, Save. It works because nothing else on the screen is that colour (isolation effect).
@@ -25,7 +95,7 @@ One page for everyone building UI. Tokens live in `assets/css/app.css` (section 
 7. **Phone first.** Design at 360 px, then 390, 820 and 1440. Touch targets at least 44 px. Nothing scrolls sideways.
 8. **Motion explains.** Short and specific; delight only at the end of a job; all of it off under `prefers-reduced-motion`.
 
-## Colour
+## Colour (the Lapis theme; Clear and the others are in the theme table)
 
 Primitives are generated in OKLCH (`docs/research/interface-psychology.md` explains why) and stored as sRGB hex so every supported browser reads them: `--n-0 … --n-975` (neutral, chroma 0), `--brand-50 … 950` (Lapis, hue 266, peak chroma 0.18), `--warm-*` (Apricot, hue 48), `--green-*` (hue 155), `--amber-*` (hue 75), `--red-*` (hue 25). Each step's OKLCH value is in a comment next to it. **Components use the semantic tokens below, not the primitives.**
 

@@ -100,7 +100,7 @@ const head = ({ title, desc, url, rootRel, extra = '' }) => `<!doctype html>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${url}">
 <meta name="robots" content="index,follow,max-image-preview:large">
-<meta name="theme-color" content="#161616">
+<meta name="theme-color" content="#F5F5F7">
 <link rel="manifest" href="${rootRel}manifest.webmanifest">
 <link rel="icon" href="${rootRel}assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="${rootRel}assets/icons/icon-192.png">
@@ -115,7 +115,7 @@ const head = ({ title, desc, url, rootRel, extra = '' }) => `<!doctype html>
 <meta property="og:image" content="${SITE}assets/icons/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="${rootRel}assets/css/app.css">
-<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
 ${extra}
 </head>
 <body>
@@ -198,7 +198,7 @@ function buildIndex() {
     <span class="hero-float-icon hero-float-4" aria-hidden="true">🎨</span>
     <span class="eyebrow">✨ 30 Free Tools · 100% In Your Browser</span>
     <h1>Every everyday tool,<br><span class="gradient-text">instant, private &amp; offline.</span></h1>
-    <p class="lead">LocalEditor is a free, awwwards-worthy collection of 30 browser-based utilities for photos, PDFs, text, and developers. Files are processed locally on your device — never uploaded — and the app installs on any phone to work anywhere, anytime.</p>
+    <p class="lead">LocalEditor is a free photo and PDF studio with ${TOOLS.length} single-step tools, and it runs entirely in your browser. Your files are edited on this device and never uploaded.</p>
     <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <label for="q" class="skip">Search tools</label><input id="q" class="input" type="search" placeholder="Search tools — compress, pdf, qr code, diff…" autocomplete="off"></div>
     <nav class="chips" aria-label="Categories">${CATS.map((c) => `<a class="chip" href="#${c.id}">${c.emoji} ${c.name.replace(' & everyday utilities', '')}</a>`).join('')}</nav>

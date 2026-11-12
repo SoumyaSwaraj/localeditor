@@ -12,7 +12,6 @@
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
-<link rel="preload" href="../assets/fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="LocalEditor">
 <meta property="og:type" content="website">
@@ -24,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
-<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Compress to a target size — LocalEditor","url":"https://localeditor.net/compress-pdf/","description":"Make a PDF small enough to email: pick Email (10 MB), under 2 MB, under 500 KB or your own size. Text stays sharp unless you choose otherwise. On your device.","applicationCategory":"BusinessApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Targets: Email (10 MB), under 2 MB, under 500 KB, or a size you type","Tidies the file first, with no change in quality","Then makes photos lighter, one step at a time; text and drawings stay sharp","Several PDFs at once, as a zip","Optionally removes document details such as author and dates"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"PDF and documents","item":"https://localeditor.net/pdf/"},{"@type":"ListItem","position":3,"name":"Compress to a target size","item":"https://localeditor.net/compress-pdf/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Will text stay sharp?","acceptedAnswer":{"@type":"Answer","text":"Yes, by default. Only photos are made lighter, and some images, such as CMYK and scans, are left exactly as they are."}},{"@type":"Question","name":"What if it cannot reach the size?","acceptedAnswer":{"@type":"Answer","text":"It says which files could not reach it and offers to turn pages into pictures to get there. That makes the file smaller, but text can no longer be selected or searched, and links stop working."}}]}]}</script>
 </head>
 <body class="le-built pg-body">
@@ -107,7 +106,7 @@
         </section>
         <footer class="hp-foot pg-foot">
           <div class="hp-foot-top">
-            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3F67D9"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
+            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><path d="M256 0C51 0 0 51 0 256s51 256 256 256 256-51 256-256S461 0 256 0z" fill="#0369DA"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
             <nav aria-label="Footer">
               <a href="../studio/">Photo studio</a>
               <a href="../pdf-studio/">PDF studio</a>

@@ -12,7 +12,6 @@
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
-<link rel="preload" href="../assets/fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="LocalEditor">
 <meta property="og:type" content="website">
@@ -24,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
-<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Brand kit — LocalEditor","url":"https://localeditor.net/brand-kit/","description":"Save your brand colours, fonts and logos in the studio and use them in every design. Stored only in your browser, free, no account.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Brand colours at the top of every colour picker","Brand fonts at the top of the font list","Logos ready to drop into any design","Pull colours from a photo or a logo","Replace colours or fonts across a whole design in one step"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Photo and design","item":"https://localeditor.net/photo/"},{"@type":"ListItem","position":3,"name":"Brand kit","item":"https://localeditor.net/brand-kit/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Can I use my brand kit on another device?","acceptedAnswer":{"@type":"Answer","text":"Not automatically. Save a project that uses your brand, and open it on the other device."}},{"@type":"Question","name":"How do I clear it?","acceptedAnswer":{"@type":"Answer","text":"Edit the brand kit in the studio, or clear saved work in the storage manager."}}]}]}</script>
 </head>
 <body class="le-built pg-body">
@@ -47,7 +46,7 @@
             </div>
             <p class="hp-kicker pg-kicker"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Free</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>No account</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Nothing uploaded</span></p>
           </div>
-          <figure class="pg-art pg-art-brand" aria-hidden="true"><div class="pg-brand"><div class="pg-brand-card"><p class="pg-meta-h">Brand kit</p><div class="pg-swatches"><i style="background:#141414"></i><i style="background:#3F67D9"></i><i style="background:#FAFAFA"></i><i style="background:#81A6FE"></i><i style="background:#EF8C57"></i></div><div class="pg-brand-type"><span class="serif">Aa</span><span>Aa</span></div><div class="pg-brand-logo"><span class="le-mark"><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3F67D9"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><b>Logo</b></div></div></div></figure>
+          <figure class="pg-art pg-art-brand" aria-hidden="true"><div class="pg-brand"><div class="pg-brand-card"><p class="pg-meta-h">Brand kit</p><div class="pg-swatches"><i style="background:#141414"></i><i style="background:#3F67D9"></i><i style="background:#FAFAFA"></i><i style="background:#81A6FE"></i><i style="background:#EF8C57"></i></div><div class="pg-brand-type"><span class="serif">Aa</span><span>Aa</span></div><div class="pg-brand-logo"><span class="le-mark"><svg viewBox="0 0 512 512"><path d="M256 0C51 0 0 51 0 256s51 256 256 256 256-51 256-256S461 0 256 0z" fill="#0369DA"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><b>Logo</b></div></div></div></figure>
         </section>
         <section class="pg-how" aria-label="What it does and how it works">
           <div>
@@ -112,7 +111,7 @@
         </section>
         <footer class="hp-foot pg-foot">
           <div class="hp-foot-top">
-            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3F67D9"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
+            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><path d="M256 0C51 0 0 51 0 256s51 256 256 256 256-51 256-256S461 0 256 0z" fill="#0369DA"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
             <nav aria-label="Footer">
               <a href="../studio/">Photo studio</a>
               <a href="../pdf-studio/">PDF studio</a>

@@ -12,7 +12,6 @@
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
-<link rel="preload" href="../assets/fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="LocalEditor">
 <meta property="og:type" content="website">
@@ -24,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
-<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Safe to send — LocalEditor","url":"https://localeditor.net/safe-to-send/","description":"One step before you send a PDF: remove scripts, hidden details, attachments and earlier versions, optionally flatten forms and shrink the file, then check the copy.","applicationCategory":"BusinessApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Removes scripts, automatic actions and attached files","Removes author, software, dates, hidden text and earlier versions","Flattens forms and comments: how they look stays, the data behind them goes (on by default)","Options to remove clickable links, and to make the file smaller (on by default)","Checks the new copy and lists what was done"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"PDF and documents","item":"https://localeditor.net/pdf/"},{"@type":"ListItem","position":3,"name":"Safe to send","item":"https://localeditor.net/safe-to-send/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Will people still be able to fill in the form?","acceptedAnswer":{"@type":"Answer","text":"Not with the default setting. Flattening makes the current answers part of the page. Turn it off to keep the form."}},{"@type":"Question","name":"Does it redact?","acceptedAnswer":{"@type":"Answer","text":"No. What is visible on the page stays. Use redaction to remove content from the page."}},{"@type":"Question","name":"Does it work on a password-protected PDF?","acceptedAnswer":{"@type":"Answer","text":"Not directly. Take the password off the file first, then clean it."}}]}]}</script>
 </head>
 <body class="le-built pg-body">
@@ -113,7 +112,7 @@
         </section>
         <footer class="hp-foot pg-foot">
           <div class="hp-foot-top">
-            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3F67D9"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
+            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><path d="M256 0C51 0 0 51 0 256s51 256 256 256 256-51 256-256S461 0 256 0z" fill="#0369DA"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
             <nav aria-label="Footer">
               <a href="../studio/">Photo studio</a>
               <a href="../pdf-studio/">PDF studio</a>

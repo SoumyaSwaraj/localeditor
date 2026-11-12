@@ -20,7 +20,7 @@
 .sx-cl-act {
   display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 58px; padding: 8px 4px; min-width: 0;
   border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--ink);
-  font: 700 11.5px/1.15 "Plus Jakarta Sans", var(--font); cursor: pointer; text-align: center;
+  font: 700 11.5px/1.15 var(--font); cursor: pointer; text-align: center;
   transition: border-color 0.15s, transform 0.12s;
 }
 .sx-cl-act .sx-ic { width: 20px; height: 20px; color: var(--ink); }
@@ -38,7 +38,7 @@
 .sx-cl-ptile img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.15s; }
 .sx-cl-ptile b {
   position: absolute; right: 5px; top: 5px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
-  font: 800 11px "Plus Jakarta Sans", var(--font); color: transparent; border: 2px solid rgba(255, 255, 255, 0.9);
+  font: 800 11px var(--font); color: transparent; border: 2px solid rgba(255, 255, 255, 0.9);
   background: rgba(21, 21, 21, 0.25); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 .sx-cl-ptile[aria-pressed="true"] { box-shadow: inset 0 0 0 3px var(--primary); }
@@ -53,7 +53,7 @@
   color: var(--ink); cursor: pointer; text-align: left; min-width: 0;
 }
 .sx-cl-asp i { grid-row: 1 / 3; justify-self: center; display: block; border-radius: 3px; border: 1.5px solid currentColor; opacity: 0.7; max-width: 22px; max-height: 22px; }
-.sx-cl-asp span { font: 700 12px "Plus Jakarta Sans", var(--font); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sx-cl-asp span { font: 700 12px var(--font); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sx-cl-asp small { font-size: 10.5px; color: var(--muted); font-weight: 650; }
 .sx-cl-asp[aria-pressed="true"], .sx-cl-lay[aria-selected="true"] { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); background: var(--accent-soft, rgba(63, 103, 217, 0.1)); }
 .sx-cl-asp[aria-pressed="true"] span { color: var(--accent, var(--primary-active)); }
@@ -62,7 +62,7 @@
 .sx-cl-step button { width: 40px; height: 40px; border-radius: 50%; border: 0; background: none; color: var(--ink); display: grid; place-items: center; cursor: pointer; }
 .sx-cl-step button:hover { background: var(--surface-2); }
 .sx-cl-step .sx-ic { width: 18px; height: 18px; }
-.sx-cl-step output { min-width: 26px; text-align: center; font: 800 14px "Plus Jakarta Sans", var(--font); }
+.sx-cl-step output { min-width: 26px; text-align: center; font: 800 14px var(--font); }
 .sx-cl-countrow .sx-cl-step button { width: 36px; height: 36px; }
 
 .sx-cl-layouts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
@@ -123,7 +123,7 @@
 .sx-rep-chip[hidden], .sx-rep-chip button[hidden] { display: none; }
 .sx-rep-chip button {
   display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 11px; border: 0; border-radius: 999px; cursor: pointer;
-  font: 750 12.5px "Plus Jakarta Sans", var(--font); color: var(--ink); background: none; white-space: nowrap;
+  font: 750 12.5px var(--font); color: var(--ink); background: none; white-space: nowrap;
 }
 .sx-rep-chip button[data-act="replace"] { background: var(--side, #141414); color: #fff; }
 .sx-rep-chip button .sx-ic { width: 15px; height: 15px; }
@@ -131,7 +131,7 @@
 .sx-attr {
   position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 7; display: flex; align-items: center; gap: 6px;
   max-width: calc(100% - 24px); padding: 4px 4px 4px 10px; border-radius: 999px; background: rgba(21, 21, 21, 0.82); color: #fff;
-  font: 650 12px/1.3 "Plus Jakarta Sans", var(--font); backdrop-filter: blur(8px); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  font: 650 12px/1.3 var(--font); backdrop-filter: blur(8px); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 }
 .sx-attr[hidden] { display: none; }
 .sx-attr-txt { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
@@ -141,7 +141,7 @@
 .sx-attr em { font-style: normal; opacity: 0.8; }
 .sx-attr-btn {
   flex: none; height: 30px; padding: 0 12px; border: 0; border-radius: 999px; cursor: pointer;
-  background: rgba(255, 255, 255, 0.16); color: #fff; font: 750 12px "Plus Jakarta Sans", var(--font);
+  background: rgba(255, 255, 255, 0.16); color: #fff; font: 750 12px var(--font);
 }
 .sx-attr-btn:hover { background: rgba(255, 255, 255, 0.26); }
 .le-hover.is-drop.is-on { display: block; border: 3px solid var(--primary); box-shadow: 0 0 0 9999px rgba(21, 21, 21, 0.18), inset 0 0 0 2px rgba(255, 255, 255, 0.7); }

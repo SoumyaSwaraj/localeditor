@@ -18,9 +18,9 @@ button.xp-ib:disabled { opacity: .35; cursor: default; }
 button.xp-ib[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
 button.xp-lay-eye[aria-pressed], .xp-sec-head button.xp-ib[aria-pressed] { background: transparent; color: var(--muted); }
 button.xp-lay-eye[aria-pressed="false"] { color: var(--faint); }
-.xp-field { height: 30px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--ink); font: 600 13px "Plus Jakarta Sans", var(--font, sans-serif); padding: 0 8px; min-width: 0; font-variant-numeric: tabular-nums; }
+.xp-field { height: 30px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--ink); font: 600 13px var(--font, sans-serif); padding: 0 8px; min-width: 0; font-variant-numeric: tabular-nums; }
 .xp-field:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--accent-soft); }
-.xp-select { height: 30px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--ink); font: 600 12.5px "Plus Jakarta Sans", var(--font, sans-serif); padding: 0 6px; min-width: 0; max-width: 100%; }
+.xp-select { height: 30px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--ink); font: 600 12.5px var(--font, sans-serif); padding: 0 6px; min-width: 0; max-width: 100%; }
 .xp-subhead { margin: 12px 0 4px; font-size: 11px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
 .xp-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .xp-dot.is-r { background: #E5484D; } .xp-dot.is-g { background: #30A46C; } .xp-dot.is-b { background: #3E7BFA; }
@@ -52,7 +52,7 @@ button.xp-rst:hover { color: var(--ink); background: var(--surface-2); }
 .xp-num:hover { background: var(--surface-2); }
 .xp-num:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus-ring); }
 .xp-num.is-editing { color: transparent; }
-.xp-num-in { position: absolute; inset: -2px; width: calc(100% + 4px); border: 1px solid var(--primary); border-radius: 6px; background: var(--surface); color: var(--ink); font: 650 12.5px "Plus Jakarta Sans", var(--font, sans-serif); text-align: right; padding: 0 4px; font-variant-numeric: tabular-nums; }
+.xp-num-in { position: absolute; inset: -2px; width: calc(100% + 4px); border: 1px solid var(--primary); border-radius: 6px; background: var(--surface); color: var(--ink); font: 650 12.5px var(--font, sans-serif); text-align: right; padding: 0 4px; font-variant-numeric: tabular-nums; }
 .xp-num-in:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
 .xp-num-sm { min-width: 38px; }
 .xp-slider.is-compact { min-height: 28px; }
@@ -70,7 +70,7 @@ button.xp-rst:hover { color: var(--ink); background: var(--surface-2); }
 .xp-segrow { grid-template-columns: minmax(58px, 31%) minmax(0, 1fr); }
 .xp-seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 9px; background: var(--surface-2); min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .xp-seg::-webkit-scrollbar { display: none; }
-.xp-seg > button { flex: 1 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 26px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font: 650 12px "Plus Jakarta Sans", var(--font, sans-serif); cursor: pointer; white-space: nowrap; }
+.xp-seg > button { flex: 1 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 26px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font: 650 12px var(--font, sans-serif); cursor: pointer; white-space: nowrap; }
 .xp-seg > button:hover { color: var(--ink); }
 .xp-seg > button[aria-checked="true"], .xp-seg > button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, .08)); }
 .xp-seg > button .xp-ic { width: 15px; height: 15px; }
@@ -82,7 +82,7 @@ button.xp-rst:hover { color: var(--ink); background: var(--surface-2); }
 .xp-seed .xp-field { width: 100%; }
 
 /* Colour swatch */
-button.xp-swatch { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px 0 3px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer; font: 650 12px "Plus Jakarta Sans", var(--font, sans-serif); min-width: 0; }
+button.xp-swatch { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px 0 3px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer; font: 650 12px var(--font, sans-serif); min-width: 0; }
 button.xp-swatch i { width: 22px; height: 22px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); flex: none; }
 .xp-swatch-hex { font-variant-numeric: tabular-nums; color: var(--muted); }
 .xp-colorrow .xp-num { display: none; }
@@ -180,7 +180,7 @@ button.xp-mask-add .xp-ic { width: 16px; height: 16px; }
 .xp-mask-empty { margin: 0; font-size: 12.5px; color: var(--faint); line-height: 1.45; }
 .xp-part { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .xp-part-head { display: flex; align-items: center; gap: 2px; padding: 3px 4px 3px 2px; min-width: 0; }
-button.xp-part-tog { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 6px; border: 0; background: transparent; color: var(--ink); font: 650 12.5px "Plus Jakarta Sans", var(--font, sans-serif); cursor: pointer; text-align: left; border-radius: 7px; }
+button.xp-part-tog { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 6px; border: 0; background: transparent; color: var(--ink); font: 650 12.5px var(--font, sans-serif); cursor: pointer; text-align: left; border-radius: 7px; }
 button.xp-part-tog span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 button.xp-part-tog:hover { background: var(--surface-2); }
 .xp-part-mode .xp-seg > button { padding: 0 5px; height: 24px; }
@@ -197,12 +197,12 @@ button.xp-part-tog:hover { background: var(--surface-2); }
 .xp-pop { position: fixed; z-index: 90; min-width: 220px; max-width: 320px; padding: 6px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-lg); }
 .xp-search { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .xp-search:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--accent-soft); }
-.xp-search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: 500 16px "Plus Jakarta Sans", var(--font, sans-serif); outline: none; }
+.xp-search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: 500 16px var(--font, sans-serif); outline: none; }
 .xp-search .xp-ic { color: var(--faint); }
 .xp-fxmenu { display: grid; gap: 8px; width: min(340px, calc(100vw - 32px)); }
 .xp-fxmenu-list { max-height: min(56vh, 420px); overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 1px; }
 .xp-fxmenu-grp { padding: 10px 8px 4px; font-size: 10.5px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
-.xp-fxmenu-list [role="option"] { display: grid; gap: 1px; text-align: left; padding: 7px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); cursor: pointer; font: 650 13px "Plus Jakarta Sans", var(--font, sans-serif); }
+.xp-fxmenu-list [role="option"] { display: grid; gap: 1px; text-align: left; padding: 7px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); cursor: pointer; font: 650 13px var(--font, sans-serif); }
 .xp-fxmenu-list [role="option"] small { font-weight: 500; font-size: 11.5px; color: var(--faint); }
 .xp-fxmenu-list [role="option"]:hover, .xp-fxmenu-list [aria-selected="true"] { background: var(--accent-soft); }
 
@@ -231,7 +231,7 @@ button.xp-part-tog:hover { background: var(--surface-2); }
 .xp-divider { position: absolute; top: 0; bottom: 0; width: 24px; margin-left: -12px; pointer-events: auto; cursor: ew-resize; touch-action: none; outline: none; }
 .xp-divider::before { content: ""; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background: #fff; box-shadow: 0 0 3px rgba(0, 0, 0, .5); }
 .xp-divider i { position: absolute; left: -4px; top: 50%; width: 32px; height: 32px; margin-top: -16px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
-.xp-divider i::before { content: "‹ ›"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 13px "Plus Jakarta Sans", sans-serif; color: #151515; letter-spacing: 2px; }
+.xp-divider i::before { content: "‹ ›"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 13px var(--font, sans-serif); color: #151515; letter-spacing: 2px; }
 .xp-divider:focus-visible i { box-shadow: 0 0 0 3px var(--focus-ring), 0 2px 8px rgba(0, 0, 0, .35); }
 .xp-cmp-l, .xp-cmp-r { position: absolute; top: 10px; padding: 3px 9px; border-radius: 99px; background: rgba(20, 20, 20, .78); color: #fff; font-size: 11.5px; font-weight: 700; letter-spacing: .02em; }
 .xp-cmp-l { left: 10px; } .xp-cmp-r { right: 10px; }
@@ -269,7 +269,7 @@ button.xp-clip[aria-pressed="true"] { box-shadow: 0 0 0 1.5px #fff; border-radiu
 .xp-empty p { margin: 0 0 6px; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
 .xp-sec { border-top: 1px solid var(--line); contain: layout style; }
 .xp-sec-head { display: flex; align-items: center; gap: 2px; min-height: 38px; }
-button.xp-sec-tog { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 4px 0 0; border: 0; background: transparent; color: var(--ink); font: 700 13px "Plus Jakarta Sans", var(--font, sans-serif); cursor: pointer; text-align: left; letter-spacing: -.005em; }
+button.xp-sec-tog { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 4px 0 0; border: 0; background: transparent; color: var(--ink); font: 700 13px var(--font, sans-serif); cursor: pointer; text-align: left; letter-spacing: -.005em; }
 button.xp-sec-tog span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .xp-chev { width: 16px; height: 16px; color: var(--faint); transform: rotate(-90deg); transition: transform var(--dur-2, .2s) var(--ease, ease); }
 .xp-sec.is-open .xp-sec-tog .xp-chev, .xp-pane:not(.is-collapsed) .xp-pane-tog .xp-chev, [aria-expanded="true"] > .xp-chev { transform: none; }
@@ -298,9 +298,9 @@ button.xp-sec-tog span { overflow: hidden; text-overflow: ellipsis; white-space:
 .xp-lay.is-hidden .xp-lay-name, .xp-lay.is-hidden .xp-lay-thumb { opacity: .45; }
 .xp-lay-thumb { width: 30px; height: 30px; flex: none; border-radius: 6px; background: var(--surface-2) center/cover no-repeat; display: grid; place-items: center; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
 .xp-lay-thumb .xp-ic { width: 16px; height: 16px; }
-.xp-lay-thumb b { font: 800 14px "Plus Jakarta Sans", sans-serif; }
+.xp-lay-thumb b { font: 800 14px var(--font, sans-serif); }
 .xp-lay.is-adjust .xp-lay-thumb { background: var(--accent-soft); color: var(--accent); }
-button.xp-lay-name { flex: 1; min-width: 0; height: 32px; border: 0; background: transparent; color: var(--ink); text-align: left; font: 600 13px "Plus Jakarta Sans", var(--font, sans-serif); padding: 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+button.xp-lay-name { flex: 1; min-width: 0; height: 32px; border: 0; background: transparent; color: var(--ink); text-align: left; font: 600 13px var(--font, sans-serif); padding: 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .xp-lay-rename { flex: 1; height: 28px; }
 button.xp-lay-mask { width: 26px; height: 26px; flex: none; padding: 0; border-radius: 5px; border: 0; background: #000 center/cover no-repeat; box-shadow: 0 0 0 1px var(--border-hover); cursor: pointer; }
 button.xp-lay-mask.is-off { opacity: .35; background-image: none !important; background: repeating-linear-gradient(45deg, var(--surface-2) 0 3px, var(--surface) 3px 6px) !important; }
@@ -329,7 +329,7 @@ button.xp-lay-fxbtn .xp-ic { width: 14px; height: 14px; }
 .xp-fx-on input:checked + i { background: var(--primary); box-shadow: none; }
 .xp-fx-on input:checked + i::after { transform: translateX(11px); }
 .xp-fx-on input:focus-visible + i { box-shadow: 0 0 0 2px var(--focus-ring); }
-button.xp-fx-name { flex: 1; min-width: 0; height: 28px; border: 0; background: transparent; color: var(--ink); text-align: left; font: 600 12.5px "Plus Jakarta Sans", var(--font, sans-serif); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+button.xp-fx-name { flex: 1; min-width: 0; height: 28px; border: 0; background: transparent; color: var(--ink); text-align: left; font: 600 12.5px var(--font, sans-serif); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
 .xp-fx.is-off .xp-fx-name { color: var(--faint); text-decoration: line-through; text-decoration-color: var(--border-hover); }
 .xp-fx-mask { color: var(--accent); display: grid; }
 .xp-fx-mask .xp-ic { width: 14px; height: 14px; }
@@ -337,7 +337,7 @@ button.xp-fx-name { flex: 1; min-width: 0; height: 28px; border: 0; background: 
 .xp-fx-body { padding: 4px 0 10px 4px; display: grid; gap: 6px; }
 .xp-fx.is-dragging { position: relative; z-index: 3; background: var(--surface); box-shadow: var(--shadow); border-radius: 8px; }
 .xp-fx-add { padding: 2px 0; }
-button.xp-linkbtn { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 6px; border: 0; border-radius: 7px; background: transparent; color: var(--accent); font: 650 12.5px "Plus Jakarta Sans", var(--font, sans-serif); cursor: pointer; }
+button.xp-linkbtn { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 6px; border: 0; border-radius: 7px; background: transparent; color: var(--accent); font: 650 12.5px var(--font, sans-serif); cursor: pointer; }
 button.xp-linkbtn:hover { background: var(--accent-soft); }
 button.xp-linkbtn .xp-ic { width: 15px; height: 15px; }
 .xp-lay-foot { display: flex; align-items: center; gap: 2px; padding-top: 4px; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: var(--surface); }
@@ -359,12 +359,12 @@ button.xp-linkbtn .xp-ic { width: 15px; height: 15px; }
 .xp-strip { grid-area: rail; background: var(--side); display: flex; flex-direction: column; padding: 8px 6px; z-index: 5; min-height: 0; overflow-y: auto; scrollbar-width: none; }
 .xp-strip::-webkit-scrollbar { display: none; }
 .xp-strip-in { display: flex; flex-direction: column; gap: 2px; align-items: center; }
-.xp-strip-sep { display: block; width: 24px; height: 1px; margin: 5px 0; background: rgba(255, 255, 255, .1); flex: none; }
+.xp-strip-sep { display: block; width: 24px; height: 1px; margin: 5px 0; background: color-mix(in srgb, var(--side-strong) 10%, transparent); flex: none; }
 button.xp-tool { position: relative; width: 40px; height: 38px; flex: none; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--side-dim); cursor: pointer; transition: background var(--dur-1, .12s), color var(--dur-1, .12s); }
 button.xp-tool .xp-ic { width: 20px; height: 20px; }
-button.xp-tool:hover { color: #fff; background: rgba(255, 255, 255, .07); }
+button.xp-tool:hover { color: var(--side-strong); background: color-mix(in srgb, var(--side-strong) 7%, transparent); }
 button.xp-tool[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); box-shadow: none; }
-button.xp-tool kbd { position: absolute; right: 2px; bottom: 1px; font: 700 8.5px "Plus Jakarta Sans", sans-serif; color: inherit; opacity: .55; background: none; border: 0; padding: 0; box-shadow: none; min-width: 0; height: auto; }
+button.xp-tool kbd { position: absolute; right: 2px; bottom: 1px; font: 700 8.5px var(--font, sans-serif); color: inherit; opacity: .55; background: none; border: 0; padding: 0; box-shadow: none; min-width: 0; height: auto; }
 button.xp-tool.is-soon { opacity: .55; }
 button.xp-tool:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--side), 0 0 0 4px var(--focus-ring); }
 .xp-strip-foot { margin-top: auto; padding-top: 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; }

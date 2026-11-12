@@ -12,7 +12,6 @@
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
-<link rel="preload" href="../assets/fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="LocalEditor">
 <meta property="og:type" content="website">
@@ -24,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
-<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Quick makers — LocalEditor","url":"https://localeditor.net/quick-makers/","description":"Fill in a short form and get a finished, editable design: quote cards, review cards, receipt lists, milestone cards, palette posters and film looks.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Six makers: quote card, review card, receipt list, milestone card, palette poster and film camera look","Four or five styles each, in square, portrait and story sizes","A live preview while you fill in the form","The result is a normal design: tap any part to edit it","Edit details reopens the form to remake the page later"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Photo and design","item":"https://localeditor.net/photo/"},{"@type":"ListItem","position":3,"name":"Quick makers","item":"https://localeditor.net/quick-makers/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Can I edit the result?","acceptedAnswer":{"@type":"Answer","text":"Yes. A maker produces ordinary layers. Tap any part to change it, or use Edit details to reopen the form."}},{"@type":"Question","name":"Do makers use my brand kit?","acceptedAnswer":{"@type":"Answer","text":"No. Some makers have an accent colour that you can set yourself."}},{"@type":"Question","name":"Can I link straight to a maker?","acceptedAnswer":{"@type":"Answer","text":"Yes. Add ?make= and the maker name to the studio address, for example /studio/?make=quote."}}]}]}</script>
 </head>
 <body class="le-built pg-body">
@@ -47,7 +46,7 @@
             </div>
             <p class="hp-kicker pg-kicker"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Free</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>No account</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Nothing uploaded</span></p>
           </div>
-          <figure class="pg-art pg-art-brand" aria-hidden="true"><div class="pg-brand"><div class="pg-brand-card"><p class="pg-meta-h">Brand kit</p><div class="pg-swatches"><i style="background:#141414"></i><i style="background:#3F67D9"></i><i style="background:#FAFAFA"></i><i style="background:#81A6FE"></i><i style="background:#EF8C57"></i></div><div class="pg-brand-type"><span class="serif">Aa</span><span>Aa</span></div><div class="pg-brand-logo"><span class="le-mark"><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3F67D9"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><b>Logo</b></div></div></div></figure>
+          <figure class="pg-art pg-art-brand" aria-hidden="true"><div class="pg-brand"><div class="pg-brand-card"><p class="pg-meta-h">Brand kit</p><div class="pg-swatches"><i style="background:#141414"></i><i style="background:#3F67D9"></i><i style="background:#FAFAFA"></i><i style="background:#81A6FE"></i><i style="background:#EF8C57"></i></div><div class="pg-brand-type"><span class="serif">Aa</span><span>Aa</span></div><div class="pg-brand-logo"><span class="le-mark"><svg viewBox="0 0 512 512"><path d="M256 0C51 0 0 51 0 256s51 256 256 256 256-51 256-256S461 0 256 0z" fill="#0369DA"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><b>Logo</b></div></div></div></figure>
         </section>
         <section class="pg-how" aria-label="What it does and how it works">
           <div>
@@ -113,7 +112,7 @@
         </section>
         <footer class="hp-foot pg-foot">
           <div class="hp-foot-top">
-            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3F67D9"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
+            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><path d="M256 0C51 0 0 51 0 256s51 256 256 256 256-51 256-256S461 0 256 0z" fill="#0369DA"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span><strong>LocalEditor</strong></span></a>
             <nav aria-label="Footer">
               <a href="../studio/">Photo studio</a>
               <a href="../pdf-studio/">PDF studio</a>

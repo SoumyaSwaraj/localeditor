@@ -28,6 +28,7 @@ const chroma = (c) => {
   return Math.hypot(A, B);
 };
 
+const SKINS = ['clear', 'lapis', 'graphite', 'paper', 'contrast'];
 const TEXT = ['--ink', '--muted', '--faint', '--accent', '--ok', '--private', '--warn', '--err', '--warm-ink'];
 const BACK = ['--bg', '--bg-2', '--surface', '--surface-2'];
 const PAIRS = [['--on-primary', '--primary'], ['--on-primary', '--primary-hover'], ['--on-primary', '--primary-active'], ['--accent', '--selected-bg'], ['--ink', '--selected-bg'],
@@ -35,15 +36,21 @@ const PAIRS = [['--on-primary', '--primary'], ['--on-primary', '--primary-hover'
   ['--side-text', '--side'], ['--side-dim', '--side'], ['--side-text', '--side-2'], ['--side-dim', '--side-2'], ['--stage-ink', '--stage']];
 
 ['light', 'dark'].forEach((theme) => {
-  cases[theme + ': every semantic text/background token pair meets AA (4.5:1)'] = async ({ browser, base, h }) => {
+  cases[theme + ': every theme: each semantic text/background token pair meets AA (4.5:1), rings 3:1, targets 44 px'] = async ({ browser, base, h }) => {
     const page = await h.openTheme(browser, base, '/', 'desktop', theme);
-    const names = [...new Set(TEXT.concat(BACK, [].concat(...PAIRS), ['--focus-ring', '--primary-edge']))];
-    const v = await page.evaluate((n) => { const cs = getComputedStyle(document.documentElement); const o = {}; n.forEach((k) => { o[k] = cs.getPropertyValue(k).trim(); }); return o; }, names);
+    const names = [...new Set(TEXT.concat(BACK, [].concat(...PAIRS), ['--focus-ring', '--primary-edge', '--side-accent', '--target']))];
     const bad = [];
-    TEXT.forEach((t) => BACK.forEach((b) => { const r = ratio(v[t], v[b]); if (r < 4.5) bad.push(t + ' on ' + b + ' ' + r.toFixed(2)); }));
-    PAIRS.forEach(([t, b]) => { const r = ratio(v[t], v[b]); if (r < 4.5) bad.push(t + ' on ' + b + ' ' + r.toFixed(2)); });
-    BACK.forEach((b) => { const r = ratio(v['--focus-ring'], v[b]); if (r < 3) bad.push('--focus-ring on ' + b + ' ' + r.toFixed(2)); });
-    BACK.forEach((b) => { const r = ratio(v['--primary-edge'], v[b]); if (r < 3) bad.push('--primary-edge on ' + b + ' ' + r.toFixed(2)); });
+    for (const skin of SKINS) {
+      const v = await page.evaluate(([n, k]) => { const r = document.documentElement; if (k === 'clear') r.removeAttribute('data-skin'); else r.setAttribute('data-skin', k); const cs = getComputedStyle(r); const o = {}; n.forEach((x) => { o[x] = cs.getPropertyValue(x).trim(); }); return o; }, [names, skin]);
+      const p = skin + ' ';
+      TEXT.forEach((t) => BACK.forEach((b) => { const r = ratio(v[t], v[b]); if (r < 4.5) bad.push(p + t + ' on ' + b + ' ' + r.toFixed(2)); }));
+      PAIRS.forEach(([t, b]) => { const r = ratio(v[t], v[b]); if (r < 4.5) bad.push(p + t + ' on ' + b + ' ' + r.toFixed(2)); });
+      BACK.forEach((b) => { const r = ratio(v['--focus-ring'], v[b]); if (r < 3) bad.push(p + '--focus-ring on ' + b + ' ' + r.toFixed(2)); });
+      BACK.forEach((b) => { const r = ratio(v['--primary-edge'], v[b]); if (r < 3) bad.push(p + '--primary-edge on ' + b + ' ' + r.toFixed(2)); });
+      if (ratio(v['--side-accent'], v['--side']) < 3) bad.push(p + '--side-accent on --side ' + ratio(v['--side-accent'], v['--side']).toFixed(2));
+      if (!(parseFloat(v['--target']) >= 44)) bad.push(p + '--target ' + v['--target']);
+    }
+    await page.evaluate(() => document.documentElement.removeAttribute('data-skin'));
     h.assert(bad.length === 0, 'pairs under the minimum: ' + bad.join('; '));
     /* The three canvas surrounds keep their own text readable. */
     for (const s of ['light', 'mid', 'dark']) {
@@ -129,6 +136,92 @@ cases['Expert: neutral chrome, mid-grey surround by default, Lapis only for "on"
   }
 };
 
+/* ---------- Themes (html[data-skin]): Clear is the default, Lapis is pass 2, plus Graphite, Paper and Contrast ---------- */
+async function openSkin(browser, base, url, vp, skin, theme, opts) {
+  const v = { desktop: { width: 1440, height: 900 }, small: { width: 360, height: 740 } }[vp || 'desktop'];
+  const mob = v.width < 600;
+  const ctx = await browser.newContext(Object.assign({ viewport: v, isMobile: mob, hasTouch: mob, deviceScaleFactor: 1, serviceWorkers: 'block', colorScheme: theme || 'light' }, opts || {}));
+  await ctx.addInitScript(([k, t]) => { try { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('le-theme', t); if (k && k !== 'clear') localStorage.setItem('le-skin', k); else localStorage.removeItem('le-skin'); } } catch (e) {}
+    requestAnimationFrame(() => { window.__firstFrameSkin = document.documentElement.getAttribute('data-skin') || 'clear'; window.__firstFrameTheme = document.documentElement.getAttribute('data-theme'); }); }, [skin, theme || 'light']);
+  const page = await ctx.newPage();
+  page.errors = []; page.requests = [];
+  page.on('console', (m) => { if (m.type() === 'error') page.errors.push(m.text()); });
+  page.on('pageerror', (e) => page.errors.push('pageerror: ' + e.message));
+  page.on('request', (r) => page.requests.push(r.url()));
+  await page.goto(base + url, { waitUntil: 'networkidle' });
+  return page;
+}
+
+cases['themes: the choice applies without reload, persists, and is on <html> before the first frame'] = async ({ browser, base, h }) => {
+  for (const url of ['/', '/studio/', '/pdf-studio/', '/photo/']) {
+    const page = await openSkin(browser, base, url, 'desktop', 'paper', 'dark');
+    h.assert.equal(await page.evaluate(() => window.__firstFrameSkin), 'paper', url + ': skin set before the first frame');
+    h.assert.equal(await page.evaluate(() => window.__firstFrameTheme), 'dark', url + ': mode set before the first frame');
+    await page.context().close();
+  }
+  const page = await openSkin(browser, base, '/', 'desktop', 'clear', 'light');
+  const bg0 = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await page.click('.le-top [data-appearance]');
+  await page.waitForSelector('#le-appearance[open] .ap-card');
+  await page.click('#le-appearance .ap-card[data-ap-skin="graphite"]');
+  h.assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-skin')), 'graphite', 'applied at once');
+  h.assert(bg0 !== await page.evaluate(() => getComputedStyle(document.body).backgroundColor), 'repainted without reload');
+  await page.click('#le-appearance [data-ap-mode="dark"]');
+  h.assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), 'dark', 'mode applied');
+  const meta = await page.evaluate(() => document.querySelector('meta[name="theme-color"]').getAttribute('content'));
+  h.assert(/#121212/i.test(meta), 'theme-color follows the theme: ' + meta);
+  await page.reload({ waitUntil: 'networkidle' });
+  h.assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-skin')), 'graphite', 'persists after reload');
+  await page.evaluate(() => { window.LE.appearance.setSkin('clear'); window.LE.appearance.setMode('auto'); });
+  h.assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-skin')), null, 'Clear is no attribute');
+  h.assert.equal(await page.evaluate(() => localStorage.getItem('le-skin')), null, 'Clear stores nothing');
+  h.assert.noErrors(page);
+};
+
+cases['themes: Clear uses the system stack and no serif accent; inactive themes load no fonts'] = async ({ browser, base, h }) => {
+  let page = await openSkin(browser, base, '/', 'desktop', 'clear', 'light');
+  const r = await page.evaluate(() => ({ body: getComputedStyle(document.body).fontFamily, h1: getComputedStyle(document.querySelector('h1')).fontFamily, em: (() => { const e = document.querySelector('h1 em'); return e ? [getComputedStyle(e).fontFamily, getComputedStyle(e).fontStyle] : null; })() }));
+  h.assert(/^-apple-system/.test(r.body), 'chrome uses the system stack: ' + r.body);
+  h.assert(!/Instrument|Jakarta/.test(r.h1), 'headline is not the serif or Jakarta: ' + r.h1);
+  if (r.em) h.assert(!/Instrument/.test(r.em[0]) && r.em[1] === 'normal', 'no serif italic accent: ' + r.em.join(' '));
+  /* The serif may load for content (the design in the product shot); the Lapis interface face must not. */
+  h.assert(!page.requests.some((u) => /jakarta-latin/.test(u)), 'Clear requests no Lapis interface font: ' + page.requests.filter((u) => /fonts\//.test(u)).join(', '));
+  await page.context().close();
+  /* The studio start screen previews designs in their own content fonts (Jakarta among them), so only marketing pages are checked. */
+  for (const url of ['/photo/', '/about/']) {
+    page = await openSkin(browser, base, url, 'desktop', 'clear', 'light');
+    h.assert(!page.requests.some((u) => /jakarta-latin/.test(u)), url + ': Clear requests no Lapis interface font');
+    await page.context().close();
+  }
+  page = await openSkin(browser, base, '/', 'desktop', 'lapis', 'light');
+  h.assert(/Plus Jakarta Sans/.test(await page.evaluate(() => getComputedStyle(document.body).fontFamily)), 'Lapis keeps its face');
+  await page.context().close();
+};
+
+cases['themes: comfort fallbacks are declared (reduced transparency, reduced motion, no blur support)'] = async ({ h }) => {
+  const css = fs.readFileSync(path.join(ROOT, 'assets', 'css', 'app.css'), 'utf8');
+  h.assert(/@media \(prefers-reduced-transparency: reduce\)[\s\S]{0,300}--bar-filter: none/.test(css), 'reduced transparency turns blur off');
+  h.assert(/@supports not \(\(backdrop-filter/.test(css), 'solid fallback without backdrop-filter');
+  h.assert(/@media \(prefers-reduced-motion: reduce\)/.test(css), 'reduced motion');
+  ['clear', 'lapis', 'graphite', 'paper', 'contrast'].forEach((k) => h.assert(k === 'clear' || css.includes(':root[data-skin="' + k + '"]'), 'theme block ' + k));
+};
+
+['clear', 'lapis', 'graphite', 'paper', 'contrast'].forEach((skin) => {
+  cases['themes: ' + skin + ' fits 360 and 1440 with no console errors on the main surfaces'] = async ({ browser, base, h }) => {
+    for (const theme of ['light', 'dark']) {
+      for (const vp of ['small', 'desktop']) {
+        for (const url of ['/', '/photo/', '/studio/', '/pdf-studio/', '/storage-manager/']) {
+          const page = await openSkin(browser, base, url, vp, skin, theme);
+          await page.waitForTimeout(100);
+          h.assert.noErrors(page);
+          h.assert(await h.noOverflow(page), skin + ' ' + theme + ' ' + vp + ' ' + url + ' scrolls sideways');
+          await page.context().close();
+        }
+      }
+    }
+  };
+});
+
 cases['no retired gold, foil or amethyst literals in CSS or inline styles'] = async ({ h }) => {
   const OLD = /#(E2B15A|F3CC7C|F2D594|2A1F0A|2C220F|C9963F|E9BE6A|B9832F|F8E3AE|F6D68E|E8BD6E|E7BA66|CBB78E|7457F0|8D74FF|6A4FE8|5B3FD9|4E36C9|A893FF|B3A1FF|141318|17131F|FBF8F3|F7F6F3|F7EFDC)\b|rgba?\(\s*(226,\s*177,\s*90|242,\s*213,\s*148|185,\s*131,\s*47|116,\s*87,\s*240|42,\s*31,\s*10)\b/i;
   const bad = [];
@@ -193,7 +286,7 @@ cases['manifest colours and icon files match the identity'] = async ({ h }) => {
   (man.shortcuts || []).forEach((s) => (s.icons || []).forEach((i) => { h.assert(fs.existsSync(path.join(ROOT, i.src)), 'shortcut icon exists: ' + i.src); h.assert.equal(png(i.src)[0], 96, i.src + ' is 96px'); }));
   ['icon.svg', 'maskable.svg'].forEach((f) => {
     const s = fs.readFileSync(path.join(ROOT, 'assets', 'icons', f), 'utf8');
-    h.assert(/#3F67D9/i.test(s) && /#EF8C57/i.test(s), f + ' carries Lapis and Apricot');
+    h.assert(/#0369DA/i.test(s) && /#EF8C57/i.test(s), f + ' carries the brand blue and the Apricot dot');
     h.assert(!/#E2B15A|#5b5bf7|#8b5cf6/i.test(s), f + ' has no old colours');
   });
   /* The inline marks in the shell and the studio header are the same mark. */

@@ -7,6 +7,8 @@
     var saved = localStorage.getItem('le-theme') || localStorage.getItem('it-theme');
     if (saved) root.setAttribute('data-theme', saved);
     else if (!root.getAttribute('data-theme')) root.setAttribute('data-theme', window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var savedSkin = localStorage.getItem('le-skin');
+    if (savedSkin && savedSkin !== 'clear' && /^[a-z]+$/.test(savedSkin)) root.setAttribute('data-skin', savedSkin); else root.removeAttribute('data-skin');
   } catch (e) {}
   document.body.classList.add('le-ready');
 
@@ -22,6 +24,7 @@
     /* One section for a studio settings panel: LE.surround.section(ctx, body). */
     section: function (c, body) {
       if (!c || !c.ui || !c.ui.section || !c.ui.seg) return;
+      if (LEX.appearance && !body.querySelector('.ap')) LEX.appearance.section(c, body);
       var s = c.ui.section('Canvas surround');
       s.querySelector('.sx-sec-body').appendChild(c.ui.seg([['auto', 'Auto'], ['light', 'Light'], ['mid', 'Mid grey'], ['dark', 'Dark']], LEX.surround.get(), function (v) { LEX.surround.set(v); if (c.renderPanel) c.renderPanel(true); }));
       var p = document.createElement('p');
@@ -32,6 +35,113 @@
     }
   };
   LEX.surround.set(LEX.surround.get());
+
+  /* Appearance: a theme (a token set, html[data-skin]) and a mode (light, dark or auto), both stored on this device.
+     Themes never touch exports: designs and PDFs render from the document, not from the interface tokens. */
+  var SKINS = [
+    { id: 'clear', name: 'Clear', note: 'Light and airy, system type. The default.' },
+    { id: 'lapis', name: 'Lapis', note: 'The original look: Lapis blue and serif accents.' },
+    { id: 'graphite', name: 'Graphite', note: 'Monochrome, compact and square.' },
+    { id: 'paper', name: 'Paper', note: 'Warm and calm for long reading.' },
+    { id: 'contrast', name: 'Contrast', note: 'Strongest contrast, larger text and targets.' }
+  ];
+  var aplisteners = [];
+  function lsGetA(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSetA(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+  function systemDark() { return !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches); }
+  function themeColor() {
+    var meta = document.querySelector('meta[name="theme-color"]:not([media])');
+    if (!meta) return;
+    var cs = getComputedStyle(root), studio = document.body.classList.contains('sx-body') || document.body.classList.contains('ps-body');
+    var c = (studio ? cs.getPropertyValue('--side') : cs.getPropertyValue('--bar-solid') || cs.getPropertyValue('--bg')).trim();
+    if (c && /^#|^rgb/.test(c)) meta.setAttribute('content', c);
+  }
+  function apChanged() {
+    themeColor();
+    aplisteners.forEach(function (fn) { try { fn(LEX.appearance.state()); } catch (e) {} });
+    try { document.dispatchEvent(new CustomEvent('le-appearance', { detail: LEX.appearance.state() })); } catch (e) {}
+  }
+  LEX.appearance = {
+    skins: SKINS,
+    skin: function () { var k = lsGetA('le-skin'); return SKINS.some(function (x) { return x.id === k; }) ? k : 'clear'; },
+    mode: function () { var m = lsGetA('le-theme'); return m === 'light' || m === 'dark' ? m : 'auto'; },
+    state: function () { return { skin: LEX.appearance.skin(), mode: LEX.appearance.mode(), dark: root.getAttribute('data-theme') === 'dark' }; },
+    setSkin: function (id) {
+      if (!SKINS.some(function (x) { return x.id === id; })) return;
+      lsSetA('le-skin', id === 'clear' ? null : id);
+      if (id === 'clear') root.removeAttribute('data-skin'); else root.setAttribute('data-skin', id);
+      apChanged();
+    },
+    setMode: function (m) {
+      if (m !== 'light' && m !== 'dark') m = 'auto';
+      lsSetA('le-theme', m === 'auto' ? null : m); lsSetA('it-theme', null);
+      root.setAttribute('data-theme', m === 'auto' ? (systemDark() ? 'dark' : 'light') : m);
+      apChanged();
+    },
+    onChange: function (fn) { aplisteners.push(fn); },
+    /* The picker: mode segments and theme cards, each card a live miniature drawn from that theme's own tokens. */
+    picker: function (opts) {
+      opts = opts || {};
+      var wrap = document.createElement('div');
+      wrap.className = 'ap';
+      function draw() {
+        var st = LEX.appearance.state();
+        var hc = window.matchMedia && matchMedia('(prefers-contrast: more)').matches && st.skin !== 'contrast';
+        wrap.innerHTML =
+          '<div class="ap-mode seg" role="group" aria-label="Light or dark">' +
+            [['light', 'Light'], ['dark', 'Dark'], ['auto', 'Auto']].map(function (m) { return '<button type="button" data-ap-mode="' + m[0] + '" aria-pressed="' + (st.mode === m[0]) + '">' + m[1] + '</button>'; }).join('') +
+          '</div>' +
+          (hc ? '<p class="ap-hint">This device asks for more contrast. <button type="button" class="btn-link" data-ap-skin="contrast">Try Contrast</button></p>' : '') +
+          '<div class="ap-grid" role="radiogroup" aria-label="Theme">' +
+            SKINS.map(function (k) {
+              return '<button type="button" class="ap-card" role="radio" aria-checked="' + (st.skin === k.id) + '" data-ap-skin="' + k.id + '">' +
+                '<span class="ap-prev" data-skin-preview="' + k.id + '" aria-hidden="true"><i class="ap-bar"></i><b class="ap-title">Aa</b><i class="ap-line"></i><i class="ap-line ap-short"></i><span class="ap-btns"><i class="ap-pri"></i><i class="ap-sec"></i></span></span>' +
+                '<span class="ap-name">' + k.name + '</span><small>' + k.note + '</small></button>';
+            }).join('') +
+          '</div>';
+      }
+      draw();
+      wrap.addEventListener('click', function (e) {
+        var m = e.target.closest('[data-ap-mode]'), k = e.target.closest('[data-ap-skin]');
+        if (m) LEX.appearance.setMode(m.getAttribute('data-ap-mode'));
+        else if (k) LEX.appearance.setSkin(k.getAttribute('data-ap-skin'));
+        else return;
+        draw();
+        var again = wrap.querySelector(m ? '[data-ap-mode="' + m.getAttribute('data-ap-mode') + '"]' : '[data-ap-skin="' + k.getAttribute('data-ap-skin') + '"].ap-card');
+        if (again) again.focus();
+        if (opts.onChange) opts.onChange();
+      });
+      return wrap;
+    },
+    /* One section for a studio settings panel: LE.appearance.section(ctx, body). */
+    section: function (c, body) {
+      if (!c || !c.ui || !c.ui.section) return;
+      var sec = c.ui.section('Appearance');
+      sec.querySelector('.sx-sec-body').appendChild(LEX.appearance.picker());
+      body.insertBefore(sec, body.firstChild);
+    },
+    open: function () {
+      var d = document.getElementById('le-appearance');
+      if (!d) {
+        d = document.createElement('dialog');
+        d.id = 'le-appearance';
+        d.className = 'le-dialog le-appear';
+        d.setAttribute('aria-labelledby', 'le-appearance-title');
+        d.innerHTML = '<div class="ap-head"><h2 id="le-appearance-title">Appearance</h2><button type="button" class="le-icon" data-ap-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>';
+        d.appendChild(LEX.appearance.picker());
+        d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-ap-close]')) d.close(); });
+        document.body.appendChild(d);
+      }
+      if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+      var on = d.querySelector('.ap-card[aria-checked="true"]');
+      if (on) on.focus();
+    }
+  };
+  if (window.matchMedia) {
+    var mq = matchMedia('(prefers-color-scheme: dark)');
+    var follow = function () { if (LEX.appearance.mode() === 'auto') { root.setAttribute('data-theme', systemDark() ? 'dark' : 'light'); apChanged(); } };
+    if (mq.addEventListener) mq.addEventListener('change', follow); else if (mq.addListener) mq.addListener(follow);
+  }
 
   var IT = window.IT = window.IT || {};
 
@@ -270,7 +380,7 @@
   };
 
   function mark() {
-    return '<span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3F67D9"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span>';
+    return '<span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><path d="M256 0C51 0 0 51 0 256s51 256 256 256 256-51 256-256S461 0 256 0z" fill="#0369DA"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span>';
   }
 
   function isCurrent(href) {
@@ -304,7 +414,7 @@
       '<div class="le-side-foot">' +
         '<button type="button" class="le-row" data-le-install>' + icon(ICONS.download) + '<span>Install app</span><small>Works offline</small></button>' +
         '<button type="button" class="le-row" data-le-storage>' + icon(ICONS.storage) + '<span>Storage on this device</span></button>' +
-        '<button type="button" class="le-row" data-theme-toggle>' + icon(ICONS.moon) + '<span data-theme-label>Dark theme</span></button>' +
+        '<button type="button" class="le-row" data-appearance>' + icon(ICONS.moon) + '<span>Appearance</span><small data-ap-label></small></button>' +
         '<a class="le-row" href="' + b + 'about/">' + icon(ICONS.info) + '<span>Privacy and about</span></a>' +
       '</div>';
   }
@@ -326,7 +436,7 @@
       '</nav>' +
       '<span class="spacer"></span>' +
       '<button class="le-search" type="button" data-search aria-label="Search tools">' + icon(ICONS.search) + '<span>Search tools</span><kbd>/</kbd></button>' +
-      '<button class="le-icon" type="button" data-theme-toggle aria-label="Switch to dark theme"><span class="le-theme-icon-light">' + icon(ICONS.moon) + '</span><span class="le-theme-icon-dark">' + icon(ICONS.sun) + '</span></button>' +
+      '<button class="le-icon" type="button" data-appearance aria-label="Appearance" aria-haspopup="dialog"><span class="le-theme-icon-light">' + icon(ICONS.moon) + '</span><span class="le-theme-icon-dark">' + icon(ICONS.sun) + '</span></button>' +
       '<button class="le-icon le-menu" type="button" data-menu aria-label="Open menu" aria-expanded="false" aria-controls="le-drawer">' + icon(ICONS.menu) + '</button>' +
       '<a class="btn btn-gold btn-sm le-cta" href="' + b + 'studio/">Open studio</a>';
   }
@@ -343,9 +453,12 @@
       if (b.classList.contains('le-icon')) b.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
     });
     document.querySelectorAll('[data-theme-label]').forEach(function (s) { s.textContent = dark ? 'Light theme' : 'Dark theme'; });
-    var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta && !document.body.classList.contains('sx-body') && !document.body.classList.contains('ps-body') && !document.body.classList.contains('cv-body')) {
-      meta.setAttribute('content', dark ? '#141414' : '#FAFAFA');
+    document.querySelectorAll('[data-ap-label]').forEach(function (s) { var st = LE.appearance.state(); s.textContent = (LE.appearance.skins.filter(function (k) { return k.id === st.skin; })[0] || {}).name + ' · ' + (st.mode === 'auto' ? 'Auto' : dark ? 'Dark' : 'Light'); });
+    var meta = document.querySelector('meta[name="theme-color"]:not([media])');
+    if (meta) {
+      var cs = getComputedStyle(root), studio = document.body.classList.contains('sx-body') || document.body.classList.contains('ps-body');
+      var c = (studio ? cs.getPropertyValue('--side') : (cs.getPropertyValue('--bar-solid') || cs.getPropertyValue('--bg'))).trim();
+      if (c) meta.setAttribute('content', c);
     }
   }
 
@@ -430,6 +543,7 @@
       syncTheme();
       return;
     }
+    if (e.target.closest('[data-appearance]')) { setMenu(false); LE.appearance.open(); return; }
 
     if (e.target.closest('[data-search]')) openSearch();
   });
@@ -567,8 +681,8 @@
 
   mountShell();
 
-  var meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', '#161616');
+  LE.appearance.onChange(syncTheme);
+  syncTheme();
 })();
 
 /* Install, updates and storage manager: loads le-pwa.js and le-pwa.css on every page.
