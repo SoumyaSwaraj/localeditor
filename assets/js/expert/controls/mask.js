@@ -156,7 +156,7 @@
       '<div class="xp-mask-view"></div><ol class="xp-mask-parts"></ol><p class="xp-mask-empty">' + esc(X.say('No mask: the effect applies everywhere. Add a gradient, a range or a brush to limit it.', 'No mask: the effect applies everywhere. Add a gradient, a range or a brush to limit it.')) + '</p></div>');
     var list = el.querySelector('.xp-mask-parts'), empty = el.querySelector('.xp-mask-empty');
     var g = C.gesture(spec);
-    var viewCtl = C.create('segmented', { label: 'Show', options: VIEWS, value: view, onCommit: function (v) { view = v; X.lsSet('le-expert-mask-view', v); X.emit('mask-view', { layerId: spec.layerId && spec.layerId(), fxId: spec.fxId, mask: mask, view: v }); } });
+    var viewCtl = C.create('choice', { label: 'Show', schema: { options: VIEWS }, value: view, onCommit: function (v) { view = v; X.lsSet('le-expert-mask-view', v); X.emit('mask-view', { layerId: spec.layerId && spec.layerId(), fxId: spec.fxId, mask: mask, view: v }); } });
     el.querySelector('.xp-mask-view').appendChild(viewCtl.el);
     var live = [];
     function send(liveMode, key) {
@@ -283,7 +283,7 @@
     return {
       el: el,
       get: function () { return mask.parts.length ? X.clone(mask) : null; },
-      set: function (m) { if (g.active()) return; var n = m && m.parts ? X.clone(m) : { parts: [] }; if (JSON.stringify(n) === JSON.stringify(mask)) return; var same = n.parts.length === mask.parts.length && n.parts.every(function (p, i) { return p.kind === mask.parts[i].kind; }); mask = n; if (same) { var fresh = mask.parts; void fresh; } render(); },
+      set: function (m) { if (g.active()) return; var n = m && m.parts ? X.clone(m) : { parts: [] }; if (JSON.stringify(n) === JSON.stringify(mask)) return; var same = n.parts.length === mask.parts.length && n.parts.every(function (p, i) { return p.kind === mask.parts[i].kind; }); void same; mask = n; render(); X.emit('mask-view', { layerId: spec.layerId && spec.layerId(), fxId: spec.fxId, mask: mask, view: view }); },
       add: add,
       view: function () { return view; },
       focus: function () { addBtn.focus(); },

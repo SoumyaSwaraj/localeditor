@@ -175,7 +175,7 @@ button.xp-swatch i { width: 22px; height: 22px; border-radius: 6px; box-shadow: 
 .xp-mask-head .xp-lbl { color: var(--ink); font-weight: 700; }
 button.xp-mask-add { min-height: 30px !important; height: 30px; padding: 0 10px 0 8px !important; gap: 4px; font-size: 12.5px !important; margin-left: 4px; }
 button.xp-mask-add .xp-ic { width: 16px; height: 16px; }
-.xp-mask-view .xp-segrow { grid-template-columns: auto minmax(0, 1fr); }
+.xp-mask-view .xp-choice { grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; }
 .xp-mask-parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .xp-mask-empty { margin: 0; font-size: 12.5px; color: var(--faint); line-height: 1.45; }
 .xp-part { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
@@ -253,6 +253,8 @@ button.xp-clip.is-low { left: 5px; } .xp-clip.is-high { right: 5px; }
 button.xp-clip.is-low.is-lit::before { background: #5B9BFF; } .xp-clip.is-high.is-lit::before { background: #FF6A6A; }
 button.xp-clip[aria-pressed="true"] { box-shadow: 0 0 0 1.5px #fff; border-radius: 4px; }
 .xp-scope-bar { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.xp-scope-bar .xp-seg { flex: none; }
+.xp-scope-info { flex: 1; text-align: right; }
 .xp-scope-info { font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
 /* ---------- Develop panel ---------- */
