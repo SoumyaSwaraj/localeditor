@@ -585,6 +585,8 @@
         dash: Array.isArray(src.stroke.dash) ? src.stroke.dash.slice(0, 8).map(function (d) { return clamp(num(d, 0), 0, 5000); }) : null,
         cap: oneOf(src.stroke.cap, ['butt', 'round', 'square'], 'butt'), join: oneOf(src.stroke.join, ['miter', 'round', 'bevel'], 'miter')
       } : null;
+      var redact = LE.Scene && LE.Scene.redactOf ? LE.Scene.redactOf(src.redact) : null;
+      if (redact) l.redact = redact;
     } else if (l.type === 'svg') {
       l.assetId = typeof src.assetId === 'string' && /^[\w-]{1,24}:(?:[\w-]{1,40}\/)?[\w-]{1,80}$/.test(src.assetId) ? src.assetId : '';
       l.svg = src.svg ? sanitizeSvg(src.svg) : '';

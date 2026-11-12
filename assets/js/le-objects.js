@@ -451,6 +451,8 @@
         cap: src.stroke.cap || 'butt',
         join: src.stroke.join || 'miter'
       } : null;
+      var redact = redactOf(src.redact);
+      if (redact) layer.redact = redact;
     } else if (type === 'svg') {
       layer.assetId = src.assetId || '';
       layer.svg = src.svg || '';
@@ -1290,6 +1292,7 @@
       this._scheduleSvg(layer.id);
     }
     if (layer.type === 'text' && (patch.font || patch.weight != null || patch.italic != null)) this._ensureFont(layer);
+    if (layer.type === 'shape' && patch.redact !== undefined) { var redact = redactOf(layer.redact); if (redact) layer.redact = redact; else delete layer.redact; }
     if (layer.groupId) this._syncGroup(layer.groupId);
     return layer;
   };
@@ -2250,6 +2253,7 @@
     if (!layer || layer.type === 'group' || layer.visible === false) return;
     if (this._hidden(layer)) return;
     if (opts.preview && this._editing === layer.id) return;
+    if (layer.type === 'shape' && layer.redact) { this._paintRedact(ctx, layer, opts); return; }
     var alpha = this._opacity(layer);
     if (alpha <= 0) return;
     ctx.save();
@@ -2487,6 +2491,141 @@
       ctx.restore();
       angle += step / r * dir;
     }
+  };
+
+  /* ---------- Redaction (privacy) ----------
+     A shape layer with `redact: { mode, amount, color }` hides whatever is already painted beneath it, inside its
+     outline: 'solid' covers it, 'pixelate' averages it into blocks, 'blur' averages it down and then blurs it (so detail
+     is destroyed, not just softened). `amount` is the block size or blur radius in document units; 0 means automatic.
+     A floor tied to the box size keeps it strong enough to hide text. The effect reads the pixels already drawn on the
+     target canvas, so the preview and every export scale match; opacity, blend and shadow never weaken it. */
+  function redactOf(r) {
+    if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
+    var mode = r.mode === 'blur' || r.mode === 'pixelate' ? r.mode : 'solid';
+    var color = typeof r.color === 'string' && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(r.color) ? r.color : '#17131F';
+    return { mode: mode, amount: clamp(Math.round(num(r.amount, 0)), 0, 500), color: color };
+  }
+  function redactSize(layer) {
+    var r = redactOf(layer && layer.redact) || { mode: 'solid', amount: 0 };
+    var short = Math.max(1, Math.min(Math.abs(num(layer.w, 1)), Math.abs(num(layer.h, 1))));
+    if (r.mode === 'blur') return Math.max(r.amount || Math.max(12, short / 4), Math.max(6, short / 8));
+    return Math.max(r.amount || Math.max(12, short / 5), Math.max(4, short / 10));
+  }
+  function redactScratch(pool, i, w, h) {
+    var c = pool[i] || (pool[i] = document.createElement('canvas'));
+    w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h));
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; } else c.getContext('2d').clearRect(0, 0, w, h);
+    return c;
+  }
+  /* Box-averages a region of src down to tw × th by repeated halving, so every output pixel is a true mean. */
+  function redactShrink(pool, src, sx, sy, sw, sh, tw, th) {
+    var cur = src, cx = sx, cy = sy, cw = sw, ch = sh, slot = 0;
+    while (cw / 2 >= tw * 1.5 || ch / 2 >= th * 1.5) {
+      var nw = Math.max(tw, Math.ceil(cw / 2)), nh = Math.max(th, Math.ceil(ch / 2));
+      var step = redactScratch(pool, slot, nw, nh);
+      var x = step.getContext('2d');
+      x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+      x.drawImage(cur, cx, cy, cw, ch, 0, 0, nw, nh);
+      cur = step; cx = 0; cy = 0; cw = nw; ch = nh; slot = slot ? 0 : 1;
+    }
+    var out = redactScratch(pool, 2, tw, th);
+    var o = out.getContext('2d');
+    o.imageSmoothingEnabled = true; o.imageSmoothingQuality = 'high';
+    o.drawImage(cur, cx, cy, cw, ch, 0, 0, tw, th);
+    return out;
+  }
+  function redactPath(layer) {
+    var spec = findShape(layer.shape);
+    var params = clone(layer.params) || {};
+    if (params.radius == null && layer.radius) params.radius = layer.radius;
+    var d = 'M0 0H' + layer.w + 'V' + layer.h + 'H0Z';
+    try { if (spec && spec.path && !spec.strokeOnly) d = spec.path(layer.w, layer.h, params) || d; } catch (e) { /* plain box */ }
+    return typeof d === 'string' ? new Path2D(d) : d;
+  }
+  /* Paints a redaction with the context set to document units. Also used to bake a redaction into a photo. */
+  function paintRedact(ctx, layer, opts) {
+    opts = opts || {};
+    var r = redactOf(layer.redact);
+    if (!r) return;
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.shadowColor = 'transparent';
+    var base = ctx.getTransform();
+    var W = num(opts.pageW, 0), H = num(opts.pageH, 0);
+    ctx.translate(layer.x + layer.w / 2, layer.y + layer.h / 2);
+    ctx.rotate((layer.rotation || 0) * Math.PI / 180);
+    if (layer.flipX || layer.flipY) ctx.scale(layer.flipX ? -1 : 1, layer.flipY ? -1 : 1);
+    ctx.translate(-layer.w / 2, -layer.h / 2);
+    var path = redactPath(layer);
+    if (r.mode === 'solid' || opts.local) {
+      ctx.fillStyle = r.color;
+      ctx.fill(path);
+      ctx.restore();
+      return;
+    }
+    var m = ctx.getTransform();
+    var cv = ctx.canvas;
+    function box(t, w, h) {
+      var xs = [], ys = [];
+      [[0, 0], [w, 0], [w, h], [0, h]].forEach(function (p) { xs.push(t.a * p[0] + t.c * p[1] + t.e); ys.push(t.b * p[0] + t.d * p[1] + t.f); });
+      return { x0: Math.min.apply(null, xs), y0: Math.min.apply(null, ys), x1: Math.max.apply(null, xs), y1: Math.max.apply(null, ys) };
+    }
+    var lim = { x0: 0, y0: 0, x1: cv.width, y1: cv.height };
+    if (W > 0 && H > 0) {
+      var pg = box(base, W, H);
+      lim = { x0: Math.max(0, pg.x0), y0: Math.max(0, pg.y0), x1: Math.min(cv.width, pg.x1), y1: Math.min(cv.height, pg.y1) };
+    }
+    var b = box(m, layer.w, layer.h);
+    var x0 = Math.floor(Math.max(b.x0, lim.x0)), y0 = Math.floor(Math.max(b.y0, lim.y0));
+    var x1 = Math.ceil(Math.min(b.x1, lim.x1)), y1 = Math.ceil(Math.min(b.y1, lim.y1));
+    if (x1 - x0 < 1 || y1 - y0 < 1) { ctx.restore(); return; }
+    var k = Math.max(1, redactSize(layer) * (Math.hypot(base.a, base.b) || 1));
+    var pool = opts.pool || [];
+    ctx.clip(path);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    var bw = x1 - x0, bh = y1 - y0;
+    if (r.mode === 'pixelate') {
+      var cols = Math.max(1, Math.ceil(bw / k)), rows = Math.max(1, Math.ceil(bh / k));
+      var gw = cols * k, gh = rows * k;
+      var sw = Math.min(gw, lim.x1 - x0), sh = Math.min(gh, lim.y1 - y0);
+      var tw = Math.max(1, Math.round(cols * sw / gw)), th = Math.max(1, Math.round(rows * sh / gh));
+      var small = redactShrink(pool, cv, x0, y0, sw, sh, tw, th);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(small, 0, 0, tw, th, x0, y0, tw * k, th * k);
+    } else {
+      var pad = Math.ceil(k * 1.5);
+      var rx0 = Math.max(lim.x0, x0 - pad), ry0 = Math.max(lim.y0, y0 - pad);
+      var rx1 = Math.min(lim.x1, x1 + pad), ry1 = Math.min(lim.y1, y1 + pad);
+      var rw = rx1 - rx0, rh = ry1 - ry0;
+      var soft = opts.fast || !filterBlur();
+      var f = Math.max(1, soft ? k / 1.5 : k / 4);
+      var dw = Math.max(1, Math.round(rw / f)), dh = Math.max(1, Math.round(rh / f));
+      var low = redactShrink(pool, cv, rx0, ry0, rw, rh, dw, dh);
+      var out = low;
+      if (!soft) {
+        out = redactScratch(pool, 3, dw, dh);
+        var ox = out.getContext('2d');
+        ox.drawImage(low, 0, 0);
+        ox.filter = 'blur(' + (k / f).toFixed(2) + 'px)';
+        ox.drawImage(low, 0, 0);
+        ox.filter = 'none';
+      }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(out, 0, 0, dw, dh, rx0, ry0, rw, rh);
+    }
+    ctx.restore();
+    if (!opts.pool) pool.forEach(function (c) { try { c.width = 1; c.height = 1; } catch (e) {} });
+  }
+  P._paintRedact = function (ctx, layer, opts) {
+    var preview = !!opts.preview;
+    try {
+      paintRedact(ctx, layer, {
+        local: !!opts.local, pageW: this._doc.width, pageH: this._doc.height,
+        pool: preview ? (this._rdx || (this._rdx = [])) : null, fast: preview && this._level() === 'low'
+      });
+    } catch (e) { /* a broken redaction should not stop the frame */ }
   };
 
   P._paintShape = function (ctx, layer) {
@@ -3959,6 +4098,9 @@
   LE.Scene.EXTENDED_ADJUST = true;
   LE.Scene.blank = blank;
   LE.Scene.collageOf = collageOf;
+  LE.Scene.redactOf = redactOf;
+  LE.Scene.redactSize = redactSize;
+  LE.Scene.paintRedact = paintRedact;
   LE.Scene.refitCrop = refitCrop;
   LE.Scene.backgroundSpec = bgSpec;
   LE.Scene.backgroundPlacement = function (bg, W, H, sw, sh) { return bgPlace(bgSpec(bg), W, H, sw, sh); };
