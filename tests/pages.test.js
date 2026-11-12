@@ -52,9 +52,9 @@ cases['no soon feature is mentioned on a generated page, the homepage or in sear
   unreleased.forEach((e) => h.assert(!index.includes('"' + e.title + '"'), 'Search index lists soon entry ' + e.title));
 };
 
-/* Waits on the site-data pass (owner of assets/data/site.json): photo-privacy became a real tool in
-   scripts/build.js TOOLS but is still "soon" in the data, so hubs and feature pages leave it out. */
-cases['KNOWN-BUG: a tool that is live in scripts/build.js is not marked soon in site.json'] = async ({ h }) => {
+/* Data consistency: a tool that is built by scripts/build.js (TOOLS) must not be soon in the data (photo-privacy was, until the
+   site-data pass flipped it). */
+cases['a tool that is live in scripts/build.js is not marked soon in site.json'] = async ({ h }) => {
   const stale = soon.filter(isBuiltTool).map((e) => e.id);
   h.assert.equal(stale.length, 0, 'live tools still marked soon: ' + stale.join(', '));
 };

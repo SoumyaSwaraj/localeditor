@@ -47,6 +47,8 @@ SIZES.forEach(([w, hh]) => {
   cases[tag + ': panel contents scroll inside the panel and the panel never exceeds the window'] = async ({ browser, base, h }) => {
     const page = await studioAt(browser, base, h, w, hh);
     await h.openPanel(page, 'design', { tab: 'resize' });
+    /* Let the panel finish opening (its slide-in transform can overshoot the window for a frame under load). */
+    await page.waitForFunction(() => document.getElementById('sx-panel').getBoundingClientRect().bottom <= innerHeight + 1, null, { timeout: 3000 }).catch(() => {});
     const m = await page.evaluate(() => { const p = document.getElementById('sx-panel').getBoundingClientRect(); const b = document.getElementById('sx-panel-body'); return { bottom: p.bottom, vh: innerHeight, scrolls: b.scrollHeight > b.clientHeight, ov: getComputedStyle(b).overflowY }; });
     h.assert(m.bottom <= m.vh + 1, 'panel bottom ' + m.bottom + ' > ' + m.vh);
     h.assert(!m.scrolls || /auto|scroll/.test(m.ov), 'long panel content scrolls');

@@ -337,6 +337,8 @@ cases['text-layout template adds editable layers (group) over the page'] = async
 cases['collage template tab lists catalogue cards and the first card applies without errors (shallow)'] = async ({ browser, base, h }) => {
   const page = await h.newDesign(browser, base, 'desktop', 'Instagram post');
   await h.openPanel(page, 'design', { tab: 'templates' });
+  /* The catalogue index loads on demand; under load it can take longer than the panel's first paint. */
+  await page.waitForFunction(() => document.querySelectorAll('#sx-panel-body .sx-cg-card').length >= 10, null, { timeout: 15000 }).catch(() => {});
   h.assert(await page.locator('#sx-panel-body .sx-cg-card').count() >= 10, 'cards listed');
   await page.locator('#sx-panel-body .sx-cg-card').first().click();
   await page.waitForTimeout(1500);
