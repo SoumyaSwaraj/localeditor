@@ -395,6 +395,7 @@
     else if (type === 'shape') readShape(src, path, l, rep);
     else if (type === 'svg' || type === 'icon') readSvg(src, path, l, d, rep, type);
     else if (type === 'path') readPath(src, path, l, rep);
+    readExpert(src, l, d, page, type);
     return d;
   }
 
@@ -482,7 +483,7 @@
       var b = objAt(src.border, path + '/border', rep, 'border');
       if (b) l.border = { width: numberAt(b.width, path + '/border/width', rep, 'width') || 0, color: colorAt(b.color, path + '/border/color', rep) || '#17131F' };
     }
-    if (src.mask != null) {
+    if (src.mask != null && !isObj(src.mask)) {
       if (typeof src.mask !== 'string' || !/^[\w-]{1,40}$/.test(src.mask)) rep.err(path + '/mask', 'mask is a shape id such as "ellipse" or "heart".');
       else l.mask = src.mask;
     }
@@ -529,7 +530,7 @@
       if (d.recipe && (typeof d.recipe.id !== 'string' || !/^[\w.-]{1,80}$/.test(d.recipe.id))) { rep.err(path + '/recipe', 'That is not a recipe id.'); d.recipe = null; }
       if (d.recipe && d.recipe.strength != null && !isNum(d.recipe.strength)) { rep.err(path + '/recipe/strength', 'strength must be a number from 0 to 100.'); d.recipe = null; }
     }
-    if (src.fx != null) {
+    if (src.fx != null && !Array.isArray(src.fx)) {
       var fx = objAt(src.fx, path + '/fx', rep, 'fx');
       if (fx) { d.fx = clone(fx); d.fxImg = readSrc(fx.src, path + '/fx/src', rep, st, { page: page.index, layer: l.id }); }
     }
@@ -962,7 +963,7 @@
       p.drafts.forEach(function (d) { if (d.img) imgs.push(d.img); if (d.fxImg && d.fxImg.kind !== 'remote') imgs.push(d.fxImg); });
     });
 
-    return resolveImages(imgs, opts, rep, st, out).then(function () {
+    return expertStage(pages, imgs, rep, st).then(function (after) { return resolveImages(imgs, opts, rep, st, out).then(after); }).then(function () {
       return Promise.all(pages.map(function (p) { return collageStage(p, rep); }));
     }).then(function () {
       var all = [];
@@ -1208,6 +1209,54 @@
     return o;
   }
 
+  /* ---------- Expert fields (docs/FX-AUTHORING.md; "Expert fields" in docs/FORMAT-DESIGN.md) ----------
+     fx as a list, layerMask (a "mask" object means the same), transform, retouch, maps, raw and the adjustment layer type.
+     They are read and checked by LE.fx.design, which loads only when a file carries them. */
+  TYPES.push('adjust');
+  COMMON.push('fx', 'layerMask', 'transform', 'retouch', 'maps', 'raw');
+  BY_TYPE.adjust = ['clip'];
+  BY_TYPE.image.push('fxBaked');
+  function readExpert(src, l, d, page, type) {
+    if (type === 'adjust') { l.clip = src.clip === true; if (d.w == null && d.h == null) { d.w = page.width; d.h = page.height; } }
+    var raw = { fx: type === 'image' && !Array.isArray(src.fx) ? null : src.fx, fxBaked: src.fxBaked, layerMask: src.layerMask != null ? src.layerMask : isObj(src.mask) ? src.mask : null, transform: src.transform, retouch: src.retouch, maps: src.maps, raw: src.raw };
+    if (Object.keys(raw).some(function (k) { return raw[k] != null; })) d.expert = { raw: raw, type: type, page: page.index };
+  }
+  /* Before the images resolve: asset references join them. Returns what to run once they have. */
+  function expertStage(pages, imgs, rep, st) {
+    var drafts = [];
+    pages.forEach(function (p) { p.drafts.forEach(function (d) { if (d.expert) drafts.push(d); }); });
+    if (!drafts.length) return Promise.resolve(null);
+    return (LE.fxBoot ? LE.fxBoot.load() : Promise.reject()).then(function (fx) {
+      return fx.design.read(drafts, { rep: rep, imgs: imgs, src: function (v, path, ref) { return readSrc(v, path, rep, st, ref); } });
+    }, function () {
+      rep.warn('', 'effects-unchecked', 'The effect renderer could not be loaded, so effects in this file were not checked; they are checked again before they are drawn.');
+      drafts.forEach(function (d) { if (LE.Scene && LE.Scene.expertOf) LE.Scene.expertOf(d.expert.raw, d.l); });
+      return null;
+    });
+  }
+  function expertOut(l, o, ctx) {
+    if (l.type === 'adjust' && l.clip) o.clip = true;
+    var lost = false;
+    /* Keys sorted; every "asset" inside is written the way an image src is. */
+    function out(v) {
+      if (Array.isArray(v)) return v.map(out).filter(function (x) { return x !== undefined; });
+      if (!isObj(v)) return v;
+      var r = {}, gone = false;
+      Object.keys(v).sort().forEach(function (k) {
+        if (k !== 'asset' || typeof v[k] !== 'string') r[k] = out(v[k]);
+        else if (ctx.images === 'none') lost = gone = true;
+        else r[k] = ctx.ref(v[k], l.id + '-asset') || v[k];
+      });
+      return gone ? undefined : r;
+    }
+    if (Array.isArray(l.fx) && l.fx.length) { if (isObj(o.fx)) o.fxBaked = o.fx; o.fx = out(l.fx); }
+    ['layerMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) {
+      var v = l[k] == null ? undefined : out(l[k]);
+      if (v !== undefined && !(k === 'layerMask' && !v.parts.length)) o[k] = v;
+    });
+    if (lost) ctx.dropped.push({ kind: 'effect', layer: l.id, name: l.name });
+  }
+
   function layerOut(l, ctx) {
     var o = {};
     o.id = l.id;
@@ -1292,6 +1341,7 @@
       if (l.color && l.color !== '#17131F') o.color = l.color;
       if (l.mode && l.mode !== 'pen') o.mode = l.mode;
     }
+    expertOut(l, o, ctx);
     return o;
   }
   function sortKeys(o) {

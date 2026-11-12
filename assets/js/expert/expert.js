@@ -240,7 +240,7 @@
   /* ---------- Document writes ----------
      Every change the workspace makes goes through here, so the contract with LE.Scene lives in one place.
      `key` is a gesture key: all writes with the same key collapse into one undo step. */
-  var MASK = 'mask';   /* docs/EXPERT-MODE.md: layer.mask = { parts: [...] } (see the report: image layers already use `mask` for a shape name) */
+  var MASK = 'layerMask';   /* the composable layer mask; layer.mask stays the frame-shape name on image layers */
   function ctx() { return global.LEStudio || null; }
   function scene() { var c = ctx(); return c && c.scene; }
   /* Layer copies are memoised per document state (LE.Scene's last snapshot), so a panel refresh clones each layer once.
@@ -370,7 +370,7 @@
 
   /* ---------- Module loading ---------- */
   /* Two waves: the kit's base first (the other files register into it), then everything else in parallel. */
-  var FIRST = ['spline.js', 'controls/base.js'];
+  var FIRST = ['../fx/curves.js', 'controls/base.js'];   /* the spline lives with the renderer (assets/js/fx/curves.js): one definition for both */
   var FILES = ['controls/slider.js', 'controls/curve.js', 'controls/color.js', 'controls/bands.js',
     'controls/pickers.js', 'controls/mask.js', 'brush.js', 'scopes.js', 'panel.js', 'layers.js', 'tools.js', 'workspace.js'];
   var loading = null;

@@ -389,6 +389,46 @@
     if (word(m.sig, 16)) out.sig = word(m.sig, 16);
     return out;
   }
+  /* Expert fields (docs/FX-AUTHORING.md): fx, layerMask, transform.quad, retouch, maps, raw. Shape only (types, sizes, forbidden
+     keys); LE.fx checks every entry against its effect's schema before it runs. */
+  function fxVal(v, d, inList, cap) {
+    if (typeof v === 'number') return isFinite(v) ? v : null;
+    if (typeof v === 'boolean') return v;
+    if (typeof v === 'string') return v.replace(/[^\w #:.,()%\/+=-]/g, '').slice(0, cap || 120);
+    if (!v || typeof v !== 'object' || d > 4) return null;
+    if (Array.isArray(v)) return v.slice(0, inList && !cap ? 4 : 512).map(function (x) { return fxVal(x, d + 1, true, cap); });
+    var o = {};
+    Object.keys(v).slice(0, 24).forEach(function (k) { if (/^[a-zA-Z][\w-]{0,31}$/.test(k) && k !== 'constructor' && k !== 'prototype') o[k] = fxVal(v[k], d + 1, inList, cap); });
+    return o;
+  }
+  function fxObj(v, d, cap) { v = fxVal(v, d, false, cap); return v && !Array.isArray(v) && Object.keys(v).length ? v : null; }
+  function layerMaskOf(m) {
+    var parts = m && Array.isArray(m.parts) ? m.parts.slice(0, 8).map(function (q) { q = fxObj(q, 2); return q && typeof q.kind === 'string' ? q : null; }).filter(Boolean) : [];
+    return parts.length || (m && m.invert === true && Array.isArray(m.parts)) ? { on: m.on !== false, invert: m.invert === true, parts: parts } : null;
+  }
+  function expertOf(src, layer) {
+    var fx = (Array.isArray(src.fx) ? src.fx : []).slice(0, 32).map(function (e) {
+      return e && typeof e.type === 'string' && /^[a-z][a-z0-9.-]{1,39}$/.test(e.type) ? {
+        id: typeof e.id === 'string' && /^[\w.-]{1,40}$/.test(e.id) ? e.id : uid(), type: e.type, on: e.on !== false, amount: clamp(num(e.amount, 1), 0, 1),
+        blend: typeof e.blend === 'string' && /^[a-z-]{1,20}$/.test(e.blend) ? e.blend : 'normal', mask: layerMaskOf(e.mask), p: fxObj(e.p, 1) || {}
+      } : null;
+    }).filter(Boolean);
+    var mask = layerMaskOf(src.layerMask || (typeof src.mask === 'object' ? src.mask : null));
+    var q = src.transform && src.transform.quad, rt = src.retouch, maps = fxObj(src.maps, 0, 12000), raw = fxObj(src.raw, 2);   /* maps hold packed face landmarks (about 4 KB of base64 per face) */
+    ['fx', 'layerMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { delete layer[k]; });
+    if (fx.length) layer.fx = fx;
+    if (mask) layer.layerMask = mask;
+    if (Array.isArray(q) && q.length === 4 && q.every(function (c) { return Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number' && isFinite(c[0] + c[1]); })) {
+      layer.transform = { quad: q.map(function (c) { return [clamp(c[0], -1e5, 1e5), clamp(c[1], -1e5, 1e5)]; }) };
+    }
+    if (rt && typeof rt.asset === 'string' && /^[\w:.-]{1,80}$/.test(rt.asset)) layer.retouch = { asset: rt.asset, version: Math.max(0, Math.round(num(rt.version, 1))) };
+    if (maps) layer.maps = maps;
+    if (raw) layer.raw = raw;
+    return layer;
+  }
+  /* Asset ids a layer's expert data and cut-out point at (masks, LUTs, retouch, maps), so projects keep them. */
+  function expertAssets(l) { return JSON.stringify([l.fx, l.layerMask, l.retouch, l.maps, l.cutout]).match(/[a-f0-9]{64}/g) || []; }
+
   /* Print meta (doc.print): the physical page this page is meant for, in mm, and the pixels per inch it was laid out at.
      PDF export uses it for the page size. */
   function printOf(p) {
@@ -432,8 +472,8 @@
   function normalize(src, scene, keepName) {
     src = src || {};
     var type = src.type || 'shape';
-    if (type !== 'image' && type !== 'text' && type !== 'shape' && type !== 'svg' && type !== 'path' && type !== 'group') type = 'shape';
-    var names = { image: 'Image', text: 'Text', shape: 'Shape', svg: 'Graphic', path: 'Drawing', group: 'Group' };
+    if (type !== 'image' && type !== 'text' && type !== 'shape' && type !== 'svg' && type !== 'path' && type !== 'group' && type !== 'adjust') type = 'shape';
+    var names = { image: 'Image', text: 'Text', shape: 'Shape', svg: 'Graphic', path: 'Drawing', group: 'Group', adjust: 'Adjustment' };
     var layer = {
       id: src.id || uid(),
       type: type,
@@ -463,7 +503,7 @@
       };
       layer.radius = Math.max(0, num(src.radius, 0));
       layer.border = src.border ? { width: Math.max(0, num(src.border.width, 0)), color: src.border.color || '#17131F' } : null;
-      layer.mask = src.mask || 'none';
+      layer.mask = typeof src.mask === 'string' && src.mask ? src.mask : 'none';
       layer.adjust = clone(src.adjust) || {};
       layer.filter = src.filter && src.filter.name ? { name: String(src.filter.name), intensity: num(src.filter.intensity, 100) } : null;
       layer.removeBg = src.removeBg ? { tolerance: num(src.removeBg.tolerance, 28), color: src.removeBg.color || '#ffffff' } : null;
@@ -521,8 +561,12 @@
       layer.width = Math.max(0.5, num(src.width, 4));
       layer.color = src.color || '#17131F';
       layer.mode = src.mode === 'marker' || src.mode === 'highlighter' ? src.mode : 'pen';
+    } else if (type === 'adjust') {
+      /* Adjustment layer: its fx stack applies to what is beneath. Covers the page unless a box is given. */
+      layer.clip = src.clip === true;
+      if (src.w == null && src.h == null) { layer.x = 0; layer.y = 0; layer.w = scene._doc.width; layer.h = scene._doc.height; }
     }
-    return layer;
+    return expertOf(src, layer);
   }
 
   function blank(w, h) {
@@ -1329,8 +1373,14 @@
   P._patch = function (id, patch) {
     var layer = this._find(id);
     if (!layer || !patch) return null;
-    var prevX = layer.x, prevY = layer.y;
+    var prevX = layer.x, prevY = layer.y, prevMask = layer.mask;
     assignInto(layer, patch);
+    if (patch.fx !== undefined || patch.layerMask !== undefined || patch.transform !== undefined || patch.retouch !== undefined || patch.maps !== undefined || patch.raw !== undefined || (patch.mask && typeof patch.mask === 'object')) {
+      var asMask = layer.mask && typeof layer.mask === 'object' ? layer.mask : null;
+      if (asMask) { layer.layerMask = asMask; if (typeof prevMask === 'string') layer.mask = prevMask; else delete layer.mask; }
+      expertOf(layer, layer);
+      if (layer.type === 'image') this._scheduleImage(layer.id);
+    }
     layer.opacity = clamp(num(layer.opacity, 1), 0, 1);
     layer.blend = blendOf(layer.blend);
     layer.w = Math.max(1, num(layer.w, 1));
@@ -1693,7 +1743,7 @@
     return Math.ceil(target / 128) * 128;
   };
   P._imageKey = function (layer) {
-    return JSON.stringify([layer.src, layer.crop, layer.adjust, layer.filter, layer.removeBg, layer.cutout || null, this._level(), this._imageBucket(layer)]);
+    return JSON.stringify([layer.src, layer.crop, layer.adjust, layer.filter, layer.removeBg, layer.cutout || null, this._level(), this._imageBucket(layer), LE.fxBoot ? LE.fxBoot.key(layer) : 0]);
   };
   P._dropCanvas = function (canvas) {
     if (!canvas || typeof canvas.getContext !== 'function') return;
@@ -1752,6 +1802,8 @@
     var rec = this._assets[layer.src];
     var self = this;
     if (!rec) return Promise.resolve(null);
+    /* Expert data: LE.fx makes the bitmap, calling back here with _fxRaw for the legacy part. */
+    if (!layer._fxRaw && LE.fxBoot && LE.fxBoot.needs(layer)) return LE.fxBoot.layer(this, layer, targetMax, preview);
     var cut = layer.cutout && layer.cutout.enabled !== false ? layer.cutout : null;
     var mrec = cut ? this._assets[cut.asset] : null;
     return Promise.all([rec.ready, mrec ? Promise.resolve(mrec.ready).catch(function () { return null; }) : null]).then(function () {
@@ -1766,6 +1818,8 @@
           base = Math.max(rec._prev.width, rec._prev.height) > targetMax ? LE.fit(rec._prev, targetMax) : cloneCanvas(rec._prev);
         } else base = LE.fit(src, targetMax);
       }
+      var rt = layer._fxRaw && layer.retouch ? assetCanvas(self._assets[layer.retouch.asset]) : null;
+      if (rt) { if (base === src) base = cloneCanvas(base); base.getContext('2d').drawImage(rt, 0, 0, base.width, base.height); }   /* retouch overlay */
       /* Cut-out first, so crop, adjust, filters and the outline all see the subject on transparency. */
       if (cut && mrec) base = cutoutApply(base, mrec, cut.feather * base.width * ((layer.crop && layer.crop.w) || 1) / Math.max(1, layer.w));
       function finish(c) { return cut && cut.outline && c ? cutoutOutline(c, cut.outline.width * c.width / Math.max(1, layer.w), cut.outline.color) : c; }
@@ -1946,6 +2000,7 @@
       return null;
     });
     jobs.push(this._prepareBg(scale).then(function (pic) { if (pic) bitmaps[BG_KEY] = pic; }));
+    if (LE.fxBoot) jobs.push(LE.fxBoot.prepare(this));
     return Promise.all(jobs).then(function () { return bitmaps; });
   };
 
@@ -2081,6 +2136,7 @@
     this._doc.layers.forEach(function (layer) {
       if (opts.preview && self._bgEdit && self._bgEdit.peek) return;
       if (opts.preview && self._crop && self._crop.id === layer.id) self._drawCropGhost(ctx, layer);
+      if (LE.fxBoot && LE.fxBoot.draw(self, ctx, layer, opts)) return;   /* expert layers drawn by LE.fx */
       self._drawLayer(ctx, layer, opts);
     });
     ctx.restore();
@@ -2527,9 +2583,11 @@
     if (cutPending) return;
     var clip = this._imageClip(layer);
     var empty = !bitmap && !node;
+    var fxb = bitmap && bitmap._fx && !bitmap._fx.fallback ? bitmap._fx : null;
     ctx.save();
-    if (clip) ctx.clip(clip);
-    if (bitmap) ctx.drawImage(bitmap, 0, 0, layer.w, layer.h);
+    if (clip && !fxb) ctx.clip(clip);
+    if (fxb) ctx.drawImage(bitmap, -fxb.padX, -fxb.padY, layer.w + 2 * fxb.padX, layer.h + 2 * fxb.padY);
+    else if (bitmap) ctx.drawImage(bitmap, 0, 0, layer.w, layer.h);
     else if (node) {
       var crop = layer.crop || { x: 0, y: 0, w: 1, h: 1 };
       var iw = node.naturalWidth || node.width, ih = node.naturalHeight || node.height;
@@ -2902,7 +2960,7 @@
     var layers = this._doc.layers;
     for (var i = layers.length - 1; i >= 0; i--) {
       var layer = layers[i];
-      if (layer.type === 'group' || layer.visible === false || this._hidden(layer) || this._locked(layer)) continue;
+      if (layer.type === 'group' || layer.type === 'adjust' || layer.visible === false || this._hidden(layer) || this._locked(layer)) continue;
       if (this._hits(layer, x, y)) return layer.id;
     }
     for (var g = layers.length - 1; g >= 0; g--) {
@@ -4301,6 +4359,9 @@
   LE.Scene.redactSize = redactSize;
   LE.Scene.paintRedact = paintRedact;
   LE.Scene.makerOf = makerOf;
+  LE.Scene.expertOf = expertOf;
+  LE.Scene.expertAssets = expertAssets;
+  LE.Scene._fx = { cutoutAlpha: cutoutAlpha, cutoutApply: cutoutApply, cutoutOutline: cutoutOutline };
   LE.Scene.printOf = printOf;
   LE.Scene.refitCrop = refitCrop;
   LE.Scene.backgroundSpec = bgSpec;
