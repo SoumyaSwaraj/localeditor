@@ -206,7 +206,7 @@
   --aurora: var(--primary);
   --amethyst: var(--primary);
   --amethyst-2: var(--primary-active);
-  --obsidian: #161616;
+  --obsidian: var(--primary);     /* was a near-black "selected" fill; selection is brand now */
   --aubergine: #182D6B;
   --pearl: #FAFAFA;
   --grain: none;
@@ -1604,6 +1604,26 @@ button.chip:hover { border-color: var(--border-hover); }
 .hp-hero-copy > :nth-child(3) { animation-delay: 80ms; }
 .hp-hero-copy > :nth-child(4) { animation-delay: 120ms; }
 .hp-shot { animation-delay: 140ms; animation-duration: 800ms; }
+
+/* Completion moments (peak-end): a job finished on this device. Used by IT.celebrate(), the studio's
+   "Downloaded" / "Saved" toasts and the photo privacy check's clean copy. One small check that draws
+   itself and one soft Apricot ring. Nothing loops, nothing bounces, all of it off under reduced motion. */
+@keyframes le-done-pop { from { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } to { transform: scale(1); } }
+@keyframes le-done-ring { from { box-shadow: 0 0 0 0 rgba(239, 140, 87, 0.6); } to { box-shadow: 0 0 0 9px rgba(239, 140, 87, 0); } }
+@keyframes le-done-draw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.toast.is-done { display: flex; align-items: center; gap: 10px; }
+.toast.is-done::before, .sx-toast.is-done::before {
+  content: "";
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ok-fill) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5.5 10.5 3 3 6-6.5'/%3E%3C/svg%3E") center / 20px no-repeat;
+  animation: le-done-pop 360ms var(--ease-out) both, le-done-ring 720ms 140ms ease-out both;
+}
+.sx-toast.is-done { padding-left: 12px; }
+.pp-done-line svg { animation: le-done-draw 420ms 80ms var(--ease-out) both; }
+.pp-done { animation: le-rise 320ms var(--ease-out) both; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

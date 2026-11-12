@@ -644,7 +644,7 @@
       x.globalAlpha = 1;
       x.lineWidth = 1;
       x.setLineDash([5, 4]);
-      x.strokeStyle = 'rgba(116,87,240,.85)';
+      x.strokeStyle = 'rgba(88,132,248,.9)';
       x.strokeRect(-l.w / 2 * v.zoom, -l.h / 2 * v.zoom, l.w * v.zoom, l.h * v.zoom);
       x.restore();
     }

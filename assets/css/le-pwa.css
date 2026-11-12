@@ -3,16 +3,16 @@
    with fallbacks, so it also works on pages that do not load app.css. */
 :root {
   --lp-bg: var(--surface, #FFFFFF);
-  --lp-ink: var(--ink, #1B1722);
-  --lp-muted: var(--muted, #6F6A78);
-  --lp-line: var(--border, #E4E0E8);
-  --lp-soft: var(--surface-2, #F3F1ED);
-  --lp-gold: var(--gold, #E2B15A);
-  --lp-foil: var(--foil, linear-gradient(180deg, #F3CC7C 0%, #E2B15A 100%));
-  --lp-on: var(--amethyst, #7457F0);
-  --lp-accent: var(--accent, #5B3FD9);
-  --lp-focus: var(--focus-ring, #6A4FE8);
-  --lp-gold-ink: #2A1F0A;
+  --lp-ink: var(--ink, #191919);
+  --lp-muted: var(--muted, #6D6D6D);
+  --lp-line: var(--border, #E2E2E2);
+  --lp-soft: var(--surface-2, #F1F1F1);
+  --lp-gold: var(--gold, var(--primary));
+  --lp-foil: var(--foil, var(--primary));
+  --lp-on: var(--amethyst, var(--primary));
+  --lp-accent: var(--accent, var(--primary-active));
+  --lp-focus: var(--focus-ring);
+  --lp-gold-ink: var(--on-primary);
   --lp-ok: var(--ok, #1F8A5B);
   --lp-warn: var(--warn, #9A6408);
   --lp-err: var(--err, #B42318);
@@ -21,10 +21,10 @@
   --lp-font: var(--font, system-ui, -apple-system, "Segoe UI", sans-serif);
 }
 :root[data-theme="dark"] {
-  --lp-soft: var(--surface-2, #211F27);
+  --lp-soft: var(--surface-2, #202020);
   --lp-err: var(--err, #F07A6E);
   --lp-ok: var(--ok, #4CC08D);
-  --lp-warn: var(--warn, #E2B15A);
+  --lp-warn: var(--warn);
 }
 
 /* Install controls hide once the app is installed; the old header button shows when installing is possible. */
@@ -52,12 +52,12 @@ dialog.lp-sheet {
   font-family: var(--lp-font);
   font-size: 15px;
   line-height: 1.45;
-  box-shadow: 0 -12px 48px rgba(16, 12, 24, 0.22);
+  box-shadow: 0 -12px 48px rgba(14, 14, 14, 0.22);
   overflow: hidden;
   animation: lp-rise 0.28s var(--lp-ease);
 }
 dialog.lp-sheet:not([open]) { display: none; }
-dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fade 0.2s ease; }
+dialog.lp-sheet::backdrop { background: rgba(13, 13, 13, 0.48); animation: lp-fade 0.2s ease; }
 .lp-sheet-in {
   box-sizing: border-box;
   max-height: min(92dvh, 92vh);
@@ -71,7 +71,7 @@ dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fa
 @keyframes lp-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { dialog.lp-sheet, dialog.lp-sheet::backdrop, .lp-notice { animation: none !important; transition: none !important; } }
 @media (min-width: 720px) {
-  dialog.lp-sheet { margin: auto; width: min(640px, calc(100% - 48px)); border-radius: var(--lp-radius); box-shadow: 0 30px 80px rgba(16, 12, 24, 0.28); }
+  dialog.lp-sheet { margin: auto; width: min(640px, calc(100% - 48px)); border-radius: var(--lp-radius); box-shadow: 0 30px 80px rgba(14, 14, 14, 0.28); }
   dialog.lp-sheet.lp-confirm { width: min(440px, calc(100% - 48px)); }
   .lp-sheet-in { padding: 0 24px 24px; }
 }
@@ -103,14 +103,14 @@ dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fa
   font: 600 14px/1.2 var(--lp-font); cursor: pointer; text-align: center;
   transition: background 0.15s, border-color 0.15s, transform 0.1s;
 }
-.lp-btn:hover { border-color: var(--border-hover, #CFC9D6); }
+.lp-btn:hover { border-color: var(--border-hover, #CCCCCC); }
 .lp-btn:active { transform: scale(0.98); }
 .lp-btn:disabled { opacity: 0.6; cursor: default; }
 .lp-btn:focus-visible, .lp-link:focus-visible, .lp-x:focus-visible, .lp-cat summary:focus-visible, .lp-sheet select:focus-visible, .lp-switch:focus-visible, .lp-type input:focus-visible { outline: 2px solid var(--lp-focus); outline-offset: 2px; }
-.lp-btn.lp-primary { background: var(--lp-foil); border-color: var(--foil-edge, #C9963F); color: var(--lp-gold-ink); }
-.lp-btn.lp-primary:hover { background: var(--foil-hover, #E8BD6E); }
+.lp-btn.lp-primary { background: var(--lp-foil); border-color: var(--foil-edge, var(--primary-edge)); color: var(--lp-gold-ink); }
+.lp-btn.lp-primary:hover { background: var(--foil-hover, var(--primary-hover)); }
 .lp-btn.lp-danger { background: var(--lp-err); border-color: var(--lp-err); color: #fff; }
-:root[data-theme="dark"] .lp-btn.lp-danger { color: #1B0907; }
+:root[data-theme="dark"] .lp-btn.lp-danger { color: #0F0F0F; }
 .lp-btn.lp-danger-ghost { color: var(--lp-err); }
 .lp-btn-sm { min-height: 40px; padding: 0 14px; font-size: 13.5px; }
 .lp-wide { width: 100%; min-height: 50px; font-size: 15.5px; }
@@ -151,10 +151,10 @@ dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fa
 .lp-hot {
   color: var(--lp-ink); font-weight: 650; background: var(--lp-bg);
   border-radius: 10px; padding: 6px 10px;
-  box-shadow: 0 0 0 2px var(--lp-on), 0 0 0 6px var(--accent-soft, rgba(116, 87, 240, 0.14));
+  box-shadow: 0 0 0 2px var(--lp-on), 0 0 0 6px var(--accent-soft, rgba(63, 103, 217, 0.14));
   animation: lp-pulse 1.8s ease-in-out infinite;
 }
-@keyframes lp-pulse { 50% { box-shadow: 0 0 0 2px var(--lp-on), 0 0 0 10px rgba(116, 87, 240, 0.04); } }
+@keyframes lp-pulse { 50% { box-shadow: 0 0 0 2px var(--lp-on), 0 0 0 10px rgba(63, 103, 217, 0.04); } }
 @media (prefers-reduced-motion: reduce) { .lp-hot { animation: none; } }
 .lp-note, .lp-sub { color: var(--lp-muted); font-size: 13.5px; margin: 10px 0 0; }
 .lp-why { list-style: none; margin: 16px 0 0; padding: 14px 0 0; display: grid; gap: 8px; border-top: 1px solid var(--lp-line); font-size: 14px; color: var(--lp-muted); }
@@ -249,32 +249,32 @@ dialog.lp-sheet::backdrop { background: rgba(14, 12, 20, 0.48); animation: lp-fa
   left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px;
   padding: 12px 8px 12px 14px; border-radius: 18px;
-  background: var(--side, #141318); color: #F6F3EC; font-family: var(--lp-font); font-size: 14px; line-height: 1.4;
-  box-shadow: 0 16px 40px rgba(10, 8, 16, 0.32);
+  background: var(--side, #141414); color: #F3F3F3; font-family: var(--lp-font); font-size: 14px; line-height: 1.4;
+  box-shadow: 0 16px 40px rgba(9, 9, 9, 0.32);
   opacity: 0; transform: translateY(12px); transition: opacity 0.22s var(--lp-ease), transform 0.22s var(--lp-ease);
 }
 .lp-notice.show { opacity: 1; transform: none; }
-:root[data-theme="dark"] .lp-notice { background: #2A2733; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
+:root[data-theme="dark"] .lp-notice { background: #292929; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
 body.sx-body .lp-notice { bottom: calc(76px + env(safe-area-inset-bottom)); }
 @media (min-width: 720px) {
   .lp-notice { left: auto; right: 20px; bottom: 20px; width: 420px; }
   body.sx-body .lp-notice { bottom: 56px; }
 }
-.lp-notice-ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: rgba(226, 177, 90, 0.18); color: #F2D594; flex: none; }
+.lp-notice-ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: rgba(129, 166, 254, 0.16); color: #81A6FE; flex: none; }
 .lp-notice-quota .lp-notice-ic { background: rgba(249, 112, 102, 0.18); color: #FDA29B; }
 .lp-notice-tx { flex: 1 1 180px; min-width: 0; display: flex; flex-direction: column; padding-right: 36px; }
-.lp-notice-tx span { color: #CFCAD8; font-size: 13px; }
+.lp-notice-tx span { color: #CDCDCD; font-size: 13px; }
 .lp-notice-ac { display: flex; gap: 8px; flex: 1 1 100%; justify-content: flex-end; }
 .lp-notice-ac:empty { display: none; }
-.lp-notice .lp-btn { background: transparent; color: #F6F3EC; border-color: rgba(255, 255, 255, 0.22); }
-.lp-notice .lp-btn.lp-primary { background: var(--lp-foil); border-color: var(--foil-edge, #C9963F); color: var(--lp-gold-ink); }
-.lp-notice .lp-x { position: absolute; top: 6px; right: 6px; margin: 0; color: #CFCAD8; }
+.lp-notice .lp-btn { background: transparent; color: #F3F3F3; border-color: rgba(255, 255, 255, 0.22); }
+.lp-notice .lp-btn.lp-primary { background: var(--lp-foil); border-color: var(--foil-edge, var(--primary-edge)); color: var(--lp-gold-ink); }
+.lp-notice .lp-x { position: absolute; top: 6px; right: 6px; margin: 0; color: #CDCDCD; }
 .lp-notice .lp-x:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
 
 .lp-toast {
   position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 2147483001;
   transform: translateX(-50%) translateY(8px); max-width: calc(100% - 24px);
-  padding: 10px 14px; border-radius: 999px; background: #16141C; color: #F6F3EC; font: 14px var(--lp-font);
+  padding: 10px 14px; border-radius: 999px; background: #151515; color: #F3F3F3; font: 14px var(--lp-font);
   opacity: 0; pointer-events: none; transition: opacity 0.18s, transform 0.18s;
 }
 .lp-toast.show { opacity: 1; transform: translateX(-50%); }

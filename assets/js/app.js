@@ -10,6 +10,29 @@
   } catch (e) {}
   document.body.classList.add('le-ready');
 
+  /* Canvas surround for the editors: light, mid or dark grey around the page, or follow the theme.
+     Neutral greys only, so people judge their own colours fairly (docs/DESIGN.md, "Neutral chrome"). */
+  var LEX = window.LE = window.LE || {};
+  LEX.surround = {
+    get: function () { try { return localStorage.getItem('le-surround') || 'auto'; } catch (e) { return 'auto'; } },
+    set: function (v) {
+      try { if (v === 'auto') localStorage.removeItem('le-surround'); else localStorage.setItem('le-surround', v); } catch (e) {}
+      if (v === 'light' || v === 'mid' || v === 'dark') root.setAttribute('data-surround', v); else root.removeAttribute('data-surround');
+    },
+    /* One section for a studio settings panel: LE.surround.section(ctx, body). */
+    section: function (c, body) {
+      if (!c || !c.ui || !c.ui.section || !c.ui.seg) return;
+      var s = c.ui.section('Canvas surround');
+      s.querySelector('.sx-sec-body').appendChild(c.ui.seg([['auto', 'Theme'], ['light', 'Light'], ['mid', 'Mid grey'], ['dark', 'Dark']], LEX.surround.get(), function (v) { LEX.surround.set(v); if (c.renderPanel) c.renderPanel(true); }));
+      var p = document.createElement('p');
+      p.className = 'sx-note';
+      p.textContent = 'The grey around your page. Mid grey is the fairest for judging colour.';
+      s.querySelector('.sx-sec-body').appendChild(p);
+      body.appendChild(s);
+    }
+  };
+  LEX.surround.set(LEX.surround.get());
+
   var IT = window.IT = window.IT || {};
 
   IT.toast = function (msg, ms) {
@@ -22,6 +45,7 @@
       document.body.appendChild(el);
     }
     el.innerHTML = msg;
+    el.classList.remove('is-done');
     el.classList.add('show');
     clearTimeout(el._t);
     el._t = setTimeout(function () { el.classList.remove('show'); }, ms || 2400);
@@ -36,12 +60,24 @@
       document.body.appendChild(el);
     }
     el.textContent = msg;
+    el.classList.remove('is-done');
     el.classList.add('show');
     clearTimeout(el._t);
     el._t = setTimeout(function () { el.classList.remove('show'); }, ms || 2400);
   };
 
-  IT.celebrate = function () {};
+  /* A finished job (saved, downloaded, cleaned): the toast with a small check (styles: app.css, "Completion moments"). */
+  IT.celebrate = function (msg, ms) {
+    if (!msg) return;
+    IT.say(msg, ms || 2800);
+    var el = document.querySelector('.toast');
+    if (!el) return;
+    el.classList.remove('is-done');
+    void el.offsetWidth;
+    el.classList.add('is-done');
+    clearTimeout(el._d);
+    el._d = setTimeout(function () { el.classList.remove('is-done'); }, (ms || 2800) + 300);
+  };
 
   IT.formatBytes = function (b) {
     if (b == null || isNaN(b)) return '';

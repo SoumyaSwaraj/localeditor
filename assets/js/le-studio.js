@@ -306,6 +306,7 @@
     opts = opts || {};
     var t = E.toast;
     t.innerHTML = '<span>' + esc(msg) + '</span>' + (opts.action ? '<button type="button" class="sx-toast-act">' + esc(opts.action.label) + '</button>' : '');
+    t.classList.toggle('is-done', !!opts.done || /^(Downloaded|Saved|Copied)\b/.test(String(msg)));
     t.hidden = false;
     placeToast();
     requestAnimationFrame(function () { t.classList.add('is-on'); });

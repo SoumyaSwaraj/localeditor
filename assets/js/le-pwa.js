@@ -906,7 +906,7 @@
   }
 
   /* ---------- The report: every place LocalEditor stores something ---------- */
-  var COLORS = { app: '#8E8A98', fonts: '#4C6FD8', packs: '#7C5CD6', photos: '#D45D79', models: '#1F8A5B', projects: '#E2B15A', versions: '#B9832F', unused: '#D9822B', settings: '#5B8C9A', other: '#C9C4D0' };
+  var COLORS = { app: '#9E9E9E', fonts: '#4C6FD8', packs: '#7C5CD6', photos: '#D45D79', models: '#0E8A93', projects: '#3F67D9', versions: '#81A6FE', unused: '#D9822B', settings: '#5B8C9A', other: '#C7C7C7' };
   function report() {
     var est = navigator.storage && navigator.storage.estimate ? navigator.storage.estimate().catch(function () { return {}; }) : Promise.resolve({});
     var pers = navigator.storage && navigator.storage.persisted ? navigator.storage.persisted().catch(function () { return false; }) : Promise.resolve(null);

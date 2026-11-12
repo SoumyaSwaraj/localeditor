@@ -1885,7 +1885,7 @@
     g.fillStyle = '#F7F6F3'; g.fillRect(0, 0, W, H);
     g.fillStyle = '#FFFFFF'; g.fillRect(40, 40, W - 80, H - 80);
     g.strokeStyle = '#E3E0DA'; g.lineWidth = 2; g.strokeRect(40, 40, W - 80, H - 80);
-    g.fillStyle = '#E2B15A'; g.fillRect(80, 92, 70, 6);
+    g.fillStyle = '#EF8C57'; g.fillRect(80, 92, 70, 6);
     g.fillStyle = '#16131C'; g.font = '750 46px ' + font; g.fillText('Fingerprint receipt', 80, 160);
     g.fillStyle = '#5E5967'; g.font = '500 24px ' + font;
     var name = trimTo(fp.name, 44);

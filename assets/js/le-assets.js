@@ -1236,7 +1236,7 @@
 
   function colorSets() {
     var sets = [
-      { id: 'localeditor', name: 'LocalEditor', group: 'brand', colors: ['#FBF8F3', '#F2D594', '#E2B15A', '#E0668E', '#D07A45', '#7457F0', '#4E36C9', '#2F6BFF', '#17A37A', '#110F17'] },
+      { id: 'localeditor', name: 'LocalEditor', group: 'brand', colors: ['#FAFAFA', '#E6EEFF', '#81A6FE', '#3F67D9', '#2E51B6', '#182D6B', '#FEB38C', '#EF8C57', '#14874E', '#141414'] },
       { id: 'amethyst', name: 'Amethyst', group: 'brand', colors: ['#F3EEFF', '#D9CEFF', '#B7A4FA', '#7457F0', '#4E36C9', '#2A2154'] },
       { id: 'champagne', name: 'Champagne', group: 'brand', colors: ['#FBF6EA', '#F2D594', '#E2B15A', '#B9832F', '#6E4E16'] },
       { id: 'rose-brand', name: 'Rose', group: 'brand', colors: ['#FDE8EF', '#F2A8C0', '#E0668E', '#B53D68', '#5C1C34'] },
