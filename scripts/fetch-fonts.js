@@ -363,7 +363,11 @@ function writeManifest(all, pop) {
     const src = fs.readFileSync(JS, 'utf8');
     const a = src.indexOf('/*NAMES*/');
     const b = src.indexOf('/*NAMES_END*/');
-    if (a >= 0 && b > a) fs.writeFileSync(JS, src.slice(0, a + 9) + JSON.stringify(names) + src.slice(b));
+    let out = a >= 0 && b > a ? src.slice(0, a + 9) + JSON.stringify(names) + src.slice(b) : src;
+    /* Total bytes of "everything" (library families, not CJK), so LE.fonts.sizeOf('all') answers without the index. */
+    const total = ordered.filter((fam) => !fam.cjk && fam.source !== 'localeditor').reduce((n, fam) => n + fam.bytes, 0);
+    out = out.replace(/\/\*TOTAL\*\/\d+\/\*TOTAL_END\*\//, '/*TOTAL*/' + total + '/*TOTAL_END*/');
+    fs.writeFileSync(JS, out);
   }
   writeLicenceTable(ordered);
   return index;
