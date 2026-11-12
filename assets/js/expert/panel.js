@@ -169,14 +169,14 @@
       if (!ids.length && c) { var b = c.targetImage && c.targetImage(); return b ? b.id : null; }
       return null;
     }
-    function entriesIn(sec) { var d = X.defs().filter(function (x) { return x.section === sec; }).map(function (x) { return x.id; }); return X.doc.fx(targetId).filter(function (e) { return d.indexOf(e.type) >= 0; }); }
+    function entriesIn(sec, list) { var d = X.sectionTypes(sec); return (list || X.doc.fx(targetId)).filter(function (e) { return d.indexOf(e.type) >= 0; }); }
     function sig() {
       var l = targetId && X.doc.layer(targetId);
       return (targetId || '') + '|' + X.defs().length + '|' + (l && l.fx ? l.fx.map(function (e) { return e.id + e.type; }).join(',') : '') + '|' + (X.doc.mask(l) ? 1 : 0);
     }
-    function headState(sec) {
+    function headState(sec, list) {
       var s = secEls[sec]; if (!s) return;
-      var es = entriesIn(sec);
+      var es = entriesIn(sec, list);
       var any = es.length > 0, off = any && es.every(function (e) { return e.on === false; });
       s.classList.toggle('is-used', any);
       s.classList.toggle('is-off', off);
@@ -213,7 +213,8 @@
       s.classList.toggle('is-open', on);
       s.querySelector('.xp-sec-tog').setAttribute('aria-expanded', on ? 'true' : 'false');
       s.querySelector('.xp-sec-body').hidden = !on;
-      if (on && !built[sec]) buildBody(sec);
+      if (on && sec === 'Mask' && !s._mask) buildMask(s);
+      else if (on && !built[sec]) buildBody(sec);
     }
     function render() {
       Object.keys(built).forEach(function (k) { built[k].forEach(function (b) { b.panel.destroy(); }); });
@@ -263,8 +264,7 @@
         }
         secsHost.appendChild(s);
         if (isMask) {
-          s.querySelector('.xp-sec-tog').addEventListener('click', function () { if (open.Mask && !s._mask) buildMask(s); });
-          if (open.Mask) { setOpen(sec, true); buildMask(s); }
+          if (open.Mask) setOpen(sec, true);
         } else if (open[sec]) setOpen(sec, true);
       });
       lastSig = sig();
@@ -282,20 +282,22 @@
       });
       body.appendChild(s._mask.el);
     }
-    /* Called on every document change (once per frame at most). */
+    /* Called on every document change (once per frame at most). Section heads update only when entries or their on/off
+       state change; built controls get their values in place. */
+    var lastHead = '';
     function sync() {
       var t = pickTarget();
       if (t !== targetId) { targetId = t; render(); X.emit('target-layer', t); return; }
-      var sg = sig();
-      if (sg !== lastSig) {
-        lastSig = sg;
-        /* Entries were added, removed or reordered: refresh heads, rebuild nothing that keeps its controls. */
-        Object.keys(secEls).forEach(function (k) { if (k !== 'Mask') headState(k); });
-        var ms = secEls.Mask; if (ms) ms.classList.toggle('is-used', !!X.doc.mask(X.doc.layer(targetId)));
+      var l = targetId && X.doc.layer(targetId), list = (l && l.fx) || [];
+      var hs = list.map(function (e) { return e.id + e.type + (e.on === false ? 0 : 1); }).join(',') + (X.doc.mask(l) ? 'm' : '');
+      if (hs !== lastHead) {
+        lastHead = hs;
+        Object.keys(secEls).forEach(function (k) { if (k !== 'Mask') headState(k, list); });
+        var ms = secEls.Mask; if (ms) ms.classList.toggle('is-used', !!X.doc.mask(l));
       }
+      lastSig = sig();
       Object.keys(built).forEach(function (k) { built[k].forEach(function (b) { b.panel.refresh(); }); });
-      Object.keys(secEls).forEach(function (k) { if (k !== 'Mask') headState(k); });
-      var m = secEls.Mask; if (m && m._mask) m._mask.set(X.doc.mask(X.doc.layer(targetId)));
+      var m = secEls.Mask; if (m && m._mask) m._mask.set(X.doc.mask(l));
     }
     var syncSoon = X.rafThrottle(sync);
     targetId = pickTarget();

@@ -2960,7 +2960,8 @@
   (PANELS._cmds = PANELS._cmds || {}).mode = function (c, arg) { closePop(); setMode(arg === 'toggle' ? (xpOn() ? 'simple' : 'expert') : arg); };
   (HOOKS['toolbar-add'] = HOOKS['toolbar-add'] || []).push(function (c, kind, l) { if (!xpOn() && xpData(l)) return '<button type="button" class="sx-tb sx-tb-chip sx-xp-mark" data-cmd="mode:expert" data-pri="2" title="Open in Expert">Edited in Expert</button>'; });
   (HOOKS.ready = HOOKS.ready || []).push(function () {
-    var q = new URLSearchParams(location.search).get('mode');
+    var u = new URL(location.href), q = u.searchParams.get('mode');
+    if (q) { u.searchParams.delete('mode'); history.replaceState(null, '', u.pathname + u.search); }
     if ((q || lsGet('le-studio-mode', 'simple')) === 'expert') setMode('expert', !q);
     else if (S.project && scene.layers().some(xpData)) toast('This design has Expert edits.', { action: { label: 'Open in Expert', fn: function () { setMode('expert'); } }, ms: 6000 });
   });

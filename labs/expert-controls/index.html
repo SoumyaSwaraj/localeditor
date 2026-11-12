@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Expert control kit</title>
+<link rel="stylesheet" href="../../assets/css/app.css">
+<link rel="stylesheet" href="../../assets/css/expert.css">
+<script>try{var t=localStorage.getItem('le-theme')||'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 "Plus Jakarta Sans", var(--font, system-ui), sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+  header.g-head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  header.g-head h1 { margin: 0; font-size: 28px; letter-spacing: -.03em; }
+  header.g-head p { margin: 4px 0 0; color: var(--muted); max-width: 640px; }
+  .g-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-items: start; }
+  .g-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 14px 12px; display: grid; gap: 10px; min-width: 0; }
+  .g-card h2 { margin: 0; font-size: 13px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); display: flex; justify-content: space-between; gap: 8px; }
+  .g-card h2 code { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--accent); }
+  .g-out { margin: 0; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); white-space: pre-wrap; word-break: break-all; max-height: 120px; overflow: auto; }
+  .g-wide { grid-column: 1 / -1; }
+  .g-stage { position: relative; border-radius: 12px; overflow: hidden; background: #111; touch-action: none; }
+  .g-stage img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+  .g-paint { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .g-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .g-btn { min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); font: 650 13px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+  .g-btn[aria-pressed="true"] { border-color: var(--amethyst); background: var(--accent-soft); }
+  :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+  .g-note { font-size: 12.5px; color: var(--faint); margin: 0; }
+</style>
+</head>
+<body class="le-built">
+<main>
+  <header class="g-head">
+    <div><h1>Expert control kit</h1><p>Every control of the Expert workspace on its own, wired to a live value. Mouse, touch and keyboard; double-click (or double-tap) a label to reset. See docs/EXPERT-UI.md.</p></div>
+    <span class="xp-grow"></span>
+    <button type="button" class="g-btn" id="theme">Dark</button>
+  </header>
+  <div class="g-grid" id="grid"></div>
+</main>
+<script src="../../assets/js/expert/expert.js"></script>
+<script src="../../assets/js/expert/spline.js"></script>
+<script src="../../assets/js/expert/controls/base.js"></script>
+<script src="../../assets/js/expert/controls/slider.js"></script>
+<script src="../../assets/js/expert/controls/curve.js"></script>
+<script src="../../assets/js/expert/controls/color.js"></script>
+<script src="../../assets/js/expert/controls/bands.js"></script>
+<script src="../../assets/js/expert/controls/pickers.js"></script>
+<script src="../../assets/js/expert/controls/mask.js"></script>
+<script src="../../assets/js/expert/brush.js"></script>
+<script src="../../assets/js/expert/scopes.js"></script>
+<script>
+(function () {
+  'use strict';
+  var X = LE.expert, C = X.controls, grid = document.getElementById('grid');
+  var values = {};
+  document.getElementById('theme').onclick = function () {
+    var d = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', d); try { localStorage.setItem('le-theme', d); } catch (e) {}
+    this.textContent = d === 'dark' ? 'Light' : 'Dark';
+  };
+  function card(title, api, extra) {
+    var c = X.h('<section class="g-card' + (extra && extra.wide ? ' g-wide' : '') + '" data-card="' + title + '"><h2><span>' + X.esc(title) + '</span><code>' + X.esc(api) + '</code></h2></section>');
+    grid.appendChild(c);
+    return c;
+  }
+  function out(c, key, v) { var o = c.querySelector('.g-out'); if (!o) { o = X.h('<pre class="g-out" aria-live="off"></pre>'); c.appendChild(o); } values[key] = v; o.textContent = JSON.stringify(v); }
+  function make(title, type, spec, extra) {
+    var c = card(title, "controls.create('" + type + "')", extra);
+    var log = { input: 0, commit: 0 };
+    var ctl = C.create(type, Object.assign({
+      onInput: function (v) { log.input++; out(c, title, { value: v, input: log.input, commit: log.commit }); },
+      onCommit: function (v) { log.commit++; out(c, title, { value: v, input: log.input, commit: log.commit }); }
+    }, spec));
+    c.insertBefore(ctl.el, null);
+    out(c, title, { value: ctl.get(), input: 0, commit: 0 });
+    return { card: c, ctl: ctl };
+  }
+
+  /* Picture for on-canvas handles, the brush and the scopes */
+  var pic = card('Canvas: handles, brush, scopes', 'canvas.attach · Brush.attach · scopes.create', { wide: true });
+  var stage = X.h('<div class="g-stage" id="stage"><img src="../../assets/photos/collage/arch-01.jpg" alt="Sample photo"><canvas class="g-paint"></canvas></div>');
+  var tools = X.h('<div class="g-tools"><button type="button" class="g-btn" id="paint" aria-pressed="false">Brush</button><span class="g-note">Brush: [ and ] size, Shift [ ] hardness, X erase, Shift-click for a straight line.</span></div>');
+  pic.appendChild(tools); pic.appendChild(stage);
+  var img = stage.querySelector('img'), paintCv = stage.querySelector('.g-paint');
+  X.canvas.attach(stage, { box: function () { var r = img.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, rotation: 0 }; }, onChange: function (fn) { addEventListener('resize', fn); addEventListener('scroll', fn, true); return function () {}; } });
+  X.canvas._page = function () { return img.getBoundingClientRect(); };
+  var brush = null;
+  document.getElementById('paint').onclick = function () {
+    var on = this.getAttribute('aria-pressed') !== 'true';
+    this.setAttribute('aria-pressed', on ? 'true' : 'false');
+    if (!on) { if (brush) brush.detach(); brush = null; stage.style.cursor = ''; return; }
+    paintCv.width = img.naturalWidth; paintCv.height = img.naturalHeight;
+    var k = function () { return img.getBoundingClientRect().width / img.naturalWidth; };
+    brush = X.Brush.attach(stage, {
+      toDoc: function (x, y) { var r = img.getBoundingClientRect(); return { x: (x - r.left) / k(), y: (y - r.top) / k() }; },
+      zoom: k, size: 60, hardness: 0.6, color: '#E5343E', smoothing: 0.4,
+      target: { canvas: paintCv, map: function (x, y) { return { x: x, y: y }; }, scale: 1 }
+    });
+    brush.on('end', function (s) { out(pic, 'brush', { points: s.points.length, mode: s.mode, bounds: s.bounds && { x: Math.round(s.bounds.x), y: Math.round(s.bounds.y), w: Math.round(s.bounds.w), h: Math.round(s.bounds.h) } }); });
+    stage.style.cursor = 'none';
+  };
+  addEventListener('keydown', function (e) {
+    if (!brush || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+    if (e.key === '[' || e.key === '{') { e.shiftKey ? brush.softer() : brush.smaller(); e.preventDefault(); }
+    else if (e.key === ']' || e.key === '}') { e.shiftKey ? brush.harder() : brush.bigger(); e.preventDefault(); }
+    else if (e.key === 'x' || e.key === 'X') brush.swap();
+  });
+  var sc = card('Scopes', "scopes.create(host)");
+  X.scopes.source = function () { return img.complete && img.naturalWidth ? img : null; };
+  X.scopes.create(sc);
+  img.addEventListener('load', function () { X.scopes.now(); });
+  if (img.complete) setTimeout(function () { X.scopes.now(); }, 50);
+
+  make('Slider (bipolar)', 'slider', { label: 'Exposure', value: 0, schema: { min: -5, max: 5, step: 0.01, default: 0, unit: 'EV' } });
+  make('Slider (gradient track)', 'slider', { label: 'Temperature', value: 0, gradient: 'temperature', schema: { min: -100, max: 100, step: 1, default: 0 } });
+  make('Slider (hue)', 'slider', { label: 'Hue', value: 0, gradient: 'hue', schema: { min: -180, max: 180, step: 1, default: 0, unit: '°' } });
+  make('Slider (unipolar, default tick)', 'slider', { label: 'Feather', value: 50, schema: { min: 0, max: 100, step: 1, default: 50, unit: '%' } });
+  make('Toggle', 'bool', { label: 'Monochrome', value: false });
+  make('Segmented', 'choice', { label: 'Style', value: 'highlight', schema: { options: [{ value: 'highlight', label: 'Highlight' }, { value: 'color', label: 'Colour' }, { value: 'paint', label: 'Paint' }] } });
+  make('Choice (select)', 'choice', { label: 'Fix', value: 'auto', schema: { options: ['auto', 'level', 'vertical', 'full', 'guided'] } });
+  make('Seed', 'seed', { label: 'Seed', value: 7 });
+  make('Colour swatch', 'color', { label: 'Glow colour', value: '#FFD9A0', schema: { default: '#FFD9A0' } });
+  make('Point (on canvas)', 'point', { label: 'Centre', value: { x: 0.5, y: 0.5 }, schema: { default: { x: 0.5, y: 0.5 } }, layerId: function () { return 'pic'; } });
+  make('Line (gradient ends)', 'line', { label: 'Ends', style: 'gradient', labels: ['Full', 'None'], value: { a: { x: 0.5, y: 0.1 }, b: { x: 0.5, y: 0.6 } }, layerId: function () { return 'pic'; } });
+  make('Angle', 'angle', { label: 'Light direction', value: 135, schema: { default: 135 }, layerId: function () { return 'pic'; } });
+  make('LUT picker', 'lut', { label: 'Look', value: null });
+  make('Curve editor', 'curve', { label: 'Curve', value: { master: [[0, 0], [0.25, 0.2], [0.75, 0.82], [1, 1]] }, histogram: function () { return X.scopes.data && X.scopes.data.hist; } });
+  make('Colour wheel', 'wheel', { label: 'Midtones', value: { h: 210, a: 0.3, l: 0 } });
+  var wc = card('Grading wheels', "controls.create('wheels')");
+  var wv = { shadows: { h: 220, a: 0.2, l: 0 }, midtones: { h: 0, a: 0, l: 0 }, highlights: { h: 40, a: 0.25, l: 0 }, global: { h: 0, a: 0, l: 0 } };
+  var wheels = C.create('wheels', { globalKey: 'global', wheels: ['shadows', 'midtones', 'highlights', 'global'].map(function (k) { return { key: k, label: k.charAt(0).toUpperCase() + k.slice(1), value: wv[k] }; }),
+    balance: { key: 'balance', label: 'Balance', value: 0, schema: { min: -100, max: 100, step: 1, default: 0 } }, blending: { key: 'blending', label: 'Blending', value: 50, schema: { min: 0, max: 100, step: 1, default: 50 } },
+    onChange: function (k, v) { wv[k] = v; out(wc, 'wheels', wv); } });
+  wc.appendChild(wheels.el); out(wc, 'wheels', wv);
+  make('Hue-band grid', 'bands', { label: 'Bands', value: null, schema: { min: -100, max: 100 } });
+  make('Channel mixer', 'mixer', { label: 'Channel mixer', value: { r: [100, 0, 0], g: [0, 100, 0], b: [0, 0, 100] } });
+  make('Mask manager', 'mask', { label: 'Mask', value: { parts: [X.maskPart('radial')] }, layerId: function () { return 'pic'; }, sample: function () { return null; } }, { wide: false });
+  X.on('mask-view', function (v) {
+    if (!v || !v.mask) { X.canvas.maskOverlay(null, null, null); return; }
+    var w = 240, hh = Math.round(240 * img.naturalHeight / img.naturalWidth);
+    var cv = document.createElement('canvas'); cv.width = w; cv.height = hh; cv.getContext('2d').drawImage(img, 0, 0, w, hh);
+    X.canvas.maskOverlay('pic', { w: w, h: hh, data: X.evalMask(v.mask, { w: w, h: hh, pixels: cv.getContext('2d').getImageData(0, 0, w, hh).data }) }, v.view);
+  });
+  window.__gallery = { values: values };
+})();
+</script>
+</body>
+</html>

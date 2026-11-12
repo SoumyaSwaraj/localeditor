@@ -290,12 +290,13 @@
         if (e.button !== 0 && e.pointerType === 'mouse') return;
         if (e.target.closest('input, select, .xp-num, [data-act="eye"], [data-act="lock"], [data-act="mask"], [data-act="fxopen"], [data-act="more"]')) return;
         st = { y: e.clientY, x: e.clientX, id: e.pointerId, on: false, armed: e.pointerType === 'mouse' };
+        try { handle.setPointerCapture(e.pointerId); } catch (err) {}
         if (!st.armed) timer = setTimeout(function () { if (st) { st.armed = true; item.classList.add('is-armed'); if (navigator.vibrate) try { navigator.vibrate(8); } catch (err) {} } }, 300);
       });
       handle.addEventListener('pointermove', function (e) {
         if (!st || e.pointerId !== st.id) return;
         if (!st.armed) { if (Math.abs(e.clientY - st.y) > 8) { clearTimeout(timer); st = null; } return; }
-        if (!st.on) { if (Math.abs(e.clientY - st.y) < 6) return; st.on = true; try { handle.setPointerCapture(e.pointerId); } catch (err) {} item.classList.add('is-dragging'); el.classList.add('is-sorting'); }
+        if (!st.on) { if (Math.abs(e.clientY - st.y) < 6) return; st.on = true; item.classList.add('is-dragging'); el.classList.add('is-sorting'); }
         e.preventDefault();
         item.style.transform = 'translateY(' + (e.clientY - st.y) + 'px)';
         var sibs = [].slice.call(siblings()), idx = 0;
@@ -332,7 +333,7 @@
         else if (e.shiftKey || e.metaKey || e.ctrlKey) { var s = selected(); var i = s.indexOf(id); if (i >= 0) s.splice(i, 1); else s.push(id); scene().select(s); }
         else scene().select([id]);
       });
-      r.querySelector('.xp-lay-name').addEventListener('dblclick', function () { rename(id, r); });
+      row.addEventListener('dblclick', function (e) { var b = e.target.closest('[data-act]'); if (!b || b.getAttribute('data-act') === 'select') rename(id, r); });
       row.addEventListener('contextmenu', function (e) { e.preventDefault(); scene().select([id]); ctxMenu(r.querySelector('.xp-lay-name'), id); });
       /* Long-press opens the same menu on touch. */
       var lp = 0;
@@ -422,7 +423,8 @@
     el.querySelector('[data-act="del"]').addEventListener('click', function () { var s = selected().filter(function (id) { var l = X.doc.layer(id); return l && !l.locked; }); if (s.length) scene().remove(s); });
 
     function sig() {
-      return selected().join(',') + '#' + JSON.stringify(scene().layers().map(function (l) { return [l.id, l.name, l.visible, l.locked, l.type, l.clip, l.src, l.opacity, l.blend, l.fx || 0, l[X.doc.MASK] && l[X.doc.MASK].parts ? l[X.doc.MASK] : 0]; })) + JSON.stringify(openFx);
+      var src = scene()._doc && scene()._doc.layers ? scene()._doc.layers : scene().layers();
+      return selected().join(',') + '#' + JSON.stringify(src.map(function (l) { return [l.id, l.name, l.visible, l.locked, l.type, l.clip, l.src, l.opacity, l.blend, l.fx || 0, l[X.doc.MASK] && l[X.doc.MASK].parts ? l[X.doc.MASK] : 0]; })) + JSON.stringify(openFx);
     }
     function render() {
       if (!c() || !scene()) return;

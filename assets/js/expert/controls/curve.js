@@ -31,8 +31,8 @@
       '<div class="xp-curve-box"><canvas class="xp-curve-hist" aria-hidden="true"></canvas><svg class="xp-curve-svg" viewBox="0 0 256 256" preserveAspectRatio="none" id="' + gid + '">' +
       '<path class="xp-curve-grid" d="M64 0V256M128 0V256M192 0V256M0 64H256M0 128H256M0 192H256"/><path class="xp-curve-diag" d="M0 256L256 0"/><path class="xp-curve-ghost"/><path class="xp-curve-line"/><g class="xp-curve-pts"></g></svg></div>' +
       '<div class="xp-curve-io"><label>Input <input class="xp-field" data-io="x" inputmode="numeric" aria-label="Input level (0–255)"></label><label>Output <input class="xp-field" data-io="y" inputmode="numeric" aria-label="Output level (0–255)"></label></div></div>');
-    var svg = el.querySelector('svg'), line = el.querySelector('.xp-curve-line'), ghost = el.querySelector('.xp-curve-ghost'), ptsG = el.querySelector('.xp-curve-pts');
-    var histC = el.querySelector('canvas'), box = el.querySelector('.xp-curve-box');
+    var svg = el.querySelector('.xp-curve-svg'), line = el.querySelector('.xp-curve-line'), ghost = el.querySelector('.xp-curve-ghost'), ptsG = el.querySelector('.xp-curve-pts');
+    var histC = el.querySelector('.xp-curve-hist'), box = el.querySelector('.xp-curve-box');
     var io = { x: el.querySelector('[data-io="x"]'), y: el.querySelector('[data-io="y"]') };
     var g = C.gesture(spec);
     var chSeg = el.querySelector('.xp-curve-ch');
@@ -208,7 +208,7 @@
     var api = {
       el: el, target: target,
       get: function () { return X.clone(single ? val.master : val); },
-      set: function (v) { if (g.active()) return; val = normal(v); if (selI >= pts().length) selI = -1; draw(); },
+      set: function (v) { if (g.active()) return; var n = normal(v); if (JSON.stringify(n) === JSON.stringify(val)) return; val = n; if (selI >= pts().length) selI = -1; draw(); },
       setChannel: setCh,
       select: function (i) { selI = i; draw(); },
       focus: function () { var f = ptsG.querySelector('.xp-cpt'); if (f) f.focus(); },

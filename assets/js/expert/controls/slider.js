@@ -96,9 +96,13 @@
       v = X.roundTo(clamp(v, sc.min, sc.max), (sc.step || 1) / 10);
       if (v === value && !oneShot) return;
       value = v;
-      paint();
-      if (oneShot) g.once(value); else g.input(value);
+      if (oneShot) { paint(); g.once(value); return; }
+      /* The document write goes first in the frame and the row repaints after it, so the scene never reads a layout this
+         row has just dirtied (no forced layout per move). */
+      g.input(value);
+      paintSoon();
     }
+    var paintSoon = X.rafThrottle(function () { paint(); });
     /* Track dragging. Mouse: the thumb jumps to the click, then follows. Touch: relative, so a scroll that starts on a slider
        does not change it. Shift (or the `fine` option) moves 10x finer. */
     var startV = 0, startX = 0, w = 1, rel = false, left = 0;
@@ -123,7 +127,7 @@
         apply(snap(startV + dv, fine), false);
         if (fine !== rel) { startV = value; startX = e.clientX; rel = fine; }
       },
-      end: function () { track.classList.remove('is-drag'); row.classList.remove('is-drag'); g.end(value); }
+      end: function () { track.classList.remove('is-drag'); row.classList.remove('is-drag'); g.end(value); paintSoon.flush(); }
     });
     /* Touch: let vertical scrolling of the panel win until the finger clearly moves sideways. */
     track.style.touchAction = 'pan-y';

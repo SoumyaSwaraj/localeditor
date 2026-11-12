@@ -147,10 +147,14 @@
     return null;
   }
   function isReal() { return !!(LE.fx && typeof LE.fx.describe === 'function'); }
-  var defCache = { src: null, n: -1, list: [], byId: {} };
+  var defCache = { src: null, n: -1, list: [], byId: {}, bySec: {}, t: 0 };
+  /* The registry is read at most twice a second (a late registration still shows up); panels call defs() often. */
   function defs() {
     var R = registry();
     if (!R) return [];
+    var now = Date.now();
+    if (defCache.src === R && now - defCache.t < 500) return defCache.list;
+    defCache.t = now;
     var raw;
     try { raw = R.describe(); } catch (e) { console.error(e); raw = []; }
     if (raw && !Array.isArray(raw)) raw = Object.keys(raw).map(function (k) { var d = raw[k]; if (d && !d.id) d.id = k; return d; });
@@ -166,10 +170,13 @@
       byId[o.id] = o;
       return o;
     }).sort(function (a, b) { return a.rank - b.rank || a.order - b.order; });
-    defCache = { src: R, n: raw.length, list: list, byId: byId };
+    var bySec = {};
+    list.forEach(function (d) { (bySec[d.section] = bySec[d.section] || []).push(d.id); });
+    defCache = { src: R, n: raw.length, list: list, byId: byId, bySec: bySec, t: now };
     return list;
   }
   function def(id) { defs(); return defCache.byId[id] || null; }
+  function sectionTypes(sec) { defs(); return defCache.bySec[sec] || []; }
   function sections() {
     var seen = {}, out = [];
     defs().forEach(function (d) { if (!seen[d.section]) { seen[d.section] = 1; out.push(d.section); } });
@@ -213,7 +220,8 @@
         if (!isFinite(v)) v = paramDefault(ps);
         if (ps.min != null) v = Math.max(ps.min, v);
         if (ps.max != null) v = Math.min(ps.max, v);
-        return ps.step ? roundTo(v, ps.step) : v;
+        /* Kept to a hundredth of the step: the step is the UI's granularity, fine adjustment may go below it. */
+        return ps.step ? roundTo(v, ps.step / 100) : Math.round(v * 1e6) / 1e6;
       case 'angle':
         v = Number(v) || 0;
         if (ps.min != null || ps.max != null) return clamp(v, ps.min == null ? -360 : ps.min, ps.max == null ? 360 : ps.max);
@@ -235,7 +243,17 @@
   var MASK = 'mask';   /* docs/EXPERT-MODE.md: layer.mask = { parts: [...] } (see the report: image layers already use `mask` for a shape name) */
   function ctx() { return global.LEStudio || null; }
   function scene() { var c = ctx(); return c && c.scene; }
-  function L(id) { var s = scene(); return s && id ? s.layer(id) : null; }
+  /* Layer copies are memoised per document state (LE.Scene's last snapshot), so a panel refresh clones each layer once.
+     Callers never mutate what they get; every write goes through scene.update with a fresh copy. */
+  var memo = { k: null, m: {} };
+  function L(id) {
+    var s = scene();
+    if (!s || !id) return null;
+    var k = s._lastSnap;
+    if (k == null) return s.layer(id);
+    if (memo.k !== k) memo = { k: k, m: {} };
+    return memo.m[id] || (memo.m[id] = s.layer(id));
+  }
   function raw(id) { var s = scene(); return s && s._find ? s._find(id) : null; }
   function upd(id, patch, key) { var s = scene(); if (s) s.update(id, patch, key ? { coalesce: key } : null); }
   function isMaskObj(m) { return !!(m && typeof m === 'object' && Array.isArray(m.parts)); }
@@ -351,7 +369,9 @@
   };
 
   /* ---------- Module loading ---------- */
-  var FILES = ['spline.js', 'controls/base.js', 'controls/slider.js', 'controls/curve.js', 'controls/color.js', 'controls/bands.js',
+  /* Two waves: the kit's base first (the other files register into it), then everything else in parallel. */
+  var FIRST = ['spline.js', 'controls/base.js'];
+  var FILES = ['controls/slider.js', 'controls/curve.js', 'controls/color.js', 'controls/bands.js',
     'controls/pickers.js', 'controls/mask.js', 'brush.js', 'scopes.js', 'panel.js', 'layers.js', 'tools.js', 'workspace.js'];
   var loading = null;
   function lazy(src) {
@@ -369,12 +389,14 @@
       document.head.appendChild(l);
     });
   }
-  /* Scripts load in parallel and run in any order: each one only fills LE.expert, nothing runs until enter(). */
-  function load(list) {
-    if (loading && !list) return loading;
-    var p = Promise.all([css()].concat((list || FILES).map(function (f) { return lazy(BASE + f); })));
-    if (!list) loading = p;
-    return p;
+  /* Within a wave scripts run in any order: each one only fills LE.expert; nothing runs until enter(). */
+  function load() {
+    if (loading) return loading;
+    loading = Promise.all([css(), Promise.all(FIRST.map(function (f) { return lazy(BASE + f); })).then(function () {
+      return Promise.all(FILES.map(function (f) { return lazy(BASE + f); }));
+    })]);
+    loading.catch(function () { loading = null; });
+    return loading;
   }
 
   var X = LE.expert = {
@@ -382,7 +404,7 @@
     h: h, esc: esc, clamp: clamp, clone: clone, uid: uid, lsGet: lsGet, lsSet: lsSet, roundTo: roundTo, rafThrottle: rafThrottle, idle: idle, cancelIdle: cancelIdle,
     mq: mq, reduced: reduced, coarse: coarse, say: say, ic: ic, I: I, on: on, emit: emit, gesture: gesture,
     SECTIONS: SECTIONS, sectionOf: sectionOf, sectionRank: sectionRank,
-    registry: registry, isReal: isReal, defs: defs, def: def, sections: sections, interactive: interactive,
+    registry: registry, isReal: isReal, defs: defs, def: def, sections: sections, sectionTypes: sectionTypes, interactive: interactive,
     paramDefault: paramDefault, defaults: defaults, coerce: coerce,
     doc: doc, clip: clip, load: load,
     controls: X && X.controls || {},

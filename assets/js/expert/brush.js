@@ -117,8 +117,10 @@
       var w = Math.min(T.canvas.width, Math.ceil(dirty.x1)) - x, hh = Math.min(T.canvas.height, Math.ceil(dirty.y1)) - y;
       if (w <= 0 || hh <= 0) return null;
       tc.save();
-      tc.globalCompositeOperation = 'copy';
+      /* 'copy' would clear the whole canvas outside the drawn rectangle: clear the rectangle, then draw. */
       tc.globalAlpha = 1;
+      tc.clearRect(x, y, w, hh);
+      tc.globalCompositeOperation = 'source-over';
       tc.drawImage(base, x, y, w, hh, x, y, w, hh);
       tc.globalCompositeOperation = stroke.mode === 'erase' ? 'destination-out' : 'source-over';
       tc.globalAlpha = clamp(o.opacity, 0, 1);
@@ -182,7 +184,7 @@
       var s = stroke;
       stroke = null;
       X.interactive(false);
-      if (cancel && bctx) { var tc = o.target.canvas.getContext('2d'); tc.save(); tc.globalCompositeOperation = 'copy'; tc.drawImage(base, 0, 0); tc.restore(); }
+      if (cancel && bctx) { var tc = o.target.canvas.getContext('2d'); tc.clearRect(0, 0, base.width, base.height); tc.drawImage(base, 0, 0); }
       base = buf = bctx = null;
       if (s.bounds) s.bounds = { x: s.bounds.x0, y: s.bounds.y0, w: s.bounds.x1 - s.bounds.x0, h: s.bounds.y1 - s.bounds.y0 };
       emit(cancel ? 'cancel' : 'end', s);

@@ -347,9 +347,10 @@
   var docSoon = X.rafThrottle(function () {
     if (!on) return;
     if (comp.develop) comp.develop.sync();
-    if (comp.layers) comp.layers.render();
+    /* The layer list waits for the end of a drag (its rows show nothing a slider changes live). */
+    if (comp.layers && !X.scopes.interactive) comp.layers.render();
     if (panelComp && panelComp.develop) panelComp.develop.sync();
-    if (panelComp && panelComp.layers) panelComp.layers.render();
+    if (panelComp && panelComp.layers && !X.scopes.interactive) panelComp.layers.render();
     X.scopes.request();
     viewChanged();
     if (cmp.mode !== 'off') cmpRenderLater();
@@ -380,13 +381,14 @@
   }
   function relayout() {
     var reopen = c.S.panel === 'expert' ? Object.assign({}, c.S.panelOpts) : null;
+    var was = size;
     teardown();
     size = sizeClass();
     root.setAttribute('data-xp-size', size);
     if (size === 'desktop') { buildStrip(false); buildRight(); }
     else if (size === 'tablet') { buildStrip(false); }
     else { buildStrip(true); buildTabs(); }
-    if (size !== 'desktop' && (reopen || !relayout.done)) openPanelTab((reopen && reopen.tab) || 'adjust');
+    if (size !== 'desktop' && (reopen || !relayout.done || was === 'desktop')) openPanelTab((reopen && reopen.tab) || 'adjust');
     relayout.done = true;
     X.scopes.request();
     setTimeout(function () { c.fit(); viewChanged(); }, 30);
@@ -402,7 +404,16 @@
     document.body.classList.add('xp-body');
     X.canvas.attach(c.E.stage, { box: box, onChange: onView });
     X.canvas._page = function () { return c.scene.pageRect(); };
-    X.scopes.source = function () { return c.S.project ? c.artboard(480) : null; };
+    /* The page area of the stage canvas, in canvas pixels (what the person sees). */
+    X.scopes.source = function () {
+      var cv = c.S.project && c.E.sceneEl.querySelector('canvas.le-view');
+      if (!cv || !cv.clientWidth) return null;
+      var k = cv.width / cv.clientWidth, z = c.scene.zoom(), v = c.scene.view(), d = c.doc();
+      var sx = v.panX * k, sy = v.panY * k, sw = d.width * z * k, sh = d.height * z * k;
+      var x0 = Math.max(0, sx), y0 = Math.max(0, sy), x1 = Math.min(cv.width, sx + sw), y1 = Math.min(cv.height, sy + sh);
+      if (x1 - x0 < 2 || y1 - y0 < 2) return null;
+      return { canvas: cv, x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    };
     X.tools.mount({ ctx: c, stage: c.E.stage, toDoc: toDoc, zoom: function () { return c.scene.zoom(); }, target: target, box: box });
     onView(function () { X.tools.placeOverlays(); if (X.scopes.clipOn) X.scopes.paintClip(); if (maskView) paintMask(); cmpPlace(); });
     relayout.done = false;
@@ -443,4 +454,7 @@
     void m;
   });
   X.on('tool', function () { if (on) setTimeout(markTabs, 0); });
+  /* While a control is dragged the studio holds its own canvas-side work (mini toolbar, toolbar redraws, panel refresh), as it
+     does for a drag on the canvas; its window pointerup handler releases it. */
+  X.on('interactive', function (v) { if (on && v && c) c.S.pointer = true; if (on && !v) docSoon(); });
 })(window);

@@ -17,15 +17,9 @@
   S.data = null;
   S.skinAngle = 123;   /* degrees from +Cb toward +Cr: the usual skin-tone (I) line */
 
-  function analyze(src) {
-    var t0 = performance.now();
-    var w = Math.min(MAXW, src.width), hh = Math.max(1, Math.round(src.height * w / src.width));
-    var c = S._c || (S._c = document.createElement('canvas'));
-    if (c.width !== w || c.height !== hh) { c.width = w; c.height = hh; }
-    var cx = c.getContext('2d', { willReadFrequently: true });
-    cx.clearRect(0, 0, w, hh);
-    cx.drawImage(src, 0, 0, w, hh);
-    var d = cx.getImageData(0, 0, w, hh).data;
+  /* The measurement itself, on RGBA pixels. Runs in a worker when it can (the source of this function is the worker's code),
+     on the main thread otherwise. Pure: no closures, no globals. */
+  function compute(d, w, hh) {
     var r = new Uint32Array(256), g = new Uint32Array(256), b = new Uint32Array(256), l = new Uint32Array(256);
     var WB = 128, WR = 96, wave = new Uint32Array(WB * WR), VS = 128, vec = new Uint32Array(VS * VS);
     var low = 0, high = 0, n = 0, clipMask = new Uint8Array(w * hh);
@@ -40,24 +34,50 @@
         else if (R >= 255 || G >= 255 || B >= 255) { high++; clipMask[y * w + x] = 2; }
         wave[((WR - 1) - ((L * (WR - 1) / 255) | 0)) * WB + ((x * WB / w) | 0)]++;
         var cb = (-0.1687 * R - 0.3313 * G + 0.5 * B) / 255, cr = (0.5 * R - 0.4187 * G - 0.0813 * B) / 255;
-        var vx = ((cb + 0.5) * (VS - 1)) | 0, vy = ((0.5 - cr) * (VS - 1)) | 0;
-        vec[vy * VS + vx]++;
+        vec[(((0.5 - cr) * (VS - 1)) | 0) * VS + (((cb + 0.5) * (VS - 1)) | 0)]++;
       }
     }
-    return { hist: { r: r, g: g, b: b, l: l }, clip: { low: n ? low / n : 0, high: n ? high / n : 0 }, clipMask: clipMask, wave: wave, wb: WB, wr: WR, vec: vec, vs: VS, n: n, w: w, h: hh, ms: performance.now() - t0 };
+    return { hist: { r: r, g: g, b: b, l: l }, clip: { low: n ? low / n : 0, high: n ? high / n : 0 }, clipMask: clipMask, wave: wave, wb: WB, wr: WR, vec: vec, vs: VS, n: n, w: w, h: hh };
+  }
+  S.compute = compute;
+  /* Main-thread path (no worker): read a reduced copy and measure it. */
+  function analyze(src, rect) {
+    var t0 = performance.now();
+    rect = rect || { x: 0, y: 0, w: src.width, h: src.height };
+    var w = Math.min(MAXW, Math.round(rect.w)), hh = Math.max(1, Math.round(rect.h * w / rect.w));
+    var c = S._c || (S._c = document.createElement('canvas'));
+    if (c.width !== w || c.height !== hh) { c.width = w; c.height = hh; }
+    var cx = c.getContext('2d', { willReadFrequently: true });
+    cx.clearRect(0, 0, w, hh);
+    cx.drawImage(src, rect.x, rect.y, rect.w, rect.h, 0, 0, w, hh);
+    var out = compute(cx.getImageData(0, 0, w, hh).data, w, hh);
+    out.ms = performance.now() - t0;
+    return out;
+  }
+  /* Worker path: the browser copies a reduced bitmap off the main thread (createImageBitmap), the worker reads and measures it. */
+  var worker = null, busy = false, again = false;
+  function getWorker() {
+    if (worker !== null) return worker;
+    worker = false;
+    try {
+      if (!global.Worker || !global.OffscreenCanvas || !global.createImageBitmap) return worker;
+      var code = 'var compute = ' + compute.toString() + ';\n' +
+        'self.onmessage = function (e) { var m = e.data, t0 = performance.now(); var c = new OffscreenCanvas(m.w, m.h); var x = c.getContext("2d", { willReadFrequently: true });' +
+        ' x.drawImage(m.bmp, 0, 0, m.w, m.h); m.bmp.close(); var o = compute(x.getImageData(0, 0, m.w, m.h).data, m.w, m.h); o.ms = performance.now() - t0;' +
+        ' self.postMessage(o, [o.hist.r.buffer, o.hist.g.buffer, o.hist.b.buffer, o.hist.l.buffer, o.wave.buffer, o.vec.buffer, o.clipMask.buffer]); };';
+      var url = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+      worker = new Worker(url);
+      worker.onerror = function () { worker = false; busy = false; };
+    } catch (e) { worker = false; }
+    return worker;
   }
   S.analyze = analyze;
 
-  function run() {
-    pending = 0;
-    lastRun = performance.now();
-    var src = S.source && S.source();
-    if (!src || !src.width) return;
+  function finish(data) {
     var R = X.registry && X.registry();
-    var data = analyze(src);
     if (R && X.isReal() && typeof R.analyze === 'function') {
       try {
-        var a = R.analyze({ source: src, kinds: ['histogram'] });
+        var a = R.analyze({ source: S._lastSrc, kinds: ['histogram'] });
         if (a && a.histogram && a.histogram.l) data.hist = a.histogram;
       } catch (e) { /* the renderer's analysis is optional */ }
     }
@@ -65,6 +85,25 @@
     views.forEach(function (v) { if (v.el.isConnected) v.draw(); });
     X.emit('scopes', data);
     if (S.clipOn) S.paintClip();
+  }
+  function run() {
+    pending = 0;
+    lastRun = performance.now();
+    if (busy) { again = true; return; }
+    var src = S.source && S.source();
+    if (!src) return;
+    var o = src.canvas ? src : { canvas: src, x: 0, y: 0, w: src.width || src.naturalWidth, h: src.height || src.naturalHeight };
+    if (!o.w || !o.h) return;
+    S._lastSrc = o.canvas;
+    var w = Math.min(MAXW, Math.round(o.w)), hh = Math.max(1, Math.round(o.h * w / o.w));
+    var wk = S.useWorker !== false && getWorker();
+    if (!wk) { finish(analyze(o.canvas, o)); return; }
+    busy = true;
+    var done = function () { busy = false; if (again) { again = false; S.request(); } };
+    createImageBitmap(o.canvas, Math.round(o.x), Math.round(o.y), Math.round(o.w), Math.round(o.h), { resizeWidth: w, resizeHeight: hh, resizeQuality: 'low' }).then(function (bmp) {
+      wk.onmessage = function (e) { done(); finish(e.data); };
+      wk.postMessage({ bmp: bmp, w: w, h: hh }, [bmp]);
+    }).catch(function () { done(); finish(analyze(o.canvas, o)); });
   }
   /* Recompute when the browser is idle; while a control is being dragged, at most every 250 ms. */
   S.request = function () {
@@ -74,6 +113,8 @@
     timer = setTimeout(function () { pending = X.idle(run, 400); }, wait);
   };
   S.now = run;
+  /* Resolves when the current measurement has landed (tests). */
+  S.settled = function () { return new Promise(function (res) { (function wait() { if (!busy && !pending) res(S.data); else setTimeout(wait, 30); })(); }); };
   X.on('interactive', function (on) { S.interactive = on; if (!on) S.request(); });
 
   function css(el, name, fb) { var v = getComputedStyle(el).getPropertyValue(name); return v && v.trim() ? v.trim() : fb; }

@@ -118,12 +118,12 @@
       bs[(i + (e.key === fwd ? 1 : -1) + bs.length) % bs.length].focus();
     });
     host.appendChild(el);
+    strips = strips.filter(function (s) { return s.isConnected; });
     strips.push(el);
     paintStrip();
     return el;
   };
   function paintStrip() {
-    strips = strips.filter(function (s) { return s.isConnected; });
     strips.forEach(function (s) { [].forEach.call(s.querySelectorAll('.xp-tool'), function (b) { var on = b.getAttribute('data-tool') === cur; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1; }); });
   }
 
@@ -219,10 +219,12 @@
   function paintOv(rect) {
     if (!ov || !work) return;
     var cx = ov.getContext('2d'), r = rect || { x: 0, y: 0, w: ov.width, h: ov.height };
-    cx.save(); cx.globalCompositeOperation = 'copy';
-    cx.drawImage(work.canvas, r.x, r.y, r.w, r.h, r.x, r.y, r.w, r.h);
-    cx.globalCompositeOperation = 'source-in'; cx.fillStyle = 'rgba(229,52,62,.5)'; cx.fillRect(r.x, r.y, r.w, r.h);
-    cx.restore();
+    var t = paintOv.tmp || (paintOv.tmp = document.createElement('canvas'));
+    if (t.width < r.w || t.height < r.h) { t.width = Math.max(t.width, r.w); t.height = Math.max(t.height, r.h); }
+    var tx = t.getContext('2d');
+    tx.clearRect(0, 0, r.w, r.h); tx.globalCompositeOperation = 'source-over'; tx.drawImage(work.canvas, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+    tx.globalCompositeOperation = 'source-in'; tx.fillStyle = 'rgba(229,52,62,.5)'; tx.fillRect(0, 0, r.w, r.h); tx.globalCompositeOperation = 'source-over';
+    cx.clearRect(r.x, r.y, r.w, r.h); cx.drawImage(t, 0, 0, r.w, r.h, r.x, r.y, r.w, r.h);
   }
   function placeOv() {
     if (!ov || !work || !env) return;
