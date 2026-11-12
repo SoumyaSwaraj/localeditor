@@ -160,17 +160,19 @@
     var c = C();
     var p = c && c.S ? c.S.project : null;
     if (!p) { A.lastSig = null; A.lastPages = null; A.projectId = null; return null; }
-    if (!c.S.preview) c.syncProject();
+    /* Read-only: the open page comes from the scene; the project object is not touched here. */
+    var pages = p.pages.slice();
+    if (!c.S.preview) pages[p.activePage || 0] = c.doc();
     if (A.projectId !== p.id) {
       if (A.projectId) {
         recordChange('person', { items: [], pagesAdded: 0, pagesRemoved: 0, background: [], resized: [], empty: false, project: true }, { label: 'Opened another design' });
       }
       A.projectId = p.id;
-      A.lastSig = JSON.stringify(p.pages);
+      A.lastSig = JSON.stringify(pages);
       A.lastPages = JSON.parse(A.lastSig);
       return p;
     }
-    var s = JSON.stringify(p.pages);
+    var s = JSON.stringify(pages);
     if (s !== A.lastSig) {
       var next = JSON.parse(s);
       var d = diffPages(A.lastPages, next);
@@ -180,12 +182,19 @@
     }
     return p;
   }
+  /* sync() plus writing the open page into the project, for actions that read or change the project. */
+  function syncP() {
+    var p = sync(), c = C();
+    if (p && !c.S.preview) c.syncProject();
+    return p;
+  }
   function settleKnown() {
     var c = C(), p = project();
     if (!p) return;
-    if (!c.S.preview) c.syncProject();
+    var pages = p.pages.slice();
+    if (!c.S.preview) pages[p.activePage || 0] = c.doc();
     A.projectId = p.id;
-    A.lastSig = JSON.stringify(p.pages);
+    A.lastSig = JSON.stringify(pages);
     A.lastPages = JSON.parse(A.lastSig);
   }
   function personChangedSince(rev, pi, id) {
@@ -997,7 +1006,7 @@
   function undoInfo(id) {
     var e = feedEntry(id);
     if (!e || e.undone) return { ok: false, code: 'invalid', message: 'Nothing to undo.' };
-    var p = sync();
+    var p = syncP();
     if (!p || p.id !== e.projectId) return { ok: false, code: 'conflict', message: 'That change was made in another design.' };
     var sel = revertOn(p.pages, e);
     var later = A.changes.filter(function (c) { return c.rev > e.rev; });
@@ -1007,7 +1016,7 @@
   function undoEntry(id, mode) {
     var e = feedEntry(id);
     if (!e || e.undone) return Promise.resolve({ ok: false, code: 'invalid', message: 'Nothing to undo.' });
-    var p = sync();
+    var p = syncP();
     if (!p || p.id !== e.projectId) return Promise.resolve({ ok: false, code: 'conflict', message: 'That change was made in another design.' });
     var target = mode === 'toHere' ? clone(e.before) : revertOn(p.pages, e);
     if (!target) return Promise.resolve({ ok: false, code: 'conflict', message: 'Later changes touched the same layers, so this change cannot be undone on its own. Use “Undo back to here”.' });
@@ -1022,7 +1031,7 @@
     return Promise.resolve({ ok: true, mode: mode, rev: A.rev, entry: undoE.id });
   }
   function undoSession(sessionId) {
-    var p = sync();
+    var p = syncP();
     if (!p) return Promise.resolve({ ok: false, code: 'invalid', message: 'No design open.' });
     var list = A.feed.filter(function (e) { return e.by === 'agent' && !e.undone && (!sessionId || e.session === sessionId) && e.projectId === p.id; });
     if (!list.length) return Promise.resolve({ ok: false, code: 'invalid', message: 'The assistant has not changed this design.' });
@@ -1038,7 +1047,7 @@
     return Promise.resolve({ ok: true, mode: mode, rev: A.rev });
   }
   function undoAllInfo(sessionId) {
-    var p = sync();
+    var p = syncP();
     if (!p) return { ok: false };
     var list = A.feed.filter(function (e) { return e.by === 'agent' && !e.undone && (!sessionId || e.session === sessionId) && e.projectId === p.id; });
     var pages = p.pages;
@@ -1146,7 +1155,7 @@
       attempt++;
       var c = C();
       try { ensureProject(); } catch (e) { return Promise.resolve(failRes(b, e)); }
-      var p = sync();
+      var p = syncP();
       if (b.ifRev != null && b.ifRev !== A.rev) {
         return Promise.resolve({ ok: false, code: 'conflict', batch: b.id, applied: 0, message: 'The design changed since rev ' + b.ifRev + ' (now ' + A.rev + '). Nothing was applied. "changes" lists what changed; read state() and send the batch again.', changes: changesSince(b.ifRev), errors: [] });
       }
@@ -1188,7 +1197,7 @@
         var final;
         try { final = gate(W, project()); } catch (e) { return failRes(b, e); }
         return ingestAssets(W, final.assets).then(function () {
-          sync();
+          syncP();
           if (A.lastSig !== sigBase || project() !== p) {
             if (attempt < 3) return once();
             return { ok: false, code: 'conflict', batch: b.id, applied: 0, message: 'The person kept editing while this batch was prepared. Nothing was applied; read state() and try again.', errors: [] };
@@ -1618,7 +1627,7 @@
       A.ended = null;
       A.stopped = null;
       setPaused(false);
-      sync();
+      syncP();
       A.session = { id: rid('s'), name: name, task: task, startedAt: now(), color: COLORS[0], batches: 0, seenRev: A.rev };
       A.newNotes = [];
       persist();
@@ -1662,7 +1671,7 @@
     o = o || {};
     var bad = entry(false, true);
     if (bad) return Promise.resolve(bad);
-    var p = sync();
+    var p = syncP();
     var c = C();
     var res = {
       ok: true, version: VERSION, session: sessionInfo(), speed: A.speed, queued: A.queue.length + (A.running ? 1 : 0),
@@ -1677,7 +1686,7 @@
   function check() {
     var bad = entry(false, true);
     if (bad) return Promise.resolve(bad);
-    var p = sync();
+    var p = syncP();
     if (!p) return Promise.resolve(wrap({ ok: true, problems: [], count: 0 }));
     var list = problems().map(function (pr) { var f = fixFor(pr, p); if (f) pr.fix = f; return pr; });
     return Promise.resolve(wrap({ ok: true, count: list.length, problems: list, clean: !list.length,
@@ -1687,7 +1696,7 @@
     o = o || {};
     var bad = entry(false, true);
     if (bad) return Promise.resolve(bad);
-    var c = C(), p = sync();
+    var c = C(), p = syncP();
     if (!p) return Promise.resolve(fail('invalid', 'No design is open.'));
     var fmt = String(o.format || 'png').toLowerCase().replace('jpg', 'jpeg');
     if (['png', 'jpeg', 'webp', 'pdf'].indexOf(fmt) < 0) return Promise.resolve(fail('invalid', 'format is png, jpeg, webp or pdf.'));
@@ -1737,7 +1746,7 @@
     o = o || {};
     var bad = entry(false, true);
     if (bad) return Promise.resolve(bad);
-    var p = sync();
+    var p = syncP();
     if (!p) return Promise.resolve(fail('invalid', 'No design is open.'));
     var images = ['embed', 'paths', 'ids', 'none'].indexOf(o.images) >= 0 ? o.images : 'embed';
     return LE.design.exportText(p, { images: images, blobs: A.blobs }).then(function (r) {
@@ -1792,7 +1801,7 @@
   function findApi(q) {
     var bad = entry(false, true);
     if (bad) return bad;
-    sync();
+    syncP();
     var list = find(q);
     return wrap({ ok: true, count: list.length, layers: list });
   }
@@ -1941,7 +1950,7 @@
     if (HEADLESS) { c.S.noSave = true; document.documentElement.setAttribute('data-le-headless', ''); }
   });
   hook('ready', function () { settleKnown(); markReady(); });
-  hook('change', function () { if (!A.committing) syncSoon(); });
-  hook('page', function () { if (!A.committing) syncSoon(); });
+  hook('change', function () { if (!A.committing && (A.mode || A.session || A.queue.length)) syncSoon(); });
+  hook('page', function () { if (!A.committing && (A.mode || A.session || A.queue.length)) syncSoon(); });
   (P._cmds = P._cmds || {}).agentMode = function (c) { c.closePop(); if (A.ui && A.ui.openPanel) A.ui.openPanel(); };
 })();
