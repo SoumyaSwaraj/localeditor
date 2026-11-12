@@ -150,3 +150,12 @@ Not planned: accounts, cloud sync, a hosted gallery, a forced watermark, an in-a
 - Every feature ships with a test in `tests/<area>.test.js` (see `tests/README.md`) that passes at 1440×900 and 390×844.
 - Check light and dark. Check the console is empty. Gold buttons use ink `#2A1F0A`.
 - Stock APIs, Hugging Face and public CDNs are not reachable from the build sandbox. Mock them in tests.
+
+## Owner requests in progress (12 Nov)
+
+| Item | What | State |
+|---|---|---|
+| Design pass 3 | **Apple-like interface**: system type stack, near-white and true-dark surfaces with one tint, translucent bars and sheets, segmented controls and grouped lists, product-page marketing pages. Principles (clarity, deference, depth), never Apple's own fonts, icons or marks. Expert keeps its conventional pro-editor layout. | Building |
+| Install choice | Install the **Design studio only**, the **PDF studio only**, or the **whole suite**: three manifests, one worker, offline files follow the installed app. `docs/INSTALL.md` when it lands. | Building |
+| D9, D10 | Make scanned PDFs searchable; scan with the camera, in the PDF studio. | Building |
+| 2.8, 2.10 | Screenshot and code beautifier; photobooth strips; recap collages (quick makers). | Building |
