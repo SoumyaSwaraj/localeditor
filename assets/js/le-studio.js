@@ -818,6 +818,7 @@
         tb('addPhoto', 'image', 'Add photo', { text: true }) + tb('addText', 'text', 'Add text', { text: true }) + tb('elements', 'elements', 'Elements', { text: true }) + SEP +
         tb('replaceAll', 'swap', 'Replace colours & fonts', { text: 'Replace all' }) + tb('pagesPanel', 'pages', 'Pages') + '<span class="sx-grow"></span>' + tb('compareHold', 'compare', 'Hold to compare', { cls: 'sx-hold' }) : '<span class="sx-tb-label">' + ic('shield') + 'Private by design — nothing leaves this device</span>';
     }
+    html += fire('toolbar-add', kind, l) || '';
     var custom = fire('toolbar', kind, l);
     if (typeof custom === 'string') html = custom;
     E.tool.innerHTML = html;

@@ -1,1 +1,46 @@
-/* LocalEditor: studio privacy tools styles. */
+/* LocalEditor: studio privacy tools styles (redact, metadata summary). Tokens from app.css. */
+.sxp-draw { position: absolute; inset: 0; z-index: 30; cursor: crosshair; touch-action: none; background: rgba(23, 19, 31, 0.06); }
+.sxp-draw-hint { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; max-width: calc(100% - 24px); padding: 6px 6px 6px 16px; border-radius: var(--r-pill); background: var(--side, #141318); color: #F2EFE9; font-size: var(--text-sm); font-weight: 600; box-shadow: var(--shadow); cursor: default; }
+.sxp-draw-hint span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sxp-draw-hint .btn { min-height: 36px; flex: none; }
+.sxp-draw-box { position: absolute; border: 2px dashed var(--amethyst); background: rgba(116, 87, 240, 0.14); border-radius: 2px; pointer-events: none; }
+.sxp-draw-box[hidden] { display: none; }
+
+.sxp-entry { display: grid; gap: var(--s-2); margin: var(--s-2) 0 var(--s-4); padding: var(--s-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.sxp-entry-text { display: grid; gap: 2px; }
+.sxp-entry-text b { font-size: var(--text-sm); font-weight: 700; color: var(--ink); }
+.sxp-entry-text small { color: var(--muted); font-size: 12px; line-height: 1.4; }
+.sxp-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }
+.sxp-mode { display: grid; justify-items: center; gap: 2px; min-height: 72px; padding: 8px 4px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); cursor: pointer; text-align: center; transition: border-color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease); }
+.sxp-mode:hover { border-color: var(--border-hover); }
+.sxp-mode:active { transform: scale(0.98); }
+.sxp-mode:focus-visible, .sxp-ink:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.sxp-mode .sx-ic { width: 22px; height: 22px; }
+.sxp-mode b { font-size: 13px; font-weight: 680; }
+.sxp-mode small { font-size: 11px; color: var(--muted); line-height: 1.25; }
+
+.sxp-tip { margin: var(--s-2) 0; font-size: 13px; color: var(--muted); }
+.sxp-tip.is-warn { color: var(--warn); }
+.sxp-muted { margin: var(--s-2) 0 0; font-size: 12px; color: var(--faint); line-height: 1.45; }
+.sxp-seg { margin-top: var(--s-2); }
+.sxp-inks { display: flex; gap: var(--s-2); margin: var(--s-2) 0; }
+.sxp-ink { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.sxp-ink i { width: 28px; height: 28px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(23, 19, 31, 0.18); }
+.sxp-ink[aria-pressed="true"] { border-color: var(--amethyst); box-shadow: 0 0 0 2px var(--accent-soft); }
+.sxp-honest { display: grid; gap: var(--s-2); padding: var(--s-3); border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line); margin-bottom: var(--s-3); }
+.sxp-honest p { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
+.sxp-honest b { color: var(--ink); font-weight: 680; }
+.sxp-bake { min-height: 44px; }
+.sxp-danger { color: var(--err); border-color: color-mix(in srgb, var(--err) 45%, var(--border)); }
+.sxp-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--err) 8%, var(--surface)); }
+.sxp-confirm p { margin: 0 0 var(--s-3); line-height: 1.5; }
+.sxp-confirm-row { display: flex; justify-content: flex-end; gap: var(--s-2); flex-wrap: wrap; }
+.sxp-confirm-row .btn { min-height: 44px; }
+.sxp-tb-label { white-space: nowrap; }
+
+.sxp-meta { display: grid; gap: var(--s-2); margin-top: var(--s-3); }
+.sxp-sum { margin: 0; font-size: 13px; line-height: 1.45; color: var(--ink); }
+.sxp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sxp-chip { padding: 3px 10px; border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 640; }
+.sxp-link { min-height: 44px; text-decoration: none; }
+@media (prefers-reduced-motion: reduce) { .sxp-mode { transition: none; } }
