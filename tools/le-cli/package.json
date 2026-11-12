@@ -1,0 +1,29 @@
+{
+  "name": "localeditor",
+  "version": "0.1.0",
+  "description": "Make and edit LocalEditor designs from the command line, an MCP server or a local API — the real editor in a headless browser, nothing uploaded.",
+  "license": "MIT",
+  "bin": {
+    "localeditor": "bin/localeditor.js",
+    "le": "bin/localeditor.js"
+  },
+  "main": "lib/service.js",
+  "files": [
+    "bin/",
+    "lib/",
+    "scripts/",
+    "site/",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "prepack": "node scripts/prepack.js",
+    "postpack": "node scripts/prepack.js --clean",
+    "test": "node ../../tests/run.js cli && node ../../tests/run.js mcp && node ../../tests/run.js link"
+  },
+  "keywords": ["design", "mcp", "agent", "canva", "localeditor", "headless"],
+  "private": false,
+  "dependencies": {}
+}

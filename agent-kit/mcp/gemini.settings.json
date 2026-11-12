@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "localeditor": {
+      "command": "npx",
+      "args": ["-y", "localeditor", "mcp"],
+      "timeout": 120000,
+      "trust": false
+    }
+  }
+}

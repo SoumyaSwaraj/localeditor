@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "localeditor": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "localeditor", "mcp"]
+    },
+    "localeditor-checkout": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/absolute/path/to/localeditor/tools/le-cli/bin/localeditor.js", "mcp"]
+    }
+  }
+}
