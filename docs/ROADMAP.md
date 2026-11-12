@@ -118,6 +118,10 @@ Order: D3, D4, D1, D2, D6 first (the security story), then D8, D5, D12, D13, D7 
 | G2 | **Fast path for agents: command line, MCP server and local API.** The same operations as agent mode, run on the real engine in a headless browser with no animation, for agents that just need the work done. Reads and writes `.ledesign.json` files; renders previews; can link a file to an open tab so a person can watch. The browser mode (G1) is for working together; this is for speed. |
 | G1 | **Agent mode in the browser.** A coding agent (Cursor, Claude Code and others) drives the open studio through a documented control API, a typed console, or links; the person watches each change happen, can pause, stop, undo any single change, leave notes and take over. Interruptions by the person midway are handled: batches are atomic, the agent waits while the person edits, and conflicting changes are reported back. |
 
+## Expert mode (added by the owner, 12 November 2026)
+
+Studio-level editing for agents first and for people who switch to Expert: professional shadows and reflections, creative optical effects, RAW and HDR, relighting, liquify, frequency separation, skin retouching, colour grading, compositing. Architecture, document model and build order are in `docs/EXPERT-MODE.md`. Fable plans and builds the core renderer; Opus and Sonnet build the workspace, the feature sets and the tests.
+
 ## Wave 3 — agents
 
 | Id | Work |
