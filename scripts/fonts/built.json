@@ -39,10 +39,7 @@
   "pkg": "@fontsource/anton",
   "version": "5.3.0",
   "gfVersion": "v27",
-  "lastModified": "2025-09-16",
-  "legacyWoff": {
-   "400": "anton-400.woff"
-  }
+  "lastModified": "2025-09-16"
  },
  "lato": {
   "family": "Lato",
@@ -219,12 +216,7 @@
   "pkg": "@fontsource-variable/inter",
   "version": "5.3.0",
   "gfVersion": "v20",
-  "lastModified": "2025-09-10",
-  "legacyWoff": {
-   "400": "inter-400.woff",
-   "700": "inter-700.woff",
-   "400i": "inter-400-italic.woff"
-  }
+  "lastModified": "2025-09-10"
  },
  "noto-sans-devanagari": {
   "family": "Noto Sans Devanagari",
@@ -304,10 +296,7 @@
   "pkg": "@fontsource/homemade-apple",
   "version": "5.3.0",
   "gfVersion": "v24",
-  "lastModified": "2025-09-08",
-  "legacyWoff": {
-   "400": "homemade-apple-400.woff"
-  }
+  "lastModified": "2025-09-08"
  },
  "geist": {
   "family": "Geist",
@@ -519,11 +508,7 @@
   "pkg": "@fontsource-variable/work-sans",
   "version": "5.3.0",
   "gfVersion": "v24",
-  "lastModified": "2025-09-11",
-  "legacyWoff": {
-   "400": "work-sans-400.woff",
-   "700": "work-sans-700.woff"
-  }
+  "lastModified": "2025-09-11"
  },
  "space-grotesk": {
   "family": "Space Grotesk",
@@ -568,11 +553,7 @@
   "pkg": "@fontsource-variable/space-grotesk",
   "version": "5.3.0",
   "gfVersion": "v22",
-  "lastModified": "2025-09-05",
-  "legacyWoff": {
-   "400": "space-grotesk-400.woff",
-   "700": "space-grotesk-700.woff"
-  }
+  "lastModified": "2025-09-05"
  },
  "schibsted-grotesk": {
   "family": "Schibsted Grotesk",
@@ -1198,11 +1179,7 @@
   "pkg": "@fontsource-variable/dm-sans",
   "version": "5.3.0",
   "gfVersion": "v17",
-  "lastModified": "2025-09-11",
-  "legacyWoff": {
-   "400": "dm-sans-400.woff",
-   "700": "dm-sans-700.woff"
-  }
+  "lastModified": "2025-09-11"
  },
  "montserrat": {
   "family": "Montserrat",
@@ -1260,11 +1237,7 @@
   "pkg": "@fontsource-variable/montserrat",
   "version": "5.3.0",
   "gfVersion": "v31",
-  "lastModified": "2025-09-05",
-  "legacyWoff": {
-   "400": "montserrat-400.woff",
-   "700": "montserrat-700.woff"
-  }
+  "lastModified": "2025-09-05"
  },
  "manrope": {
   "family": "Manrope",
@@ -1316,11 +1289,7 @@
   "pkg": "@fontsource-variable/manrope",
   "version": "5.3.0",
   "gfVersion": "v20",
-  "lastModified": "2025-09-05",
-  "legacyWoff": {
-   "400": "manrope-400.woff",
-   "700": "manrope-700.woff"
-  }
+  "lastModified": "2025-09-05"
  },
  "plus-jakarta-sans": {
   "family": "Plus Jakarta Sans",
@@ -1374,11 +1343,7 @@
   "pkg": "@fontsource-variable/plus-jakarta-sans",
   "version": "5.3.0",
   "gfVersion": "v12",
-  "lastModified": "2025-09-10",
-  "legacyWoff": {
-   "400": "plus-jakarta-sans-400.woff",
-   "700": "plus-jakarta-sans-700.woff"
-  }
+  "lastModified": "2025-09-10"
  },
  "outfit": {
   "family": "Outfit",
@@ -1420,11 +1385,7 @@
   "pkg": "@fontsource-variable/outfit",
   "version": "5.3.0",
   "gfVersion": "v15",
-  "lastModified": "2025-09-05",
-  "legacyWoff": {
-   "400": "outfit-400.woff",
-   "700": "outfit-700.woff"
-  }
+  "lastModified": "2025-09-05"
  },
  "figtree": {
   "family": "Figtree",
@@ -1539,11 +1500,7 @@
   "pkg": "@fontsource/poppins",
   "version": "5.3.0",
   "gfVersion": "v24",
-  "lastModified": "2025-09-16",
-  "legacyWoff": {
-   "400": "poppins-400.woff",
-   "700": "poppins-700.woff"
-  }
+  "lastModified": "2025-09-16"
  },
  "jost": {
   "family": "Jost",
@@ -3003,12 +2960,7 @@
   "pkg": "@fontsource-variable/nunito",
   "version": "5.3.0",
   "gfVersion": "v32",
-  "lastModified": "2025-09-16",
-  "legacyWoff": {
-   "400": "nunito-400.woff",
-   "700": "nunito-700.woff",
-   "400i": "nunito-400-italic.woff"
-  }
+  "lastModified": "2025-09-16"
  },
  "catamaran": {
   "family": "Catamaran",
@@ -3115,11 +3067,7 @@
   "pkg": "@fontsource-variable/rubik",
   "version": "5.3.0",
   "gfVersion": "v31",
-  "lastModified": "2025-09-10",
-  "legacyWoff": {
-   "400": "rubik-400.woff",
-   "700": "rubik-700.woff"
-  }
+  "lastModified": "2025-09-10"
  },
  "quicksand": {
   "family": "Quicksand",
@@ -3355,11 +3303,7 @@
   "pkg": "@fontsource-variable/oswald",
   "version": "5.3.0",
   "gfVersion": "v57",
-  "lastModified": "2025-09-11",
-  "legacyWoff": {
-   "400": "oswald-400.woff",
-   "700": "oswald-700.woff"
-  }
+  "lastModified": "2025-09-11"
  },
  "dosis": {
   "family": "Dosis",
@@ -3615,10 +3559,7 @@
   "pkg": "@fontsource/bebas-neue",
   "version": "5.3.0",
   "gfVersion": "v16",
-  "lastModified": "2025-09-16",
-  "legacyWoff": {
-   "400": "bebas-neue-400.woff"
-  }
+  "lastModified": "2025-09-16"
  },
  "barlow-condensed": {
   "family": "Barlow Condensed",
@@ -3706,10 +3647,7 @@
   "pkg": "@fontsource/archivo-black",
   "version": "5.3.0",
   "gfVersion": "v23",
-  "lastModified": "2025-09-11",
-  "legacyWoff": {
-   "400": "archivo-black-400.woff"
-  }
+  "lastModified": "2025-09-11"
  },
  "staatliches": {
   "family": "Staatliches",
@@ -3880,11 +3818,7 @@
   "pkg": "@fontsource-variable/syne",
   "version": "5.3.0",
   "gfVersion": "v24",
-  "lastModified": "2025-09-16",
-  "legacyWoff": {
-   "400": "syne-400.woff",
-   "700": "syne-700.woff"
-  }
+  "lastModified": "2025-09-16"
  },
  "righteous": {
   "family": "Righteous",
@@ -3923,10 +3857,7 @@
   "pkg": "@fontsource/righteous",
   "version": "5.3.0",
   "gfVersion": "v18",
-  "lastModified": "2025-06-02",
-  "legacyWoff": {
-   "400": "righteous-400.woff"
-  }
+  "lastModified": "2025-06-02"
  },
  "black-ops-one": {
   "family": "Black Ops One",
@@ -4060,10 +3991,7 @@
   "pkg": "@fontsource/bungee",
   "version": "5.3.0",
   "gfVersion": "v17",
-  "lastModified": "2025-09-16",
-  "legacyWoff": {
-   "400": "bungee-400.woff"
-  }
+  "lastModified": "2025-09-16"
  },
  "lilita-one": {
   "family": "Lilita One",
@@ -4743,10 +4671,7 @@
   "pkg": "@fontsource/lobster",
   "version": "5.3.0",
   "gfVersion": "v32",
-  "lastModified": "2025-09-08",
-  "legacyWoff": {
-   "400": "lobster-400.woff"
-  }
+  "lastModified": "2025-09-08"
  },
  "abril-fatface": {
   "family": "Abril Fatface",
@@ -4785,10 +4710,7 @@
   "pkg": "@fontsource/abril-fatface",
   "version": "5.3.0",
   "gfVersion": "v25",
-  "lastModified": "2025-09-16",
-  "legacyWoff": {
-   "400": "abril-fatface-400.woff"
-  }
+  "lastModified": "2025-09-16"
  },
  "rye": {
   "family": "Rye",
@@ -5168,12 +5090,7 @@
   "pkg": "@fontsource-variable/lora",
   "version": "5.3.0",
   "gfVersion": "v37",
-  "lastModified": "2025-09-11",
-  "legacyWoff": {
-   "400": "lora-400.woff",
-   "700": "lora-700.woff",
-   "400i": "lora-400-italic.woff"
-  }
+  "lastModified": "2025-09-11"
  },
  "pt-serif": {
   "family": "PT Serif",
@@ -5342,12 +5259,7 @@
   "pkg": "@fontsource-variable/merriweather",
   "version": "5.3.0",
   "gfVersion": "v33",
-  "lastModified": "2025-09-02",
-  "legacyWoff": {
-   "400": "merriweather-400.woff",
-   "700": "merriweather-700.woff",
-   "400i": "merriweather-400-italic.woff"
-  }
+  "lastModified": "2025-09-02"
  },
  "libre-baskerville": {
   "family": "Libre Baskerville",
@@ -5396,12 +5308,7 @@
   "pkg": "@fontsource-variable/libre-baskerville",
   "version": "5.3.0",
   "gfVersion": "v24",
-  "lastModified": "2025-11-20",
-  "legacyWoff": {
-   "400": "libre-baskerville-400.woff",
-   "700": "libre-baskerville-700.woff",
-   "400i": "libre-baskerville-400-italic.woff"
-  }
+  "lastModified": "2025-11-20"
  },
  "noto-serif": {
   "family": "Noto Serif",
@@ -5528,12 +5435,7 @@
   "pkg": "@fontsource-variable/eb-garamond",
   "version": "5.3.0",
   "gfVersion": "v33",
-  "lastModified": "2026-06-30",
-  "legacyWoff": {
-   "400": "eb-garamond-400.woff",
-   "700": "eb-garamond-700.woff",
-   "400i": "eb-garamond-400-italic.woff"
-  }
+  "lastModified": "2026-06-30"
  },
  "cormorant-garamond": {
   "family": "Cormorant Garamond",
@@ -5590,12 +5492,7 @@
   "pkg": "@fontsource-variable/cormorant-garamond",
   "version": "5.3.0",
   "gfVersion": "v21",
-  "lastModified": "2025-09-08",
-  "legacyWoff": {
-   "400": "cormorant-garamond-400.woff",
-   "700": "cormorant-garamond-700.woff",
-   "400i": "cormorant-garamond-400-italic.woff"
-  }
+  "lastModified": "2025-09-08"
  },
  "crimson-text": {
   "family": "Crimson Text",
@@ -6066,12 +5963,7 @@
   "pkg": "@fontsource-variable/fraunces",
   "version": "5.3.0",
   "gfVersion": "v38",
-  "lastModified": "2025-09-10",
-  "legacyWoff": {
-   "400": "fraunces-400.woff",
-   "700": "fraunces-700.woff",
-   "400i": "fraunces-400-italic.woff"
-  }
+  "lastModified": "2025-09-10"
  },
  "alegreya": {
   "family": "Alegreya",
@@ -6544,12 +6436,7 @@
   "pkg": "@fontsource-variable/playfair-display",
   "version": "5.3.0",
   "gfVersion": "v40",
-  "lastModified": "2025-09-11",
-  "legacyWoff": {
-   "400": "playfair-display-400.woff",
-   "700": "playfair-display-700.woff",
-   "400i": "playfair-display-400-italic.woff"
-  }
+  "lastModified": "2025-09-11"
  },
  "dm-serif-display": {
   "family": "DM Serif Display",
@@ -6595,11 +6482,7 @@
   "pkg": "@fontsource/dm-serif-display",
   "version": "5.3.0",
   "gfVersion": "v17",
-  "lastModified": "2025-09-11",
-  "legacyWoff": {
-   "400": "dm-serif-display-400.woff",
-   "400i": "dm-serif-display-400-italic.woff"
-  }
+  "lastModified": "2025-09-11"
  },
  "instrument-serif": {
   "family": "Instrument Serif",
@@ -6645,11 +6528,7 @@
   "pkg": "@fontsource/instrument-serif",
   "version": "5.3.0",
   "gfVersion": "v5",
-  "lastModified": "2025-09-05",
-  "legacyWoff": {
-   "400": "instrument-serif-400.woff",
-   "400i": "instrument-serif-400-italic.woff"
-  }
+  "lastModified": "2025-09-05"
  },
  "bodoni-moda": {
   "family": "Bodoni Moda",
@@ -7232,11 +7111,7 @@
   "pkg": "@fontsource-variable/dancing-script",
   "version": "5.3.0",
   "gfVersion": "v29",
-  "lastModified": "2025-09-08",
-  "legacyWoff": {
-   "400": "dancing-script-400.woff",
-   "700": "dancing-script-700.woff"
-  }
+  "lastModified": "2025-09-08"
  },
  "bree-serif": {
   "family": "Bree Serif",
@@ -7320,10 +7195,7 @@
   "pkg": "@fontsource/great-vibes",
   "version": "5.3.0",
   "gfVersion": "v21",
-  "lastModified": "2025-09-05",
-  "legacyWoff": {
-   "400": "great-vibes-400.woff"
-  }
+  "lastModified": "2025-09-05"
  },
  "sacramento": {
   "family": "Sacramento",
@@ -7362,10 +7234,7 @@
   "pkg": "@fontsource/sacramento",
   "version": "5.3.0",
   "gfVersion": "v17",
-  "lastModified": "2025-09-11",
-  "legacyWoff": {
-   "400": "sacramento-400.woff"
-  }
+  "lastModified": "2025-09-11"
  },
  "satisfy": {
   "family": "Satisfy",
@@ -7401,10 +7270,7 @@
   "pkg": "@fontsource/satisfy",
   "version": "5.3.0",
   "gfVersion": "v22",
-  "lastModified": "2025-06-02",
-  "legacyWoff": {
-   "400": "satisfy-400.woff"
-  }
+  "lastModified": "2025-06-02"
  },
  "pacifico": {
   "family": "Pacifico",
@@ -7451,10 +7317,7 @@
   "pkg": "@fontsource/pacifico",
   "version": "5.3.0",
   "gfVersion": "v23",
-  "lastModified": "2025-09-16",
-  "legacyWoff": {
-   "400": "pacifico-400.woff"
-  }
+  "lastModified": "2025-09-16"
  },
  "allura": {
   "family": "Allura",
@@ -7495,10 +7358,7 @@
   "pkg": "@fontsource/allura",
   "version": "5.3.0",
   "gfVersion": "v23",
-  "lastModified": "2025-09-02",
-  "legacyWoff": {
-   "400": "allura-400.woff"
-  }
+  "lastModified": "2025-09-02"
  },
  "pinyon-script": {
   "family": "Pinyon Script",
@@ -7581,10 +7441,7 @@
   "pkg": "@fontsource/alex-brush",
   "version": "5.3.0",
   "gfVersion": "v23",
-  "lastModified": "2025-09-11",
-  "legacyWoff": {
-   "400": "alex-brush-400.woff"
-  }
+  "lastModified": "2025-09-11"
  },
  "parisienne": {
   "family": "Parisienne",
@@ -7703,10 +7560,7 @@
   "pkg": "@fontsource/mr-dafoe",
   "version": "5.3.0",
   "gfVersion": "v15",
-  "lastModified": "2025-09-02",
-  "legacyWoff": {
-   "400": "mr-dafoe-400.woff"
-  }
+  "lastModified": "2025-09-02"
  },
  "mrs-saint-delafield": {
   "family": "Mrs Saint Delafield",
@@ -7867,11 +7721,7 @@
   "pkg": "@fontsource-variable/caveat",
   "version": "5.3.0",
   "gfVersion": "v23",
-  "lastModified": "2025-09-05",
-  "legacyWoff": {
-   "400": "caveat-400.woff",
-   "700": "caveat-700.woff"
-  }
+  "lastModified": "2025-09-05"
  },
  "charm": {
   "family": "Charm",
@@ -7963,10 +7813,7 @@
   "pkg": "@fontsource/shadows-into-light",
   "version": "5.3.0",
   "gfVersion": "v22",
-  "lastModified": "2025-09-10",
-  "legacyWoff": {
-   "400": "shadows-into-light-400.woff"
-  }
+  "lastModified": "2025-09-10"
  },
  "kalam": {
   "family": "Kalam",
@@ -8015,11 +7862,7 @@
   "pkg": "@fontsource/kalam",
   "version": "5.3.0",
   "gfVersion": "v18",
-  "lastModified": "2025-09-11",
-  "legacyWoff": {
-   "400": "kalam-400.woff",
-   "700": "kalam-700.woff"
-  }
+  "lastModified": "2025-09-11"
  },
  "indie-flower": {
   "family": "Indie Flower",
@@ -8850,11 +8693,7 @@
   "pkg": "@fontsource-variable/jetbrains-mono",
   "version": "5.3.0",
   "gfVersion": "v24",
-  "lastModified": "2025-09-11",
-  "legacyWoff": {
-   "400": "jetbrains-mono-400.woff",
-   "700": "jetbrains-mono-700.woff"
-  }
+  "lastModified": "2025-09-11"
  },
  "space-mono": {
   "family": "Space Mono",
@@ -8904,11 +8743,7 @@
   "pkg": "@fontsource/space-mono",
   "version": "5.3.0",
   "gfVersion": "v17",
-  "lastModified": "2025-06-25",
-  "legacyWoff": {
-   "400": "space-mono-400.woff",
-   "700": "space-mono-700.woff"
-  }
+  "lastModified": "2025-06-25"
  },
  "ibm-plex-mono": {
   "family": "IBM Plex Mono",
@@ -8981,11 +8816,7 @@
   "pkg": "@fontsource/ibm-plex-mono",
   "version": "5.3.0",
   "gfVersion": "v20",
-  "lastModified": "2025-09-16",
-  "legacyWoff": {
-   "400": "ibm-plex-mono-400.woff",
-   "700": "ibm-plex-mono-700.woff"
-  }
+  "lastModified": "2025-09-16"
  },
  "roboto-mono": {
   "family": "Roboto Mono",

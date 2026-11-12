@@ -39,7 +39,7 @@ These are the faces already referenced from `assets/css/app.css`. They are separ
 
 257 families (253 in the repository, 4 Chinese/Japanese/Korean families downloaded at deploy time), every one OFL-1.1 or Apache-2.0, built from the Fontsource npm packages of the Google Fonts catalogue by `scripts/fetch-fonts.js` with pinned versions and tarball hashes (`scripts/fonts/lock.json`). The full table (family, licence, package and version, Google Fonts version, copyright line) is generated into `assets/vendor/licenses/fonts-LICENSES.md`. Each family folder (`assets/fonts/library/<slug>/`, `assets/fonts/cjk/<slug>/`) carries `LICENSE.txt`: the copyright notice and the complete licence text from the package. Font files are unmodified; `assets/fonts/previews/` holds name-only subsets used under internal names. How the library is built: `docs/FONTS.md`.
 
-The `.woff` files of the original 44 families (from the Google Fonts CSS API, 2026-11-07) remain under the same folders until the woff2 PDF path has replaced them.
+The `.woff` files the original 44 families shipped for pdf-lib were removed: PDF embedding decodes the woff2 files (see `docs/FONTS.md`, PDF).
 
 ## Icons, emoji, stickers
 
