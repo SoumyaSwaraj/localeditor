@@ -1979,7 +1979,7 @@
     if (!S.project || !v || !v.doc) return;
     cancelPreview();
     var vd = v.doc;
-    ensureAssets(LE.project.assetIds(vd)).then(function () {
+    Promise.all([ensureAssets(LE.project.assetIds(vd)), LE.modules && LE.modules.forDoc ? LE.modules.forDoc(vd) : null]).then(function () {
       var page = vd.pages[clamp(vd.activePage || 0, 0, vd.pages.length - 1)];
       S.preview = { type: 'version', pre: doc(), sel: sel(), version: v };
       S.silent = true;

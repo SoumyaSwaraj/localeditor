@@ -120,6 +120,13 @@
     };
   })();
 
+  ['edit', 'forms'].forEach(function (id) {
+    var p = PS.panels[id];
+    if (!p || typeof p.build !== 'function') return;
+    var b = p.build;
+    p.build = function () { var r = b.apply(this, arguments); if (!M.loaded('office')) M.need('office').catch(function () {}); return r; };
+  });
+
   /* Start-screen links (the same markup as the modules'; they keep these). */
   function starts() {
     var s = $('.ps-empty .ps-starts');

@@ -60,7 +60,7 @@
   var agentNow = function () { if (window.LE_AGENT_HEADLESS === true) return true; try { var s = JSON.parse(ss('le-agent') || 'null'); return !!(s && s.session); } catch (e) { return false; } };
   M.defer({ id: 'agent', src: JS + 'le-agent.js', label: 'agent mode', deps: ['design'], param: ['agent'], hash: /(?:^#|[#&])ops=/, when: agentNow });
   M.defer({ id: 'agentui', src: JS + 'le-studio-agent.js', css: CSS + 'studio-agent.css', label: 'agent mode', deps: ['agent'], param: ['agent'], hash: /(?:^#|[#&])ops=/, when: agentNow, cmds: ['agentMode'], retool: true });
-  M.defer({ id: 'link', src: JS + 'le-link.js', label: 'live link', deps: ['design', 'agentui'], param: ['link'] });
+  M.defer({ id: 'link', src: JS + 'le-link.js', label: 'live link', deps: ['design', 'agentui'], param: ['link'], when: function () { return window.LE_AGENT_HEADLESS === true; } });
 
   /* Exports go through the Download module (print pages in millimetres, carousels); ctx.exportImage waits for it once. */
   (P._hooks.init = P._hooks.init || []).push(function (c) {
