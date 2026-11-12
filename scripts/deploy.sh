@@ -63,6 +63,11 @@ if [ "$BUILD" = 1 ]; then
   echo "== Building (service worker, manifest, sitemap)"
   node scripts/build.js
 fi
+# Chinese, Japanese and Korean fonts are not in git (docs/FONTS.md); fetch them once, pinned by scripts/fonts/lock.json.
+if [ ! -f assets/fonts/cjk/available.json ]; then
+  if [ "$DRY" = 1 ]; then echo "  would run: node scripts/fetch-fonts.js --cjk"
+  else echo "== Fetching the CJK fonts"; node scripts/fetch-fonts.js --cjk || echo "Warning: CJK fonts not fetched; the app shows them as not available." >&2; fi
+fi
 for f in sw.js manifest.webmanifest index.html offline.html; do
   [ -f "$f" ] || { echo "Missing $f. Run node scripts/build.js." >&2; exit 1; }
 done

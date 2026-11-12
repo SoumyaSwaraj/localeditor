@@ -10,7 +10,7 @@
   var KB = 1024;
   var MB = 1024 * 1024;
   var DAY = 864e5;
-  var CACHES = { app: 'le-app-', fonts: 'le-fonts-v1', assets: 'le-assets-v1', photos: 'le-photos-v1', models: 'le-models-v1', share: 'le-share-v1' };
+  var CACHES = { app: 'le-app-', fonts: 'le-fonts-v1', savedFonts: 'le-fonts-saved-v1', assets: 'le-assets-v1', photos: 'le-photos-v1', models: 'le-models-v1', share: 'le-share-v1' };
   var DOWNLOADS = [CACHES.fonts, CACHES.assets, CACHES.photos];
   var KEY = { state: 'le-pwa', limits: 'le-pwa-limits', packs: 'le-pwa-packs' };
   var DATABASES = ['le-projects', 'localeditor', 'le-signatures'];
@@ -728,7 +728,17 @@
       return o;
     }).catch(function () { return {}; });
   }
-  function fontFamily(path) { var m = /\/assets\/fonts\/library\/([\w-]+)\//.exec(path); return m ? m[1] : 'other'; }
+  function fontFamily(path) { var m = /\/assets\/fonts\/(?:library|cjk|originals)\/([\w-]+)\//.exec(path); return m ? m[1] : 'other'; }
+  /* Fonts: "Save for offline" copies live in le-fonts-saved-v1 (never trimmed); fonts fetched when used in le-fonts-v1. */
+  function fontEntries() {
+    return Promise.all([entries(CACHES.fonts), entries(CACHES.savedFonts)]).then(function (r) { r[1].forEach(function (x) { x.saved = true; }); return r[0].concat(r[1]); });
+  }
+  function fontName(slug) {
+    var F = window.LE && LE.fonts;
+    var f = F && F.find ? F.find(slug) : null;
+    if (!f && F && F.list) f = F.list().filter(function (x) { return x.family.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slug; })[0];
+    return f ? f.family : pretty(slug);
+  }
   /* Model files carry the id of the model in x-le-model; the shared AI engine (ONNX Runtime) is one entry. */
   function modelId(x) {
     if (x.model) return x.model;
@@ -916,7 +926,7 @@
     var appP = Promise.all([versions(), appCacheNames()]).then(function (r) {
       return Promise.all(r[1].map(function (n) { return entries(n).then(function (list) { return { name: n, list: list }; }); })).then(function (all) { return { v: r[0], caches: all }; });
     });
-    return Promise.all([est, pers, appP, entries(CACHES.fonts), entries(CACHES.assets), entries(CACHES.photos), entries(CACHES.models), entries(CACHES.share), designs(), packNames()]).then(function (r) {
+    return Promise.all([est, pers, appP, fontEntries(), entries(CACHES.assets), entries(CACHES.photos), entries(CACHES.models), entries(CACHES.share), designs(), packNames()]).then(function (r) {
       var e = r[0] || {}, app = r[2], fonts = r[3], assets = r[4], photos = r[5], models = r[6], share = r[7], d = r[8], names = r[9];
       var packsUsed = lsGet(KEY.packs, {}) || {};
       var cats = [];
@@ -935,8 +945,11 @@
       fonts.forEach(function (x) { var f = fontFamily(x.path); (fam[f] = fam[f] || []).push(x); });
       cats.push({
         id: 'fonts', name: 'Fonts', color: COLORS.fonts, bytes: sum(fonts, 'bytes'), count: Object.keys(fam).length, unit: 'font',
-        about: 'Typefaces downloaded when a design used them. They download again when needed.',
-        items: Object.keys(fam).sort().map(function (f) { return { id: f, name: pretty(f), detail: plural(fam[f].length, 'file'), bytes: sum(fam[f], 'bytes'), at: Math.max.apply(null, fam[f].map(function (x) { return x.at; })), entries: fam[f] }; })
+        about: 'Typefaces downloaded when a design used them, and fonts you saved for offline use. Downloaded ones may be removed when space is needed and download again when used; saved ones stay until you remove them.',
+        items: Object.keys(fam).sort().map(function (f) {
+          var saved = fam[f].filter(function (x) { return x.saved; }).length;
+          return { id: f, name: fontName(f), detail: (saved ? 'Saved on this device' : 'Downloaded when used') + ' · ' + plural(fam[f].length, 'file'), bytes: sum(fam[f], 'bytes'), at: Math.max.apply(null, fam[f].map(function (x) { return x.at; })), entries: fam[f], saved: saved > 0 };
+        })
       });
 
       var packs = {}, library = [], collageData = [];
@@ -1029,7 +1042,7 @@
     opts = opts || {};
     var done = function (n) { emit('storage-change', { category: id }); return n; };
     if (id === 'fonts' || id === 'photos') {
-      var names = id === 'fonts' ? [CACHES.fonts] : [CACHES.photos];
+      var names = id === 'fonts' ? [CACHES.fonts, CACHES.savedFonts] : [CACHES.photos];
       return Promise.all(names.map(function (n) { return entries(n); })).then(function (lists) {
         var all = [].concat.apply([], lists);
         if (id === 'photos') return entries(CACHES.assets).then(function (a) { return all.concat(a.filter(function (x) { return x.path.indexOf('/assets/data/collages/') >= 0; })); });

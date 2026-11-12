@@ -195,10 +195,11 @@ cases['font panel: choosing a family changes the layer font and loads it'] = asy
   const page = await h.newDesign(browser, base, 'desktop', 'Instagram post');
   await textLayer(page, h);
   await page.click('#sx-tool [data-cmd=font]');
-  await page.waitForSelector('.sx-font');
-  const fam = await page.locator('.sx-font').nth(3).evaluate((e) => e.querySelector('b,strong,span') ? e.innerText.split('\n')[0] : e.innerText);
-  await page.locator('.sx-font').nth(3).click();
-  await page.waitForTimeout(500);
+  /* The F1 picker (le-studio-fonts.js): a virtual list of .sf-row rows. */
+  await page.waitForSelector('.sf-row .sf-pick');
+  const fam = await page.locator('.sf-row .sf-pick').nth(3).getAttribute('data-fam');
+  await page.locator('.sf-row .sf-pick').nth(3).click();
+  await page.waitForTimeout(1200);
   const l = (await h.layers(page))[0];
   h.assert(l.font && l.font !== 'Plus Jakarta Sans', 'font changed to ' + l.font + ' (clicked ' + fam + ')');
   const ok = await page.evaluate((f) => document.fonts.check('20px "' + f + '"'), l.font);
