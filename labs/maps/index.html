@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Maps lab</title>
+<link rel="stylesheet" href="lab.css">
+</head>
+<body>
+<main>
+  <h1>Maps lab</h1>
+  <p class="lead">Depth, normals and face maps made on this device. Prototypes for expert mode (relighting, depth blur, face-aware retouching). Nothing downloads until you press a button.</p>
+  <div class="panel">
+    <div class="row">
+      <a class="btn gold" href="depth.html">Depth lab</a>
+      <a class="btn gold" href="face.html">Face lab</a>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Models</h2>
+    <table id="models"><thead><tr><th>Option</th><th>Kind</th><th>Download</th><th>Tier</th><th>Licence</th></tr></thead><tbody></tbody></table>
+    <p class="hint">Labels are what the studio would show. Technical names sit in the last column and stay behind "About this option" in the product.</p>
+  </div>
+  <div class="panel">
+    <h2>Privacy</h2>
+    <p>Face points are computed on this device from the photo you open, kept only in this tab, never uploaded, and are not used to recognise or identify anyone. In a design they would be stored only when an edit needs them and can always be made again from the photo.</p>
+  </div>
+</main>
+<script src="maps.js"></script>
+<script>
+  var tb = document.querySelector('#models tbody');
+  LE.maps.models().forEach(function (m) {
+    var tr = document.createElement('tr');
+    [m.sizeLabel, m.kind, m.downloadMB + ' MB', m.tier, (m.about.licence || '')].forEach(function (t) { var td = document.createElement('td'); td.textContent = t; tr.appendChild(td); });
+    tb.appendChild(tr);
+  });
+  window.__ready = true;
+</script>
+</body>
+</html>

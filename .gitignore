@@ -6,5 +6,8 @@ node_modules/
 /assets/models/local/
 /assets/vendor/ort-webgpu/
 
+# maps lab: larger depth candidates fetched by scripts/fetch-maps-models.js
+/assets/models/maps/local/
+
 # OCR language packs fetched by scripts/fetch-ocr-data.js (the English pack is committed)
 /assets/models/ocr/more/
