@@ -1009,7 +1009,7 @@
     x.drawImage(c.raw, 0, 0);
     SCAN.enhance(c.result, m);
     if (m === 'bw') {                    /* a hairline of table often survives at the page edge; in Document mode trim it to paper white */
-      var t = Math.max(2, Math.round(Math.min(c.result.width, c.result.height) * 0.006)); x.fillStyle = '#FFFFFF';
+      var t = Math.max(2, Math.round(Math.min(c.result.width, c.result.height) * 0.012)); x.fillStyle = '#FFFFFF';
       x.fillRect(0, 0, c.result.width, t); x.fillRect(0, c.result.height - t, c.result.width, t); x.fillRect(0, 0, t, c.result.height); x.fillRect(c.result.width - t, 0, t, c.result.height);
     }
     if (E.preview) {

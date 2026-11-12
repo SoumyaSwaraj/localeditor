@@ -89,7 +89,7 @@ body.psn-open { overflow: hidden; }
 .psn-handle:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -6px; }
 .psn-tools { flex: none; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .psn-tools .btn { padding: 0 14px; font-size: 13.5px; }
-.psn-tools .psn-tool-ic { width: 44px; padding: 0; justify-content: center; }
+.psn-tools .psn-tool-ic { flex: none; width: 44px; padding: 0; justify-content: center; }
 .psn-loupe {
   position: fixed; z-index: 70; width: 168px; height: 168px; border-radius: 50%; pointer-events: none;
   box-shadow: 0 0 0 3px var(--surface), 0 10px 30px rgba(0, 0, 0, 0.35);
@@ -160,6 +160,7 @@ body.psn-open { overflow: hidden; }
 @media (max-width: 380px) {
   .psn-cam-pick span { display: none; }
   .psn-cam-pick { width: 44px; padding: 0; justify-content: center; }
+  .psn-tools .btn:not(.psn-tool-ic) svg { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .psn-src, .psn-shutter { transition: none; }
