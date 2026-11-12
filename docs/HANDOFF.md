@@ -135,7 +135,7 @@ Mocked tests: `node tests/run.js stock` (`tests/stock.test.js`, fixtures in `tes
 
 Browser test (`scripts/test-stock.html`): 4000×3000 JPEG 126,496 bytes → 2400×1800 JPEG 63,682 bytes. Openverse search `cat` returned 20 hits, no CORS error. Imported photo 144,024 bytes.
 
-Local ingest in `le-studio.js` compresses a file over 8 MB, or a long edge over `previewMax * 1.4`, and toasts “Photo resized for editing”.
+Local ingest in `le-studio.js` (`ingestPolicy`) keeps the original pixels of a photo up to a device-class ceiling on the long edge: desktop 8000, modern 6000, older 4096 px (`quality` mode moves up one class, to 12000 on desktop). Over the ceiling it reduces to the ceiling and toasts “This photo was reduced to N px wide to fit this device.” A file over 25 MB is re-encoded at the same pixel size (quality 0.92). `saver` mode keeps the old rules (8 MB, `previewMax * 1.4`, cut to `previewMax`). The editor previews from a bitmap capped at `previewMax`; export renders from the original. Export area caps live in `LE.Scene.render` and `maxScale()`: desktop 120 MP, modern 48 MP, older 17 MP.
 
 ### Collage / replace UI — wired and checked (7 Nov 2026)
 

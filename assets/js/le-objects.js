@@ -1745,7 +1745,14 @@
       var src = assetCanvas(rec);
       if (!src) return null;
       var base = src;
-      if (LE.fit && Math.max(src.width, src.height) > targetMax) base = LE.fit(src, targetMax);
+      if (LE.fit && Math.max(src.width, src.height) > targetMax) {
+        /* Preview only: shrink a big original once to preview size and reuse it, so a zoom or resize does not re-scale 48 MP each time. */
+        var pm = preview ? self._previewMax() : 0;
+        if (preview && LE.fit && Math.max(src.width, src.height) > pm * 1.5 && targetMax <= pm) {
+          if (!rec._prev || rec._prevFor !== src) { rec._prev = LE.fit(src, pm); rec._prevFor = src; }
+          base = Math.max(rec._prev.width, rec._prev.height) > targetMax ? LE.fit(rec._prev, targetMax) : cloneCanvas(rec._prev);
+        } else base = LE.fit(src, targetMax);
+      }
       /* Cut-out first, so crop, adjust, filters and the outline all see the subject on transparency. */
       if (cut && mrec) base = cutoutApply(base, mrec, cut.feather * base.width * ((layer.crop && layer.crop.w) || 1) / Math.max(1, layer.w));
       function finish(c) { return cut && cut.outline && c ? cutoutOutline(c, cut.outline.width * c.width / Math.max(1, layer.w), cut.outline.color) : c; }
@@ -1936,7 +1943,8 @@
     var w = Math.max(1, Math.round(this._doc.width * scale));
     var h = Math.max(1, Math.round(this._doc.height * scale));
     var maxEdge = 16384;
-    var maxArea = 32000000;
+    var tierNow = (LE.device && LE.device.tier) ? LE.device.tier() : 'desktop';
+    var maxArea = tierNow === 'desktop' ? 120000000 : tierNow === 'modern' ? 48000000 : 17000000;
     if (w > maxEdge || h > maxEdge || w * h > maxArea) {
       var fit = Math.min(maxEdge / w, maxEdge / h, Math.sqrt(maxArea / (w * h)));
       w = Math.max(1, Math.round(w * fit));

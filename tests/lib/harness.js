@@ -65,8 +65,16 @@ function openPanel(page, id, opts) {
   return page.evaluate(([i, o]) => window.LEStudio.openPanel(i, o || {}), [id, opts || null]).then(() => page.waitForTimeout(250));
 }
 function doc(page) { return page.evaluate(() => window.LEStudio.scene.toJSON()); }
+/* No sideways scroll. A page whose layout viewport is wider than the device (mobile browsers widen the layout
+   viewport to fit overflowing content, so scrollWidth <= innerWidth stays true) also counts as overflowing. */
 async function noOverflow(page) {
-  return page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+  return page.evaluate(() => {
+    const de = document.documentElement, body = document.body;
+    const device = Math.min(window.innerWidth, window.screen && window.screen.width ? window.screen.width : Infinity);
+    const vv = window.visualViewport;
+    const widest = Math.max(de.scrollWidth, body ? body.scrollWidth : 0, vv ? vv.width * (vv.scale || 1) : 0, window.innerWidth);
+    return widest <= device + 1 && window.innerWidth <= device + 1;
+  });
 }
 
 function assert(cond, message) { if (!cond) throw new Error(message || 'Assertion failed'); }

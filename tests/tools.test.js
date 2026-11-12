@@ -256,13 +256,51 @@ cases['PDF studio: opens sample.pdf, shows a page, adds a text annotation and sa
     h.assert.noErrors(page);
   };
 });
-cases['KNOWN-BUG: image converter: Download all right after switching the output format delivers the new format (QA-016)'] = async ({ browser, base, h }) => {
+cases['image converter: Download all right after switching the output format delivers the new format (QA-016)'] = async ({ browser, base, h }) => {
   const page = await tool(browser, base, h, '/image-converter/');
   await page.setInputFiles('input[type=file]', h.PHOTO(2));
   await page.waitForFunction(() => !document.getElementById('dl-all').disabled);
   await page.click('button[data-v="image/png"]');
   const r = await h.capture(page, () => page.click('#dl-all'));
   h.assert.equal(h.imageInfo(r.buf).type, 'png', 'got ' + h.imageInfo(r.buf).type + ' named ' + r.name);
+};
+cases['image compressor: Download all right after changing the format or quality waits for the re-encode (QA-016 sibling)'] = async ({ browser, base, h }) => {
+  const page = await tool(browser, base, h, '/image-compressor/');
+  await page.setInputFiles('input[type=file]', h.PHOTO(2));
+  await page.waitForFunction(() => !document.getElementById('dl-all').disabled);
+  await page.click('button[data-v="image/jpeg"]');
+  h.assert(await page.evaluate(() => document.getElementById('dl-all').disabled), 'Download all is disabled while the re-encode is pending');
+  await page.waitForFunction(() => !document.getElementById('dl-all').disabled);
+  const r = await h.capture(page, () => page.click('#dl-all'));
+  h.assert.equal(h.imageInfo(r.buf).type, 'jpeg', 'got ' + h.imageInfo(r.buf).type + ' named ' + r.name);
+};
+cases['image resizer: Download is not offered for a stale size while a change is pending'] = async ({ browser, base, h }) => {
+  const page = await tool(browser, base, h, '/image-resizer/');
+  await page.setInputFiles('input[type=file]', h.PHOTO(2));
+  await page.waitForFunction(() => !document.getElementById('dl').disabled);
+  await page.fill('#w', '321');
+  h.assert(await page.evaluate(() => document.getElementById('dl').disabled), 'Download is disabled right after typing a width');
+  await page.waitForFunction(() => !document.getElementById('dl').disabled);
+  const r = await h.capture(page, () => page.click('#dl'));
+  h.assert.equal(h.imageInfo(r.buf).w, 321, 'downloaded the new width');
+};
+cases['noOverflow also flags a layout viewport wider than the device (a 455 px page on a 390 px phone)'] = async ({ browser, base, h }) => {
+  const page = await h.open(browser, base, '/about/', 'phone');
+  h.assert(await h.noOverflow(page), 'a correct page passes');
+  await page.evaluate(() => { const d = document.createElement('div'); d.style.cssText = 'width:455px;height:8px'; document.body.appendChild(d); });
+  await page.waitForTimeout(200);
+  h.assert(!(await h.noOverflow(page)), 'a 455 px element on a 390 px phone is caught');
+};
+cases['every tool page and the home page fit a 390 and a 360 px phone with no sideways scroll'] = async ({ browser, base, h }) => {
+  const fs = require('fs');
+  const dirs = fs.readdirSync(h.ROOT).filter((d) => fs.existsSync(h.ROOT + '/' + d + '/index.html') && !/^(studio|pdf-studio|recipes|labs)$/.test(d));
+  const bad = [];
+  for (const vp of ['phone', 'small']) for (const u of ['/'].concat(dirs.map((d) => '/' + d + '/'))) {
+    const page = await h.open(browser, base, u, vp);
+    if (!(await h.noOverflow(page))) bad.push(vp + ' ' + u);
+    await page.context().close();
+  }
+  h.assert(!bad.length, 'sideways scroll on: ' + bad.join(', '));
 };
 cases['KNOWN-BUG: converted DOCX / Markdown PDFs keep selectable text, not just page pictures (QA-010)'] = async ({ browser, base, h }) => {
   for (const f of ['sample.md', 'sample.docx']) {
