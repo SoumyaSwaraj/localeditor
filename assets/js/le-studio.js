@@ -306,6 +306,7 @@
     opts = opts || {};
     var t = E.toast;
     t.innerHTML = '<span>' + esc(msg) + '</span>' + (opts.action ? '<button type="button" class="sx-toast-act">' + esc(opts.action.label) + '</button>' : '');
+    t.classList.toggle('is-done', !!opts.done || /^(Downloaded|Saved|Copied)\b/.test(String(msg)));
     t.hidden = false;
     placeToast();
     requestAnimationFrame(function () { t.classList.add('is-on'); });
@@ -715,7 +716,7 @@
   function renderHead() {
     var name = S.project ? S.project.name : 'Untitled design';
     E.head.innerHTML =
-      '<a class="sx-brand" href="../" aria-label="LocalEditor home"><span class="sx-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><defs><linearGradient id="sx-foil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F8E3AE"/><stop offset=".55" stop-color="#E2B15A"/><stop offset="1" stop-color="#B9832F"/></linearGradient></defs><rect width="32" height="32" rx="10" fill="url(#sx-foil)"/><circle cx="16" cy="16" r="7.5" fill="none" stroke="#2A1F0A" stroke-width="1.8"/><circle cx="16" cy="16" r="1.8" fill="#2A1F0A"/></svg></span><span class="sx-brand-txt"><strong>LocalEditor</strong><span>Studio</span></span></a>' +
+      '<a class="sx-brand" href="../" aria-label="LocalEditor home"><span class="sx-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3F67D9"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span><span class="sx-brand-txt"><strong>LocalEditor</strong><span>Studio</span></span></a>' +
       '<button type="button" class="sx-headbtn sx-file-btn" data-cmd="fileMenu" aria-haspopup="menu" aria-expanded="false" aria-label="File menu">' + ic('menu') + '<span>File</span></button>' +
       '<label class="sx-name"><span class="sr">Design name</span><input id="sx-name" value="' + esc(name) + '" maxlength="120" spellcheck="false" aria-label="Design name"></label>' +
       '<span class="sx-save" id="sx-save" data-state="' + (S.dirty ? 'dirty' : 'saved') + '"><i aria-hidden="true"></i><span>' + (S.project ? (S.dirty ? 'Saving…' : 'Saved on this device') : 'On this device') + '</span></span>' +

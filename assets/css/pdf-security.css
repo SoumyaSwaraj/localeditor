@@ -108,10 +108,10 @@
 .sec-verdict { display: flex; gap: 14px; align-items: flex-start; padding: 14px; border-radius: var(--r-md, 14px); border: 1px solid var(--line); background: var(--surface); }
 .sec-verdict strong { display: block; font-size: 15px; font-weight: 720; line-height: 1.3; text-wrap: balance; }
 .sec-verdict p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
-.sec-light { flex: none; display: grid; gap: 4px; padding: 6px 5px; border-radius: 10px; background: var(--side, #141318); }
+.sec-light { flex: none; display: grid; gap: 4px; padding: 6px 5px; border-radius: 10px; background: var(--side, #141414); }
 .sec-light i { width: 12px; height: 12px; border-radius: 50%; background: rgba(255, 255, 255, 0.14); }
 .sec-verdict.is-err .sec-light i:nth-child(1) { background: #F07A6E; box-shadow: 0 0 0 2px rgba(240, 122, 110, 0.25); }
-.sec-verdict.is-warn .sec-light i:nth-child(2) { background: #E2B15A; box-shadow: 0 0 0 2px rgba(226, 177, 90, 0.25); }
+.sec-verdict.is-warn .sec-light i:nth-child(2) { background: var(--primary); box-shadow: 0 0 0 2px rgba(63, 103, 217, 0.25); }
 .sec-verdict.is-ok .sec-light i:nth-child(3) { background: #4CC08D; box-shadow: 0 0 0 2px rgba(76, 192, 141, 0.25); }
 .sec-verdict.is-err { border-color: color-mix(in srgb, var(--err) 40%, transparent); }
 .sec-verdict.is-warn { border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
@@ -149,7 +149,7 @@
 .sec-mark-x svg { width: 14px; height: 14px; }
 body[data-panel="security"] .sec-mark-x, body.sec-drawing .sec-mark-x { display: grid; }
 .sec-mark-x::before { content: ""; position: absolute; inset: -10px; }
-.sec-hitbox { position: absolute; border: 2px solid var(--amethyst); background: rgba(116, 87, 240, 0.18); border-radius: 2px; pointer-events: none; }
+.sec-hitbox { position: absolute; border: 2px solid var(--amethyst); background: rgba(63, 103, 217, 0.18); border-radius: 2px; pointer-events: none; }
 body.sec-drawing .pv-page { cursor: crosshair; touch-action: none; }
 
 @media (prefers-reduced-motion: reduce) {

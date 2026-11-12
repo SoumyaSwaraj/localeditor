@@ -549,8 +549,7 @@ module.exports = {
     await pick(page, () => page.click('.pb-work .pb-source .btn:not(.btn-ghost)'), ['images-heavy.pdf']);
     await page.click('.pb-go');
     await page.waitForSelector('.pb-result', { timeout: 60000 });
-    const ink = await page.$eval('.pb-work .btn-gold', (b) => getComputedStyle(b).color);
-    h.assert.equal(ink, 'rgb(42, 31, 10)', 'gold button ink');
+    (await h.inkContrast(page, '.pb-work .btn-gold')).forEach((c) => h.assert(c.ratio >= 4.5, 'primary button text ' + c.color + ' on ' + c.bg + ' is ' + c.ratio + ':1'));
     await page.evaluate(() => PS.bulk.open('protect'));
     await pick(page, () => page.click('.pb-work .pb-source .btn:not(.btn-ghost)'), ['form-template.pdf']);
     await page.click('.pb-suggest');

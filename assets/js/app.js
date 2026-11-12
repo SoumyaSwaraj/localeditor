@@ -10,6 +10,29 @@
   } catch (e) {}
   document.body.classList.add('le-ready');
 
+  /* Canvas surround for the editors: light, mid or dark grey around the page, or follow the theme.
+     Neutral greys only, so people judge their own colours fairly (docs/DESIGN.md, "Neutral chrome"). */
+  var LEX = window.LE = window.LE || {};
+  LEX.surround = {
+    get: function () { try { return localStorage.getItem('le-surround') || 'auto'; } catch (e) { return 'auto'; } },
+    set: function (v) {
+      try { if (v === 'auto') localStorage.removeItem('le-surround'); else localStorage.setItem('le-surround', v); } catch (e) {}
+      if (v === 'light' || v === 'mid' || v === 'dark') root.setAttribute('data-surround', v); else root.removeAttribute('data-surround');
+    },
+    /* One section for a studio settings panel: LE.surround.section(ctx, body). */
+    section: function (c, body) {
+      if (!c || !c.ui || !c.ui.section || !c.ui.seg) return;
+      var s = c.ui.section('Canvas surround');
+      s.querySelector('.sx-sec-body').appendChild(c.ui.seg([['auto', 'Theme'], ['light', 'Light'], ['mid', 'Mid grey'], ['dark', 'Dark']], LEX.surround.get(), function (v) { LEX.surround.set(v); if (c.renderPanel) c.renderPanel(true); }));
+      var p = document.createElement('p');
+      p.className = 'sx-note';
+      p.textContent = 'The grey around your page. Mid grey is the fairest for judging colour.';
+      s.querySelector('.sx-sec-body').appendChild(p);
+      body.appendChild(s);
+    }
+  };
+  LEX.surround.set(LEX.surround.get());
+
   var IT = window.IT = window.IT || {};
 
   IT.toast = function (msg, ms) {
@@ -22,6 +45,7 @@
       document.body.appendChild(el);
     }
     el.innerHTML = msg;
+    el.classList.remove('is-done');
     el.classList.add('show');
     clearTimeout(el._t);
     el._t = setTimeout(function () { el.classList.remove('show'); }, ms || 2400);
@@ -36,12 +60,24 @@
       document.body.appendChild(el);
     }
     el.textContent = msg;
+    el.classList.remove('is-done');
     el.classList.add('show');
     clearTimeout(el._t);
     el._t = setTimeout(function () { el.classList.remove('show'); }, ms || 2400);
   };
 
-  IT.celebrate = function () {};
+  /* A finished job (saved, downloaded, cleaned): the toast with a small check (styles: app.css, "Completion moments"). */
+  IT.celebrate = function (msg, ms) {
+    if (!msg) return;
+    IT.say(msg, ms || 2800);
+    var el = document.querySelector('.toast');
+    if (!el) return;
+    el.classList.remove('is-done');
+    void el.offsetWidth;
+    el.classList.add('is-done');
+    clearTimeout(el._d);
+    el._d = setTimeout(function () { el.classList.remove('is-done'); }, (ms || 2800) + 300);
+  };
 
   IT.formatBytes = function (b) {
     if (b == null || isNaN(b)) return '';
@@ -234,7 +270,7 @@
   };
 
   function mark() {
-    return '<span class="le-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><defs><linearGradient id="le-foil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3CC7C"/><stop offset="1" stop-color="#E2B15A"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#le-foil)"/><circle cx="16" cy="16" r="7.5" fill="none" stroke="#2A1F0A" stroke-width="1.9"/><circle cx="16" cy="16" r="2" fill="#2A1F0A"/></svg></span>';
+    return '<span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3F67D9"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span>';
   }
 
   function isCurrent(href) {
@@ -309,7 +345,7 @@
     document.querySelectorAll('[data-theme-label]').forEach(function (s) { s.textContent = dark ? 'Light theme' : 'Dark theme'; });
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta && !document.body.classList.contains('sx-body') && !document.body.classList.contains('ps-body') && !document.body.classList.contains('cv-body')) {
-      meta.setAttribute('content', dark ? '#0F0E13' : '#F7F6F3');
+      meta.setAttribute('content', dark ? '#141414' : '#FAFAFA');
     }
   }
 
@@ -532,7 +568,7 @@
   mountShell();
 
   var meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', '#141318');
+  if (meta) meta.setAttribute('content', '#161616');
 })();
 
 /* Install, updates and storage manager: loads le-pwa.js and le-pwa.css on every page.

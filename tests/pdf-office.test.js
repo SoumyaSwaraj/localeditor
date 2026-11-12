@@ -654,8 +654,7 @@ module.exports = {
         const small = await page.evaluate(() => [...document.querySelectorAll('.po-work button:not([hidden]), .po-work select, .po-work input:not([type=checkbox]):not([type=color])')]
           .filter((b) => b.offsetParent && !b.closest('[hidden]') && !b.closest('details:not([open])')).map((b) => [b.className || b.tagName, b.getBoundingClientRect().height]).filter((x) => x[1] > 0 && x[1] < 43.5));
         h.assert.equal(small.length, 0, job + ' has small targets: ' + JSON.stringify(small.slice(0, 4)));
-        const gold = await page.evaluate(() => { const b = document.querySelector('.po-go'); return b && !b.disabled ? getComputedStyle(b).color : 'rgb(42, 31, 10)'; });
-        h.assert.equal(gold, 'rgb(42, 31, 10)', 'gold ink');
+        (await h.inkContrast(page, '.po-go:not(:disabled)')).forEach((c) => h.assert(c.ratio >= 4.5, 'primary text ' + c.color + ' on ' + c.bg + ' is ' + c.ratio + ':1'));
         await page.evaluate(() => PS.office.close());
       }
       h.assert.noErrors(page);

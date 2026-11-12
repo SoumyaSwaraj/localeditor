@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-/* Captures the install-dialog screenshots and the app-shortcut icons referenced by manifest.webmanifest.
-   Run from the repo root:  node scripts/screenshots.js   then   node scripts/build.js
+/* Captures the install-dialog screenshots, and draws the brand icons (icon-192/512, maskable-512, favicon-32,
+   og.png) and the app-shortcut icons referenced by manifest.webmanifest, all from assets/icons/icon.svg and
+   maskable.svg (the single source of the mark).
+   Run from the repo root:  node scripts/screenshots.js [--icons-only]   then   node scripts/build.js
    Uses the preinstalled Playwright Chromium and the test harness's static server. Output is WebP (screenshots)
    and PNG (96px shortcut icons), encoded by Chromium itself so nothing else needs installing. */
 'use strict';
@@ -11,7 +13,7 @@ const h = require('../tests/lib/harness');
 const OUT = path.join(h.ROOT, 'assets', 'screenshots');
 const ICONS = path.join(h.ROOT, 'assets', 'icons', 'shortcuts');
 
-/* Shortcut glyphs, drawn on the brand gold tile. Paths match the shell icons in app.js. */
+/* Shortcut glyphs, drawn in white on the brand Lapis tile. Paths match the shell icons in app.js. */
 const GLYPHS = {
   studio: '<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/>',
   collage: '<rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/>',
@@ -47,6 +49,61 @@ async function capture(browser, base, url, vp, scale, prep) {
   return { page, ctx, png };
 }
 
+const TILE = '<defs><linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A81EC"/><stop offset="1" stop-color="#3F67D9"/></linearGradient></defs>';
+
+/* Renders an SVG file (or markup) to a PNG of the given size, transparent outside the shape. */
+async function svgPng(page, svg, size) {
+  await page.setViewportSize({ width: size, height: size });
+  await page.setContent('<html><body style="margin:0;background:transparent">' + svg.replace('<svg ', '<svg width="' + size + '" height="' + size + '" ') + '</body></html>');
+  return page.screenshot({ omitBackground: true, clip: { x: 0, y: 0, width: size, height: size } });
+}
+
+async function brandIcons(browser, base) {
+  const ROOTI = path.join(h.ROOT, 'assets', 'icons');
+  const icon = fs.readFileSync(path.join(ROOTI, 'icon.svg'), 'utf8');
+  const mask = fs.readFileSync(path.join(ROOTI, 'maskable.svg'), 'utf8');
+  const ctx = await browser.newContext({ deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  for (const [file, svg, size] of [['icon-192.png', icon, 192], ['icon-512.png', icon, 512], ['maskable-512.png', mask, 512], ['favicon-32.png', icon, 32]]) {
+    const png = await svgPng(page, svg, size);
+    fs.writeFileSync(path.join(ROOTI, file), png);
+    console.log(file, Math.round(png.length / 1024 * 10) / 10 + ' KB');
+  }
+  for (const [name, glyph] of Object.entries(GLYPHS)) {
+    const png = await svgPng(page, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">' + TILE +
+      '<rect width="96" height="96" rx="22" fill="url(#t)"/><g transform="translate(24 24) scale(2)" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + glyph + '</g></svg>', 96);
+    fs.writeFileSync(path.join(ICONS, name + '-96.png'), png);
+    console.log('shortcuts/' + name + '-96.png', Math.round(png.length / 1024 * 10) / 10 + ' KB');
+  }
+  /* Social card: the real homepage words on a neutral ground, with the mark. Fonts come from the site. */
+  await page.setViewportSize({ width: 1200, height: 630 });
+  await page.goto(base + '/404.html').catch(() => {});
+  await page.setContent(`<html><head><style>
+    @font-face { font-family: J; src: url(${base}/assets/fonts/jakarta-latin.woff2); font-weight: 400 800; }
+    @font-face { font-family: S; font-style: italic; src: url(${base}/assets/fonts/instrument-serif-italic.woff2); }
+    body { margin: 0; width: 1200px; height: 630px; background: #FAFAFA; font-family: J; color: #141414; display: grid; grid-template-columns: 1fr 360px; overflow: hidden; }
+    .copy { padding: 96px 0 0 88px; }
+    .brand { display: flex; align-items: center; gap: 18px; font: 720 34px J; letter-spacing: -0.035em; }
+    .brand svg { width: 64px; height: 64px; }
+    h1 { margin: 84px 0 30px; font: 720 74px/1.02 J; letter-spacing: -0.045em; }
+    h1 em { font: italic 400 84px/0.9 S; letter-spacing: -0.01em; }
+    p { margin: 0; font: 600 25px J; color: #525252; display: flex; gap: 26px; }
+    p span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #14874E; margin: 0 10px 3px 0; }
+    .art { position: relative; background: #E6E6E6; }
+    .art img { position: absolute; left: 44px; top: 70px; width: 272px; height: 340px; object-fit: cover; box-shadow: 0 30px 60px -24px rgba(0,0,0,.45); }
+    .sel { position: absolute; left: 64px; top: 300px; width: 232px; padding: 6px 8px; outline: 2px solid #5884F8; color: #fff; font: italic 400 38px/0.95 S; text-shadow: 0 2px 16px rgba(0,0,0,.4); }
+    .dl { position: absolute; left: 44px; top: 448px; height: 56px; padding: 0 30px; border-radius: 99px; background: #3F67D9; color: #fff; font: 700 22px J; display: flex; align-items: center; }
+  </style></head><body><div class="copy"><div class="brand">${icon.replace(/<title>.*?<\/title>/, '')}LocalEditor</div>
+    <h1>The design studio<br>that <em>stays on your device.</em></h1><p><span>Free</span><span>No account</span><span>Works offline</span></p></div>
+    <div class="art"><img src="${base}/assets/img/home/people-08.webp" alt=""><i class="sel">Long light, good friends.</i><span class="dl">Download</span></div></body></html>`);
+  await page.waitForLoadState('networkidle');
+  await page.evaluate(() => document.fonts.ready);
+  const og = await page.screenshot({ type: 'png' });
+  fs.writeFileSync(path.join(ROOTI, 'og.png'), og);
+  console.log('og.png', Math.round(og.length / 1024) + ' KB');
+  await ctx.close();
+}
+
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   fs.mkdirSync(ICONS, { recursive: true });
@@ -65,6 +122,7 @@ async function capture(browser, base, url, vp, scale, prep) {
     }, page.viewportSize().width < 600 ? 'scrapbook-03' : 'scrapbook-05').catch((e) => console.warn('collage skipped:', e.message));
     await page.waitForTimeout(2500);
   };
+  if (process.argv.includes('--icons-only')) { await brandIcons(browser, base); await browser.close(); server.close(); return; }
   const shots = [
     ['studio-narrow', '/studio/', { width: 390, height: 844 }, 2, studio],
     ['home-narrow', '/', { width: 390, height: 844 }, 2, null],
@@ -78,16 +136,7 @@ async function capture(browser, base, url, vp, scale, prep) {
     console.log(name + '.webp', vp.width * scale + 'x' + vp.height * scale, Math.round(webp.length / 1024) + ' KB');
     await ctx.close();
   }
-  const ctx = await browser.newContext({ viewport: { width: 96, height: 96 }, deviceScaleFactor: 1 });
-  const page = await ctx.newPage();
-  for (const [name, glyph] of Object.entries(GLYPHS)) {
-    await page.setContent('<html><body style="margin:0;background:transparent"><svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">' +
-      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F8E3AE"/><stop offset=".55" stop-color="#E2B15A"/><stop offset="1" stop-color="#B9832F"/></linearGradient></defs>' +
-      '<rect width="96" height="96" rx="26" fill="url(#g)"/><g transform="translate(24 24) scale(2)" fill="none" stroke="#2A1F0A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + glyph + '</g></svg></body></html>');
-    const png = await page.screenshot({ omitBackground: true, clip: { x: 0, y: 0, width: 96, height: 96 } });
-    fs.writeFileSync(path.join(ICONS, name + '-96.png'), png);
-    console.log('shortcuts/' + name + '-96.png', Math.round(png.length / 1024 * 10) / 10 + ' KB');
-  }
+  await brandIcons(browser, base);
   await browser.close();
   server.close();
 })().catch((err) => { console.error(err); process.exit(1); });

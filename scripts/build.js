@@ -100,7 +100,7 @@ const head = ({ title, desc, url, rootRel, extra = '' }) => `<!doctype html>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${url}">
 <meta name="robots" content="index,follow,max-image-preview:large">
-<meta name="theme-color" content="#141318">
+<meta name="theme-color" content="#161616">
 <link rel="manifest" href="${rootRel}manifest.webmanifest">
 <link rel="icon" href="${rootRel}assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="${rootRel}assets/icons/icon-192.png">
@@ -310,8 +310,8 @@ function manifestJSON() {
     display: 'standalone',
     display_override: ['standalone', 'minimal-ui'],
     orientation: 'any',
-    background_color: '#E7E5EB',
-    theme_color: '#141318',
+    background_color: '#FAFAFA',
+    theme_color: '#161616',
     categories: ['photo', 'productivity', 'utilities', 'graphics'],
     prefer_related_applications: false,
     icons: [

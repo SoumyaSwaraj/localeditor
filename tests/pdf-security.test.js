@@ -396,8 +396,7 @@ module.exports = {
     const afterCells = await page.$$eval('.sec-ba tbody td:last-child', (c) => c.map((x) => x.textContent.trim()));
     h.assert(afterCells.length > 5 && afterCells.every((t) => t === '0'), 'after column: ' + afterCells.join(','));
     h.assert(await page.$('[data-sec-download]'), 'download button');
-    const ink = await page.$eval('[data-sec-download]', (b) => getComputedStyle(b).color);
-    h.assert.equal(ink, 'rgb(42, 31, 10)', 'gold button ink');
+    (await h.inkContrast(page, '[data-sec-download]')).forEach((c) => h.assert(c.ratio >= 4.5, 'primary button text ' + c.color + ' on ' + c.bg + ' is ' + c.ratio + ':1'));
     h.assert.noErrors(page);
   },
 
