@@ -372,7 +372,7 @@
   /* Two waves: the kit's base first (the other files register into it), then everything else in parallel. */
   var FIRST = ['../fx/curves.js', 'controls/base.js'];   /* the spline lives with the renderer (assets/js/fx/curves.js): one definition for both */
   var FILES = ['controls/slider.js', 'controls/curve.js', 'controls/color.js', 'controls/bands.js',
-    'controls/pickers.js', 'controls/mask.js', 'brush.js', 'scopes.js', 'panel.js', 'layers.js', 'tools.js', 'workspace.js'];
+    'controls/pickers.js', 'controls/mask.js', 'brush.js', 'scopes.js', 'panel.js', 'layers.js', 'tools.js', 'workspace.js', 'tools/light.js'];
   var loading = null;
   function lazy(src) {
     if (LE.lazy) return LE.lazy(src);
