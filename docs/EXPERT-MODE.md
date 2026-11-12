@@ -120,7 +120,11 @@ Optional downloads, cached in `le-models-v1`, listed in the storage manager, gat
 
 ## What is hard, said plainly
 
-- **Camera RAW files.** Phone RAW (DNG) can be read with our own code. Most camera formats need a decoder library whose licence (LGPL) is outside the project's current rule. A feasibility check comes first; the owner decides on the licence.
+- **Camera RAW files.** Phone RAW (DNG) is read with our own code. **Owner's decision, 12 November 2026:** camera formats (Canon, Nikon, Sony, Fujifilm and the rest) may use the decoder that covers the most cameras, as an optional download, with its licence shown to the person. This is a stated exception to the project's licence rule, limited to that decoder module:
+  - it is a separate file, downloaded only when a camera RAW file is opened, never part of the editor's own code, and replaceable;
+  - the app shows the decoder's name, licence and a link to the licence text and source before or at first use, and permanently in the storage manager and an "Open-source licences" page;
+  - the repository carries the licence text, the exact source version and the build script, so anyone can rebuild or replace the module;
+  - `assets/vendor/LICENSES.md` records it in its own section, marked as the exception.
 - **Relighting.** It rests on an estimated depth map from a small model. Good for adding a rim or fill light and shifting mood; it will not match a studio reshoot.
 - **Parity.** Professional editors are decades of work. The aim is a real, coherent set of professional tools with correct results, strongest where an agent benefits most (grading by numbers, compositing with matched light and shadow), not a clone of any one product.
 - **No GPU in the build sandbox.** Speed must be checked on real machines and phones.
