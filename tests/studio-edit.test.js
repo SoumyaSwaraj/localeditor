@@ -389,10 +389,13 @@ cases['resize with Cancel leaves the page as it was'] = async ({ browser, base, 
 };
 cases['custom width and height in Resize create that size'] = async ({ browser, base, h }) => {
   const page = await photoPage(browser, base, h);
+  /* Keep the cursor off the size presets so no hover preview races the typing; the re-render itself is forced below. */
+  await page.mouse.move(2, 2);
   await h.openPanel(page, 'design', { tab: 'resize' });
   const ins = page.locator('#sx-panel-body input.sx-input[type=number]');
   await page.locator('.sx-ratio-lock').click(); // unlock ratio
   await ins.nth(0).fill('900'); await ins.nth(1).fill('500');
+  await page.waitForFunction(() => { const i = document.querySelectorAll('#sx-panel-body input.sx-input[type=number]'); return i[0] && i[0].value === '900' && i[1].value === '500'; }, null, { timeout: 5000 }).catch(() => {});
   /* The panel re-renders while the person types (a hover preview of a preset, an autosave): the typed size and
      the unlocked ratio must survive it. This was the bug (the form came back locked at the current size). */
   await page.evaluate(() => window.LEStudio.renderPanel(true));
