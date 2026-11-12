@@ -573,3 +573,19 @@
   js.async = true;
   document.head.appendChild(js);
 })();
+
+/* Download policy and packs (LE.downloads): loads le-downloads.js and le-downloads.css on every page. See docs/DOWNLOADS.md. */
+(function () {
+  'use strict';
+  if (window.__leDownloadsLoader) return;
+  window.__leDownloadsLoader = true;
+  var base = document.documentElement.getAttribute('data-root') || '';
+  var css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = base + 'assets/css/le-downloads.css';
+  document.head.appendChild(css);
+  var js = document.createElement('script');
+  js.src = base + 'assets/js/le-downloads.js';
+  js.async = true;
+  document.head.appendChild(js);
+})();

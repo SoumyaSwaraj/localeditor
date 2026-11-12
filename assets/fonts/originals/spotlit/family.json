@@ -1,0 +1,78 @@
+{
+ "family": "Spotlit",
+ "slug": "spotlit",
+ "source": "localeditor",
+ "version": "1.000",
+ "intent": "attention",
+ "feel": [
+  "elegant",
+  "bold"
+ ],
+ "description": "Dramatic thick-and-thin serif. Glamorous at big sizes.",
+ "uses": [
+  "Magazine covers",
+  "Beauty and fashion",
+  "Event posters"
+ ],
+ "concept": "Fat-face display serif: extreme stroke contrast, hairline serifs, ball terminals. The fashion-magazine shout.",
+ "category": "serif",
+ "weights": [
+  400,
+  700
+ ],
+ "italic": false,
+ "license": "LocalEditor-Proprietary (pending owner decision)",
+ "files": {
+  "400": {
+   "woff2": "assets/fonts/originals/spotlit/spotlit-400.woff2",
+   "woff": "assets/fonts/originals/spotlit/spotlit-400.woff"
+  },
+  "700": {
+   "woff2": "assets/fonts/originals/spotlit/spotlit-700.woff2",
+   "woff": "assets/fonts/originals/spotlit/spotlit-700.woff"
+  }
+ },
+ "bytes": {
+  "400": {
+   "woff2": 18944,
+   "woff": 24112
+  },
+  "700": {
+   "woff2": 20016,
+   "woff": 25164
+  }
+ },
+ "metrics": {
+  "unitsPerEm": 1000,
+  "ascender": 950,
+  "descender": -250,
+  "lineGap": 0,
+  "capHeight": 700,
+  "xHeight": 480
+ },
+ "parameters": {
+  "regular": {
+   "st": 126,
+   "ratio": 0.17,
+   "stress": 0,
+   "serif": "hair",
+   "sl": 40,
+   "sth": 10,
+   "term": "ball",
+   "ball": 0.72,
+   "xh": 480,
+   "wid": 0.98,
+   "sq": 0.6,
+   "aperture": 0.22,
+   "spacing": 0.92,
+   "join": 0.55
+  },
+  "bold": {
+   "st": 170,
+   "ratio": 0.14,
+   "ball": 0.74,
+   "wid": 1.04,
+   "join": 0.5
+  }
+ }
+}

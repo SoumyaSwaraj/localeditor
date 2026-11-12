@@ -934,6 +934,25 @@
     });
   }
 
+  /* Every style at once is a large download: it goes through the download policy and the shared progress chip
+     (LE.downloads, docs/DOWNLOADS.md). The person tapped a button that showed the size, so only free space can stop it. */
+  var saveStylesNow = saveStyleOffline;
+  saveStyleOffline = function (styleId, onProgress) {
+    var D = window.LE && LE.downloads;
+    if (styleId !== 'all' || !D || !D.request) return saveStylesNow(styleId, onProgress);
+    var ready = memory.withicons ? Promise.resolve() : load('withicons');
+    return ready.then(function () {
+      var w = memory.withicons || {};
+      var total = (w.styles || []).reduce(function (a, s) { return a + (s.bytes || 0); }, 0) + (w.paletteBytes || 0);
+      return D.request({ id: 'icons:all', name: 'All icon styles', bytes: total, kind: 'pack', reason: 'Every icon style, offline', confirmed: true });
+    }).then(function (r) {
+      if (!r.ok) { var err = new Error('There is not enough space to save every icon style.'); err.code = r.why; throw err; }
+      var t = D.track('icons:all', { name: 'Icon styles' });
+      return saveStylesNow('all', function (p) { if (p && p.totalBytes) t.progress(p.bytes, p.totalBytes); if (onProgress) onProgress(p); })
+        .then(function (x) { t.done(); return x; }, function (e) { t.fail(e); throw e; });
+    });
+  };
+
   function removeStyleOffline(styleId) {
     delete packs[styleId];
     if (styleState[styleId]) styleState[styleId].offline = false;

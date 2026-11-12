@@ -35,32 +35,42 @@ cases['the model is not fetched until asked, then cached in le-models-v1'] = asy
   h.assert(!before.some((u) => AI.test(u)), 'Fetched before asked: ' + before.filter((u) => AI.test(u)).join(', '));
   h.assert.equal(await page.evaluate(() => !!(window.LE.bgRemove)), false, 'Runtime loaded before asked');
   h.assert.equal(await page.evaluate(() => caches.has('le-models-v1')), false, 'Model cache exists before asked');
-  await page.click('.sxc-tb');
+  await page.evaluate(() => LEStudio.openPanel('cutout'));
   await page.waitForSelector('.sxc-go');
-  const note = await page.waitForFunction(() => { const n = document.querySelector('.sxc-first'); return n && /once \(\d+ MB\)/.test(n.textContent) && n.textContent; });
-  h.assert(/works offline/.test(await note.jsonValue()) && /stays on this device/.test(await note.jsonValue()), 'First-use sentence missing');
-  h.assert.equal(await page.textContent('.sxc-go'), 'Download and remove');
+  /* Download policy (docs/DOWNLOADS.md): no download question or size in the main flow; one tap does it. */
+  const note = await page.textContent('.sxc-first');
+  h.assert(!/MB|download/i.test(note) && /never uploaded/.test(note), 'Main flow should not talk about downloads: ' + note);
+  h.assert.equal(await page.textContent('.sxc-go'), 'Remove background');
   /* The chooser is data-driven, plain-worded and pre-selects one recommended option. */
   await page.click('.sxc-other > summary');
-  const cards = await page.evaluate(() => [...document.querySelectorAll('.sxc-opt')].map((o) => ({ id: o.dataset.model, text: o.querySelector('.sxc-pick').textContent, on: o.querySelector('.sxc-pick').getAttribute('aria-checked') })));
+  await page.waitForSelector('.sxc-ladder .sxc-opt');
+  await page.waitForFunction(() => LE.bgRemove.models().filter((m) => m.listed).length === document.querySelectorAll('.sxc-opt').length);
+  const cards = await page.evaluate(() => [...document.querySelectorAll('.sxc-opt')].map((o) => ({ id: o.dataset.model, text: o.querySelector('.sxc-otext').textContent, on: o.querySelector('.sxc-pick').getAttribute('aria-checked') })));
   h.assert.equal(cards.length, await page.evaluate(() => LE.bgRemove.models().filter((m) => m.listed).length));
   h.assert(cards.every((c) => !/int8|u2net|onnx|RAM/i.test(c.text)), 'Jargon on a card: ' + cards.map((c) => c.text).join(' | '));
-  h.assert(cards.every((c) => /\d+ MB, one time/.test(c.text) && /(Good|Better|Best)/.test(c.text)), 'Download line or quality missing');
-  h.assert.equal(cards.filter((c) => /Recommended for you/.test(c.text)).length, 1);
-  h.assert.equal(cards.filter((c) => c.on === 'true')[0].id, 'u2netp');
+  h.assert(cards.every((c) => /download \(about \d+ MB\)|Not available on this copy|graphics card/.test(c.text)), 'Download line missing: ' + cards.map((c) => c.text).join(' | '));
+  h.assert(cards.filter((c) => /Quick|Better|Best/.test(c.text)).length >= 3, 'Quality ladder missing');
+  h.assert.equal(cards.filter((c) => /Recommended for this device/.test(c.text)).length, 1);
+  /* Quality first: the pre-selected option is the best one this device runs well within the automatic limit. */
+  const expected = await page.evaluate(() => LE.support.checkAsync('cutout.detailed').then((r) => r.status === 'ok' ? 'u2net-int8' : 'u2netp'));
+  h.assert.equal(cards.filter((c) => c.on === 'true')[0].id, expected);
+  h.assert.equal(await page.evaluate(() => LEStudioCutout.state().recommended), expected);
   const urls = await page.evaluate(() => performance.getEntriesByType('resource').map((r) => r.name));
-  h.assert(!urls.some((u) => /\.onnx|\.wasm/.test(u)), 'Model fetched before the button was pressed');
+  h.assert(!urls.some((u) => /\.onnx|\.wasm/.test(u) && !/\/models\/pro\//.test(u)), 'Model fetched before the button was pressed');
   await page.click('.sxc-go');
-  await page.waitForFunction(() => LEStudio.scene.layers().some((x) => x.cutout), null, { timeout: 60000 });
+  h.assert(!(await page.$('.sxc-confirm')), 'A download within the automatic limit must not ask');
+  /* Downloaded quietly and kept (the run itself is covered by the next case; cancel it to keep this one quick). */
+  await page.evaluate(async (id) => { for (let i = 0; i < 400 && !(window.LE.bgRemove && await LE.bgRemove.isCached(id)); i++) await new Promise((r) => setTimeout(r, 200)); }, expected);
+  await page.evaluate(() => LEStudioCutout.cancel());
   const cached = await page.evaluate(async () => (await LE.bgRemove.cachedModels()).map((m) => m.id));
-  h.assert(cached.indexOf('u2netp') >= 0, 'Model not cached: ' + cached.join(','));
+  h.assert(cached.indexOf(expected) >= 0, 'Model not cached: ' + cached.join(','));
   h.assert.noErrors(page);
 };
 
 cases['cut-out stores a mask asset, is transparent outside and toggles back to the original'] = async ({ browser, base, h }) => {
   const page = await studioWithPhoto(browser, base, h, 'desktop', 'arch-01');
   const undoBefore = await page.evaluate(() => LEStudio.scene._hist.undo.length);
-  const res = await page.evaluate(() => LEStudioCutout.run(null, { quiet: true }));
+  const res = await page.evaluate(() => LEStudioCutout.run(null, { quiet: true, model: 'u2netp' }));
   h.assert(res && res.asset, 'No result');
   const l = await imageLayer(page);
   h.assert(l.cutout && l.cutout.asset === res.asset && l.cutout.enabled === true && l.cutout.model === 'u2netp', 'cutout field: ' + JSON.stringify(l.cutout));
@@ -94,7 +104,7 @@ cases['cut-out stores a mask asset, is transparent outside and toggles back to t
 
 cases['the shadow follows the subject, and backdrops are normal layers'] = async ({ browser, base, h }) => {
   const page = await studioWithPhoto(browser, base, h, 'desktop', 'arch-01');
-  await page.evaluate(() => LEStudioCutout.run(null, { quiet: true }));
+  await page.evaluate(() => LEStudioCutout.run(null, { quiet: true, model: 'u2netp' }));
   const r = await page.evaluate(async () => {
     const l = LEStudio.one();
     LEStudio.patch(l.id, { shadow: { color: 'rgba(0,0,0,.9)', blur: 0, x: 30, y: 0 } });
@@ -116,7 +126,7 @@ cases['the shadow follows the subject, and backdrops are normal layers'] = async
 
 cases['refine brush erases and restores the mask, and commits one undo step'] = async ({ browser, base, h }) => {
   const page = await studioWithPhoto(browser, base, h, 'desktop', 'arch-01');
-  await page.evaluate(() => LEStudioCutout.run(null, { quiet: true }));
+  await page.evaluate(() => LEStudioCutout.run(null, { quiet: true, model: 'u2netp' }));
   const first = (await imageLayer(page)).cutout.asset;
   const undoBefore = await page.evaluate(() => LEStudio.scene._hist.undo.length);
   const centre = await page.evaluate(() => { const l = LEStudio.one(); return [l.x + l.w / 2, l.y + l.h / 2, l.x + 6, l.y + 6]; });
@@ -148,7 +158,7 @@ cases['refine brush erases and restores the mask, and commits one undo step'] = 
 
 cases['.leproject round trip keeps the cut-out and its mask'] = async ({ browser, base, h }) => {
   const page = await studioWithPhoto(browser, base, h, 'desktop', 'arch-01');
-  await page.evaluate(() => LEStudioCutout.run(null, { quiet: true }));
+  await page.evaluate(() => LEStudioCutout.run(null, { quiet: true, model: 'u2netp' }));
   await page.evaluate(() => { const l = LEStudio.one(); LEStudio.patch(l.id, { cutout: { feather: 3, outline: { width: 9, color: '#ff4d6d' } } }); });
   const r = await page.evaluate(async () => {
     LEStudio.syncProject();
@@ -189,7 +199,7 @@ cases['a photo with no clear subject gets a kind message and no change'] = async
   const before = JSON.stringify(await h.doc(page));
   const assetsBefore = await page.evaluate(() => Object.keys(LEStudio.S.project.assets).length);
   await page.evaluate(() => LEStudio.openPanel('cutout'));
-  const res = await page.evaluate(() => LEStudioCutout.run(null, { quiet: true }));
+  const res = await page.evaluate(() => LEStudioCutout.run(null, { quiet: true, model: 'u2netp' }));
   h.assert.equal(res, null);
   const st = await page.evaluate(() => LEStudioCutout.state());
   h.assert(st.error && st.error.code === 'no-subject', 'Expected no-subject, got ' + JSON.stringify(st.error));
@@ -204,7 +214,7 @@ cases['a photo with no clear subject gets a kind message and no change'] = async
 cases['cancel mid-run leaves the document untouched'] = async ({ browser, base, h }) => {
   const page = await studioWithPhoto(browser, base, h, 'desktop', 'people-07');
   const before = JSON.stringify(await h.doc(page));
-  await page.evaluate(() => { LEStudio.openPanel('cutout'); window.__p = LEStudioCutout.run(null, { quiet: true }); });
+  await page.evaluate(() => { LEStudio.openPanel('cutout'); window.__p = LEStudioCutout.run(null, { quiet: true, model: 'u2netp' }); });
   await page.waitForFunction(() => LEStudioCutout.state().running && /Finding|Starting|Loading|Downloading/.test(LEStudioCutout.state().stage || ''));
   await page.waitForSelector('#sxc-progress');
   await page.click('#sx-panel-body .btn:has-text("Cancel")');
@@ -214,7 +224,7 @@ cases['cancel mid-run leaves the document untouched'] = async ({ browser, base, 
   h.assert.equal(JSON.stringify(await h.doc(page)), before, 'Document changed after cancel');
   h.assert.equal(await page.evaluate(() => Object.keys(LEStudio.S.project.assets).filter((id) => /mask/.test(LEStudio.S.project.assets[id].name)).length), 0);
   /* A second run after cancelling works (the worker restarts from Cache Storage). */
-  const again = await page.evaluate(() => LEStudioCutout.run(null, { quiet: true }));
+  const again = await page.evaluate(() => LEStudioCutout.run(null, { quiet: true, model: 'u2netp' }));
   h.assert(again && again.asset, 'Run after cancel failed');
   h.assert.noErrors(page);
 };
@@ -224,13 +234,13 @@ cases['download failure and out-of-memory are explained, nothing changes'] = asy
   await page.route('**/assets/models/u2netp.onnx', (r) => r.abort('internetdisconnected'));
   const before = JSON.stringify(await h.doc(page));
   await page.evaluate(() => LEStudio.openPanel('cutout'));
-  await page.evaluate(() => LEStudioCutout.run(null, { quiet: true }));
+  await page.evaluate(() => LEStudioCutout.run(null, { quiet: true, model: 'u2netp' }));
   h.assert.equal((await page.evaluate(() => LEStudioCutout.state().error || {})).code, 'download');
   h.assert(/Download did not finish/.test(await page.textContent('#sx-panel-body')), 'Download message missing');
   h.assert.equal(JSON.stringify(await h.doc(page)), before);
   /* Simulated out-of-memory from the engine (both tries). */
   await page.evaluate(() => { LE.bgRemove.cutout = () => Promise.reject(Object.assign(new Error('out of memory'), { code: 'memory' })); });
-  await page.evaluate(() => LEStudioCutout.run(null, { quiet: true }));
+  await page.evaluate(() => LEStudioCutout.run(null, { quiet: true, model: 'u2netp' }));
   h.assert.equal((await page.evaluate(() => LEStudioCutout.state().error || {})).code, 'memory');
   h.assert(/Not enough memory/.test(await page.textContent('#sx-panel-body')), 'Memory message missing');
   h.assert.equal(JSON.stringify(await h.doc(page)), before);
@@ -239,15 +249,17 @@ cases['download failure and out-of-memory are explained, nothing changes'] = asy
 
 cases['phone: one tap, refine with the brush, no sideways scroll at 360 px'] = async ({ browser, base, h }) => {
   const page = await studioWithPhoto(browser, base, h, 'small', 'people-07');
-  await page.tap('.sxc-tb');
+  await page.evaluate(() => LEStudio.openPanel('cutout'));
   await page.waitForSelector('.sxc-go');
   await page.waitForTimeout(500);
   h.assert(await h.noOverflow(page), 'Sideways scroll on the intro');
   const go = await page.$('.sxc-go');
   const gb = await go.boundingBox();
   h.assert(gb.height >= 44 && gb.y + gb.height <= 740, 'Gold button should be visible and 44px: ' + JSON.stringify(gb));
-  await page.tap('.sxc-go');
-  await page.waitForFunction(() => LEStudio.scene.layers().some((x) => x.cutout), null, { timeout: 60000 });
+  await page.evaluate(() => LEStudio.closePanel());
+  /* One tap on the toolbar does it (download policy: no question for a small download). */
+  await page.tap('.sxc-tb');
+  await page.waitForFunction(() => LEStudio.scene.layers().some((x) => x.cutout), null, { timeout: 90000 });
   await page.waitForSelector('.sxc-refine');
   h.assert(await h.noOverflow(page), 'Sideways scroll after the cut-out');
   await page.tap('.sxc-refine');
@@ -289,16 +301,17 @@ cases['a second file can add options to the chooser through the registry'] = asy
     LEStudio.openPanel('cutout');
   });
   await page.click('.sxc-other > summary');
-  await page.waitForSelector('.sxc-opt[data-model="test-pro"]');
+  await page.waitForSelector('.sxc-opt[data-model="test-pro"]', { state: 'attached' });   /* folded under "Not available on this copy" */
   const r = await page.evaluate(() => ({
     text: document.querySelector('.sxc-opt[data-model="test-pro"]').textContent,
     rec: LEStudioCutout.state().recommended,
     defs: (window.LE_SUPPORT_DEFS || []).filter((d) => /^cutout\./.test(d.id)).map((d) => d.id)
   }));
-  h.assert(/Finest edges/.test(r.text) && /Best for hair and fur/.test(r.text) && /Takes a while/.test(r.text) && /123 MB, one time|120 MB, one time/.test(r.text), 'Card text: ' + r.text);
-  h.assert.equal(r.rec, 'u2netp');
+  /* Its file is not on this server: shown as such (same-origin HEAD probe), not as a failure. */
+  h.assert(/Finest edges/.test(r.text) && /Best for hair and fur/.test(r.text) && /Not available on this copy of the app/.test(r.text), 'Card text: ' + r.text);
+  h.assert(['u2netp', 'u2net-int8'].indexOf(r.rec) >= 0, 'Recommendation: ' + r.rec);
   h.assert(['cutout.fast', 'cutout.detailed', 'cutout.people', 'cutout.test-pro'].every((id) => r.defs.indexOf(id) >= 0), 'Support defs: ' + r.defs.join(','));
-  h.assert.noErrors(page);
+  h.assert.noErrors(page, [/404/]);   /* the same-origin HEAD probe for the missing file */
 };
 
 module.exports = cases;

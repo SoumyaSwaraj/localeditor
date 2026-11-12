@@ -1,0 +1,73 @@
+{
+ "family": "Plainfield",
+ "slug": "plainfield",
+ "source": "localeditor",
+ "version": "1.000",
+ "intent": "trust",
+ "feel": [
+  "calm",
+  "trust"
+ ],
+ "description": "Calm and wide. Good for prices and menus.",
+ "uses": [
+  "Price lists",
+  "Menus",
+  "Business cards"
+ ],
+ "concept": "Calm wide grotesque: wide, even, airy, horizontal terminals, extra tracking. Quiet confidence.",
+ "category": "sans",
+ "weights": [
+  400,
+  700
+ ],
+ "italic": false,
+ "license": "LocalEditor-Proprietary (pending owner decision)",
+ "files": {
+  "400": {
+   "woff2": "assets/fonts/originals/plainfield/plainfield-400.woff2",
+   "woff": "assets/fonts/originals/plainfield/plainfield-400.woff"
+  },
+  "700": {
+   "woff2": "assets/fonts/originals/plainfield/plainfield-700.woff2",
+   "woff": "assets/fonts/originals/plainfield/plainfield-700.woff"
+  }
+ },
+ "bytes": {
+  "400": {
+   "woff2": 16628,
+   "woff": 21268
+  },
+  "700": {
+   "woff2": 16960,
+   "woff": 21756
+  }
+ },
+ "metrics": {
+  "unitsPerEm": 1000,
+  "ascender": 950,
+  "descender": -250,
+  "lineGap": 0,
+  "capHeight": 700,
+  "xHeight": 510
+ },
+ "parameters": {
+  "regular": {
+   "st": 80,
+   "ratio": 0.9,
+   "wid": 1.18,
+   "xh": 510,
+   "sq": 0.62,
+   "aperture": 0.45,
+   "term": "h",
+   "spacing": 1.1,
+   "track": 10,
+   "join": 0.86
+  },
+  "bold": {
+   "st": 120,
+   "ratio": 0.86,
+   "wid": 1.22,
+   "join": 0.76
+  }
+ }
+}

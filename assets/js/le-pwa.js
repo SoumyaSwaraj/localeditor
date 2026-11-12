@@ -881,7 +881,9 @@
     [/^le-recent-colors$|^le-studio-colors$/, 'Recent colours'],
     [/^le-convert-/, 'Convert to PDF preferences'],
     [/^le-pwa-limits$/, 'Storage limits you set here'],
-    [/^le-pwa/, 'Install and storage reminders']
+    [/^le-pwa/, 'Install and storage reminders'],
+    [/^le-downloads-usage$/, 'What you use, for offline downloads', 'Counts of the features you open, kept on this device to decide what to download next.'],
+    [/^le-downloads$/, 'Offline download choices']
   ];
   function settingsRows() {
     var out = [];
@@ -1324,6 +1326,7 @@
         toggleRow('autoClean', 'Keep to these limits automatically', 'Checks a few times a day, quietly.', L.autoClean) +
         toggleRow('memoryGuard', 'Free editor memory in the background', 'When you switch away, big images are let go and redrawn when you return.', L.memoryGuard) +
       '</div></section>' +
+      (window.LE && LE.downloads ? '<section class="lp-sec" id="downloads" data-lp-downloads></section>' : '') +
       '<section class="lp-sec lp-safe"><h3>Keep my work safe</h3>' +
         '<div class="lp-persist" data-lp-persist>' + persistHTML(r.persisted) + '</div>' +
         '<div class="lp-row-btns"><button type="button" class="lp-btn" data-lp-backup>' + ICON.install + 'Back up everything</button><button type="button" class="lp-btn lp-danger-ghost" data-lp-erase>Erase everything on this device</button></div>' +
@@ -1331,6 +1334,8 @@
       '</section>' +
       '<section class="lp-sec"><h3>This device</h3>' + memoryHTML(mem, r) + '</section>';
     bindStorage(d, body, r);
+    var dl = body.querySelector('[data-lp-downloads]');
+    if (dl) LE.downloads.renderSettings(dl);
   }
   function tierName(t) { return t === 'older' ? 'device (lighter settings to save memory)' : t === 'modern' ? 'phone or tablet' : 'computer'; }
   function catHTML(c) {
