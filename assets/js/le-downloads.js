@@ -622,10 +622,11 @@
         if (ps.state === 'done' && (id === 'basic' || id === 'basic+models' || id === 'all') && window.LEPwa && LEPwa.updateReady && LEPwa.updateReady()) ps.state = 'update';
         ps.missing = r.filter(function (x) { return x !== 'ok'; }).length;
       });
-    })).then(function () { emit('packs', packs()); return packs(); });
+    })).then(refreshParts).then(function () { emit('packs', packs()); return packs(); });
   }
   function packProgress(d) {
     var id = String(d.id || '');
+    if (id.indexOf('part:') === 0) { partProgress(id, d); return; }
     if (id.indexOf('pack:') !== 0) return;
     var pid = id.slice(5);
     var ps = packState[pid] = packState[pid] || {};
@@ -681,6 +682,7 @@
       var ps = packState[id] = packState[id] || {};
       ps.state = 'downloading';
       emit('packs', packs());
+      if (holdsBasic(id) && !keep().all) setKeep(OPTIONAL.slice());
       var files = filesOf(id);
       var expertOnDemand = manifest.decision && !manifest.decision.expertWithBasic;
       var marker = (id === 'expert' || id === 'all') && expertOnDemand;
@@ -768,6 +770,189 @@
     return Promise.all(jobs).then(function () { if (packState[id]) packState[id].state = 'none'; return refreshPacks(); });
   }
 
+  /* ---------- App parts: what this device keeps offline (docs/INSTALL.md) ----------
+     packs.json splits the Basic editor into core (always kept), design, pdf and tools. A studio installed on its own keeps
+     only its part plus the core; the suite, or a plain browser visit, keeps all four, as before. The choice lives in the
+     cache le-packs-v1 at ./__packs/app (the worker reads it when a new version downloads, so it survives updates) and is
+     mirrored in localStorage le-downloads-keep for instant reads. No marker means "everything". */
+  var OPTIONAL = ['design', 'pdf', 'tools'];
+  var KEEP_KEY = 'le-downloads-keep';
+  var partState = {};
+  function keepOf(list) { list = list || []; return OPTIONAL.filter(function (p) { return list.indexOf(p) >= 0; }); }
+  /* { keep: [parts], all, chosen, app }: chosen stays false until a studio was installed on its own or a part was changed. */
+  function keep() {
+    var k = lsGet(KEEP_KEY, null);
+    var list = k && Array.isArray(k.keep) ? keepOf(k.keep) : OPTIONAL.slice();
+    return { keep: list, all: list.length === OPTIONAL.length, chosen: !!(k && k.chosen), app: (k && k.app) || null, at: (k && k.at) || 0 };
+  }
+  function markerUrl() { return abs('__packs/app'); }
+  function setKeep(list, opts) {
+    opts = opts || {};
+    var next = keepOf(list);
+    var all = next.length === OPTIONAL.length;
+    var rec = { keep: next, chosen: true, app: opts.app || keep().app || null, at: Date.now() };
+    lsSet(KEEP_KEY, rec);
+    var write = typeof caches === 'undefined' ? Promise.resolve() : caches.open(CACHES.packs).then(function (c) {
+      return all ? c.delete(markerUrl()) : c.put(markerUrl(), new Response(JSON.stringify({ app: rec.app, keep: next, at: rec.at }), { headers: { 'content-type': 'application/json', 'x-le-at': String(rec.at) } }));
+    }).catch(function () {});
+    return write.then(function () { emit('keep', keep()); return refreshPacks(); }).then(function () { return keep(); });
+  }
+  /* The cache is the truth ("Reset all settings" clears localStorage but not the marker): copy it back into the mirror. */
+  function syncKeep() {
+    if (typeof caches === 'undefined') return Promise.resolve(keep());
+    return caches.open(CACHES.packs).then(function (c) { return c.match(markerUrl()); }).then(function (r) { return r ? r.json() : null; }).then(function (j) {
+      var k = lsGet(KEEP_KEY, null);
+      if (j && Array.isArray(j.keep)) {
+        if (!k || keepOf(k.keep).join() !== keepOf(j.keep).join()) lsSet(KEEP_KEY, { keep: keepOf(j.keep), chosen: true, app: j.app || null, at: j.at || Date.now() });
+      } else if (k && keepOf(k.keep).length < OPTIONAL.length) lsSet(KEEP_KEY, { keep: OPTIONAL.slice(), chosen: true, app: k.app || null, at: Date.now() });
+      emit('keep', keep());
+      return keep();
+    }).catch(function () { return keep(); });
+  }
+  function partDef(id) { return manifest && manifest.parts ? manifest.parts[id] || null : null; }
+  function appDef(id) { return manifest && manifest.apps ? manifest.apps[id] || null : null; }
+  function partFiles(id) { var p = partDef(id); return p ? fileRows(p.files || []) : []; }
+  function holdsBasic(id) { var b = filesOf('basic'); return !!(b.length && filesOf(id).some(function (f) { return f.u === b[0].u; })); }
+  /* What is really stored now, part by part (any cache, like the packs). */
+  function refreshParts() {
+    if (!manifest || !manifest.parts || typeof caches === 'undefined') return Promise.resolve();
+    return Promise.all(Object.keys(manifest.parts).map(function (id) {
+      var files = partFiles(id);
+      return Promise.all(files.map(function (f) { return caches.match(abs(f.u)).then(function (r) { return r ? f.raw || 0 : -1; }, function () { return -1; }); })).then(function (r) {
+        var ps = partState[id] = partState[id] || {};
+        var have = r.filter(function (x) { return x >= 0; });
+        ps.files = files.length;
+        ps.stored = have.length;
+        ps.bytes = have.reduce(function (a, b) { return a + b; }, 0);
+        if (ps.state !== 'downloading') ps.state = have.length === files.length ? 'done' : have.length ? 'partial' : 'none';
+      });
+    }));
+  }
+  /* parts() -> [{ id, name, bytes (download), raw (on the device), kept, always, state: done|partial|none|downloading, stored, add(), remove() }] */
+  function parts() {
+    if (!manifest || !manifest.parts) return [];
+    var k = keep();
+    return ['core'].concat(OPTIONAL).filter(function (id) { return manifest.parts[id]; }).map(function (id) {
+      var p = manifest.parts[id], ps = partState[id] || {};
+      return {
+        id: id, name: p.name, bytes: p.transfer, raw: p.raw, files: p.count, always: id === 'core', kept: id === 'core' || k.keep.indexOf(id) >= 0,
+        state: ps.state || 'none', stored: ps.bytes || 0,
+        add: function () { return addPart(id); },
+        remove: function () { return removePart(id); }
+      };
+    });
+  }
+  /* apps() -> the three installable apps with their parts and sizes (download and on the device), from packs.json. */
+  function apps() {
+    if (!manifest || !manifest.apps) return [];
+    return ['suite', 'design', 'pdf'].filter(function (id) { return manifest.apps[id]; }).map(function (id) {
+      var a = manifest.apps[id];
+      return { id: id, parts: a.parts, bytes: a.transfer, raw: a.raw, manifest: a.manifest, scope: a.scope, start: a.start };
+    });
+  }
+  /* "Keep offline" next to a part (the row showed its size): keep it from now on and download what is missing now. */
+  function addPart(id) {
+    if (OPTIONAL.indexOf(id) < 0) return Promise.resolve({ ok: true });
+    return setKeep(keep().keep.concat(id)).then(function () { return fetchPart(id, true); });
+  }
+  function keepEverything() {
+    return setKeep(OPTIONAL.slice()).then(function () {
+      return Promise.all(OPTIONAL.filter(function (p) { return (partState[p] || {}).state !== 'done'; }).map(function (p) { return fetchPart(p, true); }));
+    });
+  }
+  function fetchPart(id, confirmed) {
+    var p = partDef(id);
+    if (!p) return Promise.resolve({ ok: false, why: 'unknown' });
+    var ps = partState[id] = partState[id] || {};
+    return ready.then(function () {
+      return request({ id: 'part:' + id, name: p.name, bytes: p.transfer, kind: 'pack', reason: 'Keeps it working offline', confirmed: !!confirmed, quiet: !confirmed });
+    }).then(function (r) {
+      if (!r.ok) return { ok: false, why: r.why };
+      return missing(partFiles(id)).then(function (need) {
+        if (!need.length) return refreshPacks().then(function () { return { ok: true }; });
+        ps.state = 'downloading';
+        emit('packs', packs());
+        return viaWorkerOrPage('part:' + id, p.name, need, false).then(function (res) {
+          ps.state = null;
+          if (res.state === 'done') logDownload({ id: 'part:' + id, name: p.name, bytes: p.transfer, why: confirmed ? 'You chose to keep it offline' : 'Part of the app you installed' });
+          return refreshPacks().then(function () { return { ok: res.state === 'done', why: res.state }; });
+        }, function (err) { ps.state = null; refreshPacks(); return { ok: false, why: 'failed', error: String(err && err.message || err) }; });
+      });
+    });
+  }
+  function partProgress(id, d) {
+    var part = id.slice(5), ps = partState[part] = partState[part] || {};
+    var t = track(id, { name: (partDef(part) || {}).name || 'Offline files', bytes: d.total, cancel: function () { message({ type: 'le-pack-cancel', id: id }); } });
+    t.progress(d.loaded, d.total);
+    if (d.state === 'running') { ps.state = 'downloading'; emit('packs', packs()); return; }
+    if (d.state === 'done') t.done(); else t.fail(new Error('Some files did not download'));
+  }
+  /* "Remove the PDF studio's offline files": out of this version now, and later versions skip them. The core always stays. */
+  function removePart(id) {
+    if (OPTIONAL.indexOf(id) < 0) return Promise.resolve({ ok: false, why: 'core' });
+    return setKeep(keep().keep.filter(function (x) { return x !== id; })).then(function () { return dropFiles(partFiles(id)); }).then(function (n) {
+      var s = st();
+      save({ log: s.log.filter(function (x) { return x.id !== 'part:' + id; }) });
+      return refreshPacks().then(function () { return { ok: true, freed: n }; });
+    });
+  }
+  function dropFiles(files) {
+    if (typeof caches === 'undefined' || !files.length) return Promise.resolve(0);
+    return appCache().then(function (name) {
+      return caches.open(name).then(function (c) {
+        return Promise.all(files.map(function (f) { return c.delete(abs(f.u)).then(function (gone) { return gone ? f.raw || 0 : 0; }); }));
+      });
+    }).then(function (l) { return l.reduce(function (a, b) { return a + b; }, 0); }).catch(function () { return 0; });
+  }
+  /* An app was installed (le-pwa.js calls this, also on the first launch of an installed studio). The suite keeps everything;
+     a studio installed first keeps only its own part; a second app adds its part to what is kept. Never asks anything:
+     what the new app needs downloads quietly under the usual rules (LE.downloads.request, quiet). */
+  function chooseApp(app) {
+    return ready.then(function () {
+      var a = appDef(app);
+      var want = app === 'suite' || !a ? OPTIONAL.slice() : keepOf(a.parts);
+      var k = keep();
+      var next = k.chosen ? keepOf(k.keep.concat(want)) : want;
+      var dropped = k.keep.filter(function (p) { return next.indexOf(p) < 0; });
+      return setKeep(next, { app: app }).then(function () {
+        return Promise.all(dropped.map(function (p) { return dropFiles(partFiles(p)); }));
+      }).then(function () {
+        return Promise.all(next.filter(function (p) { return (partState[p] || {}).state !== 'done'; }).map(function (p) { return fetchPart(p, false).catch(function () {}); }));
+      }).then(function () { return refreshPacks(); }).then(function () { return keep(); });
+    });
+  }
+  var PART_NAMES = { design: 'Design studio', pdf: 'PDF studio', tools: 'tools' };
+  function keepSummary() {
+    var k = keep();
+    var inst = window.LEPwa && LEPwa.installedApps ? LEPwa.installedApps() : [];
+    var label = k.all ? 'Everything is kept offline' : 'Kept offline: ' + (k.keep.length ? k.keep.map(function (p) { return PART_NAMES[p]; }).join(' and ') + ' only' : 'the shared files only');
+    if (inst.length && inst.indexOf('suite') < 0) label = 'Installed: ' + inst.map(function (a) { return PART_NAMES[a]; }).join(' and ') + (inst.length === 1 ? ' only' : '') + (k.all ? ' · everything kept offline' : '');
+    else if (inst.length) label = 'Installed: the whole LocalEditor' + (k.all ? '' : ' · ' + label.toLowerCase());
+    var on = parts().filter(function (p) { return p.kept; }).reduce(function (a, p) { return a + p.raw; }, 0);
+    return label + (on ? ' · about ' + mbWhole(on) + ' on this device' : '');
+  }
+  function partRowHTML(p) {
+    var done = p.always || p.state === 'done';
+    var label;
+    if (p.always) label = 'Always kept: every page needs these';
+    else if (p.state === 'downloading') label = 'Downloading';
+    else if (p.kept) label = done ? 'On this device' : 'Kept offline; finishes downloading when online';
+    else label = done ? 'On this device until the next update' : 'Works online; saved as you use it';
+    var btn = '';
+    if (!p.always && p.state !== 'downloading') {
+      if (!p.kept || !done) btn = '<button type="button" class="lp-btn lp-btn-sm" data-ld-part-add="' + esc(p.id) + '">' + (p.kept ? 'Download' : 'Keep offline') + '</button>';
+      else btn = '<button type="button" class="lp-link" data-ld-part-rm="' + esc(p.id) + '" aria-label="Remove the offline files of the ' + esc(p.name) + '">Remove</button>';
+    }
+    var state = p.kept && done ? 'done' : p.state === 'downloading' ? 'downloading' : 'none';
+    return '<li class="ld-pack ld-part" data-ld-part="' + esc(p.id) + '" data-state="' + state + '"><div><b>' + esc(p.name) + ' <span class="ld-mb">' + mbWhole(p.bytes) + '</span></b>' +
+      '<small class="ld-state">' + (state === 'done' ? '<i class="ld-ok" aria-hidden="true"></i>' : '') + esc(label) + '</small></div>' + btn + '</li>';
+  }
+  function partsHTML() {
+    if (!manifest || !manifest.parts) return '';
+    return '<h4>Kept offline</h4><p class="ld-keep" data-ld-keep>' + esc(keepSummary()) + '</p><ul class="ld-packs ld-parts">' + parts().map(partRowHTML).join('') + '</ul>' +
+      (keep().all ? '' : '<div class="lp-row-btns"><button type="button" class="lp-btn lp-btn-sm" data-ld-part-all>Keep everything offline</button></div>');
+  }
+
   /* ---------- Settings: one place, in the studio's Settings and in the storage manager ---------- */
   var STATE_TEXT = { none: 'Not downloaded', downloading: 'Downloading', done: 'Available offline', update: 'Update available' };
   function packRowHTML(p) {
@@ -807,6 +992,7 @@
         '<label class="ld-mode"><input type="radio" name="ld-mode" value="auto"' + (m === 'auto' ? ' checked' : '') + '><span><b>Automatically, as I use them</b><small>Things download quietly when you use a feature or are likely to next.</small></span></label>' +
         '<label class="ld-mode"><input type="radio" name="ld-mode" value="ask"' + (m === 'ask' ? ' checked' : '') + '><span><b>Always ask first</b><small>One short question the first time each feature needs a download.</small></span></label>' +
       '</div>' +
+      '<div data-ld-parts>' + partsHTML() + '</div>' +
       '<h4>Download now</h4><ul class="ld-packs">' + (manifest ? packs().map(packRowHTML).join('') : '<li class="ld-empty">Sizes are not available right now.</li>') + '</ul>' +
       '<div data-ld-pending>' + pendingHTML() + '</div>' +
       '<h4>What downloaded and why</h4><div data-ld-log>' + logHTML() + '</div>' +
@@ -827,7 +1013,12 @@
           var id = b.getAttribute('data-ld-ok'), it = lastItems[id] || st().wants[id] || { id: id };
           b.disabled = true;
           request(Object.assign({}, it, { confirmed: true })).then(function (r) { if (r.ok) { want(it); scheduleBackground(0); } renderSettings(el); });
-        } else if (b.hasAttribute('data-ld-forget')) { var keepMode = mode(); forget(); save({ mode: keepMode }); renderSettings(el); }
+        } else if (b.hasAttribute('data-ld-part-add')) { b.disabled = true; addPart(b.getAttribute('data-ld-part-add')); }
+        else if (b.hasAttribute('data-ld-part-rm')) {
+          if (!b.classList.contains('is-sure')) { b.classList.add('is-sure'); b.textContent = 'Tap again to remove'; return; }
+          b.disabled = true; removePart(b.getAttribute('data-ld-part-rm'));
+        } else if (b.hasAttribute('data-ld-part-all')) { b.disabled = true; keepEverything(); }
+        else if (b.hasAttribute('data-ld-forget')) { var keepMode = mode(); forget(); save({ mode: keepMode }); renderSettings(el); }
       });
       var offs = [on('packs', function () { if (!el.isConnected) return offs.forEach(function (f) { f(); }); repaintPacks(el); }), on('log', function () { if (el.isConnected) el.querySelector('[data-ld-log]').innerHTML = logHTML(); }),
         on('deferred', function () { if (el.isConnected) el.querySelector('[data-ld-pending]').innerHTML = pendingHTML(); })];
@@ -836,7 +1027,9 @@
     return el;
   }
   function repaintPacks(el) {
-    var ul = el.querySelector('.ld-packs');
+    var pt = el.querySelector('[data-ld-parts]');
+    if (pt && manifest && manifest.parts && !pt.querySelector('.is-sure')) pt.innerHTML = partsHTML();
+    var ul = el.querySelector('.ld-packs:not(.ld-parts)');
     if (!ul || !manifest) return;
     var focus = document.activeElement && ul.contains(document.activeElement) ? document.activeElement.closest('[data-ld-pack]') : null;
     var fid = focus && focus.getAttribute('data-ld-pack');
@@ -904,6 +1097,7 @@
       }).catch(function () {});
     }
     if (window.LEPwa) wirePwa(); else window.addEventListener('le-pwa-ready', wirePwa);
+    syncKeep();
     try { pageSignal(); } catch (e) {}
     if (/[?&]downloads=1(&|$)/.test(location.search) || location.hash === '#downloads') ready.then(open);
     window.addEventListener('online', function () { scheduleBackground(); });
@@ -918,7 +1112,7 @@
       P.describeModel('ocr-eng', { name: 'Text recognition: English', about: 'Language data for reading English text' });
     }
     if (P.on) {
-      P.on('erased', function () { lastItems = {}; packState = {}; budgetUse.at = 0; });
+      P.on('erased', function () { lastItems = {}; packState = {}; partState = {}; budgetUse.at = 0; });
       P.on('storage-change', function () { budgetUse.at = 0; refreshPacks(); });
     }
   }
@@ -931,6 +1125,8 @@
     used: used, want: want, pending: pending, forget: forget, log: function () { return st().log.slice(); }, usage: function () { return usage().f; },
     on: on, open: open, renderSettings: renderSettings, studioRow: studioRow,
     ready: ready.then(function () { return packs(); }), refresh: refreshPacks, manifest: function () { return manifest; },
+    /* App parts: what this device keeps offline (docs/INSTALL.md) */
+    parts: parts, apps: apps, keep: keep, setKeep: setKeep, chooseApp: chooseApp, addPart: addPart, removePart: removePart, keepEverything: keepEverything, keepSummary: keepSummary,
     connection: connection, autoLimit: autoLimit,
     /* Tests and support: run the background planner now (still obeys mode, connection and battery). */
     _background: function () { lastInput = 0; return background(); },

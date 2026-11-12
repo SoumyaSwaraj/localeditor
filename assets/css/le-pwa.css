@@ -278,3 +278,25 @@ body.sx-body .lp-notice { bottom: calc(76px + env(safe-area-inset-bottom)); }
   opacity: 0; pointer-events: none; transition: opacity 0.18s, transform 0.18s;
 }
 .lp-toast.show { opacity: 1; transform: translateX(-50%); }
+
+/* ---------- Install chooser: everything, or one studio (docs/INSTALL.md) ---------- */
+.lp-apps { display: grid; gap: 8px; margin-top: 4px; }
+.lp-app {
+  display: flex; gap: 12px; align-items: flex-start; min-height: 44px; padding: 12px;
+  border: 1px solid var(--lp-line); border-radius: var(--r-md, 14px); cursor: pointer;
+}
+.lp-app:has(input:checked) { border-color: var(--selected-edge, var(--primary)); background: var(--selected-bg, var(--lp-soft)); }
+.lp-app:has(input:disabled) { cursor: default; opacity: 0.7; }
+.lp-app input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--primary); }
+.lp-app input:focus-visible { outline: 2px solid var(--lp-focus); outline-offset: 2px; }
+.lp-app-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lp-app-tx b { font-size: 15px; font-weight: 650; }
+.lp-app-tx small { color: var(--lp-muted); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.lp-app-tx .lp-app-mb { color: var(--lp-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.lp-rec { margin-left: 6px; font-style: normal; font-size: 12px; font-weight: 600; color: var(--lp-accent); white-space: nowrap; }
+.lp-how { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--lp-line); }
+.lp-how[hidden] { display: none; }
+.lp-choose-msg:empty { display: none; }
+/* Downloads settings: what this device keeps offline (rendered by le-downloads.js; kept here with the install styles). */
+.ld-keep { margin: 0 0 4px; font-size: 14px; font-weight: 600; color: var(--lp-ink); overflow-wrap: anywhere; }
+.lp-nw { white-space: nowrap; }

@@ -31,7 +31,7 @@ What the script does, in order:
 
 1. Runs `node scripts/build.js`. This writes a fresh `sw.js` with a new version name. **This is what makes installed copies of the app notice the update**, so never skip it on a real deploy.
 2. If `assets/fonts/cjk/` is missing, runs `node scripts/fetch-fonts.js --cjk` once (Chinese, Japanese and Korean fonts, about 17 MB, kept out of git; versions pinned in `scripts/fonts/lock.json`, see `docs/FONTS.md`). Without them those four families show as not available.
-3. Checks that `sw.js`, `manifest.webmanifest`, `index.html` and `offline.html` exist and look right.
+3. Checks that `sw.js`, the three app manifests (`manifest.webmanifest`, `manifest-design.webmanifest`, `manifest-pdf.webmanifest`), `index.html` and `offline.html` exist and look right.
 4. Uploads in passes, each with its own cache lifetime (table below). Long-lived files go first and pages and `sw.js` go last, so a visitor never gets a new page that points at a file that is not uploaded yet.
 5. Asks CloudFront to forget its copies (`/*`, which counts as one invalidation path).
 
@@ -50,13 +50,13 @@ After a deploy, open the site, then open it again: installed copies show **"A ne
 
 | Files | `Cache-Control` | Why |
 |---|---|---|
-| Pages (`*.html`), `sw.js`, `manifest.webmanifest`, `robots.txt`, `sitemap.xml`, `llms.txt` | `no-cache` (always check) | Small, and they decide which version people get. |
+| Pages (`*.html`), `sw.js`, `manifest.webmanifest` (and `manifest-design.webmanifest`, `manifest-pdf.webmanifest`, docs/INSTALL.md), `robots.txt`, `sitemap.xml`, `llms.txt` | `no-cache` (always check) | Small, and they decide which version people get. |
 | `assets/js/*`, `assets/css/*` | `max-age=600, must-revalidate` | Names do not change between versions. The app's offline copy (the service worker) keeps installed users consistent; this only covers first visits. |
 | `assets/data/**/*.json` (icon packs, collage layouts) | `max-age=86400, stale-while-revalidate=604800` | Large, change rarely; the app also refreshes them in the background. |
 | `assets/vendor/*`, `assets/icons/*`, `assets/screenshots/*` | `max-age=2592000` (30 days) | Stable, but names are not versioned, so not "immutable". |
 | `assets/fonts/*`, `assets/photos/*`, `assets/img/*`, `assets/models/*`, `*.wasm` (the AI engine in `assets/vendor/ort/`), `*.onnx` | `max-age=31536000, immutable` | Content never changes under the same name. **If you ever replace one of these, give it a new file name.** |
 
-Content types the CLI would get wrong are set explicitly: `manifest.webmanifest` → `application/manifest+json`, `*.wasm` → `application/wasm`, `*.onnx` → `application/octet-stream`, `*.mjs` → `text/javascript`, `*.leworkflow` → `application/vnd.localeditor.workflow+json`, `*.leproject` → `application/vnd.localeditor.project+zip`, graphics data → `application/json`.
+Content types the CLI would get wrong are set explicitly: `manifest.webmanifest` and `manifest-*.webmanifest` → `application/manifest+json`, `*.wasm` → `application/wasm`, `*.onnx` → `application/octet-stream`, `*.mjs` → `text/javascript`, `*.leworkflow` → `application/vnd.localeditor.workflow+json`, `*.leproject` → `application/vnd.localeditor.project+zip`, graphics data → `application/json`.
 
 Never uploaded: `scripts/`, `tests/`, `docs/`, `infra/`, Markdown files, `.git`, `.claude`, `node_modules`, `assets/models/local/` (evaluation downloads and model sources).
 
@@ -130,7 +130,7 @@ The catch: with `require-corp`, every image from another site must send a `Cross
 
 ### 4f. Share target (Android "Share to LocalEditor")
 
-When the app is installed on Android, photos shared to it are received by the app's offline worker on the phone; nothing is sent to CloudFront. If the worker is not running yet, the phone may send the photos to `/studio/` as a POST. To answer that gracefully instead of with an S3 error, set the default behavior's **Allowed HTTP methods** to *GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE*; the function above then replies with a redirect to the studio (nothing is stored or forwarded; S3 never sees the POST). If you leave methods at GET/HEAD, CloudFront answers that rare case with a 403, which is acceptable.
+When the app is installed on Android, photos shared to it are received by the app's offline worker on the phone; nothing is sent to CloudFront. If the worker is not running yet, the phone may send the photos to `/studio/` as a POST. To answer that gracefully instead of with an S3 error, set the default behavior's **Allowed HTTP methods** to *GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE*; the function above then replies with a redirect to the studio (nothing is stored or forwarded; S3 never sees the POST). If you leave methods at GET/HEAD, CloudFront answers that rare case with a 403, which is acceptable. The same applies to `/pdf-studio/?share-target=1` when LocalEditor PDF is installed on its own (docs/INSTALL.md); the function handles both.
 
 ### 4g. Compression and HTTP/3
 

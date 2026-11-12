@@ -227,7 +227,11 @@ cases['install button drives a captured beforeinstallprompt, once, and hides aft
   const shown = () => page.$eval(sel, (el) => getComputedStyle(el).display !== 'none');
   h.assert(await shown(), 'the shell install control is available');
   await page.evaluate((s) => document.querySelector(s).click(), sel);
-  await page.waitForTimeout(200);
+  /* The entry opens the chooser (docs/INSTALL.md); Install there fires the browser prompt from the same tap. */
+  await page.waitForSelector('dialog.lp-choose[open]');
+  h.assert.equal(await page.evaluate(() => window.__prompts), 0, 'no browser prompt before the person picks');
+  await page.click('dialog.lp-choose [data-lp-go]');
+  await page.waitForTimeout(300);
   h.assert.equal(await page.evaluate(() => window.__prompts), 1, 'the browser prompt opened exactly once');
   await page.evaluate(() => window.dispatchEvent(new Event('appinstalled')));
   h.assert(!(await shown()), 'install control hidden once installed');

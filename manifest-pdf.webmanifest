@@ -1,0 +1,151 @@
+{
+  "id": "/pdf-studio/",
+  "name": "LocalEditor PDF",
+  "short_name": "LE PDF",
+  "description": "The LocalEditor PDF studio on its own: sign, fill, organise, protect and clean PDFs. Files stay on your device and it works offline.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./pdf-studio/?app=pdf",
+  "scope": "./pdf-studio/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#FAFAFA",
+  "theme_color": "#161616",
+  "categories": [
+    "productivity",
+    "business",
+    "utilities"
+  ],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open a PDF",
+      "short_name": "Open",
+      "description": "Edit, sign and fill a PDF",
+      "url": "./pdf-studio/?app=pdf",
+      "icons": [
+        {
+          "src": "assets/icons/shortcuts/pdf-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Merge PDFs",
+      "short_name": "Merge",
+      "description": "Combine several PDFs into one",
+      "url": "./pdf-studio/?panel=bulk&job=merge&app=pdf",
+      "icons": [
+        {
+          "src": "assets/icons/shortcuts/pdf-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Protect a PDF",
+      "short_name": "Protect",
+      "description": "Lock a PDF with a password, on this device",
+      "url": "./pdf-studio/?panel=bulk&job=protect&app=pdf",
+      "icons": [
+        {
+          "src": "assets/icons/shortcuts/protect-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Safe to send",
+      "short_name": "Clean",
+      "description": "Remove hidden data before it leaves your hands",
+      "url": "./pdf-studio/?panel=security&job=send&app=pdf",
+      "icons": [
+        {
+          "src": "assets/icons/shortcuts/protect-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "./pdf-studio/?app=pdf",
+      "accept": {
+        "application/pdf": [
+          ".pdf"
+        ],
+        "application/vnd.localeditor.pdf-workflow+json": [
+          ".lepdfworkflow"
+        ]
+      },
+      "icons": [
+        {
+          "src": "assets/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ],
+      "launch_type": "single-client"
+    }
+  ],
+  "share_target": {
+    "action": "./pdf-studio/?share-target=1&app=pdf",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "media",
+          "accept": [
+            "application/pdf",
+            ".pdf",
+            ".lepdfworkflow"
+          ]
+        }
+      ]
+    }
+  },
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  }
+}
