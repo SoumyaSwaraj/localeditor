@@ -96,22 +96,27 @@ pass() {
   for p in "$@"; do inc+=(--include "$p"); done
   local typ=()
   [ -n "$ct" ] && typ=(--content-type "$ct")
+  # WebAssembly, ONNX models and ES modules only ever go up in their own typed passes.
+  local own=()
+  case "$*" in *.wasm*|*.onnx*|*.mjs*) ;; *) own=(--exclude "*.wasm" --exclude "*.onnx" --exclude "*.mjs") ;; esac
   echo "-- $cc ${ct:+($ct)}: $*"
-  run "${AWS[@]}" "${VERB[@]}" . "$DEST" --exclude "*" "${inc[@]}" "${NEVER[@]}" --cache-control "$cc" "${typ[@]}" "${COMMON[@]}"
+  run "${AWS[@]}" "${VERB[@]}" . "$DEST" --exclude "*" "${inc[@]}" "${own[@]}" "${NEVER[@]}" --cache-control "$cc" "${typ[@]}" "${COMMON[@]}"
 }
 
 echo "== Uploading to $DEST$([ "$DRY" = 1 ] && echo ' (dry run)')"
 # 1. Long-lived files whose content never changes under the same name.
 pass "$CC_YEAR" "" "assets/fonts/*" "assets/photos/*" "assets/img/*"
-pass "$CC_YEAR" "application/octet-stream" "assets/models/*.onnx" "assets/models/*.bin"
+pass "$CC_YEAR" "application/octet-stream" "*.onnx"
+pass "$CC_YEAR" "" "assets/models/*.bin"
 pass "$CC_YEAR" "application/wasm" "*.wasm"
+pass "$CC_MONTH" "text/javascript; charset=utf-8" "*.mjs"
 pass "$CC_YEAR" "" "assets/models/*.json"
 # 2. Vendor libraries, icons and screenshots: a month (names are stable, so not immutable).
 pass "$CC_MONTH" "" "assets/vendor/*" "assets/icons/*" "assets/screenshots/*"
 # 3. Graphics data (icon packs, collage layouts): a day, then revalidate in the background.
 pass "$CC_DATA" "application/json" "assets/data/*.json" "assets/data/*/*.json"
 # 4. Code.
-pass "$CC_CODE" "" "assets/js/*" "assets/css/*"
+pass "$CC_CODE" "" "assets/js/*" "assets/css/*" "labs/*.js" "labs/*.css"
 # 5. Example files people can download.
 pass "$CC_CODE" "application/vnd.localeditor.workflow+json" "*.leworkflow"
 pass "$CC_CODE" "application/vnd.localeditor.project+zip" "*.leproject"

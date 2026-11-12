@@ -399,7 +399,7 @@ function walk(dir, out = []) {
   return out;
 }
 /* Downloaded on request and owned by a runtime cache (listed in the storage manager), never precached. */
-const ON_DEMAND = /^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
+const ON_DEMAND = /^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
 /* If one of these fails to download, the new version is not installed (the old one keeps working). */
 const CRITICAL = ['./', './offline.html', './studio/', './assets/js/app.js', './assets/css/app.css', './assets/js/le-pwa.js', './assets/css/le-pwa.css', './manifest.webmanifest'];
 
@@ -414,7 +414,9 @@ function precacheList() {
      le-fonts-v1       font library files, cache-first, size-capped (LRU).
      le-assets-v1      graphics JSON (icon packs, collage layouts), stale-while-revalidate, size-capped (LRU).
      le-photos-v1      collage pool photos, cache-first, size-capped (LRU).
-     le-models-v1      on-device AI models, cache-first, never precached, never trimmed automatically.
+     le-models-v1      on-device AI: model files are stored by the feature that downloads them (with an
+                       x-le-model header) and only served from here; the AI engine (assets/vendor/ort*)
+                       is stored here on first use. Never precached, never trimmed automatically.
      le-share-v1       files shared to the app from the system share sheet until the studio picks them up. */
 function swMain(VERSION, ASSETS, CRITICAL) {
   'use strict';
@@ -596,7 +598,8 @@ function swMain(VERSION, ASSETS, CRITICAL) {
     if (req.method !== 'GET' || req.headers.has('range')) return;
     var p = url.pathname;
     if (/\/sw\.js$/.test(p) || p.indexOf('/__share/') >= 0) return;
-    if (p.indexOf('/assets/models/') >= 0) { e.respondWith(runtime(e, RT.models, false, false)); return; }
+    if (p.indexOf('/assets/models/') >= 0) { e.respondWith(caches.open(RT.models).then(function (c) { return c.match(req, { ignoreSearch: true }); }).then(function (hit) { return hit || fetch(req); })); return; }
+    if (p.indexOf('/assets/vendor/ort') >= 0) { e.respondWith(runtime(e, RT.models, false, false)); return; }
     if (p.indexOf('/assets/fonts/library/') >= 0) { e.respondWith(runtime(e, RT.fonts, false, true)); return; }
     if (/\/assets\/data\/[\w\/-]+\.json$/.test(p)) { e.respondWith(runtime(e, RT.assets, true, true)); return; }
     if (p.indexOf('/assets/photos/') >= 0) { e.respondWith(runtime(e, RT.photos, false, true)); return; }

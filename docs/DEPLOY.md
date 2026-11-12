@@ -53,9 +53,9 @@ After a deploy, open the site, then open it again: installed copies show **"A ne
 | `assets/js/*`, `assets/css/*` | `max-age=600, must-revalidate` | Names do not change between versions. The app's offline copy (the service worker) keeps installed users consistent; this only covers first visits. |
 | `assets/data/**/*.json` (icon packs, collage layouts) | `max-age=86400, stale-while-revalidate=604800` | Large, change rarely; the app also refreshes them in the background. |
 | `assets/vendor/*`, `assets/icons/*`, `assets/screenshots/*` | `max-age=2592000` (30 days) | Stable, but names are not versioned, so not "immutable". |
-| `assets/fonts/*`, `assets/photos/*`, `assets/img/*`, `assets/models/*`, `*.wasm` | `max-age=31536000, immutable` | Content never changes under the same name. **If you ever replace one of these, give it a new file name.** |
+| `assets/fonts/*`, `assets/photos/*`, `assets/img/*`, `assets/models/*`, `*.wasm` (the AI engine in `assets/vendor/ort/`), `*.onnx` | `max-age=31536000, immutable` | Content never changes under the same name. **If you ever replace one of these, give it a new file name.** |
 
-Content types the CLI would get wrong are set explicitly: `manifest.webmanifest` → `application/manifest+json`, `*.wasm` → `application/wasm`, `*.onnx` → `application/octet-stream`, `*.leworkflow` → `application/vnd.localeditor.workflow+json`, `*.leproject` → `application/vnd.localeditor.project+zip`, graphics data → `application/json`.
+Content types the CLI would get wrong are set explicitly: `manifest.webmanifest` → `application/manifest+json`, `*.wasm` → `application/wasm`, `*.onnx` → `application/octet-stream`, `*.mjs` → `text/javascript`, `*.leworkflow` → `application/vnd.localeditor.workflow+json`, `*.leproject` → `application/vnd.localeditor.project+zip`, graphics data → `application/json`.
 
 Never uploaded: `scripts/`, `tests/`, `docs/`, `infra/`, Markdown files, `.git`, `.claude`, `node_modules`.
 
@@ -91,7 +91,7 @@ Distribution → Error pages: for **403** and **404**, response page `/404.html`
 
 ### 4d. Security headers: the response headers policy
 
-`infra/cloudfront/response-headers-policy.json` sets the Content Security Policy, HSTS, `nosniff`, `X-Frame-Options: DENY`, a strict referrer policy, `Permissions-Policy` (camera, microphone, location, payment and similar all off) and `Cross-Origin-Opener-Policy: same-origin`.
+`infra/cloudfront/response-headers-policy.json` sets the Content Security Policy, HSTS, `nosniff`, `X-Frame-Options: DENY`, a strict referrer policy and `Permissions-Policy` (camera, microphone, location, payment and similar all off). It deliberately sets no `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy` (see 4e).
 
 ```bash
 aws cloudfront create-response-headers-policy --response-headers-policy-config file://infra/cloudfront/response-headers-policy.json
@@ -114,7 +114,7 @@ Some on-device AI libraries run faster with several threads, which needs `Shared
 
 The catch: with `require-corp`, every image from another site must send a `Cross-Origin-Resource-Policy` header. Stock thumbnails (Pixabay, Pexels, Openverse sources) do not, so they would stop showing. `credentialless` keeps them working in Chrome, Edge and Firefox, but Safari does not support it.
 
-**Recommendation:** keep COOP `same-origin` everywhere (already in the policy, harmless here) and **do not** set COEP for now. The AI models run single-threaded and still work. If the background remover later proves it needs threads, add a second response headers policy with `Cross-Origin-Embedder-Policy: credentialless` attached only to a `/studio/*` behavior, and test stock search there in Safari (Safari will simply run single-threaded).
+**Recommendation: set neither COOP nor COEP for now.** The background-remover prototype measured that threads would gain at most 1.5 to 2 times, while `require-corp` would break the hot-linked stock thumbnails. The AI engine runs single-threaded and works everywhere. If that changes, add a second response headers policy with `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: credentialless` attached only to a `/studio/*` behavior, and test stock search there in Safari (which does not support `credentialless` and will simply stay single-threaded).
 
 ### 4f. Share target (Android "Share to LocalEditor")
 

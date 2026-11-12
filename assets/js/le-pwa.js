@@ -660,7 +660,7 @@
             return c.match(k).then(function (res) {
               return entrySize(res).then(function (n) {
                 var u = new URL(k.url);
-                return { cache: name, req: k, url: k.url, path: u.pathname, bytes: n, at: res ? entryTime(res) : 0 };
+                return { cache: name, req: k, url: k.url, path: u.pathname, bytes: n, at: res ? entryTime(res) : 0, model: res ? res.headers.get('x-le-model') : null };
               });
             });
           }));
@@ -729,11 +729,17 @@
     }).catch(function () { return {}; });
   }
   function fontFamily(path) { var m = /\/assets\/fonts\/library\/([\w-]+)\//.exec(path); return m ? m[1] : 'other'; }
-  function modelId(path) {
-    var m = /\/assets\/models\/([^/]+)(\/|$)/.exec(path);
-    return m ? m[1].replace(/\.(onnx|bin|json|wasm|tflite)$/i, '') : path.split('/').pop();
+  /* Model files carry the id of the model in x-le-model; the shared AI engine (ONNX Runtime) is one entry. */
+  function modelId(x) {
+    if (x.model) return x.model;
+    if (/\/assets\/vendor\/ort/.test(x.path)) return 'ai-engine';
+    var m = /\/assets\/models\/(?:local\/)?([^/]+)(\/|$)/.exec(x.path);
+    return m ? m[1].replace(/\.(onnx|ort|bin|json|wasm|tflite)$/i, '') : x.path.split('/').pop();
   }
-  var modelInfo = {};
+  var modelInfo = {
+    'ai-engine': { name: 'AI engine', about: 'Shared by every on-device AI feature' },
+    'u2netp': { name: 'Background remover (fast)', about: 'Cuts people and objects out of photos' }
+  };
   function describeModel(id, info) { modelInfo[id] = info || {}; }
 
   /* ---------- Designs database (same schema as le-project.js; opened only after le-project.js is loaded) ---------- */
@@ -956,7 +962,7 @@
       });
 
       var mod = {};
-      models.forEach(function (x) { var id = modelId(x.path); (mod[id] = mod[id] || []).push(x); });
+      models.forEach(function (x) { var id = modelId(x); (mod[id] = mod[id] || []).push(x); });
       cats.push({
         id: 'models', name: 'AI models', color: COLORS.models, bytes: sum(models, 'bytes'), count: Object.keys(mod).length, unit: 'model',
         about: 'On-device AI, such as the background remover, downloaded only when you ask for it. It runs here; your photos are never sent anywhere.',

@@ -43,7 +43,11 @@ async function seed(page, opts) {
     await put('le-assets-v1', '/assets/data/withicons/clay.json', 2e6, Date.now());
     await put('le-assets-v1', '/assets/data/withicons/glass.json', 1.5e6, Date.now() - 120 * day);
     await put('le-photos-v1', '/assets/photos/collage/p01.jpg', 90000, Date.now() - 2 * day);
-    await put('le-models-v1', '/assets/models/bg-remover/model.onnx', 3e6, Date.now());
+    {
+      const m = await caches.open('le-models-v1');
+      await m.put(location.origin + '/assets/models/u2netp.onnx', new Response(new Uint8Array(3e6), { headers: { 'content-type': 'application/octet-stream', 'content-length': '3000000', 'x-le-model': 'u2netp' } }));
+      await put('le-models-v1', '/assets/vendor/ort/ort-wasm-simd-threaded.wasm', 1e6, Date.now());
+    }
     await put('le-app-202601010000', '/index.html', 30000, Date.now());
     await put('le-app-202611120000', '/index.html', 30000, Date.now());
     localStorage.setItem('le-stock-keys', JSON.stringify({ pixabay: 'abcd1234wxyz', pexels: 'zzzz9999' }));
@@ -67,7 +71,7 @@ cases['lists every category with sizes, counts and its own actions'] = async ({ 
   ['app', 'fonts', 'packs', 'photos', 'models', 'projects', 'versions', 'unused', 'settings'].forEach((id) => h.assert(r[id], 'category ' + id));
   ['app', 'fonts', 'packs', 'photos', 'models', 'projects', 'versions', 'unused', 'settings'].forEach((id) => h.assert(r[id].bytes > 0, id + ' has a size'));
   h.assert.equal(r.packs.count, 2, 'two icon packs');
-  h.assert.equal(r.models.count, 1, 'one AI model');
+  h.assert.equal(r.models.count, 2, 'the background model and the shared AI engine');
   h.assert.equal(r.projects.count, 1, 'one design');
   h.assert.equal(r.versions.count, 13, 'thirteen versions');
   h.assert.equal(r.unused.count, 1, 'one unused image');
@@ -78,6 +82,13 @@ cases['lists every category with sizes, counts and its own actions'] = async ({ 
   const txt = await page.textContent('dialog.lp-storage');
   ['App files', 'Fonts', 'Icon and graphic packs', 'AI models', 'Your designs', 'Version history', 'Unused images', 'Settings and keys', 'Summer sale', 'Free up space', 'Keep my work safe'].forEach((s) => h.assert(txt.includes(s), 'shows "' + s + '"'));
   h.assert(!/service worker|indexeddb|cache storage/i.test(txt), 'no jargon in the UI');
+  /* AI models are listed per model, each with its own remove button. */
+  await page.click('.lp-cat[data-cat=models] summary');
+  h.assert(/Background remover \(fast\)/.test(await page.textContent('.lp-cat[data-cat=models]')), 'model named for people');
+  const before = await page.evaluate(() => caches.open('le-models-v1').then((c) => c.keys()).then((k) => k.length));
+  await page.click('.lp-cat[data-cat=models] .lp-items li:has-text("Background remover") [data-lp-item]');
+  await page.waitForFunction((n) => caches.open('le-models-v1').then((c) => c.keys()).then((k) => k.length === n - 1), before);
+  h.assert(!(await page.evaluate(() => caches.open('le-models-v1').then((c) => c.match(location.origin + '/assets/models/u2netp.onnx')))), 'model removed, engine kept');
   /* Clear one API key on its own. */
   await page.click('.lp-cat[data-cat=settings] summary');
   await page.click('[data-lp-key=pixabay]');
@@ -137,7 +148,7 @@ cases['free up space previews, then removes only safe things'] = async ({ browse
     used: !!(await window.LE.project.assetRecord(ids.used)),
     glass: !!(await caches.open('le-assets-v1').then((c) => c.match(location.origin + '/assets/data/withicons/glass.json'))),
     clay: !!(await caches.open('le-assets-v1').then((c) => c.match(location.origin + '/assets/data/withicons/clay.json'))),
-    model: !!(await caches.open('le-models-v1').then((c) => c.match(location.origin + '/assets/models/bg-remover/model.onnx'))),
+    model: !!(await caches.open('le-models-v1').then((c) => c.match(location.origin + '/assets/models/u2netp.onnx'))),
     versions: (await window.LE.project.versions(ids.id)).length
   }), s);
   h.assert(after.projects === 1 && after.used, 'the design and its photo stay');

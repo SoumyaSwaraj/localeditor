@@ -1,6 +1,6 @@
 {
   "Name": "localeditor-security-headers",
-  "Comment": "LocalEditor: CSP, HSTS, Permissions-Policy, COOP. See docs/DEPLOY.md before changing.",
+  "Comment": "LocalEditor: CSP, HSTS, Permissions-Policy. No COOP/COEP on purpose. See docs/DEPLOY.md before changing.",
   "SecurityHeadersConfig": {
     "ContentSecurityPolicy": {
       "Override": true,
@@ -12,10 +12,9 @@
     "ReferrerPolicy": { "Override": true, "ReferrerPolicy": "strict-origin-when-cross-origin" }
   },
   "CustomHeadersConfig": {
-    "Quantity": 2,
+    "Quantity": 1,
     "Items": [
-      { "Header": "Permissions-Policy", "Override": true, "Value": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), bluetooth=(), midi=(), display-capture=(), browsing-topics=(), clipboard-read=(self), clipboard-write=(self), fullscreen=(self), web-share=(self)" },
-      { "Header": "Cross-Origin-Opener-Policy", "Override": true, "Value": "same-origin" }
+      { "Header": "Permissions-Policy", "Override": true, "Value": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), bluetooth=(), midi=(), display-capture=(), browsing-topics=(), clipboard-read=(self), clipboard-write=(self), fullscreen=(self), web-share=(self)" }
     ]
   }
 }
