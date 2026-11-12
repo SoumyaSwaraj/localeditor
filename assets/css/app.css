@@ -296,6 +296,9 @@
   --thumb: 24px;
   --thumb-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 3px 8px rgba(0, 0, 0, 0.18), 0 1px 1px rgba(0, 0, 0, 0.1);
   --pop-radius: 14px;
+  --list-frame: transparent;
+  --list-radius: 12px;
+  --card-radius-sm: 12px;
   --bg: #F5F5F7;
   --bg-2: #EDEDF0;
   --surface: #FFFFFF;
@@ -390,6 +393,11 @@
   --side-selected-ink: var(--side-accent);
   --pop-bg: var(--sheet-bg);
   --pop-border: var(--line);
+  --group-bg: var(--bg);
+  --list-bg: var(--surface);
+  --list-border: transparent;
+  --list-pad: 16px;
+  --list-last-line: transparent;
   color-scheme: light;
 }
 :root[data-theme="dark"], :root[data-theme="dark"] [data-skin-preview="clear"] {
@@ -487,6 +495,11 @@
   --side-selected-ink: var(--side-accent);
   --pop-bg: var(--sheet-bg);
   --pop-border: var(--line);
+  --group-bg: var(--bg);
+  --list-bg: var(--surface);
+  --list-border: transparent;
+  --list-pad: 16px;
+  --list-last-line: transparent;
   color-scheme: dark;
 }
 /* Lapis */
@@ -559,6 +572,9 @@
   --thumb: 18px;
   --thumb-shadow: 0 0 0 1px rgba(21, 21, 21, 0.12), 0 2px 6px rgba(21, 21, 21, 0.25);
   --pop-radius: 16px;
+  --list-radius: 16px;
+  --card-radius-sm: 10px;
+  --list-frame: transparent;
   --bg: #FAFAFA;
   --bg-2: #F0F0F0;
   --surface: #FFFFFF;
@@ -653,6 +669,11 @@
   --side-selected-ink: var(--side-strong);
   --pop-bg: var(--surface);
   --pop-border: var(--border);
+  --group-bg: var(--surface);
+  --list-bg: transparent;
+  --list-border: var(--line);
+  --list-pad: 0px;
+  --list-last-line: var(--line);
 }
 :root[data-skin="lapis"][data-theme="dark"], :root[data-theme="dark"] [data-skin-preview="lapis"] {
   --bg: #141414;
@@ -749,6 +770,11 @@
   --side-selected-ink: var(--side-strong);
   --pop-bg: var(--surface);
   --pop-border: var(--border);
+  --group-bg: var(--surface);
+  --list-bg: transparent;
+  --list-border: var(--line);
+  --list-pad: 0px;
+  --list-last-line: var(--line);
 }
 /* Graphite */
 :root[data-skin="graphite"], [data-skin-preview="graphite"] {
@@ -820,6 +846,9 @@
   --thumb: 16px;
   --thumb-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
   --pop-radius: 8px;
+  --list-frame: var(--border);
+  --list-radius: 6px;
+  --card-radius-sm: 6px;
   --bg: #EFEFEF;
   --bg-2: #E6E6E6;
   --surface: #FFFFFF;
@@ -914,6 +943,11 @@
   --side-selected-ink: #000000;
   --pop-bg: var(--surface);
   --pop-border: var(--border);
+  --group-bg: var(--surface);
+  --list-bg: var(--surface);
+  --list-border: var(--border);
+  --list-pad: 14px;
+  --list-last-line: transparent;
 }
 :root[data-skin="graphite"][data-theme="dark"], :root[data-theme="dark"] [data-skin-preview="graphite"] {
   --bg: #121212;
@@ -1010,6 +1044,11 @@
   --side-selected-ink: #FFFFFF;
   --pop-bg: var(--surface);
   --pop-border: var(--border);
+  --group-bg: var(--surface);
+  --list-bg: var(--surface);
+  --list-border: var(--border);
+  --list-pad: 14px;
+  --list-last-line: transparent;
 }
 /* Paper */
 :root[data-skin="paper"], [data-skin-preview="paper"] {
@@ -1081,6 +1120,9 @@
   --thumb: 24px;
   --thumb-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 3px 8px rgba(0, 0, 0, 0.18), 0 1px 1px rgba(0, 0, 0, 0.1);
   --pop-radius: 14px;
+  --list-frame: transparent;
+  --list-radius: 12px;
+  --card-radius-sm: 12px;
   --bg: #F6F1E7;
   --bg-2: #EEE7D9;
   --surface: #FFFCF6;
@@ -1175,6 +1217,11 @@
   --side-selected-ink: var(--side-accent);
   --pop-bg: var(--sheet-bg);
   --pop-border: var(--line);
+  --group-bg: var(--bg);
+  --list-bg: var(--surface);
+  --list-border: transparent;
+  --list-pad: 16px;
+  --list-last-line: transparent;
 }
 :root[data-skin="paper"][data-theme="dark"], :root[data-theme="dark"] [data-skin-preview="paper"] {
   --bg: #1A1714;
@@ -1271,6 +1318,11 @@
   --side-selected-ink: var(--side-accent);
   --pop-bg: var(--sheet-bg);
   --pop-border: var(--line);
+  --group-bg: var(--bg);
+  --list-bg: var(--surface);
+  --list-border: transparent;
+  --list-pad: 16px;
+  --list-last-line: transparent;
 }
 /* Contrast */
 :root[data-skin="contrast"], [data-skin-preview="contrast"] {
@@ -1342,6 +1394,9 @@
   --thumb: 26px;
   --thumb-shadow: 0 0 0 2px #000000;
   --pop-radius: 12px;
+  --list-frame: var(--border);
+  --list-radius: 10px;
+  --card-radius-sm: 10px;
   --bg: #FFFFFF;
   --bg-2: #EBEBEB;
   --surface: #FFFFFF;
@@ -1436,6 +1491,11 @@
   --side-selected-ink: #0035A8;
   --pop-bg: var(--surface);
   --pop-border: var(--border);
+  --group-bg: var(--surface);
+  --list-bg: var(--surface);
+  --list-border: var(--border);
+  --list-pad: 14px;
+  --list-last-line: transparent;
 }
 :root[data-skin="contrast"][data-theme="dark"], :root[data-theme="dark"] [data-skin-preview="contrast"] {
   --bg: #000000;
@@ -1532,6 +1592,11 @@
   --side-selected-ink: #FFFFFF;
   --pop-bg: var(--surface);
   --pop-border: var(--border);
+  --group-bg: var(--surface);
+  --list-bg: var(--surface);
+  --list-border: var(--border);
+  --list-pad: 14px;
+  --list-last-line: transparent;
 }
 :root[data-theme="dark"]:not([data-surround]) { --stage: var(--surround-dark); --stage-ink: #A3A3A3; }
 /* THEMES:END */
@@ -2196,6 +2261,44 @@ button.chip:hover { border-color: var(--btn-hover-border); background: var(--btn
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 :root[data-theme="dark"] .toast { box-shadow: inset 0 0 0 1px var(--line), var(--shadow-lg); }
 
+/* Collapsed large title (phone): the page title moves into the bar once the big one has scrolled away. */
+.le-top-title { display: none; }
+@media (max-width: 719px) {
+  .le-top-title { display: block; position: absolute; left: 50%; top: 50%; max-width: calc(100% - 200px); transform: translate(-50%, -40%); opacity: 0; pointer-events: none; font: 600 var(--text-sm)/1.2 var(--font-display); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease-out); }
+  .le-top.is-titled .le-top-title { opacity: 1; transform: translate(-50%, -50%); }
+  .le-top.is-titled .le-brand strong { opacity: 0; }
+}
+
+/* Switch: on/off settings. Tool-page option checkboxes (.check) and any checkbox with role="switch" draw as a switch
+   (Lapis keeps its native checkboxes). Same input, same name, same behaviour. */
+:root:not([data-skin="lapis"]) :is(.check > input[type="checkbox"], input[type="checkbox"][role="switch"]):not(.native):not(.lp-switch) {
+  -webkit-appearance: none; appearance: none; position: relative; flex: none; width: 46px; height: 28px; margin: 0;
+  border-radius: 999px; background: var(--fill-2); box-shadow: inset 0 0 0 var(--hair-w) var(--border); cursor: pointer;
+  transition: background-color var(--dur-2) var(--ease);
+}
+:root:not([data-skin="lapis"]) :is(.check > input[type="checkbox"], input[type="checkbox"][role="switch"]):not(.native):not(.lp-switch)::before {
+  content: ""; position: absolute; left: 2px; top: 2px; width: 24px; height: 24px; border-radius: 50%; background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 0 0 0.5px rgba(0, 0, 0, 0.06); transition: transform var(--dur-2) var(--ease-spring);
+}
+:root:not([data-skin="lapis"]) :is(.check > input[type="checkbox"], input[type="checkbox"][role="switch"]):not(.native):not(.lp-switch):checked { background: var(--primary); box-shadow: none; }
+:root:not([data-skin="lapis"]) :is(.check > input[type="checkbox"], input[type="checkbox"][role="switch"]):not(.native):not(.lp-switch):checked::before { transform: translateX(18px); }
+:root:not([data-skin="lapis"]) :is(.check > input[type="checkbox"], input[type="checkbox"][role="switch"]):not(.native):not(.lp-switch):disabled { opacity: 0.45; cursor: default; }
+:root:not([data-skin="lapis"]) .check { justify-content: space-between; flex-direction: row-reverse; gap: var(--s-3); }
+
+/* Grouped (inset) list: rows with hairline separators, value on the right, chevron for navigation. */
+.list-inset { list-style: none; margin: 0; padding: 0 var(--list-pad); background: var(--list-bg); border: var(--hair-w) solid var(--list-border); border-radius: var(--list-radius); overflow: hidden; }
+.list-inset > * { display: flex; align-items: center; gap: var(--s-3); min-height: var(--target); padding: 10px 0; color: var(--ink); text-decoration: none; }
+.list-inset > * + * { border-top: var(--hair-w) solid var(--line); }
+.list-inset .list-value { margin-left: auto; color: var(--muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.list-inset a::after, .list-inset .list-go::after { content: ""; flex: none; width: 8px; height: 8px; margin-left: var(--s-2); border: solid var(--faint); border-width: 2px 2px 0 0; transform: rotate(45deg); }
+
+/* Skeletons: where the layout is known, show its shape instead of a spinner. */
+.skel { display: block; border-radius: var(--r-sm); background: linear-gradient(90deg, var(--fill) 0%, var(--fill-2) 50%, var(--fill) 100%); background-size: 200% 100%; animation: le-skel 1.3s linear infinite; }
+.skel-row { height: 38px; }
+.skel-cards { height: 150px; margin-top: var(--s-3); }
+.skel-line { height: 12px; margin: 6px 0; }
+@keyframes le-skel { to { background-position: -200% 0; } }
+
 /* Appearance picker (LE.appearance.picker): mode segments and theme cards with live miniatures. */
 .ap { display: grid; gap: var(--s-4); }
 .ap-mode { width: 100%; }
@@ -2278,6 +2381,8 @@ button.chip:hover { border-color: var(--btn-hover-border); background: var(--btn
 .section-head h2 { margin: 0; }
 .section-head a { color: var(--ink); font-size: var(--text-sm); font-weight: 620; }
 .content { display: grid; gap: var(--s-4); margin-top: var(--s-4); }
+.content > * { min-width: 0; }
+.container :is(p, li) :is(code, a) { overflow-wrap: anywhere; }
 .content h2 { margin-bottom: var(--s-3); }
 .content ol, .content ul { margin: var(--s-2) 0 0; padding-left: 20px; color: var(--muted); }
 .content li { margin: 4px 0; }

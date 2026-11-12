@@ -277,6 +277,18 @@ for _t in (GRAPHITE, CONTRAST):
     _t['light'].update({'--pop-bg': 'var(--surface)', '--pop-border': 'var(--border)'}); _t['dark'].update({'--pop-bg': 'var(--surface)', '--pop-border': 'var(--border)'})
 GRAPHITE['light'].update({'--side': '#F7F7F7', '--side-2': '#EDEDED', '--side-text': '#161616', '--side-strong': '#000000', '--side-dim': '#4A4A4A', '--side-active': 'rgba(0, 0, 0, 0.08)', '--side-hover': 'rgba(0, 0, 0, 0.06)', '--side-line': 'rgba(0, 0, 0, 0.12)', '--side-accent': '#000000', '--side-accent-icon': '#000000', '--side-selected': 'rgba(0, 0, 0, 0.08)', '--side-selected-edge': 'transparent', '--side-selected-ink': '#000000'})
 CONTRAST['light'].update({'--side': '#FFFFFF', '--side-2': '#F0F0F0', '--side-text': '#000000', '--side-strong': '#000000', '--side-dim': '#1F1F1F', '--side-active': '#DCE6FF', '--side-hover': 'rgba(0, 0, 0, 0.08)', '--side-line': '#000000', '--side-accent': '#0035A8', '--side-accent-icon': '#0035A8', '--side-selected': '#DCE6FF', '--side-selected-edge': '#0035A8', '--side-selected-ink': '#0035A8'})
+# Grouped (inset) lists: settings, storage, downloads, install chooser
+for _m in ('light', 'dark'):
+    LAPIS[_m].update({'--group-bg': 'var(--surface)', '--list-bg': 'transparent', '--list-border': 'var(--line)', '--list-pad': '0px', '--list-last-line': 'var(--line)'})
+    for _t in (CLEAR, PAPER):
+        _t[_m].update({'--group-bg': 'var(--bg)', '--list-bg': 'var(--surface)', '--list-border': 'transparent', '--list-pad': '16px', '--list-last-line': 'transparent'})
+    for _t in (GRAPHITE, CONTRAST):
+        _t[_m].update({'--group-bg': 'var(--surface)', '--list-bg': 'var(--surface)', '--list-border': 'var(--border)', '--list-pad': '14px', '--list-last-line': 'transparent'})
+LAPIS['shared'].update({'--list-radius': '16px', '--card-radius-sm': '10px', '--list-frame': 'transparent'})
+for _t in (CLEAR, PAPER): _t['shared']['--list-frame'] = 'transparent'
+for _t in (GRAPHITE, CONTRAST): _t['shared']['--list-frame'] = 'var(--border)'
+CLEAR['shared'].update({'--list-radius': '12px', '--card-radius-sm': '12px'}); PAPER['shared'].update({'--list-radius': '12px', '--card-radius-sm': '12px'})
+GRAPHITE['shared'].update({'--list-radius': '6px', '--card-radius-sm': '6px'}); CONTRAST['shared'].update({'--list-radius': '10px', '--card-radius-sm': '10px'})
 THEMES = [('clear', 'Clear', CLEAR), ('lapis', 'Lapis', LAPIS), ('graphite', 'Graphite', GRAPHITE), ('paper', 'Paper', PAPER), ('contrast', 'Contrast', CONTRAST)]
 
 def block(sel, d, extra=''):

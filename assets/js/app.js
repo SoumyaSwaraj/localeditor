@@ -69,8 +69,9 @@
     setSkin: function (id) {
       if (!SKINS.some(function (x) { return x.id === id; })) return;
       lsSetA('le-skin', id === 'clear' ? null : id);
-      if (id === 'clear') root.removeAttribute('data-skin'); else root.setAttribute('data-skin', id);
-      apChanged();
+      var apply = function () { if (id === 'clear') root.removeAttribute('data-skin'); else root.setAttribute('data-skin', id); apChanged(); };
+      var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (document.startViewTransition && !calm) document.startViewTransition(apply); else apply();
     },
     setMode: function (m) {
       if (m !== 'light' && m !== 'dark') m = 'auto';
@@ -79,63 +80,27 @@
       apChanged();
     },
     onChange: function (fn) { aplisteners.push(fn); },
-    /* The picker: mode segments and theme cards, each card a live miniature drawn from that theme's own tokens. */
-    picker: function (opts) {
-      opts = opts || {};
-      var wrap = document.createElement('div');
-      wrap.className = 'ap';
-      function draw() {
-        var st = LEX.appearance.state();
-        var hc = window.matchMedia && matchMedia('(prefers-contrast: more)').matches && st.skin !== 'contrast';
-        wrap.innerHTML =
-          '<div class="ap-mode seg" role="group" aria-label="Light or dark">' +
-            [['light', 'Light'], ['dark', 'Dark'], ['auto', 'Auto']].map(function (m) { return '<button type="button" data-ap-mode="' + m[0] + '" aria-pressed="' + (st.mode === m[0]) + '">' + m[1] + '</button>'; }).join('') +
-          '</div>' +
-          (hc ? '<p class="ap-hint">This device asks for more contrast. <button type="button" class="btn-link" data-ap-skin="contrast">Try Contrast</button></p>' : '') +
-          '<div class="ap-grid" role="radiogroup" aria-label="Theme">' +
-            SKINS.map(function (k) {
-              return '<button type="button" class="ap-card" role="radio" aria-checked="' + (st.skin === k.id) + '" data-ap-skin="' + k.id + '">' +
-                '<span class="ap-prev" data-skin-preview="' + k.id + '" aria-hidden="true"><i class="ap-bar"></i><b class="ap-title">Aa</b><i class="ap-line"></i><i class="ap-line ap-short"></i><span class="ap-btns"><i class="ap-pri"></i><i class="ap-sec"></i></span></span>' +
-                '<span class="ap-name">' + k.name + '</span><small>' + k.note + '</small></button>';
-            }).join('') +
-          '</div>';
-      }
-      draw();
-      wrap.addEventListener('click', function (e) {
-        var m = e.target.closest('[data-ap-mode]'), k = e.target.closest('[data-ap-skin]');
-        if (m) LEX.appearance.setMode(m.getAttribute('data-ap-mode'));
-        else if (k) LEX.appearance.setSkin(k.getAttribute('data-ap-skin'));
-        else return;
-        draw();
-        var again = wrap.querySelector(m ? '[data-ap-mode="' + m.getAttribute('data-ap-mode') + '"]' : '[data-ap-skin="' + k.getAttribute('data-ap-skin') + '"].ap-card');
-        if (again) again.focus();
-        if (opts.onChange) opts.onChange();
+    /* The picker, the studio section and the sheet load on first use (assets/js/le-appearance.js), off the blocking path. */
+    load: function () {
+      if (LEX.appearance._ready) return LEX.appearance._ready;
+      LEX.appearance._ready = new Promise(function (res, rej) {
+        var sc = document.createElement('script');
+        sc.src = base() + 'assets/js/le-appearance.js';
+        sc.onload = function () { res(LEX.appearance); };
+        sc.onerror = function (e) { LEX.appearance._ready = null; rej(e); };
+        document.head.appendChild(sc);
       });
-      return wrap;
+      return LEX.appearance._ready;
     },
-    /* One section for a studio settings panel: LE.appearance.section(ctx, body). */
     section: function (c, body) {
       if (!c || !c.ui || !c.ui.section) return;
       var sec = c.ui.section('Appearance');
-      sec.querySelector('.sx-sec-body').appendChild(LEX.appearance.picker());
+      var host = sec.querySelector('.sx-sec-body');
+      host.innerHTML = '<div class="ap ap-loading" aria-busy="true"><span class="skel skel-row"></span><span class="skel skel-cards"></span></div>';
       body.insertBefore(sec, body.firstChild);
+      LEX.appearance.load().then(function (A) { host.innerHTML = ''; host.appendChild(A.picker()); }).catch(function () { host.innerHTML = '<p class="ap-hint">Appearance could not load. Check the connection and open this panel again.</p>'; });
     },
-    open: function () {
-      var d = document.getElementById('le-appearance');
-      if (!d) {
-        d = document.createElement('dialog');
-        d.id = 'le-appearance';
-        d.className = 'le-dialog le-appear';
-        d.setAttribute('aria-labelledby', 'le-appearance-title');
-        d.innerHTML = '<div class="ap-head"><h2 id="le-appearance-title">Appearance</h2><button type="button" class="le-icon" data-ap-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>';
-        d.appendChild(LEX.appearance.picker());
-        d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-ap-close]')) d.close(); });
-        document.body.appendChild(d);
-      }
-      if (d.showModal) d.showModal(); else d.setAttribute('open', '');
-      var on = d.querySelector('.ap-card[aria-checked="true"]');
-      if (on) on.focus();
-    }
+    open: function () { LEX.appearance.load().then(function (A) { A.open(); }); }
   };
   if (window.matchMedia) {
     var mq = matchMedia('(prefers-color-scheme: dark)');
@@ -683,6 +648,18 @@
 
   LE.appearance.onChange(syncTheme);
   syncTheme();
+  /* Large title that collapses into the bar: when the page's title scrolls away, its words appear in the top bar. */
+  (function () {
+    var h1 = document.querySelector('.pg-hero h1, .hero h1, .page-intro h1, main > section h1');
+    var bar = document.querySelector('.le-top');
+    if (!h1 || !bar || !window.IntersectionObserver || document.querySelector('.hp-hero')) return;
+    var t = document.createElement('span');
+    t.className = 'le-top-title'; t.setAttribute('aria-hidden', 'true'); t.textContent = h1.textContent.replace(/\s+/g, ' ').trim();
+    bar.appendChild(t);
+    new IntersectionObserver(function (es) { bar.classList.toggle('is-titled', !es[0].isIntersecting); }, { rootMargin: '-64px 0px 0px 0px' }).observe(h1);
+  })();
+  /* On/off options on tool pages are switches (styled in app.css; Lapis keeps checkboxes). */
+  document.querySelectorAll('.check > input[type="checkbox"]:not([role])').forEach(function (i) { i.setAttribute('role', 'switch'); });
 })();
 
 /* Install, updates and storage manager: loads le-pwa.js and le-pwa.css on every page.

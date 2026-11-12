@@ -47,7 +47,7 @@ dialog.lp-sheet {
   max-height: min(92dvh, 92vh);
   border: 0;
   border-radius: var(--lp-radius) var(--lp-radius) 0 0;
-  background: var(--lp-bg);
+  background: var(--group-bg, var(--lp-bg));
   color: var(--lp-ink);
   font-family: var(--lp-font);
   font-size: 15px;
@@ -187,8 +187,8 @@ dialog.lp-sheet::backdrop { background: rgba(13, 13, 13, 0.48); animation: lp-fa
 .lp-sec { margin-top: 22px; }
 .lp-sec h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--lp-muted); font-weight: 700; }
 .lp-sec h3 + .lp-sub { margin-top: -4px; margin-bottom: 8px; }
-.lp-cats { border: 1px solid var(--lp-line); border-radius: 16px; overflow: hidden; }
-.lp-cat + .lp-cat { border-top: 1px solid var(--lp-line); }
+.lp-cats { border: var(--hair-w, 1px) solid var(--list-border, var(--lp-line)); border-radius: var(--list-radius, 16px); background: var(--list-bg, transparent); overflow: hidden; }
+.lp-cat + .lp-cat { border-top: var(--hair-w, 1px) solid var(--lp-line); }
 .lp-cat summary {
   display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 14px;
   cursor: pointer; list-style: none;
@@ -210,9 +210,9 @@ dialog.lp-sheet::backdrop { background: rgba(13, 13, 13, 0.48); animation: lp-fa
 .lp-items small { color: var(--lp-muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; }
 .lp-items .lp-size { color: var(--lp-muted); font-size: 13px; }
 
-.lp-limits { display: grid; border: 1px solid var(--lp-line); border-radius: 16px; overflow: hidden; }
+.lp-limits { display: grid; border: var(--hair-w, 1px) solid var(--list-border, var(--lp-line)); border-radius: var(--list-radius, 16px); background: var(--list-bg, transparent); overflow: hidden; }
 .lp-limit { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 14px; }
-.lp-limit + .lp-limit { border-top: 1px solid var(--lp-line); }
+.lp-limit + .lp-limit { border-top: var(--hair-w, 1px) solid var(--lp-line); }
 .lp-limit label { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .lp-limit label b { font-weight: 600; font-size: 14.5px; }
 .lp-limit small { color: var(--lp-muted); font-size: 12.5px; }
@@ -283,7 +283,7 @@ body.sx-body .lp-notice { bottom: calc(76px + env(safe-area-inset-bottom)); }
 .lp-apps { display: grid; gap: 8px; margin-top: 4px; }
 .lp-app {
   display: flex; gap: 12px; align-items: flex-start; min-height: 44px; padding: 12px;
-  border: 1px solid var(--lp-line); border-radius: var(--r-md, 14px); cursor: pointer;
+  border: 1px solid var(--lp-line); border-radius: var(--r-md, 14px); background: var(--list-bg, transparent); cursor: pointer;
 }
 .lp-app:has(input:checked) { border-color: var(--selected-edge, var(--primary)); background: var(--selected-bg, var(--lp-soft)); }
 .lp-app:has(input:disabled) { cursor: default; opacity: 0.7; }
