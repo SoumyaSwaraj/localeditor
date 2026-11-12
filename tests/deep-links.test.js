@@ -76,14 +76,15 @@ cases['/studio/?make= opens the form for each of the six makers, and says so for
     await page.context().close();
   }
   const page = await h.open(browser, base, '/studio/?make=not-a-maker', 'desktop');
-  await page.waitForTimeout(1500);
+  await page.waitForSelector('text=There is no maker called', { timeout: 10000 });
   h.assert.equal(await page.evaluate(() => window.LEStudioMakers.form()), null, 'no form');
-  h.assert(await page.isVisible('text=There is no maker called'), 'a toast explains');
 };
 
 /* ---------- PDF studio ---------- */
 async function ready(page) {
   await page.waitForFunction(() => window.PS && document.body.classList.contains('ps-ready'), null, { timeout: 15000 });
+  await page.waitForLoadState('load');
+  await page.waitForTimeout(300);
 }
 async function chooseFile(page) {
   const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-act="intent"][data-intent="merge"]')]);

@@ -167,6 +167,8 @@ for (const [url, e] of pdfLaunches) {
     h.assert.equal(q.get('job'), e.job, url + ' job in the URL');
     const page = await h.open(browser, base, '/' + url, 'desktop');
     await page.waitForFunction(() => window.PS && document.body.classList.contains('ps-ready'), null, { timeout: 15000 });
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300);
     const noDoc = await page.evaluate((p) => !!PS.panels[p].noDoc, e.panel);
     if (!noDoc) {
       const wait = await page.evaluate(() => ({ panel: PS.S.panel, pending: PS.pendingPanel, pages: PS.S.pages.length }));

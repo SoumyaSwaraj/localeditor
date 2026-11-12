@@ -2382,7 +2382,9 @@
       }).catch(offerRestore);
     } else offerRestore();
     var p = params.get('panel');
-    applyDeepLink(p, (params.get('job') || '').replace(/[^a-z-]/g, ''));
+    /* The Protect and Bulk panels come from scripts that run after this one, so wait until every script has run. */
+    var job = (params.get('job') || '').replace(/[^a-z-]/g, '');
+    if (p) { if (d.readyState === 'complete') applyDeepLink(p, job); else global.addEventListener('load', function () { applyDeepLink(p, job); }); }
     d.body.classList.add('ps-ready');
   }
 
