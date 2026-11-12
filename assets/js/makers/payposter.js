@@ -39,10 +39,11 @@
     name: 'Scan to pay',
     category: 'Business',
     summary: 'A counter poster with a UPI code from your own ID, or any payment link.',
-    keywords: ['upi', 'pay', 'payment', 'qr', 'scan to pay', 'shop', 'counter', 'india', 'gpay', 'phonepe', 'paytm', 'bhim', 'donation', 'tip'],
+    keywords: ['upi', 'pay', 'payment', 'qr', 'scan to pay', 'shop', 'counter', 'india', 'payment qr', 'donation', 'tip', 'cash counter'],
+    /* Print sizes come from LE.makers.PAPER (300 dpi, with doc.print) so a PDF comes out at the real size. */
     sizes: [
-      { id: 'a5', name: 'A5', w: 1240, h: 1754 },
-      { id: 'tent', name: 'Tent 4×6', w: 1200, h: 1800 },
+      'a5',
+      Object.assign(LE.makers.paperSize('photo-4x6'), { id: 'tent', name: 'Tent 4×6' }),
       'square'
     ],
     inputs: [
@@ -88,6 +89,9 @@
       var muted = C.readable(bgUnder, [S.muted, S.ink]);
       var acc = C.ensure(accent, bgUnder, 4.5);
 
+      /* The code is encoded once; the fitting loop only moves and sizes copies of it. */
+      var QR = code ? env.qr(code, { id: 'qr', name: mode === 'upi' ? 'UPI QR code' : 'Payment QR code', x: 0, y: 0, w: 1, h: 1, color: '#111111', background: '#FFFFFF', quiet: 4, level: 'M' }) : null;
+      function qrAt(x, y, q) { return Object.assign({}, QR, { x: x, y: y, w: q, h: q }); }
       function blocks(s, q) {
         var out = [], y = 0, x = inner.x, w = inner.w;
         function push(l, gap) { l.y = y; out.push(l); y += l.h + (gap || 0); return l; }
@@ -99,7 +103,7 @@
         if (style === 'kraft' && kicker) push(env.text({ id: 'payee-top', name: 'Payee', text: kicker, x: x, y: 0, w: w, font: S.body, weight: 700, size: 3.4 * u * s, min: 2 * u, maxLines: 2, align: 'center', color: acc, balance: true }), 2.4 * u * s);
         var qx = x + (w - q) / 2;
         if (code) {
-          var qrl = env.qr(code, { id: 'qr', name: mode === 'upi' ? 'UPI QR code' : 'Payment QR code', x: qx, y: 0, w: q, h: q, color: '#111111', background: '#FFFFFF', quiet: 4, level: 'M' });
+          var qrl = qrAt(qx, 0, q);
           if (style === 'dark') {
             var tile = env.rect({ id: 'qr-tile', name: 'Code tile', x: qx - 2 * u, y: y, w: q + 4 * u, h: q + 4 * u, fill: '#FFFFFF', radius: 3 * u });
             out.push(tile); qrl.y = y + 2 * u; out.push(qrl); y += q + 4 * u + 3.4 * u * s;

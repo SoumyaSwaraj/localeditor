@@ -10,7 +10,7 @@
     name: 'Album cover',
     category: 'Social',
     summary: 'An album or single cover with your photo, the artist and the title.',
-    keywords: ['album', 'cover', 'single', 'ep', 'music', 'band', 'playlist', 'mixtape', 'record', 'vinyl', 'spotify', 'artwork'],
+    keywords: ['album', 'cover', 'single', 'ep', 'music', 'band', 'playlist', 'mixtape', 'record', 'vinyl', 'streaming', 'artwork'],
     sizes: [
       'square',
       { id: 'release', name: 'Release 3000²', w: 3000, h: 3000 }

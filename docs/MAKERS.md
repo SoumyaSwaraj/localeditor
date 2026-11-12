@@ -56,8 +56,9 @@ Then add `'badge'` to `FILES` in `le-makers.js`, run `node tests/run.js makers`,
 | Field | Meaning |
 |---|---|
 | `id` | `^[a-z][a-z0-9-]{1,39}$`. Also the file name and the `?make=` id. |
-| `name`, `category`, `summary`, `keywords` | Gallery card, category chips and search. Categories in use: Social, Business, Life, Photo, Events. |
-| `sizes` | `[{ id, name, w, h }]` or ids from `LE.makers.SIZES` (`square` 1080×1080, `portrait` 1080×1350, `story` 1080×1920). First is the default. |
+| `name`, `category`, `summary`, `keywords` | Gallery card, category chips and search. Categories in use: Social, Business, Life, Photo, Print, Events. Keywords are generic words, not brand names. |
+| `sizes` | `[{ id, name, w, h, print }]` or ids from `LE.makers.SIZES` (`square` 1080×1080, `portrait` 1080×1350, `story` 1080×1920) or paper ids from `LE.makers.PAPER` (see Print below). First is the default. Keep names short: the size buttons share one row at 360 px. |
+| `maxPages` | Most pages one build may return (default 8, at most 50, the project's page limit). Multi-page makes land as consecutive pages; Edit details on any of them remakes the whole run (see Multi-page makers). |
 | `inputs` | `{ key, label, type, required, max, placeholder, options, default, hint }`. See types below. |
 | `styles` | `[{ id, name }]`, 4–6 genuinely different looks. First is the default. |
 | `sample.values` | What the gallery card and a fresh form show. Use `sample:<name>` photo ids from `assets/photos/collage/` (they are ingested into the design when the person makes it). |
@@ -77,6 +78,7 @@ Input types and what `validate` accepts:
 | `number` | number (or numeric string) | `min`, `max`, `step` |
 | `list` | array of strings, or with `columns: ['Item','Value']` array of string arrays | `max` rows (default 15), `cellMax` (default 48) |
 | `toggle` | boolean | |
+| `table` | rows of cells for `columns: [{ key, label, max, aliases, worst }]`; arrays of rows, or the packed form below | `max` rows (default 300); every cell ≤ its column's `max`; all text ≤ 80,000 characters |
 
 Unknown keys, wrong types and over-long values are errors. Script-like text is valid: it is only ever drawn as text on a canvas or set as `.value`/`.textContent`, never as markup.
 
@@ -106,20 +108,20 @@ Dates (`env.date`): `parse`, `iso`, `format(date, 'D MMMM YYYY')` (tokens `YYYY 
 
 `env.warn(kind, message, layer)` adds to the build's warnings. A warning of kind `input` with `layer` set to an input key shows as a note under that field in the form (the invitation uses it for "this link is long", the Wi-Fi sign for a password of the wrong length).
 
-`env.page(bg, { w, h })` gives a page its own size. Without the second argument a page takes the chosen size.
+`env.page(bg, own)` gives a page its own size: `{ w, h }` in px, optionally with `print` (`{ paper, w, h, dpi }`, mm), or `{ paper: 'a4' }` for a size from `LE.makers.PAPER` (300 dpi px and a real `doc.print`). Without it a page takes the chosen size, and `doc.print` when the chosen size is a paper size. For cut marks on such a page pass `page: { w, h }` to `env.print.cutMarks`.
 
 ### Multi-page makers
 
-`build` may return up to 8 pages (the event kit returns an invitation, a story, a banner and name-tag sheets). The first page must have the chosen size (the tests check it); the others may use `env.page(bg, { w, h })`. In the studio:
+`build` may return up to `maxPages` pages (the event kit returns an invitation, a story, a banner and name-tag sheets; a catalogue up to 50). The first page must have the chosen size (the tests check it); the others may use `env.page(bg, own)`. In the studio (one mechanism for every maker, `place` in `le-studio-makers.js`):
 
-- Making inserts every page after the current one; the first is shown.
-- The pages share one `doc.maker`. Edit details on any of them remakes the whole run (neighbouring pages with the same id, style, size and values), even when the page count changes.
-- Studio history is per page, so the current page is replaced through history and the rest of the run in the project; one undo (or redo) on that page swaps the whole run back. Switching page ends that link, like any page history.
-- The form preview shows all pages side by side.
+- A new make goes on the current page when it is empty, else on new pages after the run the current page belongs to. The first page is shown.
+- The pages share one `doc.maker`. Edit details on any of them remakes the whole run (neighbouring pages with the same id, style, size and values, so hand edits elsewhere and page moves around it do not break it), growing or shrinking it to fit. The page being looked at stays in view.
+- Studio history is per page, so the page in view is replaced through history and the rest of the run in the project; one undo (or redo) on that page swaps the whole run back. Switching page ends that link, like any page history.
+- The form preview shows the pages side by side with an "N pages" note; past 6 pages only the first 6 are drawn.
 
 ### QR codes
 
-Use `env.qr(text, { quiet: 4, color: '#111111', background: '#FFFFFF', level: 'M' })`: dark on light only, the standard four-module quiet zone, and put it on a white tile when the page is dark. Keep it at least about a quarter of the page width so it scans from a phone screen and from print. Build the payload in a pure function the maker exposes (`LE.makers.payPayload`, `LE.makers.wifiPayload`) so tests can assert it exactly; `tests/makers.test.js` also reads every code back from the rendered page with a decoder vendored for tests (`tests/lib/jsQR.js`). Never fetch anything for a code and never invent its contents: without the person's ID or link, draw an empty, labelled code box.
+Use `env.qr(text, { quiet: 4, color: '#111111', background: '#FFFFFF', level: 'M' })`: dark on light only, the standard four-module quiet zone, and put it on a white tile when the page is dark. Keep it at least about a quarter of the page width so it scans from a phone screen and from print. Build the payload in a pure function the maker exposes (`LE.makers.payPayload`, `LE.makers.wifiPayload`) so tests can assert it exactly; `tests/makers.test.js` also reads every code back from the rendered page with a decoder vendored for tests (`tests/lib/jsqr.js`, shared with the PDF office tests). Never fetch anything for a code and never invent its contents: without the person's ID or link, draw an empty, labelled code box.
 
 ## The pipeline and the public API
 
@@ -177,3 +179,55 @@ node <scratch>/mk-sheet.js <makerId> sample   # bigger tiles
 ```
 
 (The script used for the first six makers renders `LE.makers.cases()` through `LE.makers.renderPage` and prints every `check()` problem; copy it from the wave 2M report or write the same 60 lines.)
+
+## Print
+
+Print makers (category `Print`) lay out real paper at 300 dpi. Seven exist: `calendar`, `chart`, `labels`, `stickers`, `photobook`, `zine`, `catalogue`.
+
+### Paper sizes and `doc.print`
+
+| id | Paper | Pixels |
+|---|---|---|
+| `a4` / `a4-landscape` | 210 × 297 mm | 2480 × 3508 |
+| `a5` / `a5-landscape` | 148 × 210 mm | 1748 × 2480 |
+| `letter` / `letter-landscape` | 8.5 × 11 in | 2550 × 3300 |
+| `photo-4x6` | 4 × 6 in | 1200 × 1800 |
+| `square-20` | 20 × 20 cm | 2362 × 2362 |
+
+300 dpi is the ceiling on purpose: A4 landscape (3508 px, 8.7 MP) is under the smallest device canvas the studio plans for (4096 px edge on older phones, 16.7 MP on iOS), so print pages always render and export at 1×. A3 at 300 dpi (4961 px) would not, so it is not offered.
+
+A page built at a paper size carries page meta, sanitised by `LE.Scene.printOf` and kept through undo, redo and `.leproject` (wired exactly like `doc.maker`):
+
+```json
+"print": { "v": 1, "paper": "a4", "w": 210, "h": 297, "dpi": 300 }
+```
+
+`w`/`h` are millimetres. PDF export (Download → PDF, and the Print action next to it) makes each page `w × h` mm in points (A4 = 595.28 × 841.89 pt) with the image at 100%. If the page was resized since, its pixels are mapped at `dpi`; pages without `print` keep the old 96 dpi (0.75 pt a pixel). Mixed designs get mixed page sizes. `LEStudioExport.print.pageSize(doc)` returns the size in points.
+
+### `env.print`
+
+| Helper | Notes |
+|---|---|
+| `paper`, `dpi` | The size's `print` meta (or null) and its dpi (300). |
+| `mm(n)`, `inch(n)`, `pt(n)` | Physical units to pixels. |
+| `safe(mm = 10)` | The page inside a margin home printers reach. |
+| `sheet(area, { cols, rows, w, h, gx, gy })` | Cells (`{ x, y, w, h, row, col, i }`) tiled N-up with gutters; with `w`/`h` the grid keeps that cell size and is centred. |
+| `labels(count)` | A generic label grid for this paper as cells (`LE.makers.labelGrid(paper, count)`): 8 (2×4), 14 (2×7), 21 (3×7), 24 (3×8), 30 (3×10), 65 (5×13), in A4 and Letter dimensions. No brands or product codes. |
+| `cutMarks({ cells, marks, lines, outlines, folds, cuts, holes, color, width, len, gap, name })` | Guides as ordinary layers in one group named "Cut marks" (or `name`): crop ticks in the margin at every distinct cell edge (sides without room are skipped), dashed cut lines, dashed outlines (`rect`/`ellipse`), dashed fold lines, a solid cut, punch-hole circles. Put it first in `page.layers` (under the design), or last for marks that must show on top (punch holes). The person hides or deletes the group in Layers; makers offer a toggle. |
+| `group(name, layers, id)` | Any layers under a named group layer. Returns members + group (the group goes after its members, as `LE.Scene` stores it). |
+| `zine(W, H)`, `placeIn(layers, panel)` | The 8-page mini-zine imposition (front bottom right; 2–5 along the top, turned 180°; 6, 7, back along the bottom) and a mover that draws a panel's layers onto the sheet, turning them when the panel is turned. Also `LE.makers.print.zine`. |
+| `theme(id, accent)` | Shared print looks `clean`, `friendly`, `pastel`, `bold`, `ink` (ink saver: no filled areas): `{ bg, ink, muted, line, faint, accent, accent2, accent3, head, headWeight, body, r, hair, inkSaver }`. |
+
+Calendars: `env.date.monthGrid(y, m, weekStart)` (weeks of `{ y, m, d, inMonth, iso }`, 4–6 rows), `weekOf(date, weekStart)`, `addDays`, `weekday` (0 = Sunday), `weekdays(weekStart, 'dddd' | 'ddd' | 'd')`. `weekStart` is 1 for Monday, 0 for Sunday.
+
+`env.photoName(id)` is a photo's file name (the studio passes `names` to `build`), for matching photos to rows.
+
+### Tables
+
+A `table` input holds rows in fixed columns. In `doc.maker.values` it is stored packed: an array of at most 40 strings of at most 2,000 characters, each a run of rows (`cell\tcell` lines joined by `\n`). That fits the existing `doc.maker` limits (40 array entries, 2,000-character strings) without widening them, so 300 rows of ordinary product data (about 20–30 KB) round-trip through undo, projects and links; the hard cap is 300 rows and 80,000 characters. Each page of a multi-page make carries the same values (a 300-row catalogue of ~28 pages stores about 0.8 MB of meta in all).
+
+`LE.makers.table`: `parse(text, delim)` (CSV, TSV and pasted spreadsheet cells; quotes), `match(columns, grid)` (header names and aliases → column indexes; no header → by position), `rows(columns, grid, match, max)` (cells shortened to each column's max, with counts), `pack(rows)`, `unpack(packed, ncols)`. Validation accepts plain row arrays (what an agent writes) and stores the packed form. The form's table field takes pasted cells or a CSV / TSV / Excel file (Excel through `LE.pdfBulk.parseTable`, which lazy-loads the vendored SheetJS) and shows one select per column for the mapping.
+
+### Print quality bar
+
+Everything in the main quality bar, plus: real sizes in mm (`env.print.mm`), body text at least about 2.5 mm, text 4.5:1 on paper, an ink-saving style with no filled areas, and a look at the exported PDF, not only the canvas.

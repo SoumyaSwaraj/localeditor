@@ -20,6 +20,7 @@ Everything under `assets/vendor/`, `assets/fonts/`, and `assets/data/` is vendor
 | onnxruntime-web | 1.22.0 | MIT | `assets/vendor/ort/ort.wasm.min.js`, `assets/vendor/ort/ort-wasm-simd-threaded.module.js` (renamed from `.mjs` so every static host serves a JavaScript MIME type), `assets/vendor/ort/ort-wasm-simd-threaded.wasm`; licence text `assets/vendor/licenses/onnxruntime-LICENSE.txt` | https://www.npmjs.com/package/onnxruntime-web · https://github.com/microsoft/onnxruntime |
 | tesseract.js worker script (text recognition) | 7.0.0 | Apache-2.0 (the minified worker also bundles `buffer` MIT, `ieee754` BSD-3-Clause, `regenerator-runtime` MIT, `zlibjs` MIT, `bmp-js` MIT, `is-url` MIT, `wasm-feature-detect` Apache-2.0) | `assets/vendor/tesseract/worker.min.js`; licence text `assets/vendor/licenses/tesseract.js-LICENSE.txt` | https://www.npmjs.com/package/tesseract.js · https://github.com/naptha/tesseract.js |
 | tesseract.js-core (Tesseract 5 LSTM engine, Leptonica, compiled to WebAssembly) | 7.0.0 | Apache-2.0 | `assets/vendor/tesseract/tesseract-core-simd-lstm.wasm.js`, `assets/vendor/tesseract/tesseract-core-lstm.wasm.js` (no-SIMD fallback); licence text `assets/vendor/licenses/tesseract.js-core-LICENSE.txt` | https://www.npmjs.com/package/tesseract.js-core · https://github.com/naptha/tesseract.js-core |
+| jsQR (QR code reader; **tests only**, never loaded by the site) | 1.4.0 | Apache-2.0 | `tests/lib/jsqr.js` (the package's `dist/jsQR.js`, unchanged; SHA-256 bc40c8a15196236b2314db0856f72ca0b49980cd5413b8c852a7349f5fee0859); licence text `assets/vendor/licenses/jsqr-LICENSE.txt`. Used by `tests/pdf-office.test.js` to decode the fingerprint receipt QR codes and by `tests/makers.test.js` to read back the QR codes makers draw. | https://www.npmjs.com/package/jsqr · https://github.com/cozmo/jsQR |
 | GlyphLessFont (572-byte blank-glyph TrueType font, embedded as base64 in the invisible text layer of searchable PDFs) | from Tesseract `pdf_ttf.h` | Apache-2.0 | inside `labs/pdf-ocr/ocr.js` | https://github.com/tesseract-ocr/tesseract |
 
 The word “QR Code” is a registered trademark of Denso Wave Incorporated.
@@ -120,9 +121,3 @@ Downloaded only when the user asks (scanned PDF text, labs/pdf-ocr; see `docs/re
 |---|---|---|---|
 | tessdata_fast `eng` (4.1 MB) | Apache-2.0 | `assets/models/ocr/eng.traineddata` (committed) | https://github.com/tesseract-ocr/tessdata_fast |
 | tessdata_fast `spa` `por` `fra` `deu` `hin` `ara` (1.1 to 2.3 MB each) | Apache-2.0 | `assets/models/ocr/more/<id>.traineddata` (not committed; `node scripts/fetch-ocr-data.js`) | https://github.com/tesseract-ocr/tessdata_fast |
-
-### Test-only files (never shipped)
-
-| Name | License | Files | Source |
-|---|---|---|---|
-| jsQR 1.4.0 | Apache-2.0 | `tests/lib/jsQR.js` (reads back maker QR codes in `tests/makers.test.js`) | npm `jsqr` |

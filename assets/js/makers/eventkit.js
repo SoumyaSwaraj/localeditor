@@ -6,7 +6,6 @@
   var LE = window.LE;
   if (!LE || !LE.makers) return;
 
-  var PAPER = { a4: { w: 1240, h: 1754, name: 'A4' }, letter: { w: 1275, h: 1650, name: 'US Letter' } };
   var TAGS = 8;
   var T = {
     modern: { bg: '#F3EFE7', ink: '#1B1A20', muted: '#4B4852', accent: '#FF5A36', display: 'Syne', dw: 700, body: 'Inter', align: 'left', tight: -0.03 },
@@ -63,7 +62,7 @@
       var acc = party ? S.accent : C.ensure(S.accent, S.bg, 3), accText = party ? S.accent : C.ensure(S.accent, S.bg, 4.5);
       var dateTxt = v.date ? env.date.format(v.date, 'dddd D MMMM YYYY') : '';
       var when = [dateTxt, v.time].filter(Boolean).join(' · ');
-      var paper = PAPER[env.size.id] || PAPER.a4;
+      var paperId = env.size.id === 'letter' ? 'letter' : 'a4';
 
       function bgOf() { return party ? { type: 'gradient', kind: 'linear', angle: 150, colors: [S.bg, S.bg2] } : S.bg; }
       /* The event's details as a stack at scale s inside width w. kind: invite | story | banner */
@@ -165,21 +164,23 @@
         page.layers = L.concat(lay);
         return page;
       }
-      /* Name tags: 2 × 4 per sheet on white paper, light dashed cut guides along every edge, a band in the kit's colours. */
+      /* Name tags: the generic 8-up label grid (2 × 4) on real A4 or US Letter pages (300 dpi, doc.print, so the PDF
+         prints at 100%), with crop marks and light dashed cut lines as one "Cut marks" group under the tags. */
       function sheets() {
         var names = (v.names || []).slice(0, 24);
         var count = Math.max(1, Math.ceil(names.length / TAGS));
         var out = [];
-        var W = paper.w, H = paper.h, m = Math.round(W * 0.05);
-        var cols = 2, rows = TAGS / cols;
-        var tw = (W - 2 * m) / cols, th = (H - 2 * m) / rows;
+        var ps = LE.makers.paperSize(paperId), W = ps.w, H = ps.h, mm = env.print.mm;
+        var g = LE.makers.labelGrid(paperId, TAGS);
+        var cells = env.print.sheet({ x: 0, y: 0, w: W, h: H }, { cols: g.cols, rows: g.rows, w: mm(g.w), h: mm(g.h), gx: mm(g.gx), gy: mm(g.gy) });
+        var B = env.print.bounds(cells);
         var band = party ? S.bg : style === 'elegant' ? S.bg : style === 'minimal' ? '#FFFFFF' : S.accent;
         var bandInk = C.readable(band, [party || style === 'elegant' ? S.ink : '#FFFFFF', '#16131C']);
         var nameInk = style === 'elegant' ? C.ensure(S.bg, '#FFFFFF', 4.5) : C.readable('#FFFFFF', [style === 'party' ? S.bg : S.ink]);
         for (var sh = 0; sh < count; sh++) {
-          var page = env.page('#FFFFFF', { w: W, h: H }), L = [];
+          var page = env.page('#FFFFFF', { paper: paperId }), L = [];
           for (var i = 0; i < TAGS; i++) {
-            var cx = m + (i % cols) * tw, cy = m + Math.floor(i / cols) * th;
+            var cx = cells[i].x, cy = cells[i].y, tw = cells[i].w, th = cells[i].h;
             var nm = names[sh * TAGS + i] || '';
             var pad = tw * 0.08, bh = th * 0.24;
             if (style === 'minimal') L.push(env.rect({ id: 'tag-bar', name: 'Tag bar', x: cx, y: cy, w: tw * 0.04, h: th, fill: acc }));
@@ -194,12 +195,9 @@
             if (nm) L.push(env.text({ id: 'tag-name', name: 'Name ' + (sh * TAGS + i + 1), text: nm, x: bx, y: ny, w: bw, h: nh, valign: 'middle', font: S.display, weight: S.dw, size: th * 0.25, min: th * 0.07, maxLines: 2, lineHeight: 1.02, tracking: S.tight, align: S.align, color: nameInk, balance: true }));
             else L.push(env.line({ id: 'tag-line', name: 'Write-on line', x: bx, y: cy + th * 0.78, w: bw, width: Math.max(2, th * 0.006), color: '#BDBDC4' }));
           }
-          /* Cut guides: hairline dashes on every tag edge, light enough to disappear when trimmed off. */
-          var d = '', dl = (W * 0.008).toFixed(1);
-          for (var r = 0; r <= rows; r++) d += 'M' + (m * 0.4).toFixed(1) + ' ' + (m + r * th).toFixed(1) + 'H' + (W - m * 0.4).toFixed(1);
-          for (var c2 = 0; c2 <= cols; c2++) d += 'M' + (m + c2 * tw).toFixed(1) + ' ' + (m * 0.4).toFixed(1) + 'V' + (H - m * 0.4).toFixed(1);
-          L.push(env.svg({ id: 'cut-guides', name: 'Cut guides', markup: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '"><path d="' + d + '" fill="none" stroke="#C9C9CF" stroke-width="1.5" stroke-dasharray="' + dl + ' ' + dl + '"/></svg>', x: 0, y: 0, w: W, h: H }));
-          L.push(env.text({ id: 'sheet-note', name: 'Sheet note', text: 'Name tags ' + (sh + 1) + ' of ' + count + ' · ' + paper.name + ' · print at 100%, cut on the dashed lines', x: m, y: H - m * 0.62, w: W - 2 * m, font: 'Inter', weight: 400, size: m * 0.26, min: m * 0.18, maxLines: 1, align: 'center', color: '#6E6E76' }));
+          var marks = env.print.cutMarks({ cells: cells, lines: true, page: { w: W, h: H } });
+          L.push(env.text({ id: 'sheet-note', name: 'Sheet note', text: 'Name tags ' + (sh + 1) + ' of ' + count + ' · ' + ps.name + ' · print at 100%, cut on the lines', x: B.x, y: B.y + B.h + mm(7.5), w: B.w, font: 'Inter', weight: 400, size: mm(2.6), min: mm(1.8), maxLines: 1, align: 'center', color: '#6E6E76' }));
+          L = marks.concat(L);
           page.layers = L;
           out.push(page);
         }

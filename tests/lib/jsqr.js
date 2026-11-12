@@ -1,5 +1,3 @@
-/* jsQR 1.4.0 (npm "jsqr", by Cosmo Wolfe), Apache-2.0. Vendored for tests only: reads back the QR codes makers draw
-   (tests/makers.test.js). Never shipped or precached. */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();

@@ -19,7 +19,7 @@
     name: 'Link card and banner',
     category: 'Business',
     summary: 'A social preview card or a README and profile banner for your project or post.',
-    keywords: ['og image', 'open graph', 'social card', 'link preview', 'twitter card', 'readme', 'banner', 'github', 'repository', 'header', 'blog', 'developer', 'project'],
+    keywords: ['og image', 'open graph', 'social card', 'link preview', 'social preview', 'readme', 'banner', 'repository banner', 'repository', 'header', 'blog', 'developer', 'project'],
     sizes: [
       { id: 'og', name: 'Card', w: 1200, h: 630 },
       { id: 'repo', name: 'Repo', w: 1280, h: 640 },

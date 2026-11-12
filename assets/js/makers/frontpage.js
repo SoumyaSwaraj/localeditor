@@ -21,7 +21,7 @@
     sizes: [
       'portrait',
       'story',
-      { id: 'a4', name: 'A4 print', w: 1240, h: 1754 }
+      Object.assign(LE.makers.paperSize('a4'), { name: 'A4 print' })
     ],
     inputs: [
       { key: 'masthead', label: 'Paper name', type: 'text', required: true, max: 28, placeholder: 'The Weekend Wanderer' },

@@ -23,7 +23,7 @@
     sizes: [
       'portrait',
       'story',
-      { id: 'card5x7', name: 'Print 5×7', w: 1500, h: 2100 }
+      { id: 'card5x7', name: 'Print 5×7', w: 1500, h: 2100, print: { paper: '5x7', w: 127, h: 177.8, dpi: 300 } }
     ],
     inputs: [
       { key: 'names', label: 'Who or what', type: 'text', required: true, max: 60, placeholder: 'Asha & Rohan' },
@@ -75,6 +75,9 @@
       var when = [dateTxt, v.time].filter(Boolean).join(style === 'wedding' ? ' at ' : ' · ');
       var al = left ? 'left' : 'center';
 
+      /* The code is encoded once; the fitting loop only moves and sizes copies of it. */
+      var QR = code ? env.qr(code, { id: 'qr', name: 'QR code', x: 0, y: 0, w: 1, h: 1, color: '#111111', background: '#FFFFFF', quiet: 4, level: 'M' }) : null;
+      function qrAt(x, y, q) { return Object.assign({}, QR, { x: x, y: y, w: q, h: q }); }
       function blocks(s, q, ph) {
         var out = [], y = 0, x = inner.x, w = inner.w;
         function push(l, gap) { l.y = y; out.push(l); y += l.h + (gap || 0); return l; }
@@ -88,29 +91,30 @@
           out.push(env.photo(spec));
           y += ph + 5 * u * s;
         }
-        if (kicker) push(env.text({ id: 'kicker', name: 'Line above', text: kicker, x: x, y: 0, w: w, font: T.body, weight: style === 'wedding' ? 700 : 700, size: (style === 'wedding' ? 3.4 : 2.9) * u * s, min: 1.8 * u, maxLines: 2, uppercase: style !== 'birthday', tracking: style === 'wedding' ? 0.14 : 0.12, align: al, color: style === 'corporate' ? acc : accText, balance: !left }), 2.4 * u * s);
+        if (kicker) push(env.text({ id: 'kicker', name: 'Line above', text: kicker, x: x, y: 0, w: w, font: T.body, weight: style === 'wedding' ? 700 : 700, size: (style === 'wedding' ? 3.4 : 2.9) * u * s, min: 1.8 * u, maxLines: 2, uppercase: style !== 'birthday', tracking: style === 'wedding' ? 0.14 : 0.12, align: al, color: style === 'corporate' ? acc : accText, balance: bal && !left }), 2.4 * u * s);
         var nameSize = { wedding: 15, birthday: 11, babyshower: 13, housewarming: 11.5, corporate: 8.5 }[style] * u * s;
-        push(env.text({ id: 'names', name: 'Names', text: v.names, x: x, y: 0, w: w, font: T.names, weight: T.namesW, size: nameSize, min: 4.5 * u, maxLines: 3, lineHeight: style === 'wedding' || style === 'babyshower' ? 1.15 : 1.02, tracking: style === 'corporate' ? -0.02 : 0, align: al, color: style === 'wedding' ? C.ensure(T.accent, bg, 4.5) : ink, balance: !left }), 2 * u * s);
-        if (line) push(env.text({ id: 'line', name: 'Line below', text: line, x: x, y: 0, w: w, font: style === 'birthday' ? 'Poppins' : T.head, weight: style === 'wedding' ? 400 : 700, italic: style === 'wedding', size: (style === 'wedding' ? 4.6 : style === 'birthday' ? 4.2 : 4.4) * u * s, min: 2.2 * u, maxLines: 2, uppercase: style === 'birthday', tracking: style === 'birthday' ? 0.08 : 0, align: al, color: style === 'birthday' ? accText : ink, balance: !left }), 3 * u * s);
+        push(env.text({ id: 'names', name: 'Names', text: v.names, x: x, y: 0, w: w, font: T.names, weight: T.namesW, size: nameSize, min: 4.5 * u, maxLines: 3, lineHeight: style === 'wedding' || style === 'babyshower' ? 1.15 : 1.02, tracking: style === 'corporate' ? -0.02 : 0, align: al, color: style === 'wedding' ? C.ensure(T.accent, bg, 4.5) : ink, balance: bal && !left }), 2 * u * s);
+        if (line) push(env.text({ id: 'line', name: 'Line below', text: line, x: x, y: 0, w: w, font: style === 'birthday' ? 'Poppins' : T.head, weight: style === 'wedding' ? 400 : 700, italic: style === 'wedding', size: (style === 'wedding' ? 4.6 : style === 'birthday' ? 4.2 : 4.4) * u * s, min: 2.2 * u, maxLines: 2, uppercase: style === 'birthday', tracking: style === 'birthday' ? 0.08 : 0, align: al, color: style === 'birthday' ? accText : ink, balance: bal && !left }), 3 * u * s);
         if (style === 'wedding' || style === 'corporate') { out.push(env.line({ id: 'rule', name: 'Rule', x: left ? x : x + w / 2 - 8 * u, y: y, w: left ? 14 * u : 16 * u, width: Math.max(2, 0.3 * u), color: acc })); y += 3.2 * u * s; }
-        if (when) push(env.text({ id: 'when', name: 'Date and time', text: when, x: x, y: 0, w: w, font: T.body, weight: 700, size: 3.5 * u * s, min: 1.9 * u, maxLines: 2, uppercase: style === 'wedding' || style === 'corporate', tracking: style === 'wedding' ? 0.08 : 0.02, align: al, color: ink, balance: !left }), 1.4 * u * s);
-        if (v.venue) push(env.text({ id: 'venue', name: 'Venue', text: v.venue, x: x, y: 0, w: w, font: style === 'wedding' ? T.body : T.head === 'Bungee' ? 'Poppins' : T.head, weight: 700, size: 3.9 * u * s, min: 2 * u, maxLines: 2, align: al, color: ink, balance: !left }), 0.8 * u * s);
-        if (v.address) push(env.text({ id: 'address', name: 'Address', text: v.address, x: x, y: 0, w: w, font: T.body, weight: 400, size: 3.1 * u * s, min: 1.8 * u, maxLines: 3, align: al, color: muted, balance: !left }), 0);
+        if (when) push(env.text({ id: 'when', name: 'Date and time', text: when, x: x, y: 0, w: w, font: T.body, weight: 700, size: 3.5 * u * s, min: 1.9 * u, maxLines: 2, uppercase: style === 'wedding' || style === 'corporate', tracking: style === 'wedding' ? 0.08 : 0.02, align: al, color: ink, balance: bal && !left }), 1.4 * u * s);
+        if (v.venue) push(env.text({ id: 'venue', name: 'Venue', text: v.venue, x: x, y: 0, w: w, font: style === 'wedding' ? T.body : T.head === 'Bungee' ? 'Poppins' : T.head, weight: 700, size: 3.9 * u * s, min: 2 * u, maxLines: 2, align: al, color: ink, balance: bal && !left }), 0.8 * u * s);
+        if (v.address) push(env.text({ id: 'address', name: 'Address', text: v.address, x: x, y: 0, w: w, font: T.body, weight: 400, size: 3.1 * u * s, min: 1.8 * u, maxLines: 3, align: al, color: muted, balance: bal && !left }), 0);
         y += 3 * u * s;
-        if (v.message) push(env.text({ id: 'message', name: 'Message', text: v.message, x: x, y: 0, w: w, font: T.body, weight: 400, italic: style === 'wedding', size: 3.3 * u * s, min: 1.8 * u, maxLines: 6, lineHeight: 1.35, align: al, color: ink, balance: !left }), 3 * u * s);
+        if (v.message) push(env.text({ id: 'message', name: 'Message', text: v.message, x: x, y: 0, w: w, font: T.body, weight: 400, italic: style === 'wedding', size: 3.3 * u * s, min: 1.8 * u, maxLines: 6, lineHeight: 1.35, align: al, color: ink, balance: bal && !left }), 3 * u * s);
         if (code) {
           var tile = q + 3 * u;
           var tx = left ? x : x + (w - tile) / 2;
           out.push(env.rect({ id: 'qr-tile', name: 'Code tile', x: tx, y: y, w: tile, h: tile, fill: '#FFFFFF', radius: 1.6 * u, stroke: C.contrast('#FFFFFF', bg) < 1.3 ? { width: Math.max(2, 0.25 * u), color: C.mix(bg, ink, 0.3) } : null }));
-          out.push(env.qr(code, { id: 'qr', name: 'QR code', x: tx + 1.5 * u, y: y + 1.5 * u, w: q, h: q, color: '#111111', background: '#FFFFFF', quiet: 4, level: 'M' }));
+          out.push(qrAt(tx + 1.5 * u, y + 1.5 * u, q));
           y += tile + 1.6 * u * s;
           push(env.text({ id: 'qr-caption', name: 'Code caption', text: CAPTION[v.linkKind || 'rsvp'], x: x, y: 0, w: w, font: T.body, weight: 700, size: 2.7 * u * s, min: 1.7 * u, maxLines: 1, uppercase: true, tracking: 0.12, align: al, color: accText }), 1.2 * u * s);
         }
-        if (v.rsvp) push(env.text({ id: 'rsvp', name: 'RSVP line', text: v.rsvp, x: x, y: 0, w: w, font: T.body, weight: 400, size: 3 * u * s, min: 1.8 * u, maxLines: 2, align: al, color: muted, balance: !left }));
+        if (v.rsvp) push(env.text({ id: 'rsvp', name: 'RSVP line', text: v.rsvp, x: x, y: 0, w: w, font: T.body, weight: 400, size: 3 * u * s, min: 1.8 * u, maxLines: 2, align: al, color: muted, balance: bal && !left }));
         return { layers: out, h: y };
       }
       var qMax = 30 * u, qMin = 24 * u;
       var phMax = v.photo ? (env.tall ? 44 : env.portrait ? 30 : 34) * u * (style === 'corporate' ? 0.8 : 1) : 0, phMin = v.photo ? 18 * u : 0;
+      var bal = false; /* balancing keeps the line count, so it is left for the final pass */
       var s = env.tall ? 1.28 : 1, q = qMax * (env.tall ? 1.15 : 1), ph = phMax, res;
       for (var i = 0; i < 40; i++) {
         res = blocks(s, q, ph);
@@ -123,6 +127,7 @@
         else if (q > qMin) q = Math.max(qMin, q - over);
         else s = Math.max(0.5, s * 0.93);
       }
+      bal = true; res = blocks(s, q, ph);
       var oy = inner.y + Math.max(0, (inner.h - res.h) / 2);
       res.layers.forEach(function (l) { l.y += oy; });
 

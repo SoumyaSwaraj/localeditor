@@ -8,6 +8,10 @@ Kept by the lead architect. Things reported by the team that are not yet assigne
 - **Replay end tag.** The "Made with LocalEditor" tag on replay videos is off by default. Turning it on by default would help reach.
 - **Open source and self-hosting.** Not decided.
 
+## Decisions made by the owner
+- **Camera RAW decoder (12 November 2026):** allowed as an optional download with its licence shown, as an exception to the licence rule. Worth one legal read of how the licence text, source offer and replaceability are presented before launch.
+- **Download policy (12 November 2026):** `docs/DOWNLOADS.md`.
+
 ## Not yet assigned
 - **QA-010** Convert to PDF turns Word, Markdown, HTML and PowerPoint into page pictures with no text layer. Belongs with the next PDF wave.
 - **PDF wave, second half:** D11 saved form details, D14 compare versions, D15 bundle builder, D16 stamps and comment summary, D17 invoice maker, D18 tables to spreadsheet, D19 saved PDF workflows, D20 fingerprint receipt. D21 to D26 (teacher kit) are not requested yet.

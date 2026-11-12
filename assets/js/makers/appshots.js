@@ -11,7 +11,7 @@
     name: 'App store screenshots',
     category: 'Business',
     summary: 'A set of store screenshots: a headline over each screen in a simple device frame.',
-    keywords: ['app store', 'play store', 'screenshots', 'app', 'mockup', 'device', 'phone', 'tablet', 'launch', 'listing', 'marketing'],
+    keywords: ['app store', 'store listing', 'screenshots', 'app', 'mockup', 'device', 'phone', 'tablet', 'launch', 'listing', 'marketing'],
     sizes: [
       { id: 'phone', name: 'Phone', w: 1290, h: 2796 },
       { id: 'phone916', name: 'Phone 9:16', w: 1080, h: 1920 },

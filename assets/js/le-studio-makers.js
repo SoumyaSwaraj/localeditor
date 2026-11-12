@@ -47,6 +47,16 @@
       }).catch(function () {});
     })).then(function () { return map; });
   }
+  /* File names of the photos, so a maker can match photos to rows by name (sample:x → x.jpg). */
+  function namesOf(c, m, values) {
+    var out = {};
+    photoIds(m, values).forEach(function (id) {
+      if (/^sample:/.test(id)) { out[id] = id.slice(7) + '.jpg'; return; }
+      var meta = (c && c.mem && c.mem[id] && c.mem[id].meta) || (c && c.S && c.S.project && c.S.project.assets && c.S.project.assets[id]);
+      if (meta && meta.name) out[id] = String(meta.name).slice(0, 120);
+    });
+    return out;
+  }
   /* Sample photos become real assets of the design when it is made. */
   function ingestSamples(c, m, values) {
     var out = clone(values), jobs = [];
@@ -260,6 +270,8 @@
       }
     } else if (t === 'list') {
       ctl = listField(F, inp, set);
+    } else if (t === 'table') {
+      ctl = tableField(F, inp, set);
     } else if (t === 'photo' || t === 'photos') {
       ctl = photoField(F, inp, set);
     }
@@ -303,6 +315,73 @@
       if (rows.length >= max) box.appendChild(el('<small class="mk-hint">That is the most lines this design holds.</small>'));
     }
     draw();
+    return box;
+  }
+  /* A table from pasted spreadsheet cells or a CSV / Excel file, with a simple column mapping. */
+  function tableField(F, inp, set) {
+    var T = M.table, cols = inp.columns, max = inp.max || 300;
+    var box = el('<div class="mk-table" style="display:grid;gap:8px"></div>');
+    var ta = el('<textarea class="sx-input mk-area" rows="5" spellcheck="false"></textarea>');
+    ta.id = 'mk-' + inp.key;
+    ta.placeholder = inp.placeholder || ('Paste rows from a spreadsheet, with a header row (' + cols.map(function (c) { return c.label; }).join(', ') + ')');
+    var bar = el('<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><label class="btn btn-sm mk-file">' + F.c.ic('file') + '<span>CSV or Excel file</span><input type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.ods,text/csv" hidden></label><small class="mk-hint" aria-live="polite"></small></div>');
+    var note = bar.querySelector('small');
+    var map = el('<div class="mk-map" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px"></div>');
+    var st = { grid: [], match: { map: {}, header: false } };
+    var cur = F.values[inp.key];
+    if (cur) ta.value = [cols.map(function (c) { return c.label; })].concat(T.unpack(cur, cols.length)).map(function (r) { return r.join('\t'); }).join('\n');
+    function commit() {
+      var r = T.rows(cols, st.grid, st.match, max);
+      var bits = [r.rows.length + (r.rows.length === 1 ? ' row' : ' rows')];
+      if (r.dropped) bits.push(r.dropped + ' more than the ' + max + ' this design holds were left out');
+      if (r.shortened) bits.push(r.shortened + ' long ' + (r.shortened === 1 ? 'cell was' : 'cells were') + ' shortened');
+      note.textContent = st.grid.length ? bits.join(' · ') : '';
+      set(r.rows);
+    }
+    function drawMap() {
+      map.innerHTML = '';
+      if (!st.grid.length) return;
+      var heads = st.match.header ? st.grid[0] : st.grid[0].map(function (_, i) { return 'Column ' + (i + 1); });
+      cols.forEach(function (c) {
+        var lab = el('<label class="mk-hint" style="display:grid;gap:2px"><span></span><select class="sx-input"></select></label>');
+        lab.querySelector('span').textContent = c.label;
+        var sel = lab.querySelector('select');
+        sel.setAttribute('aria-label', 'Column for ' + c.label);
+        [['-1', '(none)']].concat(heads.map(function (hd, i) { return [String(i), String(hd || 'Column ' + (i + 1)).slice(0, 40)]; })).forEach(function (o) {
+          var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; sel.appendChild(op);
+        });
+        sel.value = String(st.match.map[c.key]);
+        sel.onchange = function () { st.match.map[c.key] = Number(sel.value); commit(); };
+        map.appendChild(lab);
+      });
+    }
+    function read(keepMap) {
+      st.grid = T.parse(ta.value);
+      if (!keepMap) st.match = T.match(cols, st.grid);
+      drawMap();
+      commit();
+    }
+    var timer = 0;
+    ta.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(function () { read(false); }, 250); });
+    bar.querySelector('input').onchange = function (e) {
+      var f = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!f) return;
+      note.textContent = 'Reading ' + f.name + '…';
+      var sheet = /\.(xlsx|xlsm|xls|ods)$/i.test(f.name);
+      var job = !sheet ? f.text().then(function (t) { return T.parse(t, /\.tsv$/i.test(f.name) ? '\t' : null); }) :
+        (LE.pdfBulk && LE.pdfBulk.parseTable ? Promise.resolve() : LE.lazy(root() + 'assets/js/le-pdf-bulk.js')).then(function () {
+          return LE.pdfBulk.parseTable(f);
+        }).then(function (t) { return [t.columns].concat(t.rows.map(function (r) { return t.columns.map(function (k) { return r[k] == null ? '' : String(r[k]); }); })); });
+      job.then(function (grid) {
+        ta.value = grid.slice(0, max + 1).map(function (r) { return r.map(function (x) { return String(x).replace(/[\t\n\r]+/g, ' '); }).join('\t'); }).join('\n');
+        read(false);
+      }).catch(function (err) { note.textContent = (err && err.message) || 'That file could not be read.'; });
+    };
+    box.appendChild(ta);
+    box.appendChild(bar);
+    box.appendChild(map);
+    if (ta.value) { st.grid = T.parse(ta.value); st.match = T.match(cols, st.grid); drawMap(); note.textContent = T.unpack(cur, cols.length).length + ' rows'; }
     return box;
   }
   function photoField(F, inp, set) {
@@ -417,14 +496,18 @@
       var vals = clone(F.values);
       images(F.c, F.m, vals).then(function (imgs) {
         if (token !== F.token) return null;
-        return M.build(F.m.id, vals, { style: F.style, size: F.size, images: imgs }).then(function (out) {
+        return M.build(F.m.id, vals, { style: F.style, size: F.size, images: imgs, names: namesOf(F.c, F.m, vals) }).then(function (out) {
           if (token !== F.token) return null;
           notes(F, out.warnings);
           var box = F.canvas.getBoundingClientRect();
           var dpr = Math.min(2, window.devicePixelRatio || 1);
           var edge = Math.max(320, Math.round(Math.max(box.width, box.height) * dpr));
+          pagesNote(F, out.pages.length);
           if (out.pages.length < 2) return M.renderPage(out.pages[0], { images: imgs, maxEdge: edge });
-          return Promise.all(out.pages.map(function (pg) { return M.renderPage(pg, { images: imgs, maxEdge: edge }); })).then(strip);
+          /* Long runs (a 50-page catalogue) are virtualised: only the first pages are drawn, the note gives the count. */
+          var shown = out.pages.slice(0, PREVIEW_PAGES);
+          var small = Math.max(240, Math.round(edge / Math.min(shown.length, 3)));
+          return Promise.all(shown.map(function (pg) { return M.renderPage(pg, { images: imgs, maxEdge: small }); })).then(strip);
         });
       }).then(function (cv) {
         if (!cv || token !== F.token) return;
@@ -441,6 +524,17 @@
     }, ms == null ? 180 : ms);
   }
 
+  var PREVIEW_PAGES = 6;
+  /* "5 pages" (or "50 pages · first 6 shown") over the preview of a multi-page make. */
+  function pagesNote(F, n) {
+    var host = F.node.querySelector('.mk-preview'), note = host.querySelector('.mk-pages');
+    if (n < 2) { if (note) note.remove(); return; }
+    if (!note) {
+      note = el('<span class="mk-pages" role="status" style="position:absolute;left:12px;bottom:8px;font-size:11px;font-weight:650;color:var(--faint)"></span>');
+      host.appendChild(note);
+    }
+    note.textContent = n + ' pages' + (n > PREVIEW_PAGES ? ' · first ' + PREVIEW_PAGES + ' shown' : '');
+  }
   /* Several pages side by side, one height, as one preview canvas. */
   function strip(list) {
     var hh = 600, gap = 24, w = 0;
@@ -478,10 +572,10 @@
     btn.textContent = 'Making…';
     return ingestSamples(c, m, v.values).then(function (finalVals) {
       return images(c, m, finalVals).then(function (imgs) {
-        return M.build(m.id, finalVals, { style: F.style, size: F.size, images: imgs });
+        return M.build(m.id, finalVals, { style: F.style, size: F.size, images: imgs, names: namesOf(c, m, finalVals) });
       });
     }).then(function (out) {
-      var pages = out.pages.map(function (pg) { pg = normalize(pg); pg.maker.sig = M.signature(pg.layers); return pg; });
+      var pages = out.pages.map(function (pg) { var n = normalize(pg); n.maker.sig = M.signature(n.layers); return n; });
       var edit = F.edit;
       close();
       place(c, pages, out.name, edit);
@@ -493,54 +587,68 @@
       return null;
     });
   }
-  /* New design, or the current page when it is empty or being remade, or a new page after it. Never overwrites work. */
+  /* Placing a make. One mechanism for every maker, one page or many:
+     - a new make goes on the current page when it is empty, else on new pages after the run the current page belongs to;
+     - Edit details on any page remakes the run of pages that came from the same make (same maker, style, size and
+       values, so hand edits and reordering elsewhere do not break it), growing or shrinking it to fit;
+     - the page being looked at is replaced through history and the rest of the run in the project, and one undo (or
+       redo) on that page swaps the whole run back, because studio history is per page. Leaving the page ends that link,
+       like any page history. Never overwrites work outside the run. */
+  function makeKey(mk) { return mk ? mk.id + '|' + mk.style + '|' + mk.size + '|' + JSON.stringify(mk.values) : ''; }
+  /* The pages around the active one that came from the same make. */
+  function runOf(c) {
+    var P0 = c && c.S && c.S.project;
+    if (!P0) return { from: 0, to: -1 };
+    c.syncProject();
+    var a = P0.activePage, mk = P0.pages[a] && P0.pages[a].maker, def = mk && M.get(mk.id);
+    if (!def || def.maxPages < 2) return { from: a, to: a };
+    var key = makeKey(mk), from = a, to = a;
+    var same = function (i) { return makeKey(P0.pages[i] && P0.pages[i].maker) === key; };
+    while (from > 0 && same(from - 1)) from--;
+    while (to < P0.pages.length - 1 && same(to + 1)) to++;
+    return { from: from, to: to };
+  }
+  function docKey(d) { return M.signature(d.layers) + '|' + JSON.stringify(d.maker || null) + '|' + d.width + 'x' + d.height; }
   function place(c, pages, name, edit) {
-    var page = pages[0];
     ST.multi = null;
-    var old = edit && c.S.project ? c.scene.toJSON().maker : null;
-    if (!c.S.project) c.newDesign(page.width, page.height, name);
-    else if (!edit && c.scene.layers().length) c.addPage(false);
+    var run, pos = 0;
+    if (!c.S.project) { c.newDesign(pages[0].width, pages[0].height, name); run = { from: 0, to: 0 }; }
+    else {
+      run = runOf(c);
+      var active = c.S.project.activePage;
+      if (edit) pos = Math.min(active - run.from, pages.length - 1);
+      else if (!c.scene.layers().length) run = { from: active, to: active };
+      else {
+        /* A fresh page after the run; it is the page that takes the make through history. */
+        if (active !== run.to) c.switchPage(run.to);
+        c.addPage(false);
+        run = { from: c.S.project.activePage, to: c.S.project.activePage };
+      }
+    }
     if (c.hideStart) c.hideStart();
+    c.syncProject();
     var p = c.S.project;
-    var multi = pages.length > 1 || (old && runOf(p, old).length > 1);
-    if (multi) page = placeMany(c, pages, old);
-    else c.replaceDoc(page, true);
+    var multi = pages.length > 1 || run.to > run.from;
+    var before = multi ? { pages: clone(p.pages), active: p.activePage, key: docKey(p.pages[p.activePage]) } : null;
+    if (multi) {
+      var fresh = pages.slice();
+      fresh[pos] = p.pages[p.activePage];
+      p.pages.splice.apply(p.pages, [run.from, run.to - run.from + 1].concat(fresh));
+      p.activePage = run.from + pos;
+    }
+    c.replaceDoc(pages[pos], true);
+    c.syncProject();
+    if (multi) {
+      c.S.pageThumbs = {};
+      ST.multi = { project: p, before: before, after: { pages: clone(p.pages), active: p.activePage, key: docKey(p.pages[p.activePage]) }, state: 'after' };
+    }
     pages.forEach(function (pg) { photoIdsOfPage(pg).forEach(function (id) { if (c.mem[id] && p) p.assets[id] = c.mem[id].meta; }); });
     c.scene.select([]);
     c.fit();
     c.markDirty();
     if (c.renderFoot) c.renderFoot();
-    c.toast(edit ? (pages.length > 1 ? pages.length + ' pages remade' : 'Page remade') : (pages.length > 1 ? 'Made ' + pages.length + ' pages. Tap any part to edit it.' : 'Made. Tap any part to edit it.'), { action: { label: 'Edit details', fn: function () { editDetails(c); } } });
-  }
-  /* Multi-page makers (an event kit): the pages one make produced sit next to each other and carry the same doc.maker.
-     Remaking replaces that whole run; the current page is replaced through history, the others in the project, and
-     one undo (or redo) on the current page swaps the whole run back, because studio history is per page. */
-  function sameMake(a, b) { return !!(a && b && a.id === b.id && a.style === b.style && a.size === b.size && JSON.stringify(a.values) === JSON.stringify(b.values)); }
-  function runOf(p, meta) {
-    var i = p.activePage, a = i, b = i;
-    if (!sameMake(p.pages[i] && p.pages[i].maker, meta)) return [i];
-    while (a > 0 && sameMake(p.pages[a - 1].maker, meta)) a--;
-    while (b < p.pages.length - 1 && sameMake(p.pages[b + 1].maker, meta)) b++;
-    var out = [];
-    for (var k = a; k <= b; k++) out.push(k);
-    return out;
-  }
-  function docKey(d) { return M.signature(d.layers) + '|' + JSON.stringify(d.maker || null) + '|' + d.width + 'x' + d.height; }
-  function placeMany(c, pages, old) {
-    c.syncProject();
-    var p = c.S.project;
-    var before = { pages: clone(p.pages), active: p.activePage, key: docKey(p.pages[p.activePage]) };
-    var run = old ? runOf(p, old) : [p.activePage];
-    var start = run[0], pos = Math.min(p.activePage - start, pages.length - 1);
-    var fresh = pages.slice();
-    fresh[pos] = p.pages[p.activePage];
-    p.pages.splice.apply(p.pages, [start, run.length].concat(fresh));
-    p.activePage = start + pos;
-    c.replaceDoc(pages[pos], true);
-    c.syncProject();
-    c.S.pageThumbs = {};
-    ST.multi = { project: p, before: before, after: { pages: clone(p.pages), active: p.activePage, key: docKey(p.pages[p.activePage]) }, state: 'after' };
-    return pages[pos];
+    var n = pages.length;
+    c.toast(edit ? (n > 1 ? 'Remade ' + n + ' pages' : 'Page remade') : (n > 1 ? 'Made ' + n + ' pages. Tap any part to edit it.' : 'Made. Tap any part to edit it.'), { action: { label: 'Edit details', fn: function () { editDetails(c); } } });
   }
   function swapRun(c, to) {
     var R = ST.multi, p = c.S.project, snap = R[to];

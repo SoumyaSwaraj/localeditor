@@ -32,10 +32,10 @@
     name: 'Wi-Fi sign',
     category: 'Business',
     summary: 'A sign with a code that joins your Wi-Fi, and the password in print.',
-    keywords: ['wifi', 'wi-fi', 'wireless', 'password', 'network', 'qr', 'guest', 'cafe', 'airbnb', 'home', 'office', 'sign', 'table tent'],
+    keywords: ['wifi', 'wi-fi', 'wireless', 'password', 'network', 'qr', 'guest', 'cafe', 'holiday rental', 'home', 'office', 'sign', 'table tent'],
     sizes: [
-      { id: 'tent', name: 'Tent 4×6', w: 1200, h: 1800 },
-      { id: 'a5', name: 'A5', w: 1240, h: 1754 },
+      Object.assign(LE.makers.paperSize('photo-4x6'), { id: 'tent', name: 'Tent 4×6' }),
+      'a5',
       'square'
     ],
     inputs: [
@@ -76,6 +76,9 @@
       var ink = C.readable(under, [S.ink]), muted = C.readable(under, [S.muted, S.ink]), acc = C.ensure(S.accent, under, 3);
       var accText = C.ensure(S.accent, under, 4.5);
 
+      /* The code is encoded once; the fitting loop only moves and sizes copies of it. */
+      var QR = code ? env.qr(code, { id: 'qr', name: 'Wi-Fi QR code', x: 0, y: 0, w: 1, h: 1, color: '#111111', background: '#FFFFFF', quiet: 4, level: 'M' }) : null;
+      function qrAt(x, y, q) { return Object.assign({}, QR, { x: x, y: y, w: q, h: q }); }
       function blocks(s, q) {
         var out = [], y = 0, x = inner.x, w = inner.w;
         function push(l, gap) { l.y = y; out.push(l); y += l.h + (gap || 0); return l; }
@@ -84,11 +87,11 @@
         push(env.text({ id: 'heading', name: 'Heading', text: v.heading || S.heading, x: x, y: 0, w: w, font: S.head, weight: S.headW, size: (style === 'home' ? 11 : style === 'bold' ? 13 : 10.5) * u * s, min: 4 * u, maxLines: 2, uppercase: !!S.upper, lineHeight: style === 'home' ? 1.1 : 1.05, tracking: style === 'bold' ? 0 : -0.02, align: 'center', color: ink, balance: true }), 4 * u * s);
         var qx = x + (w - q) / 2;
         if (code) {
-          if (S.card) { push(env.qr(code, { id: 'qr', name: 'Wi-Fi QR code', x: qx, y: 0, w: q, h: q, color: '#111111', background: '#FFFFFF', quiet: 4, level: 'M' }), 4 * u * s); }
+          if (S.card) { push(qrAt(qx, 0, q), 4 * u * s); }
           else {
             var tw = q + 4 * u;
             out.push(env.rect({ id: 'qr-tile', name: 'Code tile', x: x + (w - tw) / 2, y: y, w: tw, h: tw, fill: '#FFFFFF', radius: style === 'clean' ? 2 * u : 3 * u, stroke: style === 'clean' ? { width: 0.3 * u, color: '#C9CDD4' } : null }));
-            var ql = env.qr(code, { id: 'qr', name: 'Wi-Fi QR code', x: qx, y: y + 2 * u, w: q, h: q, color: '#111111', background: '#FFFFFF', quiet: 4, level: 'M' });
+            var ql = qrAt(qx, y + 2 * u, q);
             out.push(ql); y += tw + 4 * u * s;
           }
         } else {

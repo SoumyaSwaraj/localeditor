@@ -23,13 +23,22 @@ const loadImages = (page) => page.evaluate(async (list) => {
 
 const cases = {};
 
-cases['every maker, style and size builds clean with sample, minimal and worst-case values'] = async ({ browser, base, h }) => {
+/* Every maker × style × size × {sample, minimal, worst}, every page, in groups so each case stays well inside the
+   case timeout. A maker in no named group (a new one) lands in the last group, so it is always covered. */
+const BUILD_GROUPS = [
+  ['first set and print set', ['quote', 'review', 'receipt', 'milestone', 'palette', 'film', 'calendar', 'chart', 'labels', 'stickers', 'photobook', 'zine']],
+  ['catalogue', ['catalogue']],
+  ['QR makers', ['payposter', 'wifisign', 'qrinvite']],
+  ['everything else', null]
+];
+async function buildsClean({ browser, base, h }, only, named) {
   const page = await studio(h, browser, base);
   await loadImages(page);
-  const res = await page.evaluate(async (photos) => {
-    const out = { builds: 0, problems: [] };
+  const res = await page.evaluate(async ([photos, only, named]) => {
+    const out = { builds: 0, problems: [], makers: 0 };
     const fonts = LE.fonts.list().map((f) => f.family);
-    for (const m of LE.makers.list()) {
+    for (const m of LE.makers.list().filter((x) => only ? only.indexOf(x.id) >= 0 : named.indexOf(x.id) < 0)) {
+      out.makers++;
       h: for (const st of m.styles) {
         for (const sz of m.sizes) {
           const cs = LE.makers.cases(m.id, photos.map((p) => 'sample:' + p));
@@ -38,15 +47,20 @@ cases['every maker, style and size builds clean with sample, minimal and worst-c
             try { r = await LE.makers.build(m.id, cs[cn], { style: st.id, size: sz.id, images: window.__imgs, today: '2026-11-12' }); }
             catch (e) { out.problems.push(m.id + '/' + st.id + '/' + sz.id + '/' + cn + ' threw ' + e.message); continue; }
             out.builds++;
+            /* Every page of every make: the first has the chosen size; pages with their own size keep it. */
             if (r.pages[0].width !== sz.w || r.pages[0].height !== sz.h) out.problems.push(m.id + ' wrong size');
             r.pages.forEach((pg, pi) => {
+              const chosen = pg.width === sz.w && pg.height === sz.h;
+              if (!(pg.width > 0 && pg.height > 0) || 'ownSize' in pg || 'ownPrint' in pg) out.problems.push(m.id + ' page size');
               if (!pg.maker || pg.maker.id !== m.id || pg.maker.style !== st.id || pg.maker.size !== sz.id) out.problems.push(m.id + ' maker meta missing');
-              if (!(pg.width > 0 && pg.height > 0) || 'ownSize' in pg) out.problems.push(m.id + ' page size');
+              if (chosen && sz.print && !(pg.print && pg.print.paper === sz.print.paper)) out.problems.push(m.id + ' print meta missing');
+              if (pg.print && !(pg.print.w > 0 && pg.print.h > 0 && Math.abs(pg.width / pg.height - pg.print.w / pg.print.h) < 0.01)) out.problems.push(m.id + ' print meta does not match the page shape');
               LE.makers.check(pg).forEach((p) => out.problems.push(m.id + '/' + st.id + '/' + sz.id + '/' + cn + '/p' + (pi + 1) + ' ' + p.kind + ': ' + p.message));
               pg.layers.forEach((l) => {
                 if (l.type === 'text' && fonts.indexOf(l.font) < 0) out.problems.push(m.id + ' font ' + l.font);
-                if (['text', 'image', 'shape', 'svg'].indexOf(l.type) < 0) out.problems.push(m.id + ' layer type ' + l.type);
+                if (['text', 'image', 'shape', 'svg', 'group'].indexOf(l.type) < 0) out.problems.push(m.id + ' layer type ' + l.type);
                 if (l.type === 'image' && !l.slot) out.problems.push(m.id + ' photo without slot');
+                if (l.groupId && !pg.layers.some((g) => g.id === l.groupId && g.type === 'group')) out.problems.push(m.id + ' orphan group member');
               });
             });
           }
@@ -54,23 +68,31 @@ cases['every maker, style and size builds clean with sample, minimal and worst-c
       }
     }
     return out;
-  }, PHOTOS);
-  h.assert(res.builds >= 10 * 4 * 2 * 3, 'built ' + res.builds);
+  }, [PHOTOS, only, named]);
+  h.assert(res.makers >= (only ? only.length : 6), 'makers covered: ' + res.makers);
+  h.assert(res.builds >= res.makers * 4 * 2 * 3, 'built ' + res.builds);
   h.assert(!res.problems.length, res.problems.slice(0, 6).join(' | '));
   h.assert.noErrors(page);
-};
+}
+BUILD_GROUPS.forEach(([label, ids]) => {
+  const named = [].concat.apply([], BUILD_GROUPS.map((g) => g[1] || []));
+  cases['every maker, style and size builds clean with sample, minimal and worst-case values (' + label + ')'] = (ctx) => buildsClean(ctx, ids, named);
+});
 
-cases['each maker offers 4–6 styles; the social makers square, 4:5 and 9:16'] = async ({ browser, base, h }) => {
+cases['each maker offers 4–6 styles; social makers square, 4:5 and 9:16; print makers paper sizes; the rest their own'] = async ({ browser, base, h }) => {
   const page = await studio(h, browser, base);
-  const list = await page.evaluate(() => LE.makers.list().map((m) => ({ id: m.id, styles: m.styles.length, sizes: m.sizes.map((s) => s.w + 'x' + s.h) })));
+  const list = await page.evaluate(() => LE.makers.list().map((m) => ({ id: m.id, category: m.category, styles: m.styles.length, sizes: m.sizes.map((s) => s.w + 'x' + s.h), print: m.sizes.every((s) => s.print && s.print.dpi === 300), anyPrint: m.sizes.filter((s) => s.print).map((s) => s.print.dpi) })));
   const ids = list.map((m) => m.id);
   h.assert.equal(ids.slice(0, 6).join(','), 'quote,review,receipt,milestone,palette,film');
-  ['payposter', 'wifisign', 'qrinvite', 'eventkit', 'movieposter', 'albumcover', 'frontpage', 'appshots', 'linkcard'].forEach((id) => h.assert(ids.indexOf(id) >= 0, id + ' registered'));
+  ['calendar', 'chart', 'labels', 'stickers', 'photobook', 'zine', 'catalogue', 'payposter', 'wifisign', 'qrinvite', 'eventkit', 'movieposter', 'albumcover', 'frontpage', 'appshots', 'linkcard'].forEach((id) => h.assert(ids.indexOf(id) >= 0, id + ' registered'));
+  /* The first set offers every social size; the second set picks the sizes its formats need (and may print). */
   const social = ['quote', 'review', 'receipt', 'milestone', 'palette', 'film'];
   list.forEach((m) => {
     h.assert(m.styles >= 4 && m.styles <= 6, m.id + ' styles');
+    if (m.category === 'Print') { h.assert(m.print, m.id + ' print sizes'); return; }
+    if (social.indexOf(m.id) >= 0) { ['1080x1080', '1080x1350', '1080x1920'].forEach((s) => h.assert(m.sizes.indexOf(s) >= 0, m.id + ' ' + s)); return; }
     h.assert(m.sizes.length >= 1 && m.sizes.length <= 4, m.id + ' sizes');
-    if (social.indexOf(m.id) >= 0) ['1080x1080', '1080x1350', '1080x1920'].forEach((s) => h.assert(m.sizes.indexOf(s) >= 0, m.id + ' ' + s));
+    h.assert(m.anyPrint.every((d) => d === 300), m.id + ' print sizes at 300 dpi');
   });
 };
 
@@ -313,7 +335,7 @@ cases['text the shipped fonts cannot draw falls back to a system-backed family']
 /* ---------- QR makers: exact payloads, read back from the rendered page with a decoder vendored for tests ---------- */
 const path = require('path');
 async function withDecoder(page) {
-  await page.addScriptTag({ path: path.join(__dirname, 'lib', 'jsQR.js') });
+  await page.addScriptTag({ path: path.join(__dirname, 'lib', 'jsqr.js') });
   await page.evaluate(() => {
     window.__readQR = async (doc) => {
       const c = await LE.makers.renderPage(doc, { maxEdge: 1400 });
@@ -405,6 +427,16 @@ cases['a long invitation link warns in the form; the payment form says to check 
   await page.waitForTimeout(300);
   const payHint = await page.evaluate(() => document.querySelector('.mk-sheet').textContent);
   h.assert(/Check the code with your own payment app before printing\./.test(payHint), 'payment form tells the person to check the code');
+  /* Multi-page previews say how many pages; long runs draw only the first six. */
+  await page.evaluate(() => LEStudioMakers.open('eventkit'));
+  await page.waitForFunction(() => document.querySelector('.mk-pages'));
+  h.assert.equal(await page.evaluate(() => document.querySelector('.mk-pages').textContent), '4 pages');
+  await page.evaluate(() => LEStudioMakers.open('eventkit', { values: { event: 'Big day', names: new Array(24).fill('Name') } }));
+  await page.waitForFunction(() => /^6 pages/.test((document.querySelector('.mk-pages') || {}).textContent || ''));
+  await page.evaluate(() => LEStudioMakers.open('appshots', { values: { shots: [['One', ''], ['Two', '']] } }));
+  await page.waitForFunction(() => (document.querySelector('.mk-pages') || {}).textContent === '2 pages');
+  await page.evaluate(() => LEStudioMakers.open('quote'));
+  await page.waitForFunction(() => document.querySelector('.mk-render') && !document.querySelector('.mk-pages'));
   await page.evaluate(() => LEStudioMakers.close());
   h.assert.noErrors(page);
 };
@@ -428,14 +460,16 @@ cases['event kit builds invitation, story, banner and name-tag sheets'] = async 
       names1: a.pages[3].layers.filter((l) => /^tag-name/.test(l.id)).map((l) => l.text).join(','),
       names2: a.pages[4].layers.filter((l) => /^tag-name/.test(l.id)).map((l) => l.text).join(','),
       blankLines: b.pages[3].layers.filter((l) => /^tag-line/.test(l.id)).length,
-      guides: !!sheet.layers.find((l) => l.id === 'cut-guides'),
+      guides: !!sheet.layers.find((l) => l.id === 'cut-marks' && l.type === 'group'),
+      prints: a.pages.map((p) => p.print ? p.print.paper : '-').join(',') + '/' + b.pages.map((p) => p.print ? p.print.paper : '-').join(','),
       inside: boxes.every((p) => p.x >= 0 && p.y >= 0 && p.x + p.w <= sheet.width && p.y + p.h <= sheet.height),
       overlap,
       problems: a.pages.concat(b.pages).reduce((n, p) => n + LE.makers.check(p).length, 0)
     };
   });
-  h.assert.equal(r.sizes, '1080x1350,1080x1920,1920x1080,1240x1754,1240x1754');
-  h.assert.equal(r.sizesB, '1080x1350,1080x1920,1500x500,1275x1650');
+  h.assert.equal(r.sizes, '1080x1350,1080x1920,1920x1080,2480x3508,2480x3508');
+  h.assert.equal(r.sizesB, '1080x1350,1080x1920,1500x500,2550x3300');
+  h.assert.equal(r.prints, '-,-,-,a4,a4/-,-,-,letter', 'tag sheets carry doc.print, screen pages do not');
   h.assert(r.metas, 'every page carries doc.maker');
   h.assert.equal(r.tagsPerSheet, '8/8');
   h.assert.equal(r.names1, 'Meera,Arjun,Lena,Kofi,Sam,Ana,Ivo,Zoë');
@@ -453,7 +487,7 @@ cases['event kit: make adds every page; edit details remakes all of them in one 
   await page.evaluate(() => LEStudioMakers.make());
   await page.waitForFunction(() => LEStudio.S.project && LEStudio.S.project.pages.length === 5);
   let s = await snap();
-  h.assert.equal(s.map((p) => p.w + 'x' + p.h).join(','), '1080x1350,1080x1920,1920x1080,1240x1754,1240x1754');
+  h.assert.equal(s.map((p) => p.w + 'x' + p.h).join(','), '1080x1350,1080x1920,1920x1080,2480x3508,2480x3508');
   h.assert(s.every((p) => p.ev === 'Supper Club' && p.text === 'Supper Club'), 'all pages made');
   h.assert.equal(await page.evaluate(() => LEStudio.S.project.activePage), 0, 'the invitation is shown');
   /* Edit from the second tag sheet, and shorten the list so the kit loses a page. */
@@ -474,6 +508,11 @@ cases['event kit: make adds every page; edit details remakes all of them in one 
   await page.evaluate(() => LEStudio.scene.redo());
   s = await snap();
   h.assert(s.length === 4 && s.every((p) => p.ev === 'Rooftop Social'), 'redo remakes them again');
+  /* PDF: screen pages at their pixel size (96 dpi, 0.75 pt a px), the tag sheet at A4 in points. */
+  const dl = await h.capture(page, () => page.evaluate(() => LEStudio.exportImage({ format: 'pdf', pages: 'all', name: 'kit' })), 60000);
+  const info = await h.pdfRead(browser, base, dl.buf);
+  h.assert.equal(info.pages, 4);
+  h.assert.equal(info.sizes.map((x) => x.join('x')).join(','), '810x1013,810x1440,1440x810,595x842');
   h.assert.noErrors(page);
 };
 
