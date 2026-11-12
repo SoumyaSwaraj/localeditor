@@ -927,6 +927,31 @@
     return Promise.resolve();
   }
 
+  /* Notes (agent mode): [{ id, page (index or page id), layer?, x, y, text, status: open | done, reply?, at }]. Plain text.
+     Stored in meta.studio.notes; the studio shows them as pins for an assistant to answer. */
+  function readNotes(v, rep, pageIds, nPages) {
+    if (v == null) return null;
+    if (!Array.isArray(v)) { rep.err('/notes', 'notes is a list of { "id", "page", "x", "y", "text" }.'); return null; }
+    var out = [], seen = {};
+    v.slice(0, 200).forEach(function (n, i) {
+      var path = '/notes/' + i;
+      if (!isObj(n)) { rep.err(path, 'A note must be an object.'); return; }
+      if (typeof n.id !== 'string' || !/^[\w:.-]{1,48}$/.test(n.id) || seen[n.id]) { rep.err(path + '/id', 'Each note needs its own "id" (letters, numbers, "-", "_", "." or ":").'); return; }
+      seen[n.id] = 1;
+      if (typeof n.text !== 'string' || !n.text.trim()) { rep.err(path + '/text', 'A note needs "text".'); return; }
+      var pg = 0;
+      if (typeof n.page === 'string') { pg = pageIds.indexOf(n.page); if (pg < 0) { rep.err(path + '/page', 'No page with the id "' + plain(n.page, 48) + '".'); return; } }
+      else if (n.page != null) { var pv = numberAt(n.page, path + '/page', rep, 'page'); if (pv == null) return; pg = Math.round(pv); }
+      if (pg < 0 || pg >= nPages) { rep.err(path + '/page', 'page is a page index from 0 to ' + (nPages - 1) + ', or a page id.'); return; }
+      var o = { id: n.id, page: pg, x: numberAt(n.x, path + '/x', rep, 'x') || 0, y: numberAt(n.y, path + '/y', rep, 'y') || 0, text: plain(n.text, 1000), status: n.status === 'done' ? 'done' : 'open', at: isNum(n.at) ? n.at : 0 };
+      if (n.status != null && n.status !== 'open' && n.status !== 'done') rep.err(path + '/status', 'status is "open" or "done".');
+      if (n.layer != null) { if (typeof n.layer === 'string' && /^[\w:.-]{1,48}$/.test(n.layer)) o.layer = n.layer; else rep.err(path + '/layer', 'layer is a layer id.'); }
+      if (n.reply != null) { if (typeof n.reply === 'string') { if (n.reply.trim()) o.reply = plain(n.reply, 1000); } else rep.err(path + '/reply', 'reply must be text.'); }
+      out.push(o);
+    });
+    return out;
+  }
+
   /* Page carousel (wave 2): { slides 1–20, slideWidth }; slideWidth × slides = page width (slideWidth may be left out). */
   function readCarousel(v, path, page, rep) {
     var c = objAt(v, path, rep, 'carousel');
@@ -1007,7 +1032,7 @@
     if (raw.version == null) rep.err('/version', 'Add "version": 1.');
     else if (Number(raw.version) > VERSION) { rep.err('/version', 'This design needs a newer LocalEditor (version ' + plain(raw.version, 8) + ').'); return Promise.resolve(done()); }
     else if (Number(raw.version) !== VERSION) rep.err('/version', '"version" must be 1.');
-    var TOP = ['$schema', 'format', 'version', 'name', 'pages', 'variables', 'remix'];
+    var TOP = ['$schema', 'format', 'version', 'name', 'pages', 'variables', 'remix', 'notes'];
     Object.keys(raw).forEach(function (k) { if (TOP.indexOf(k) < 0) rep.warn(ptr('', k), 'unknown-key', 'The key "' + plain(k, 40) + '" is not part of the format and was ignored.'); });
     if (raw.name != null && typeof raw.name !== 'string') rep.err('/name', 'name must be text.');
     if (!Array.isArray(raw.pages) || !raw.pages.length) { rep.err('/pages', 'A design needs "pages": [ { "width", "height", "layers": [ … ] } ].'); return Promise.resolve(done()); }
@@ -1023,6 +1048,7 @@
     }
 
     var st = { ids: {}, link: !!opts.link, dropped: [] };
+    var notesIn = raw.notes;
     var pageIds = [];
     var pages = raw.pages.slice(0, LIMITS.pages).map(function (p, pi) {
       var path = '/pages/' + pi;
@@ -1195,6 +1221,8 @@
       if (variables && variables.length) studio.variables = variables;
       if (remix) studio.remix = remix;
       /* Page ids live on the pages themselves (page.id), so they follow a page when it is moved or deleted. */
+      var notes = readNotes(notesIn, rep, pageIds, outPages.length);
+      if (notes && notes.length) studio.notes = notes;
       studio.originalSize = { w: outPages[0].width, h: outPages[0].height };
       var assetMeta = {};
       Object.keys(out.meta).forEach(function (id) { assetMeta[id] = out.meta[id]; });
@@ -1267,16 +1295,89 @@
           }
           var fg = rgbOf(l.fill && l.fill.type === 'solid' ? l.fill.color : (l.fill && l.fill.type !== 'none' && l.fill.type ? null : l.color));
           var under = l.background && l.background.color ? rgbOf(l.background.color) : behind(page, li, bb);
+          var need = (l.size || 48) >= 24 ? 3 : 4.5;
           if (fg && under && fg.a > 0.6 && under.a > 0.95) {
             var ratio = contrast(fg, under);
-            var need = (l.size || 48) >= 24 ? 3 : 4.5;
             if (ratio < need) rep.warn(path, 'low-contrast', 'Text ' + label + ' has low contrast against what is behind it (' + (Math.round(ratio * 10) / 10) + ':1; aim for ' + need + ':1).', l.id);
+          } else if (fg && !under && fg.a > 0.6 && !(l.background && l.background.color) && typeof opts.sample === 'function') {
+            /* Over a photo or gradient: sample what is drawn behind the text box (opts.sample, see lintRendered) and judge
+               the contrast that 80 % of the box reaches (the 20th percentile), so a few dark pixels do not hide a problem. */
+            var px = null;
+            try { px = opts.sample(pi, bb, l); } catch (e) { px = null; }
+            if (px && px.length >= 4) {
+              var rs = px.map(function (c) { return contrast(fg, { r: c[0], g: c[1], b: c[2], a: 1 }); }).sort(function (a, b) { return a - b; });
+              var p20 = rs[Math.floor(rs.length * 0.2)];
+              if (p20 < need) rep.warn(path, 'low-contrast', 'Text ' + label + ' is hard to read over the image or gradient behind it (' + (Math.round(p20 * 10) / 10) + ':1 over most of it; aim for ' + need + ':1). Add a text highlight, a shadow, or a darker or lighter area behind it.', l.id);
+            }
           }
         }
       });
     });
     return rep.warnings.slice(start);
   }
+  /* lint with sampled contrast over photos and gradients: renders each page once at low resolution with its text
+     layers hidden, then samples the region behind each text box. opts.render(page, scale) → Promise<canvas>; in the
+     studio it defaults to LEStudio.hiddenRender. Without a renderer it is plain lint. */
+  function lintRendered(project, opts) {
+    opts = Object.assign({}, opts || {});
+    var render = opts.render || (window.LEStudio && typeof window.LEStudio.hiddenRender === 'function' ? function (pg, sc) { return window.LEStudio.hiddenRender(pg, sc); } : null);
+    if (!render || !project || !Array.isArray(project.pages)) return Promise.resolve(lint(project, opts));
+    var shots = [];
+    return project.pages.reduce(function (chain, page, pi) {
+      return chain.then(function () {
+        if (!(page.layers || []).some(function (l) { return l.type === 'text'; })) return null;
+        var bare = clone(page);
+        bare.layers = (bare.layers || []).filter(function (l) { return l.type !== 'text'; });
+        var sc = Math.min(1, 320 / Math.max(page.width, page.height));
+        return Promise.resolve(render(bare, sc)).then(function (cv) {
+          if (!cv || !cv.getContext) return;
+          shots[pi] = { sc: sc, data: cv.getContext('2d').getImageData(0, 0, cv.width, cv.height), w: cv.width, h: cv.height };
+        }, function () {});
+      });
+    }, Promise.resolve()).then(function () {
+      opts.sample = function (pi, box) {
+        var s = shots[pi];
+        if (!s) return null;
+        var x0 = clamp(Math.floor(box.x * s.sc), 0, s.w - 1), y0 = clamp(Math.floor(box.y * s.sc), 0, s.h - 1);
+        var x1 = clamp(Math.ceil((box.x + box.w) * s.sc), x0 + 1, s.w), y1 = clamp(Math.ceil((box.y + box.h) * s.sc), y0 + 1, s.h);
+        var out = [], step = Math.max(1, Math.floor(Math.sqrt((x1 - x0) * (y1 - y0) / 400)));
+        for (var y = y0; y < y1; y += step) for (var x = x0; x < x1; x += step) { var i = (y * s.w + x) * 4; out.push([s.data.data[i], s.data.data[i + 1], s.data.data[i + 2]]); }
+        return out;
+      };
+      return lint(project, opts);
+    });
+  }
+
+  /* =====================================================================
+     ONE LAYER — for callers that patch a single layer (agent mode)
+     ===================================================================== */
+  /* parseLayer(shorthandLayer, { width, height, background?, assets?, studio? }, { resolve?, link? })
+     → Promise<parse result + { layer }>, with every path relative to the layer ("/x", "/src"). The full result
+     (project, assets, remote) is kept so a caller can pull in new images or ask about remote hosts. */
+  function parseLayer(src, ctx, opts) {
+    ctx = ctx || {};
+    opts = opts || {};
+    var mini = { format: FORMAT, version: VERSION, name: 'layer', pages: [{ width: ctx.width || 1080, height: ctx.height || 1080, background: ctx.background || '#ffffff', layers: [src] }] };
+    function rebase(pth) { return String(pth || '').replace(/^\/pages\/0\/layers\/0/, '').replace(/^\/pages\/0/, ''); }
+    return parse(mini, { resolve: opts.resolve, link: opts.link, assets: ctx.assets }).then(function (res) {
+      res.errors = res.errors.map(function (e) { return { path: rebase(e.path), message: e.message }; });
+      res.warnings = res.warnings.map(function (w) { var o = Object.assign({}, w); o.path = rebase(w.path); return o; });
+      (res.remote || []).forEach(function (r) { r.refs.forEach(function (ref) { ref.path = rebase(ref.path); }); });
+      res.layer = res.ok && res.project ? res.project.pages[0].layers[0] || null : null;
+      return res;
+    });
+  }
+  /* layerToLong(layer, { width, height, assets, studio }) → the long open-format form of one studio layer (images by id). */
+  function layerToLong(layer, ctx) {
+    ctx = ctx || {};
+    var l = clone(layer);
+    delete l.groupId;
+    var st = {};
+    ['icons', 'qr', 'fx'].forEach(function (k) { if (ctx.studio && ctx.studio[k] && ctx.studio[k][layer.id]) { st[k] = {}; st[k][layer.id] = ctx.studio[k][layer.id]; } });
+    var mini = { name: 'x', pages: [{ v: 1, width: ctx.width || 1080, height: ctx.height || 1080, background: { type: 'color', color: '#ffffff' }, layers: [l] }], assets: ctx.assets || {}, meta: { studio: st } };
+    return JSON.parse(stringify(mini, { images: 'ids' }).text).pages[0].layers[0];
+  }
+
   function aabb(l) {
     var r = (l.rotation || 0) * Math.PI / 180;
     if (!r) return { x: l.x, y: l.y, w: l.w, h: l.h };
@@ -1537,6 +1638,17 @@
     var doc = { $schema: SCHEMA_URL, format: FORMAT, version: VERSION, name: String(project.name || 'Untitled design') };
     var remix = opts.remix !== undefined ? opts.remix : st.remix;
     if (remix && (remix.name || remix.by)) { doc.remix = {}; if (remix.name) doc.remix.name = remix.name; if (remix.by) doc.remix.by = remix.by; }
+    if (Array.isArray(st.notes) && st.notes.length) {
+      doc.notes = st.notes.map(function (n) {
+        var pg = (project.pages || [])[n.page];
+        var o = { id: n.id, page: pg && pg.id ? pg.id : n.page };
+        if (n.layer) o.layer = n.layer;
+        o.x = geo(n.x); o.y = geo(n.y); o.text = n.text; o.status = n.status === 'done' ? 'done' : 'open';
+        if (n.reply) o.reply = n.reply;
+        if (n.at) o.at = n.at;
+        return o;
+      });
+    }
     if (Array.isArray(st.variables) && st.variables.length) doc.variables = st.variables.map(function (v) { var o = { key: v.key, label: v.label, type: v.type || 'text' }; if (v.default != null) o.default = v.default; return o; });
     /* Older projects kept page ids by position in meta.studio.pageIds; used only when no page has its own id. */
     var legacyIds = Array.isArray(st.pageIds) && !(project.pages || []).some(function (p) { return p && p.id; }) ? st.pageIds : [];
@@ -2091,7 +2203,8 @@
 
   LE.design = {
     FORMAT: FORMAT, VERSION: VERSION, SCHEMA_URL: SCHEMA_URL, LIMITS: LIMITS,
-    parse: parse, stringify: stringify, exportText: exportText, lint: lint, measureText: measureText,
+    parse: parse, stringify: stringify, exportText: exportText, lint: lint, lintRendered: lintRendered, measureText: measureText,
+    parseLayer: parseLayer, layerToLong: layerToLong,
     toLink: toLink, fromLink: fromLink, linkPayload: linkPayload, fetchRemote: fetchRemote,
     openShare: openShare, saveDialog: saveDialog, importText: importText, openSharedLink: openSharedLink,
     studioImport: studioImport, studioBoot: studioBoot, studioCmd: studioCmd, isDesignFile: function (f) { return !!f && (/\.json$/i.test(f.name || '') || f.type === 'application/json'); }
