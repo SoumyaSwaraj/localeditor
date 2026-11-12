@@ -64,3 +64,11 @@ Built and merged but still marked "coming soon" or missing on the hubs and featu
 
 ## Never verified in this build environment
 Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen readers, the Android share sheet, real AWS (deploy, CloudFront function, headers policy), and every stock API (Pixabay, Pexels, Openverse, Unsplash are all tested against mocked responses).
+
+## Fonts — open after the follow-up pass
+
+- Shaped scripts (Devanagari and similar) still fail when embedded in PDFs: the vendored fontkit refers to `regeneratorRuntime` during layout.
+- Fonts kept for a design are not released when the design is deleted.
+- `le-pdf-flow.js` has a dead fallback to the old `.woff` file names.
+- In automatic mode each studio / PDF studio / Convert page fetches the font index plus four PDF text faces (~575 KB) about 8 s after load, once per device. Tests that count requests after a long wait can see them.
+- Select-box chevron icon still has a hard-coded neutral grey (`%238E8898`).

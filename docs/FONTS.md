@@ -51,6 +51,10 @@ Left out on purpose: Ubuntu and Ubuntu Mono (Ubuntu Font Licence), Fontshare fam
 
 ### LocalEditor originals
 
+The twenty originals (F2) are registered at load time by `assets/js/le-fonts-originals.js` through `LE.fonts.register(list, { collection, source })`. Registering fetches nothing: the families join `list()` and `css()` at once and the index when it first loads. Files stay in `assets/fonts/originals/<slug>/` (woff2 for the browser; `LE.fonts.bytes` decodes the woff2 like any library face, so PDFs go through the same `fontFileForPdf` step). The picker's "LocalEditor originals" view shows their one-line descriptions and an intent filter (attention, trust, positive feeling, tension); names are drawn with the real regular face (16–28 KB each) rather than preview subsets. `LE.fontsOriginals` stays for the `/fonts/` specimen page. Sizes for "Save for offline" are an estimate (18 KB per face) because the shim's compact list has no byte counts.
+
+The older, folder-scanning route below (meta.json) still works for families added by hand:
+
 Put `assets/fonts/originals/<slug>/meta.json` (`{ "family", "style", "kind", "feel": [...], "wght": [min, max]?, "license", "copyright", "version" }`), `LICENSE.txt`, and `<slug>-wght.woff2` / `<slug>-wght-italic.woff2` or `<slug>-400.woff2`, `<slug>-700.woff2`, `<slug>-400-italic.woff2`, then `node scripts/fetch-fonts.js --index` and `--previews`. They get `source: "localeditor"`, collection `originals`, and the picker's "LocalEditor originals" view (hidden when there are none).
 
 ## Budget
@@ -70,6 +74,10 @@ Two caches, both in the storage manager's Fonts category, per family with size a
 - `le-fonts-v1`: fonts fetched when used (the service worker stores them; least recently used are trimmed past 120 MB, and "Free up space" may remove them). They download again when needed.
 - `le-fonts-saved-v1`: never trimmed automatically. Filled by **Save for offline** (per font from the selected text's card, per collection or everything in "Saved on this device"), and automatically with the slices used by the open design (download policy, `docs/DOWNLOADS.md`: default mode keeps them without asking; "Always ask first" asks once through `LE.downloads`). So a saved design always opens with its fonts offline.
 
+PDF text faces: Plus Jakarta Sans, Lora, JetBrains Mono and Manrope (about 575 KB) are saved quietly once per device, when the Basic editor or Everything pack finishes or at the first idle moment in automatic mode (`LE.fonts.keepPdfFaces()`), so Convert to PDF, the invoice maker and the bulk tools set real text offline after a first visit.
+
+`LE.fonts.sizeOf('all')` answers synchronously with a number generated into `le-fonts.js` (the download manager lists packs with it); other targets give a number once the index is loaded, else a Promise. `saveOffline(target, onProgress, { track: true })` shows the shared download chip (the picker passes it; LE.downloads' own packs track themselves).
+
 Collections and "everything" go through `LE.downloads.request(...)` (fallback without it: no question up to 60 MB). Picking a font never asks. `saveOffline` reports total bytes in its first progress call, uses `LE.downloads.track` when present, and resumes: files already saved are skipped.
 
 ## PDF
@@ -81,4 +89,4 @@ Known: the vendored fontkit (`@pdf-lib/fontkit` 1.1.1 UMD) references `regenerat
 ## API (`LE.fonts`)
 
 Kept: `list()`, `load(family, weight, italic)`, `css(name)`, `bytes(...)`, `isOffline(family)`, `saveAllOffline(onProgress)`, `ensurePreview(family)`, `previewCSS()` (now empty).
-New: `ready()`, `find(name)`, `list(filter)` (`style, feel, script, collection, q, source, favourites, recent, families`), `search(q)`, `load(family, opts)`, `prepare(family, text, opts)`, `missing(family, text)`, `fallbacks(family)`, `preview(family)`, `pairs(family)`, `collections()`, `recent()`, `favourites()`, `setFavourite(family, on)`, `sizeOf(target)`, `saveOffline(family | collectionId | 'all' | [families], onProgress)`, `removeOffline(...)`, `keep(families)`, `usage()`, `details(family)`, `cjkAvailable()`, `on(fn)`, `labels`.
+New: `register(list, opts)`, `keepPdfFaces()`, `ready()`, `find(name)`, `list(filter)` (`style, feel, script, collection, q, source, favourites, recent, families`), `search(q)`, `load(family, opts)`, `prepare(family, text, opts)`, `missing(family, text)`, `fallbacks(family)`, `preview(family)`, `pairs(family)`, `collections()`, `recent()`, `favourites()`, `setFavourite(family, on)`, `sizeOf(target)`, `saveOffline(family | collectionId | 'all' | [families], onProgress)`, `removeOffline(...)`, `keep(families)`, `usage()`, `details(family)`, `cjkAvailable()`, `on(fn)`, `labels`.

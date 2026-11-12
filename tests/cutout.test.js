@@ -64,7 +64,9 @@ cases['the model is not fetched until asked, then cached in le-models-v1'] = asy
   await page.evaluate(() => LEStudioCutout.cancel());
   const cached = await page.evaluate(async () => (await LE.bgRemove.cachedModels()).map((m) => m.id));
   h.assert(cached.indexOf(expected) >= 0, 'Model not cached: ' + cached.join(','));
-  h.assert.noErrors(page);
+  /* Opening the chooser asks (HEAD) whether the larger models are on this copy of the app. They are git-ignored, so a
+     checkout without them answers 404 and the browser logs it; that is the expected "Not available on this copy" path. */
+  h.assert.noErrors(page, [/status of 404/]);
 };
 
 cases['cut-out stores a mask asset, is transparent outside and toggles back to the original'] = async ({ browser, base, h }) => {
