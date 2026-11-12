@@ -10,7 +10,7 @@
   /* Part of every cache key. Bump when the renderer's pixels change for the same document. */
   FX.version = 1;
   /* Effect packs loaded with the renderer. Feature teams add their pack name here (assets/js/fx/le-fx-<name>.js). */
-  var PACKS = ['basic', 'grade'];
+  var PACKS = ['basic', 'grade', 'retouch'];
 
   var BAD = { __proto__: 1, constructor: 1, prototype: 1 };
   var BLENDS = ['normal', 'multiply', 'screen', 'overlay', 'soft-light', 'hard-light', 'darken', 'lighten', 'difference', 'color', 'luminosity'];

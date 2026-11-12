@@ -474,6 +474,7 @@
     }
     if (mod && !e.shiftKey && (k === '1' || (e.altKey && k === '0') || (e.altKey && e.code === 'Digit0'))) { c.S.fitting = true; c.scene.zoomTo(1); c.S.fitting = false; c.S.autoFit = false; return true; }
     if (mod || e.altKey) return false;
+    if (REG[cur] && REG[cur].onKey && REG[cur].onKey(e, api)) return true;   /* a tool's own brush keys ([ ] X) */
     if (k === '[' || k === ']' || k === '{' || k === '}' || e.code === 'BracketLeft' || e.code === 'BracketRight') {
       var bigger = k === ']' || k === '}' || e.code === 'BracketRight';
       if (brush) { if (e.shiftKey) { if (bigger) brush.harder(); else brush.softer(); } else if (bigger) brush.bigger(); else brush.smaller(); }
