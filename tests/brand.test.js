@@ -200,7 +200,7 @@ cases['manifest colours and icon files match the identity'] = async ({ h }) => {
   (man.shortcuts || []).forEach((s) => (s.icons || []).forEach((i) => { h.assert(fs.existsSync(path.join(ROOT, i.src)), 'shortcut icon exists: ' + i.src); h.assert.equal(png(i.src)[0], 96, i.src + ' is 96px'); }));
   ['icon.svg', 'maskable.svg'].forEach((f) => {
     const s = fs.readFileSync(path.join(ROOT, 'assets', 'icons', f), 'utf8');
-    h.assert(/#3F67D9/i.test(s) && /#EF8C57/i.test(s), f + ' carries Lapis and Apricot');
+    h.assert(/#0369DA/i.test(s) && /#EF8C57/i.test(s), f + ' carries the brand blue and the Apricot dot');
     h.assert(!/#E2B15A|#5b5bf7|#8b5cf6/i.test(s), f + ' has no old colours');
   });
   /* The inline marks in the shell and the studio header are the same mark. */

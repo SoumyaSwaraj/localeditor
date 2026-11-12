@@ -49,7 +49,7 @@ async function capture(browser, base, url, vp, scale, prep) {
   return { page, ctx, png };
 }
 
-const TILE = '<defs><linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A81EC"/><stop offset="1" stop-color="#3F67D9"/></linearGradient></defs>';
+const TILE = '<defs><linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3589ED"/><stop offset="1" stop-color="#0369DA"/></linearGradient></defs>';
 
 /* Renders an SVG file (or markup) to a PNG of the given size, transparent outside the shape. */
 async function svgPng(page, svg, size) {
@@ -71,7 +71,7 @@ async function brandIcons(browser, base) {
   }
   for (const [name, glyph] of Object.entries(GLYPHS)) {
     const png = await svgPng(page, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">' + TILE +
-      '<rect width="96" height="96" rx="22" fill="url(#t)"/><g transform="translate(24 24) scale(2)" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + glyph + '</g></svg>', 96);
+      '<path d="M48 0C9.6 0 0 9.6 0 48s9.6 48 48 48 48-9.6 48-48S86.4 0 48 0z" fill="url(#t)"/><g transform="translate(24 24) scale(2)" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + glyph + '</g></svg>', 96);
     fs.writeFileSync(path.join(ICONS, name + '-96.png'), png);
     console.log('shortcuts/' + name + '-96.png', Math.round(png.length / 1024 * 10) / 10 + ' KB');
   }
@@ -81,18 +81,18 @@ async function brandIcons(browser, base) {
   await page.setContent(`<html><head><style>
     @font-face { font-family: J; src: url(${base}/assets/fonts/jakarta-latin.woff2); font-weight: 400 800; }
     @font-face { font-family: S; font-style: italic; src: url(${base}/assets/fonts/instrument-serif-italic.woff2); }
-    body { margin: 0; width: 1200px; height: 630px; background: #FAFAFA; font-family: J; color: #141414; display: grid; grid-template-columns: 1fr 360px; overflow: hidden; }
+    body { margin: 0; width: 1200px; height: 630px; background: #F5F5F7; font-family: system-ui, J; color: #1D1D1F; display: grid; grid-template-columns: 1fr 360px; overflow: hidden; }
     .copy { padding: 96px 0 0 88px; }
     .brand { display: flex; align-items: center; gap: 18px; font: 720 34px J; letter-spacing: -0.035em; }
     .brand svg { width: 64px; height: 64px; }
-    h1 { margin: 84px 0 30px; font: 720 74px/1.02 J; letter-spacing: -0.045em; }
-    h1 em { font: italic 400 84px/0.9 S; letter-spacing: -0.01em; }
+    h1 { margin: 84px 0 30px; font: 700 74px/1.02 system-ui, J; letter-spacing: -0.035em; }
+    h1 em { font: inherit; font-style: normal; color: #6E6E73; }
     p { margin: 0; font: 600 25px J; color: #525252; display: flex; gap: 26px; }
     p span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #14874E; margin: 0 10px 3px 0; }
     .art { position: relative; background: #E6E6E6; }
     .art img { position: absolute; left: 44px; top: 70px; width: 272px; height: 340px; object-fit: cover; box-shadow: 0 30px 60px -24px rgba(0,0,0,.45); }
-    .sel { position: absolute; left: 64px; top: 300px; width: 232px; padding: 6px 8px; outline: 2px solid #5884F8; color: #fff; font: italic 400 38px/0.95 S; text-shadow: 0 2px 16px rgba(0,0,0,.4); }
-    .dl { position: absolute; left: 44px; top: 448px; height: 56px; padding: 0 30px; border-radius: 99px; background: #3F67D9; color: #fff; font: 700 22px J; display: flex; align-items: center; }
+    .sel { position: absolute; left: 64px; top: 300px; width: 232px; padding: 6px 8px; outline: 2px solid #3589ED; color: #fff; font: italic 400 38px/0.95 S; text-shadow: 0 2px 16px rgba(0,0,0,.4); }
+    .dl { position: absolute; left: 44px; top: 448px; height: 56px; padding: 0 30px; border-radius: 99px; background: #0369DA; color: #fff; font: 700 22px J; display: flex; align-items: center; }
   </style></head><body><div class="copy"><div class="brand">${icon.replace(/<title>.*?<\/title>/, '')}LocalEditor</div>
     <h1>The design studio<br>that <em>stays on your device.</em></h1><p><span>Free</span><span>No account</span><span>Works offline</span></p></div>
     <div class="art"><img src="${base}/assets/img/home/people-08.webp" alt=""><i class="sel">Long light, good friends.</i><span class="dl">Download</span></div></body></html>`);

@@ -1792,8 +1792,8 @@ body.le-menu-open .le-side {
 .le-label {
   margin: var(--s-5) var(--s-3) var(--s-2);
   font-size: var(--text-xs);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: var(--eyebrow-tracking);
+  text-transform: var(--eyebrow-case);
   color: var(--faint);
   font-weight: 650;
 }
@@ -2766,7 +2766,7 @@ button.chip:hover { border-color: var(--btn-hover-border); background: var(--btn
 .hp-chips::-webkit-scrollbar { display: none; }
 .hp-chips .chip { flex: none; }
 .hp-dir-group { margin: 0 0 var(--s-8); scroll-margin-top: calc(var(--header-h) + 16px); }
-.hp-dir-label { display: flex; align-items: baseline; gap: 8px; margin: 0 0 var(--s-3); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.hp-dir-label { display: flex; align-items: baseline; gap: 8px; margin: 0 0 var(--s-3); font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--eyebrow-tracking); text-transform: var(--eyebrow-case); color: var(--muted); }
 .hp-dir-label span { color: var(--faint); font-weight: 600; letter-spacing: 0; }
 .hp-dir-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); border-top: 1px solid var(--line); }
 @media (min-width: 640px) { .hp-dir-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s-6); } }
@@ -2915,6 +2915,11 @@ body[data-panel="export"] .ps-save.btn {
 }
 body[data-panel="export"] .ps-save.btn:hover:not(:disabled) { background: var(--surface-2) !important; }
 body[data-panel="export"] .ps-save.btn svg { stroke: var(--ink) !important; color: var(--ink) !important; }
+
+/* Performance and colour safety: nothing blurs over Expert's image area, and nothing blurs while the canvas is being dragged. */
+body.xp-body .sx-pop, .sx-stage.is-dragging ~ .sx-pop, body.is-dragging .sx-pop { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--surface); }
+/* The selected phone tab gets a filled glyph (our own icons, a soft fill under the stroke). */
+:root:not([data-skin="lapis"]) .sx-tabs .sx-rail-btn[aria-pressed="true"] svg :is(rect, path, circle) { fill: currentColor; fill-opacity: 0.16; }
 
 /* Completion moments (peak-end): a job finished on this device. Used by IT.celebrate(), the studio's
    "Downloaded" / "Saved" toasts and the photo privacy check's clean copy. One small check that draws
