@@ -229,8 +229,8 @@ cases['photo book: varied pages with page numbers; a multi-page make lands as pa
   h.assert.noErrors(page);
 };
 
-cases['the table field reads pasted cells and maps columns'] = async ({ browser, base, h }) => {
-  const page = await studio(h, browser, base);
+cases['the table field reads pasted cells and maps columns (phone)'] = async ({ browser, base, h }) => {
+  const page = await studio(h, browser, base, 'phone');
   await page.evaluate(() => LEStudioMakers.open('catalogue'));
   await page.waitForSelector('.mk-table textarea');
   await page.fill('.mk-table textarea', 'Item\tPrice each\tDetails\nTea\t3\tA pot for one\nCake\t4.5\tLemon drizzle');
