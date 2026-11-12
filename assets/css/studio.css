@@ -1577,6 +1577,14 @@ select.sx-input { padding-right: 28px; }
 @media (max-height: 640px) and (min-width: 768px) {
   .sx-foot .sx-hold { display: none; }
 }
+/* Tablet: the floating panel covers the left of the main area; toolbar and footer start beside it. */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .has-panel .sx-tool, .has-panel .sx-foot { padding-left: calc(var(--panel-w) + 12px); }
+  .has-panel .sx-foot .sx-hold, .has-panel #sx-zoom, .has-panel .sx-foot [data-cmd="zoomIn"], .has-panel .sx-foot [data-cmd="zoomOut"] { display: none; }
+}
+.sx-tool.is-compact .sx-tb-font { min-width: 96px; max-width: 132px; }
+.sx-tool.is-tight .sx-tb-font { min-width: 56px; max-width: 72px; }
+.sx-tool.is-tight .sx-tb-font .sx-ic { display: none; }
 
 @media (max-width: 767px) {
   .sx-head { gap: 4px; padding: env(safe-area-inset-top) 6px 0 6px; }

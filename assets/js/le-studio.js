@@ -257,9 +257,11 @@
         if (isPhone()) top = Math.max(top, E.bar.offsetHeight + 16);
         else bottom = Math.max(bottom, E.bar.offsetHeight + 28);
       }
-      var aw = Math.max(8, cw - pad * 2), ah = Math.max(8, ch - top - bottom);
+      /* tablet: the panel floats over the left of the canvas, so the page fits beside it */
+      var left = pad + (isTablet() && S.panel && !E.panel.hidden ? E.panel.offsetWidth : 0);
+      var aw = Math.max(8, cw - left - pad), ah = Math.max(8, ch - top - bottom);
       var z = clamp(Math.min(aw / d.width, ah / d.height), 0.05, 8);
-      scene.setView(z, pad + (aw - d.width * z) / 2, top + (ah - d.height * z) / 2);
+      scene.setView(z, left + (aw - d.width * z) / 2, top + (ah - d.height * z) / 2);
     } else scene.fit();
     S.fitting = false;
     S.autoFit = true;
@@ -1051,7 +1053,7 @@
   function common(l) {
     var ph = isPhone();
     return SEP + tb('opacity', 'opacity', 'Transparency', { pri: 3, popup: 'dialog' }) + tb('position', 'position', 'Position', { text: true, pri: 3 }) + tb('copyStyle', 'brush', S.painterArmed ? 'Click another item to paste this style (Esc to stop)' : 'Copy style (Ctrl+Alt+C)', { pressed: !!S.painterArmed, pri: 3 }) + SEP +
-      tb(l && l.locked ? 'unlock' : 'lock', l && l.locked ? 'lock' : 'unlock', l && l.locked ? 'Unlock' : 'Lock', { pressed: !!(l && l.locked), pri: ph ? 3 : 1 }) +
+      tb(l && l.locked ? 'unlock' : 'lock', l && l.locked ? 'lock' : 'unlock', l && l.locked ? 'Unlock' : 'Lock', { pressed: !!(l && l.locked), pri: ph ? 3 : isTablet() ? 2 : 1 }) +
       tb('dup', 'copy', 'Duplicate (Ctrl+D)', { pri: S.editing ? 3 : 1 }) + tb('del', 'trash', 'Delete (Del)', { pri: S.editing ? 3 : 1, cls: 'is-danger' }) + moreBtn();
   }
   /* Buttons from feature hooks get a default priority unless they set their own data-pri. */
@@ -1141,7 +1143,7 @@
     if (!t.offsetParent) return;
     var items = [].slice.call(t.querySelectorAll(':scope > [data-pri], :scope > button'));
     var more = t.querySelector(':scope > [data-cmd="more"], :scope > [data-cmd="tbMore"]');
-    t.classList.remove('is-compact');
+    t.classList.remove('is-compact', 'is-tight');
     items.forEach(function (n) { n.hidden = false; });
     if (more && more.getAttribute('data-cmd') === 'tbMore') more.hidden = true;
     t.querySelectorAll(':scope > .sx-tb-sep').forEach(function (n) { n.hidden = false; });
@@ -1159,6 +1161,8 @@
         gone.push(n);
       }
     });
+    /* still too wide with only the essentials: narrow the font button too */
+    if (over()) t.classList.add('is-tight');
     /* second pass: bring back anything that fits again (a wide item may have gone after a narrow one) */
     gone.slice().sort(function (a, b) { return pri(a) - pri(b) || items.indexOf(a) - items.indexOf(b); }).forEach(function (n) {
       n.hidden = false;
