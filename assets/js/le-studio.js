@@ -2899,6 +2899,7 @@
   new MutationObserver(function () {
     try {
       var bg = getComputedStyle(E.sceneEl).getPropertyValue('--sx-workspace') || getComputedStyle(document.documentElement).getPropertyValue('--bg');
+      if (getComputedStyle(document.documentElement).getPropertyValue('--stage')) bg = 'rgba(0,0,0,0)'; /* the surround is CSS (var(--stage)) */
       if (bg && bg.trim()) { scene._workspace = bg.trim(); scene._dirty = true; }
     } catch (e) {}
   }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

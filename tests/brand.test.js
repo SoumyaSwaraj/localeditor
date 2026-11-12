@@ -95,6 +95,7 @@ const PAIRS = [['--on-primary', '--primary'], ['--on-primary', '--primary-hover'
       h.assert(chroma(c) < 0.006, 'surround ' + s + ' is not neutral: ' + c);
       greys.push(lum(c));
     }
+    h.assert(/rgba\(0, ?0, ?0, ?0\)|transparent/.test(await page.evaluate(() => window.LEStudio.scene._workspace)), 'the scene canvas paints no surround of its own (the CSS surround shows)');
     h.assert(greys[0] > greys[1] && greys[1] > greys[2], 'light > mid > dark surround: ' + greys.map((x) => x.toFixed(3)).join(', '));
     await page.evaluate(() => window.LE.surround.set('auto'));
     await h.openPanel(page, 'settings');

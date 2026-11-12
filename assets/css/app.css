@@ -343,6 +343,7 @@
   --stage: var(--surround-dark);
   --stage-ink: #A3A3A3;
   --brand-soft: var(--selected-bg);
+  --aurora: #81A6FE;            /* deprecated alias; brighter on dark so the PDF and Convert accent words keep 6:1 */
   --sky: #1E2A47;
   --sky-ink: #CEDDFF;
   --peach: #3F2314;
@@ -1641,6 +1642,7 @@ body[data-panel="export"] .ps-save.btn {
   box-shadow: var(--shadow-xs) !important;
 }
 body[data-panel="export"] .ps-save.btn:hover:not(:disabled) { background: var(--surface-2) !important; }
+body[data-panel="export"] .ps-save.btn svg { stroke: var(--ink) !important; color: var(--ink) !important; }
 
 /* Completion moments (peak-end): a job finished on this device. Used by IT.celebrate(), the studio's
    "Downloaded" / "Saved" toasts and the photo privacy check's clean copy. One small check that draws
