@@ -374,16 +374,35 @@
       E.name.value = S.name;
       showWorkspace(true);
       fitTo('width');
+      if (!opts.panel && PS.pendingPanel && PS.panels[PS.pendingPanel]) opts.panel = PS.pendingPanel; /* ?panel= link waiting for a file */
       if (!opts.panel && !isPhone()) openPanel('pages');
     } else {
       say(newRefs.length + ' page' + (newRefs.length === 1 ? '' : 's') + ' added');
       goTo(at);
     }
-    if (opts.panel) openPanel(opts.panel);
+    if (opts.panel) { openPanel(opts.panel); if (opts.panel === PS.pendingPanel) runDeepJob(); }
     markDirty();
     return newRefs.length;
   }
   PS.addFiles = addFiles;
+
+  /* ?panel=<id>&job=<job> deep links: security views (send, reveal, safety, redact, find) and bulk jobs (protect, merge, split, watermark, compress). */
+  function runDeepJob() {
+    var panel = PS.pendingPanel, job = PS.pendingJob;
+    PS.pendingPanel = PS.pendingJob = null;
+    if (!panel || !job) return;
+    if (panel === 'security' && PS.security && PS.security.go) {
+      if (job === 'find') { PS.security.findOpen = true; PS.security.go('redact'); }
+      else if (['send', 'reveal', 'safety', 'redact'].indexOf(job) >= 0) PS.security.go(job);
+    } else if (panel === 'bulk' && PS.bulk && PS.bulk.jobs && PS.bulk.jobs.some(function (j) { return j.id === job; })) PS.bulk.open(job);
+  }
+  function applyDeepLink(panel, job) {
+    if (!panel || !PS.panels[panel]) return;
+    PS.pendingPanel = panel;
+    PS.pendingJob = job || null;
+    if (S.pages.length || panel === 'convert' || PS.panels[panel].noDoc) { openPanel(panel); runDeepJob(); return; }
+    say('Open a PDF to continue to ' + (PS.panels[panel].title || 'this tool') + '.', 6000); /* the file prompt stays on screen; addFiles carries on to the panel */
+  }
 
   function createBlank(size, landscape) {
     var dims = PAGE_PRESETS[size] || PAGE_PRESETS.A4;
@@ -2374,7 +2393,9 @@
       }).catch(offerRestore);
     } else offerRestore();
     var p = params.get('panel');
-    if (p && PS.panels[p]) PS.pendingPanel = p;
+    /* The Protect and Bulk panels come from scripts that run after this one, so wait until every script has run. */
+    var job = (params.get('job') || '').replace(/[^a-z-]/g, '');
+    if (p) { if (d.readyState === 'complete') applyDeepLink(p, job); else global.addEventListener('load', function () { applyDeepLink(p, job); }); }
     d.body.classList.add('ps-ready');
   }
 

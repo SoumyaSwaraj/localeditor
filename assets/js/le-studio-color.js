@@ -944,15 +944,17 @@
     }
     draw();
   }
-  var patUrls = {};
+  var patUrls = P._urlCache ? P._urlCache('patterns', 160) : null;
+  var patMemo = {};
   function patUrl(p, fg, bg) {
     var key = p.id + fg + bg;
-    if (patUrls[key]) return patUrls[key];
+    var hit = patUrls ? patUrls.get(key) : patMemo[key];
+    if (hit) return hit;
     var markup = '';
     try { markup = p.svg(40, fg, bg); } catch (e) { return ''; }
     if (LE.project && LE.project.sanitizeSvg) markup = LE.project.sanitizeSvg(markup) || markup;
-    patUrls[key] = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml' }));
-    return patUrls[key];
+    var u = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml' }));
+    return patUrls ? patUrls.set(key, u) : (patMemo[key] = u);
   }
   function bgPatterns(c, host, bg) {
     var cur = bg.spec && bg.spec.kind === 'pattern' ? c.clone(bg.spec) : { kind: 'pattern', id: '', fg: '#7457f0', bg: '#ffffff', scale: 1 };

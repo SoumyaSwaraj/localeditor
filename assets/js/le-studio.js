@@ -154,6 +154,9 @@
   function isPhone() { return mq('(max-width: 767px)'); }
   function isTablet() { return mq('(min-width: 768px) and (max-width: 1023px)'); }
   function reduced() { return mq('(prefers-reduced-motion: reduce)'); }
+  /* Touch-first copy: "Double-tap" on a touchscreen, "Double-click" with a mouse. */
+  function coarse() { return mq('(pointer: coarse)') || (mq('(hover: none)') && 'ontouchstart' in window); }
+  function say(mouse, touch) { return coarse() ? touch : mouse; }
   function debounce(fn, ms) { var t; return function () { var a = arguments, s = this; clearTimeout(t); t = setTimeout(function () { fn.apply(s, a); }, ms); }; }
   function newId(p) { return (p || 'l') + Date.now().toString(36).slice(-5) + Math.random().toString(36).slice(2, 7); }
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
@@ -207,7 +210,7 @@
     tool: 'select', editing: false, dirty: false, silent: false, preview: null, pointer: false, autoFit: true, fitting: false,
     gesture: 0, known: {}, draw: lsGet('le-studio-draw', { mode: 'pen', color: '#17131F', width: 6, smoothing: 0.55 }),
     exportOpts: lsGet('le-studio-export', { format: 'png', quality: 0.92, scale: 1, transparent: false, pages: 'current' }),
-    recentColors: lsGet('le-studio-colors', []), lastSnap: 0, saveTimer: 0, thumbs: {}, pageThumbs: {}, chain: false, sheet: 0, canUndo: false, canRedo: false
+    recentColors: lsGet('le-studio-colors', []), layerCount: 0, tbOverflow: [], railHidden: [], lastSnap: 0, saveTimer: 0, thumbs: {}, pageThumbs: {}, chain: false, sheet: 'half', canUndo: false, canRedo: false
   };
 
   var scene = new LE.Scene({ el: E.sceneEl, width: 1080, height: 1080, background: { type: 'color', color: '#ffffff' } });
@@ -249,7 +252,29 @@
     if (history) { scene._before(null); scene._restore(json, true); scene._after(); }
     else scene._restore(json, true);
   }
-  function fit() { S.fitting = true; scene.fit(); S.fitting = false; S.autoFit = true; }
+  /* Fit the page into the free part of the stage: a 24px inset on phones (handles and the rotate knob stay on screen), and
+     room for a docked bar (size preview) when one is showing. */
+  function fit() {
+    S.fitting = true;
+    var el = E.sceneEl, cw = el.clientWidth, ch = el.clientHeight;
+    var d = scene._doc || null;
+    if (scene.setView && d && cw > 8 && ch > 8) {
+      var pad = isPhone() ? 24 : Math.max(16, Math.min(48, cw * 0.04));
+      var top = pad, bottom = pad;
+      if (E.bar && !E.bar.hidden && E.bar.offsetHeight) {
+        if (isPhone()) top = Math.max(top, E.bar.offsetHeight + 16);
+        else bottom = Math.max(bottom, E.bar.offsetHeight + 28);
+      }
+      /* tablet: the panel floats over the left of the canvas, so the page fits beside it */
+      var left = pad + (isTablet() && S.panel && !E.panel.hidden ? E.panel.offsetWidth : 0);
+      var aw = Math.max(8, cw - left - pad), ah = Math.max(8, ch - top - bottom);
+      var z = clamp(Math.min(aw / d.width, ah / d.height), 0.05, 8);
+      scene.setView(z, left + (aw - d.width * z) / 2, top + (ah - d.height * z) / 2);
+    } else scene.fit();
+    S.fitting = false;
+    S.autoFit = true;
+    if (E.chips) paintChips();
+  }
   function startCrop(id) {
     var layer = scene._find ? scene._find(id) : null;
     if (layer && typeof scene._beginCrop === 'function') { scene.select([id]); scene._beginCrop(layer); return; }
@@ -265,22 +290,48 @@
   function keyEvent(key) { E.sceneEl.dispatchEvent(new KeyboardEvent('keydown', { key: key, bubbles: true })); }
 
   /* ---------- Toast, popover, modal ---------- */
+  /* Toasts sit in the free area: above the phone tab bar, toolbar and sheet, above the desktop footer, centred on the canvas. */
+  function placeToast() {
+    var t = E.toast;
+    var vh = innerHeight;
+    var lowest = vh;
+    var phone = isPhone();
+    (phone ? [E.tabs, E.panel, E.tool, E.bar] : [E.foot, E.bar]).forEach(function (n) {
+      if (!n || n.hidden || !n.offsetParent || getComputedStyle(n).visibility === 'hidden') return;
+      var r = n.getBoundingClientRect();
+      if (r.height > 0 && r.width > 0 && r.bottom > vh * 0.45 && r.top < lowest) lowest = r.top;
+    });
+    var free = Math.max(12, Math.round(vh - lowest + 12));
+    document.body.style.setProperty('--sx-free-b', free + 'px');
+    document.body.classList.toggle('sx-toasting', !t.hidden);
+    if (t.hidden) return;
+    t.style.bottom = free + 'px';
+    var sr = E.stage.getBoundingClientRect();
+    t.style.left = !phone && sr.width > 0 ? Math.round(sr.left + 12) + 'px' : '';
+    t.style.right = !phone && sr.width > 0 ? Math.round(innerWidth - sr.right + 12) + 'px' : '';
+  }
   function toast(msg, opts) {
     opts = opts || {};
     var t = E.toast;
     t.innerHTML = '<span>' + esc(msg) + '</span>' + (opts.action ? '<button type="button" class="sx-toast-act">' + esc(opts.action.label) + '</button>' : '');
     t.hidden = false;
+    placeToast();
     requestAnimationFrame(function () { t.classList.add('is-on'); });
-    if (opts.action) t.querySelector('button').onclick = function () { hideToast(); opts.action.fn(); };
+    if (opts.action) t.querySelector('button').onclick = function (e) { e.stopPropagation(); hideToast(); opts.action.fn(); };
+    t.onclick = function (e) { if (!e.target.closest('button')) hideToast(); };
     clearTimeout(t._t);
     t._t = setTimeout(hideToast, opts.ms || (opts.action ? 6500 : 2600));
   }
-  function hideToast() { E.toast.classList.remove('is-on'); setTimeout(function () { if (!E.toast.classList.contains('is-on')) E.toast.hidden = true; }, 240); }
+  function hideToast() { E.toast.classList.remove('is-on'); setTimeout(function () { if (!E.toast.classList.contains('is-on')) { E.toast.hidden = true; document.body.classList.remove('sx-toasting'); } }, 240); }
 
+  /* Popovers: menus are keyboard menus (focus moves in, arrows move, Esc or Tab returns to the button that opened them). */
   var popAnchor = null;
+  function focusables(host) {
+    return [].slice.call(host.querySelectorAll('button:not([disabled]), a[href], input:not([type="hidden"]):not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])')).filter(function (n) { return n.offsetParent !== null || n === document.activeElement; });
+  }
   function openPop(anchor, content, opts) {
     opts = opts || {};
-    closePop();
+    closePop({ keepFocus: true });
     var p = E.pop;
     p.innerHTML = '';
     p.className = 'sx-pop' + (opts.cls ? ' ' + opts.cls : '');
@@ -289,12 +340,24 @@
     body.className = 'sx-pop-body';
     if (typeof content === 'string') body.innerHTML = content; else body.appendChild(content);
     p.appendChild(body);
+    var isMenu = !opts.title && (/\bsx-pop-menu\b/.test(opts.cls || '') || !!body.querySelector('.sx-menu, .sx-align-grid'));
+    p.setAttribute('role', isMenu ? 'menu' : 'dialog');
+    if (isMenu) {
+      p.removeAttribute('aria-label');
+      p.querySelectorAll('button, a[href]').forEach(function (n) { n.setAttribute('role', 'menuitem'); });
+    } else p.setAttribute('aria-label', opts.title || opts.label || 'Options');
+    p._menu = isMenu;
     p.hidden = false;
     popAnchor = anchor || null;
+    if (popAnchor && popAnchor.setAttribute) popAnchor.setAttribute('aria-expanded', 'true');
     var x = p.querySelector('.sx-pop-x');
-    if (x) x.onclick = closePop;
+    if (x) x.onclick = function () { closePop(); };
     placePop();
     requestAnimationFrame(function () { p.classList.add('is-on'); });
+    if (opts.focus !== false) {
+      var first = focusables(p).filter(function (n) { return isMenu || !/INPUT|TEXTAREA|SELECT/.test(n.tagName) || !coarse(); })[0];
+      if (first) try { first.focus({ preventScroll: true }); } catch (e) { first.focus(); }
+    }
     return body;
   }
   function placePop() {
@@ -310,29 +373,88 @@
     p.style.left = x + 'px';
     p.style.top = y + 'px';
   }
-  function closePop() {
+  /* The control that opened the pop, or its re-rendered twin (same data-cmd) if the toolbar was drawn again. */
+  function liveAnchor(a) {
+    if (!a) return null;
+    if (a.isConnected && a.offsetParent !== null) return a;
+    var c = a.getAttribute && a.getAttribute('data-cmd');
+    var twin = c ? root.querySelector('[data-cmd="' + c + '"]:not([hidden])') : null;
+    if (twin && twin.offsetParent !== null) return twin;
+    return E.tool.querySelector('[data-cmd="more"]:not([hidden]), [data-cmd="tbMore"]:not([hidden])');
+  }
+  function closePop(o) {
+    o = o || {};
     if (E.pop.hidden) return;
+    var had = E.pop.contains(document.activeElement);
+    var a = popAnchor;
     E.pop.classList.remove('is-on');
     E.pop.hidden = true;
     E.pop.innerHTML = '';
     popAnchor = null;
+    if (a && a.setAttribute) a.setAttribute('aria-expanded', 'false');
+    if (had && !o.keepFocus) {
+      var back = liveAnchor(a);
+      if (back) try { back.focus({ preventScroll: true }); } catch (e) {}
+    }
   }
+  E.pop.addEventListener('keydown', function (e) {
+    var k = e.key;
+    var list = focusables(E.pop);
+    if (!list.length) return;
+    var act = document.activeElement;
+    var i = list.indexOf(act);
+    var field = /INPUT|TEXTAREA|SELECT/.test((act && act.tagName) || '');
+    if (k === 'Tab') {
+      if (E.pop._menu) { closePop(); return; }
+      e.preventDefault();
+      var n = list.length;
+      list[((i < 0 ? 0 : i) + (e.shiftKey ? -1 : 1) + n) % n].focus();
+      return;
+    }
+    if (field) return;
+    var next = -1;
+    if (k === 'ArrowDown' || k === 'ArrowRight') next = i < 0 ? 0 : (i + 1) % list.length;
+    else if (k === 'ArrowUp' || k === 'ArrowLeft') next = i < 0 ? list.length - 1 : (i - 1 + list.length) % list.length;
+    else if (k === 'Home') next = 0;
+    else if (k === 'End') next = list.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    list[next].focus();
+  });
+
+  /* Dialogs: plain-text names, Tab stays inside, focus returns to where it was. */
   function openModal(title, content, opts) {
     opts = opts || {};
     var m = E.modal;
-    m.innerHTML = '<div class="sx-modal-card' + (opts.wide ? ' is-wide' : '') + '" role="dialog" aria-modal="true" aria-label="' + esc(title) + '"><div class="sx-modal-head"><h2>' + title + '</h2><button type="button" class="sx-iconbtn" data-close aria-label="Close">' + ic('x') + '</button></div><div class="sx-modal-body"></div></div>';
+    if (m.hidden) S.modalReturn = document.activeElement;
+    var plain = String(title).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+    m.innerHTML = '<div class="sx-modal-card' + (opts.wide ? ' is-wide' : '') + '" role="dialog" aria-modal="true" aria-label="' + esc(plain) + '"><div class="sx-modal-head"><h2>' + title + '</h2><button type="button" class="sx-iconbtn" data-close aria-label="Close">' + ic('x') + '</button></div><div class="sx-modal-body"></div></div>';
     var body = m.querySelector('.sx-modal-body');
     if (typeof content === 'string') body.innerHTML = content; else body.appendChild(content);
     m.hidden = false;
     requestAnimationFrame(function () { m.classList.add('is-on'); });
     m.querySelector('[data-close]').onclick = closeModal;
     m.onclick = function (e) { if (e.target === m) closeModal(); };
-    var f = m.querySelector('button, input');
-    if (f) setTimeout(function () { f.focus(); }, 30);
+    var f = m.querySelector('.sx-modal-body button, .sx-modal-body input') || m.querySelector('button, input');
+    if (f) setTimeout(function () { if (!m.hidden && !m.contains(document.activeElement)) f.focus(); }, 30);
     return body;
   }
-  function closeModal() { E.modal.classList.remove('is-on'); E.modal.hidden = true; E.modal.innerHTML = ''; if (S.onModalClose) { var f = S.onModalClose; S.onModalClose = null; f(); } }
-
+  E.modal.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || E.modal.hidden) return;
+    var list = focusables(E.modal);
+    if (!list.length) { e.preventDefault(); return; }
+    var i = list.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); list[list.length - 1].focus(); }
+    else if (!e.shiftKey && (i < 0 || i === list.length - 1)) { e.preventDefault(); list[0].focus(); }
+  });
+  function closeModal() {
+    var was = !E.modal.hidden;
+    E.modal.classList.remove('is-on'); E.modal.hidden = true; E.modal.innerHTML = '';
+    if (S.onModalClose) { var f = S.onModalClose; S.onModalClose = null; f(); }
+    var back = S.modalReturn;
+    S.modalReturn = null;
+    if (was && E.modal.hidden && back && back.isConnected && back !== document.body) try { back.focus({ preventScroll: true }); } catch (e) {}
+  }
   /* ---------- UI builders shared with panels ---------- */
   var ui = {
     section: function (title, extra) {
@@ -342,7 +464,7 @@
       var mul = o.mul || 1;
       var v = o.value == null ? 0 : o.value;
       var shown = Math.round(v / mul * 100) / 100;
-      var node = h('<div class="sx-slider"><div class="sx-slider-row"><label title="Double-click to reset">' + esc(o.label) + '</label><output class="sx-val" tabindex="0" role="button" aria-label="' + esc(o.label) + ' value — click to type">' + esc(o.fmt ? o.fmt(shown) : shown) + '</output></div><div class="sx-range"><input type="range" min="' + o.min + '" max="' + o.max + '" step="' + (o.step || 1) + '" value="' + shown + '" aria-label="' + esc(o.label) + '"></div></div>');
+      var node = h('<div class="sx-slider"><div class="sx-slider-row"><label title="' + say('Double-click to reset', 'Double-tap to reset') + '">' + esc(o.label) + '</label><output class="sx-val" tabindex="0" role="button" aria-label="' + esc(o.label) + ' value, ' + say('click', 'tap') + ' to type">' + esc(o.fmt ? o.fmt(shown) : shown) + '</output></div><div class="sx-range"><input type="range" min="' + o.min + '" max="' + o.max + '" step="' + (o.step || 1) + '" value="' + shown + '" aria-label="' + esc(o.label) + '"></div></div>');
       var input = node.querySelector('input');
       var out = node.querySelector('output');
       var dflt = o.reset == null ? (o.min <= 0 && o.max >= 0 ? 0 : null) : o.reset;
@@ -486,6 +608,13 @@
       return io;
     }
   };
+  /* A sticky footer for a panel's primary action: stays at the bottom of the side panel or phone sheet while the rest scrolls. */
+  ui.actions = function (nodes) {
+    var bar = h('<div class="sx-sheet-actions"></div>');
+    [].concat(nodes || []).forEach(function (n) { if (n) bar.appendChild(typeof n === 'string' ? h(n) : n); });
+    return bar;
+  };
+
   function cssFill(v) {
     if (!v) return 'transparent';
     if (typeof v === 'string') return v;
@@ -597,19 +726,19 @@
   function renderHead() {
     var name = S.project ? S.project.name : 'Untitled design';
     E.head.innerHTML =
-      '<a class="sx-brand" href="../" aria-label="LocalEditor home"><span class="sx-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><defs><linearGradient id="sx-foil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F8E3AE"/><stop offset=".55" stop-color="#E2B15A"/><stop offset="1" stop-color="#B9832F"/></linearGradient></defs><rect width="32" height="32" rx="10" fill="url(#sx-foil)"/><circle cx="16" cy="16" r="7.5" fill="none" stroke="#2C220F" stroke-width="1.8"/><circle cx="16" cy="16" r="1.8" fill="#2C220F"/><circle cx="21.5" cy="10.5" r="1.3" fill="#fff" fill-opacity=".85"/></svg></span><span class="sx-brand-txt"><strong>LocalEditor</strong><em>Studio</em></span></a>' +
-      '<button type="button" class="sx-headbtn sx-file-btn" data-cmd="fileMenu" aria-haspopup="menu">' + ic('menu') + '<span>File</span></button>' +
+      '<a class="sx-brand" href="../" aria-label="LocalEditor home"><span class="sx-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><defs><linearGradient id="sx-foil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F8E3AE"/><stop offset=".55" stop-color="#E2B15A"/><stop offset="1" stop-color="#B9832F"/></linearGradient></defs><rect width="32" height="32" rx="10" fill="url(#sx-foil)"/><circle cx="16" cy="16" r="7.5" fill="none" stroke="#2A1F0A" stroke-width="1.8"/><circle cx="16" cy="16" r="1.8" fill="#2A1F0A"/></svg></span><span class="sx-brand-txt"><strong>LocalEditor</strong><span>Studio</span></span></a>' +
+      '<button type="button" class="sx-headbtn sx-file-btn" data-cmd="fileMenu" aria-haspopup="menu" aria-expanded="false" aria-label="File menu">' + ic('menu') + '<span>File</span></button>' +
       '<label class="sx-name"><span class="sr">Design name</span><input id="sx-name" value="' + esc(name) + '" maxlength="120" spellcheck="false" aria-label="Design name"></label>' +
       '<span class="sx-save" id="sx-save" data-state="' + (S.dirty ? 'dirty' : 'saved') + '"><i aria-hidden="true"></i><span>' + (S.project ? (S.dirty ? 'Saving…' : 'Saved on this device') : 'On this device') + '</span></span>' +
       '<span class="sx-grow"></span>' +
-      '<button type="button" class="sx-iconbtn" data-cmd="undo" aria-label="Undo (Ctrl+Z)" title="Undo (Ctrl+Z)"' + (S.canUndo ? '' : ' disabled') + '>' + ic('undo') + '</button>' +
-      '<button type="button" class="sx-iconbtn" data-cmd="redo" aria-label="Redo (Ctrl+Shift+Z)" title="Redo (Ctrl+Shift+Z)"' + (S.canRedo ? '' : ' disabled') + '>' + ic('redo') + '</button>' +
+      '<button type="button" class="sx-iconbtn sx-head-act" data-cmd="undo" aria-label="Undo (Ctrl+Z)" title="Undo (Ctrl+Z)"' + (S.canUndo ? '' : ' disabled') + '>' + ic('undo') + '</button>' +
+      '<button type="button" class="sx-iconbtn sx-head-act" data-cmd="redo" aria-label="Redo (Ctrl+Shift+Z)" title="Redo (Ctrl+Shift+Z)"' + (S.canRedo ? '' : ' disabled') + '>' + ic('redo') + '</button>' +
       '<span class="sx-sep sx-hide-phone"></span>' +
       '<button type="button" class="sx-iconbtn sx-hide-phone" data-cmd="history" aria-label="Version history" title="Version history">' + ic('history') + '</button>' +
       '<button type="button" class="sx-iconbtn sx-hide-phone" data-cmd="settings" aria-label="Performance settings" title="Performance">' + ic('gauge') + '</button>' +
       '<button type="button" class="sx-iconbtn sx-hide-phone" data-theme-toggle aria-label="Switch color theme" title="Theme">' + ic('moon') + '</button>' +
       '<button type="button" class="sx-iconbtn sx-hide-phone" data-cmd="shortcuts" aria-label="Keyboard shortcuts (?)" title="Shortcuts (?)">' + ic('keyboard') + '</button>' +
-      '<button type="button" class="btn btn-gold sx-download" data-cmd="export" aria-label="Download">' + ic('download') + '<span>Download</span></button>';
+      '<button type="button" class="btn btn-gold sx-download sx-head-act" data-cmd="export" aria-label="Download">' + ic('download') + '<span>Download</span></button>';
     var input = byId('sx-name');
     input.addEventListener('change', function () {
       if (!S.project) return;
@@ -624,19 +753,112 @@
     n.setAttribute('data-state', state);
     n.lastChild.textContent = state === 'dirty' ? 'Saving…' : state === 'error' ? 'Not saved — storage full?' : state === 'preview' ? 'Previewing' : 'Saved on this device';
   }
-  function renderRail() {
-    var html = '';
-    RAIL.forEach(function (r) {
-      html += '<button type="button" class="sx-rail-btn" data-panel-btn="' + r[0] + '" aria-label="' + r[1] + '" aria-pressed="' + (S.panel === r[0]) + '"><span class="sx-rail-ic">' + ic(r[2]) + '</span><span class="sx-rail-lb">' + r[1] + '</span></button>';
+
+  /* ---------- Tools: rail (desktop), tab bar + More sheet (phone) ----------
+     The list is RAIL, then anything another module registers: PANELS._rail.push({ id, label, icon, order }) or a panel spec with
+     `rail: { label, icon }`. The phone tab bar shows PRIMARY plus "More", a grid sheet with every other tool. */
+  var PRIMARY = ['design', 'elements', 'text', 'uploads'];
+  var SNAPS = ['peek', 'half', 'full'];
+  var SHEET_PREF = { fonts: 'full', projects: 'full', recipes: 'full', history: 'full' };
+  function iconHtml(name) {
+    if (I[name]) return ic(name);
+    if (/^\s*</.test(name || '')) return '<svg class="sx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + name + '</svg>';
+    return ic('apps');
+  }
+  function railItems() {
+    var list = RAIL.map(function (r, i) { return { id: r[0], label: r[1], icon: r[2], order: i * 10 }; });
+    var seen = {};
+    list.forEach(function (x) { seen[x.id] = 1; });
+    function add(it) {
+      if (!it || !it.id || seen[it.id] || !PANELS[it.id]) return;
+      seen[it.id] = 1;
+      list.push({ id: it.id, label: it.label || it.id, icon: it.icon || 'apps', order: typeof it.order === 'number' ? it.order : 1000 + list.length });
+    }
+    (PANELS._rail || []).forEach(function (r) { add(Array.isArray(r) ? { id: r[0], label: r[1], icon: r[2], order: r[3] } : r); });
+    Object.keys(PANELS).forEach(function (id) {
+      var sp = PANELS[id];
+      if (id.charAt(0) === '_' || !sp || !sp.rail) return;
+      var o = typeof sp.rail === 'object' ? sp.rail : {};
+      add({ id: id, label: o.label || (typeof sp.title === 'string' ? sp.title : id), icon: o.icon, order: o.order });
     });
-    E.rail.innerHTML = html;
-    E.tabs.innerHTML = html + '<button type="button" class="sx-rail-btn" data-panel-btn="export" aria-label="Download" aria-pressed="' + (S.panel === 'export') + '"><span class="sx-rail-ic">' + ic('download') + '</span><span class="sx-rail-lb">Download</span></button>';
+    return list.map(function (x, i) { x.i = i; return x; }).sort(function (a, b) { return a.order - b.order || a.i - b.i; });
+  }
+  function railBtn(it, cls) {
+    return '<button type="button" class="sx-rail-btn' + (cls ? ' ' + cls : '') + '" data-panel-btn="' + esc(it.id) + '" aria-label="' + esc(it.label) + '" title="' + esc(it.label) + '" aria-pressed="' + (S.panel === it.id) + '"><span class="sx-rail-ic">' + iconHtml(it.icon) + '</span><span class="sx-rail-lb">' + esc(it.label) + '</span></button>';
+  }
+  function renderRail() {
+    var items = railItems();
+    E.rail.innerHTML = items.map(function (it) { return railBtn(it); }).join('') +
+      '<button type="button" class="sx-rail-btn sx-rail-more" data-cmd="railMore" aria-label="More tools" title="More tools" aria-haspopup="menu" aria-expanded="false" hidden><span class="sx-rail-ic">' + ic('more') + '</span><span class="sx-rail-lb">More</span></button>';
+    E.tabs.innerHTML = items.filter(function (it) { return PRIMARY.indexOf(it.id) >= 0; }).map(function (it) { return railBtn(it); }).join('') +
+      railBtn({ id: 'more', label: 'More', icon: 'grid' }, 'sx-tab-more');
+    markRail();
+    fitRail();
   }
   function markRail() {
-    root.querySelectorAll('[data-panel-btn]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-panel-btn') === S.panel ? 'true' : 'false'); });
+    var secondary = !!S.panel && PRIMARY.indexOf(S.panel) < 0;
+    root.querySelectorAll('[data-panel-btn]').forEach(function (b) {
+      var id = b.getAttribute('data-panel-btn');
+      var on = id === S.panel || (id === 'more' && secondary && b.parentNode === E.tabs);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var rm = E.rail.querySelector('.sx-rail-more');
+    if (rm) rm.setAttribute('aria-pressed', S.railHidden && S.railHidden.indexOf(S.panel) >= 0 ? 'true' : 'false');
+  }
+  /* Short laptop screens: smaller rail rhythm first, then icons only, then the rest under "More" (never a hidden scrollbar). */
+  function fitRail() {
+    var r = E.rail;
+    S.railHidden = [];
+    if (!r.offsetParent) return;
+    var btns = [].slice.call(r.querySelectorAll('[data-panel-btn]'));
+    var more = r.querySelector('.sx-rail-more');
+    r.classList.remove('is-compact', 'is-tight');
+    btns.forEach(function (b) { b.hidden = false; });
+    if (more) more.hidden = true;
+    function over() { return r.scrollHeight > r.clientHeight + 1; }
+    if (!over()) return markRail();
+    r.classList.add('is-compact');
+    if (!over()) return markRail();
+    r.classList.add('is-tight');
+    if (!over() || !more) return markRail();
+    more.hidden = false;
+    for (var i = btns.length - 1; i >= 0 && over(); i--) { btns[i].hidden = true; S.railHidden.unshift(btns[i].getAttribute('data-panel-btn')); }
+    markRail();
+  }
+  function railMoreMenu(el) {
+    var items = railItems().filter(function (it) { return S.railHidden.indexOf(it.id) >= 0; });
+    openPop(el, '<div class="sx-menu">' + items.map(function (it) { return '<button type="button" data-cmd="openPanel:' + esc(it.id) + '">' + iconHtml(it.icon) + esc(it.label) + '</button>'; }).join('') + '</div>', { cls: 'sx-pop-menu' });
+  }
+  /* The phone "More" sheet: every tool that is not a primary tab, plus the jobs people look for by name. */
+  function moreItems() {
+    var out = [];
+    if (PANELS.apps) out.push({ cmd: 'tool:collage', label: 'Collage', icon: 'grid' });
+    railItems().forEach(function (it) { if (PRIMARY.indexOf(it.id) < 0) out.push({ id: it.id, label: it.label, icon: it.icon }); });
+    if (PANELS.export) out.push({ id: 'export', label: 'Download', icon: 'download' });
+    return out;
+  }
+  if (!PANELS.more) {
+    PANELS.more = {
+      title: 'All tools', eyebrow: 'More', sheet: 'half',
+      render: function (c, body) {
+        var g = h('<div class="sx-more-grid" role="list"></div>');
+        moreItems().forEach(function (it) {
+          g.insertAdjacentHTML('beforeend', '<button type="button" class="sx-more-item" role="listitem" ' + (it.cmd ? 'data-cmd="' + esc(it.cmd) + '"' : 'data-panel-btn="' + esc(it.id) + '" aria-pressed="false"') + '><span class="sx-more-ic">' + iconHtml(it.icon) + '</span><span>' + esc(it.label) + '</span></button>');
+        });
+        body.appendChild(g);
+      }
+    };
   }
 
   /* ---------- Panels ---------- */
+  function prefSnap(id, opts) {
+    var spec = PANELS[id] || {};
+    var v = opts && opts.sheet;
+    if (!v && opts && opts.full) v = 'full';
+    if (!v) { try { v = typeof spec.sheet === 'function' ? spec.sheet(ctx, opts || {}) : spec.sheet; } catch (e) { v = null; } }
+    if (!v) v = SHEET_PREF[id];
+    return SNAPS.indexOf(v) >= 0 ? v : 'half';
+  }
   function openPanel(id, opts) {
     var spec = PANELS[id];
     if (!spec) return;
@@ -651,19 +873,22 @@
     root.classList.add('has-panel');
     markRail();
     renderPanel();
-    if (isPhone()) openSheet(S.panelOpts.full ? 1 : 0);
+    if (isPhone()) openSheet(prefSnap(id, S.panelOpts));
     try {
       var url = new URL(location.href);
       url.searchParams.set('tool', id);
       history.replaceState(null, '', url.pathname + url.search);
     } catch (e) {}
     if (!was) refitSoon();
+    fitToolbarSoon();
   }
   function closePanel() {
     if (!S.panel) return;
     if (S.panel === 'draw') stopDraw();
     fire('panel-close', S.panel);
     if (S.panelSpec && S.panelSpec.close) S.panelSpec.close(ctx);
+    var restore = E.panel.contains(document.activeElement);
+    var closedId = S.panel;
     S.panel = null;
     S.panelSpec = null;
     root.setAttribute('data-panel', '');
@@ -678,6 +903,12 @@
       history.replaceState(null, '', url.pathname + url.search);
     } catch (e) {}
     refitSoon();
+    fitToolbarSoon();
+    if (restore) {
+      var host = isPhone() ? E.tabs : E.rail;
+      var b = host.querySelector('[data-panel-btn="' + closedId + '"]:not([hidden])') || (isPhone() && E.tabs.querySelector('[data-panel-btn="more"]')) || host.querySelector('[data-panel-btn]');
+      if (b) try { b.focus({ preventScroll: true }); } catch (e) {}
+    }
   }
   function renderPanel(keepScroll) {
     var spec = PANELS[S.panel];
@@ -689,41 +920,65 @@
     E.panelHead.innerHTML = (S.panelOpts.back ? '<button type="button" class="sx-iconbtn" data-cmd="panelBack" aria-label="Back">' + ic('back') + '</button>' : '') +
       '<div class="sx-panel-title"><span class="sx-eyebrow">' + esc(spec.eyebrow || 'Studio') + '</span><h2>' + esc(title) + '</h2></div>' +
       '<button type="button" class="sx-iconbtn" data-cmd="closePanel" aria-label="Close panel">' + ic('x') + '</button>';
+    E.panel.setAttribute('aria-label', String(title || 'Tool panel'));
     E.panelBody.innerHTML = '';
     try { spec.render(ctx, E.panelBody, S.panelOpts); } catch (err) {
       console.error(err);
       E.panelBody.appendChild(ui.empty('Something went wrong', 'This panel could not open. Your design is safe.'));
     }
     E.panelBody.scrollTop = top;
+    markRail();
+    markScrollers();
+    setTimeout(markScrollers, 400);
   }
+  /* Rows that scroll sideways inside a panel (tab strips, chip rows) fade at the edge that has more, so people know. */
+  var SCROLLERS = '.sx-tabs-row, .sx-chips.is-scroll, .sx-cg-chips, .sx-stock-provs, .sx-rep-tabs, .sx-wi-rail';
+  function markScroller(n) {
+    var more = n.scrollWidth > n.clientWidth + 2;
+    n.classList.toggle('sx-fade-r', more && n.scrollLeft + n.clientWidth < n.scrollWidth - 2);
+    n.classList.toggle('sx-fade-l', more && n.scrollLeft > 2);
+  }
+  function markScrollers() { if (S.panel) E.panelBody.querySelectorAll(SCROLLERS).forEach(markScroller); }
+  E.panelBody.addEventListener('scroll', function (e) { var n = e.target; if (n && n.matches && n.matches(SCROLLERS)) markScroller(n); }, true);
   var refreshPanelSoon = debounce(function () {
     var spec = PANELS[S.panel];
     if (!spec || !spec.doc || S.pointer || S.preview) return;
     if (E.panel.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
-    if (S.panelDrag) return;
+    if (S.panelDrag || S.scrub) return;
     if (typeof spec.doc === 'function') spec.doc(ctx, E.panelBody); else renderPanel(true);
   }, 260);
 
-  /* ---------- Phone sheet ---------- */
+  /* ---------- Phone sheet: peek / half / full ---------- */
   function sheetSnaps() {
     var avail = innerHeight - (E.tabs.offsetHeight || 64) - (E.head.offsetHeight || 52);
-    return [Math.round(avail * 0.46), Math.round(avail * 0.9)];
+    return { peek: Math.round(Math.min(avail * 0.3, 148)), half: Math.round(avail * 0.4), full: Math.round(avail * 0.9) };
   }
   function setSheet(px, animate) {
     root.classList.toggle('sheet-drag', !animate);
     root.style.setProperty('--sheet-h', px + 'px');
   }
-  function openSheet(i) {
-    var snaps = sheetSnaps();
-    S.sheet = i;
+  function openSheet(name) {
+    if (typeof name === 'number') name = name ? 'full' : 'half';
+    if (SNAPS.indexOf(name) < 0) name = 'half';
+    S.sheet = name;
     root.classList.add('sheet-open');
-    setSheet(snaps[i], true);
+    root.setAttribute('data-sheet', name);
+    setSheet(sheetSnaps()[name], true);
     refitSoon(320);
+    setTimeout(placeToast, 330);
   }
   function closeSheet() {
     root.classList.remove('sheet-open', 'sheet-drag');
+    root.removeAttribute('data-sheet');
     root.style.setProperty('--sheet-h', '0px');
+    setTimeout(placeToast, 330);
   }
+  /* Panels and modules: ctx.sheet('peek' | 'half' | 'full') moves the phone sheet; ctx.sheet() reads it. No-op on desktop. */
+  function sheet(name) {
+    if (name && isPhone() && S.panel) openSheet(name);
+    return isPhone() && S.panel ? S.sheet : null;
+  }
+  function peekSheet() { if (isPhone() && S.panel && S.sheet !== 'peek' && !(S.panelSpec && S.panelSpec.keepSheet)) openSheet('peek'); }
   (function bindSheet() {
     var start = null;
     function down(e) {
@@ -734,7 +989,7 @@
     }
     function move(e) {
       if (!start) return;
-      var hgt = clamp(start.h - (e.clientY - start.y), 80, sheetSnaps()[1] + 20);
+      var hgt = clamp(start.h - (e.clientY - start.y), 60, sheetSnaps().full + 20);
       setSheet(hgt, false);
     }
     function up(e) {
@@ -743,9 +998,11 @@
       var moved = Math.abs(e.clientY - start.y);
       start = null;
       var snaps = sheetSnaps();
-      if (moved < 6) { openSheet(S.sheet === 0 ? 1 : 0); return; }
-      if (hgt < snaps[0] * 0.62) { closePanel(); return; }
-      openSheet(Math.abs(hgt - snaps[0]) < Math.abs(hgt - snaps[1]) ? 0 : 1);
+      if (moved < 6) { openSheet(S.sheet === 'peek' ? 'half' : S.sheet === 'half' ? 'full' : 'half'); return; }
+      if (hgt < snaps.peek * 0.6) { closePanel(); return; }
+      var best = 'peek';
+      SNAPS.forEach(function (n) { if (Math.abs(hgt - snaps[n]) < Math.abs(hgt - snaps[best])) best = n; });
+      openSheet(best);
     }
     [E.grip, E.panelHead].forEach(function (n) {
       n.addEventListener('pointerdown', down);
@@ -753,31 +1010,72 @@
       n.addEventListener('pointerup', up);
       n.addEventListener('pointercancel', up);
     });
+    E.grip.setAttribute('role', 'button');
+    E.grip.setAttribute('tabindex', '-1');
+    E.grip.setAttribute('aria-label', 'Resize panel');
+  })();
+  /* Dragging a slider in the sheet: the sheet shrinks to that slider (it stays under the finger) and the canvas gets the room. */
+  (function bindScrub() {
+    var st = null;
+    function end() {
+      if (!st) return;
+      var s0 = st;
+      st = null;
+      S.scrub = false;
+      s0.row.classList.remove('is-scrub');
+      root.classList.remove('is-scrubbing');
+      if (S.panel && isPhone()) { openSheet(s0.snap); E.panelBody.scrollTop = s0.scroll; }
+    }
+    E.panelBody.addEventListener('pointerdown', function (e) {
+      var inp = e.target.closest && e.target.closest('input[type="range"]');
+      if (!inp || !isPhone() || !S.panel || !root.classList.contains('sheet-open') || e.pointerType === 'mouse') return;
+      var row = inp.closest('.sx-slider') || inp.parentElement || inp;
+      var r0 = row.getBoundingClientRect();
+      var pr = E.panel.getBoundingClientRect();
+      if (r0.top - pr.top < 40) return;
+      st = { snap: S.sheet, scroll: E.panelBody.scrollTop, row: row };
+      S.scrub = true;
+      row.classList.add('is-scrub');
+      root.classList.add('is-scrubbing');
+      setSheet(Math.round(pr.bottom - r0.top + 10), false);
+      var r1 = row.getBoundingClientRect();
+      E.panelBody.scrollTop += r1.top - r0.top;
+      refitSoon(30);
+    });
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
   })();
   var refitSoon = function (ms) {
     clearTimeout(refitSoon.t);
-    refitSoon.t = setTimeout(function () { if (S.autoFit) fit(); placeMini(); }, ms || 60);
+    refitSoon.t = setTimeout(function () { if (S.autoFit) fit(); placeMini(); placeToast(); }, ms || 60);
   };
 
-  /* ---------- Toolbar ---------- */
+  /* ---------- Toolbar ----------
+     Every button carries a priority (data-pri: 0 never hides, 1 always shown, 2 common, 3 first to go). When the row does not fit,
+     desktop first drops text labels, then lower priorities move into the "More" menu. Measured, never a hidden scrollbar. */
   function tb(cmd, icon, label, o) {
     o = o || {};
-    return '<button type="button" class="sx-tb' + (o.text ? ' has-text' : '') + (o.cls ? ' ' + o.cls : '') + '" data-cmd="' + cmd + '" aria-label="' + esc(o.aria || label) + '" title="' + esc(o.title || label) + '"' + (o.pressed != null ? ' aria-pressed="' + !!o.pressed + '"' : '') + (o.disabled ? ' disabled' : '') + '>' + (icon ? ic(icon) : '') + (o.text !== false && (o.text || o.label) ? '<span>' + esc(o.text === true ? label : (o.text || label)) + '</span>' : '') + '</button>';
+    return '<button type="button" class="sx-tb' + (o.text ? ' has-text' : '') + (o.cls ? ' ' + o.cls : '') + '" data-cmd="' + cmd + '" data-pri="' + (o.pri == null ? 2 : o.pri) + '" aria-label="' + esc(o.aria || label) + '" title="' + esc(o.title || label) + '"' + (o.pressed != null ? ' aria-pressed="' + !!o.pressed + '"' : '') + (o.disabled ? ' disabled' : '') + (o.hidden ? ' hidden' : '') + (o.popup ? ' aria-haspopup="' + o.popup + '" aria-expanded="false"' : '') + '>' + (icon ? ic(icon) : '') + (o.text !== false && (o.text || o.label) ? '<span>' + esc(o.text === true ? label : (o.text || label)) + '</span>' : '') + '</button>';
   }
-  function swatch(cmd, value, label) {
-    return '<button type="button" class="sx-tb sx-tb-swatch" data-cmd="' + cmd + '" aria-label="' + esc(label) + '" title="' + esc(label) + '"><i style="background:' + esc(cssFill(value)) + '"></i></button>';
+  function swatch(cmd, value, label, pri) {
+    return '<button type="button" class="sx-tb sx-tb-swatch" data-cmd="' + cmd + '" data-pri="' + (pri == null ? 1 : pri) + '" aria-label="' + esc(label) + '" title="' + esc(label) + '" aria-haspopup="dialog"><i style="background:' + esc(cssFill(value)) + '"></i></button>';
   }
   var SEP = '<span class="sx-tb-sep" aria-hidden="true"></span>';
   function common(l) {
-    return SEP + tb('opacity', 'opacity', 'Transparency') + tb('position', 'position', 'Position', { text: true }) + tb('copyStyle', 'brush', S.painterArmed ? 'Click another item to paste this style (Esc to stop)' : 'Copy style (Ctrl+Alt+C)', { pressed: !!S.painterArmed }) + SEP +
-      tb(l && l.locked ? 'unlock' : 'lock', l && l.locked ? 'lock' : 'unlock', l && l.locked ? 'Unlock' : 'Lock', { pressed: !!(l && l.locked) }) +
-      tb('dup', 'copy', 'Duplicate (Ctrl+D)') + tb('del', 'trash', 'Delete (Del)');
+    var ph = isPhone();
+    return SEP + tb('opacity', 'opacity', 'Transparency', { pri: 3, popup: 'dialog' }) + tb('position', 'position', 'Position', { text: true, pri: 3 }) + tb('copyStyle', 'brush', S.painterArmed ? 'Click another item to paste this style (Esc to stop)' : 'Copy style (Ctrl+Alt+C)', { pressed: !!S.painterArmed, pri: 3 }) + SEP +
+      tb(l && l.locked ? 'unlock' : 'lock', l && l.locked ? 'lock' : 'unlock', l && l.locked ? 'Unlock' : 'Lock', { pressed: !!(l && l.locked), pri: ph ? 3 : isTablet() ? 2 : 1 }) +
+      tb('dup', 'copy', 'Duplicate (Ctrl+D)', { pri: S.editing ? 3 : 1 }) + tb('del', 'trash', 'Delete (Del)', { pri: S.editing ? 3 : 1, cls: 'is-danger' }) + moreBtn();
   }
+  /* Buttons from feature hooks get a default priority unless they set their own data-pri. */
+  function withPri(html, pri) { return String(html || '').replace(/<button(?![^>]*data-pri)/g, '<button data-pri="' + pri + '"'); }
+  function moreBtn() { return tb('more', 'more', 'More options', { pri: 0, cls: 'sx-tb-more', popup: 'menu' }); }
   function renderToolbar() {
     if (E.tool.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;
     var ids = sel();
     var html = '';
     var kind = 'page';
+    var ph = isPhone();
     if (S.preview && S.preview.type === 'size') kind = 'preview';
     else if (S.tool === 'crop') kind = 'crop';
     else if (/^(pen|marker|highlighter|eraser)$/.test(S.tool)) kind = 'draw';
@@ -785,65 +1083,123 @@
     else if (ids.length === 1) { var l0 = L(ids[0]); kind = l0 ? l0.type : 'page'; }
     var l = ids.length === 1 ? L(ids[0]) : null;
     if (kind === 'crop') {
-      html = '<span class="sx-tb-label">' + ic('crop') + 'Crop</span>' +
-        [['free', 'Free'], ['1', '1:1'], ['0.8', '4:5'], ['1.5', '3:2'], ['1.7778', '16:9'], ['0.5625', '9:16']].map(function (r) { return tb('ratio:' + r[0], null, r[1], { text: true, cls: 'sx-tb-chip' }); }).join('') +
-        SEP + tb('cropReset', 'reset', 'Reset crop', { text: true }) + '<span class="sx-grow"></span>' + tb('cropCancel', 'x', 'Cancel', { text: true }) + tb('cropDone', 'check', 'Done', { text: true, cls: 'is-primary' });
+      html = '<span class="sx-tb-label" data-pri="3">' + ic('crop') + 'Crop</span>' +
+        [['free', 'Free'], ['1', '1:1'], ['0.8', '4:5'], ['1.5', '3:2'], ['1.7778', '16:9'], ['0.5625', '9:16']].map(function (r, i) { return tb('ratio:' + r[0], null, r[1], { text: true, cls: 'sx-tb-chip', pri: i < 3 ? 2 : 3 }); }).join('') +
+        SEP + tb('cropReset', 'reset', 'Reset crop', { text: true, pri: 3 }) + '<span class="sx-grow"></span>' + tb('cropCancel', 'x', 'Cancel', { text: true, pri: 1 }) + tb('cropDone', 'check', 'Done', { text: true, cls: 'is-primary', pri: 0 });
     } else if (kind === 'draw') {
       var d = S.draw;
       html = [['pen', 'Pen', 'pen'], ['marker', 'Marker', 'marker'], ['highlighter', 'Highlighter', 'highlighter'], ['eraser', 'Eraser', 'eraser']].map(function (m) {
-        return tb('drawMode:' + m[0], m[2], m[1], { text: true, pressed: S.tool === m[0] });
-      }).join('') + SEP + swatch('drawColor', d.color, 'Pen color') + '<span class="sx-grow"></span>' + tb('drawDone', 'check', 'Done', { text: true, cls: 'is-primary' });
+        return tb('drawMode:' + m[0], m[2], m[1], { text: true, pressed: S.tool === m[0], pri: m[0] === 'pen' || m[0] === 'eraser' ? 1 : 2 });
+      }).join('') + SEP + swatch('drawColor', d.color, 'Pen color') + '<span class="sx-grow"></span>' + tb('drawDone', 'check', 'Done', { text: true, cls: 'is-primary', pri: 0 });
     } else if (kind === 'preview') {
       html = '<span class="sx-tb-label">' + ic('resize') + 'Previewing size</span>';
     } else if (kind === 'image') {
       var repl = (l && (l.slot || !l.src)) ? 'Replace photo' : 'Replace';
-      html = tb('adjust', 'adjust', 'Edit photo', { text: true }) + tb('filters', 'filters', 'Filters', { text: true }) + tb('effects', 'sparkle', 'Effects', { text: true }) + (fire('photo-tools', l) || '') + SEP +
-        tb('crop', 'crop', 'Crop', { text: true }) + tb('flipMenu', 'flip', 'Flip', { text: true }) + tb('replace', 'replace', repl, { text: repl, cls: (l && l.slot) ? 'is-primary' : '' }) + common(l) + tb('more', 'more', 'More options');
+      html = tb('adjust', 'adjust', 'Edit photo', { text: ph ? 'Edit' : true, pri: 1 }) + tb('filters', 'filters', 'Filters', { text: true, pri: ph ? 2 : 1 }) + tb('effects', 'sparkle', 'Effects', { text: true, pri: 3 }) + withPri(fire('photo-tools', l) || '', 1) + SEP +
+        tb('crop', 'crop', 'Crop', { text: true, pri: 1 }) + tb('flipMenu', 'flip', 'Flip', { text: true, pri: 3, popup: 'menu' }) + tb('replace', 'replace', repl, { text: ph ? 'Replace' : repl, cls: (l && l.slot) ? 'is-primary' : '', pri: (l && l.slot) ? 1 : 2 }) + common(l);
     } else if (kind === 'text') {
       var fam = l.font || 'Plus Jakarta Sans';
-      html = '<button type="button" class="sx-tb sx-tb-font" data-cmd="font" aria-label="Font: ' + esc(fam) + '" title="Font"><span style="font-family:' + esc(fontCss(fam)) + '">' + esc(fam) + '</span>' + ic('chev') + '</button>' +
-        '<span class="sx-tb-size"><button type="button" class="sx-tb" data-cmd="size:-" aria-label="Smaller">' + ic('minus') + '</button><input type="number" id="sx-fsize" min="4" max="2000" value="' + Math.round(l.size) + '" aria-label="Font size"><button type="button" class="sx-tb" data-cmd="size:+" aria-label="Bigger">' + ic('plus') + '</button></span>' +
+      html = (S.editing && ph ? tb('textDone', 'check', 'Done', { text: true, cls: 'is-primary', pri: 0 }) : '') +
+        '<button type="button" class="sx-tb sx-tb-font" data-cmd="font" data-pri="1" aria-label="Font: ' + esc(fam) + '" title="Font"><span style="font-family:' + esc(fontCss(fam)) + '">' + esc(ph ? 'Aa' : fam) + '</span>' + ic('chev') + '</button>' +
+        '<span class="sx-tb-size" data-pri="1"><button type="button" class="sx-tb" data-cmd="size:-" aria-label="Smaller text" title="Smaller">' + ic('minus') + '</button><input type="number" id="sx-fsize" min="4" max="2000" value="' + Math.round(l.size) + '" aria-label="Font size"><button type="button" class="sx-tb" data-cmd="size:+" aria-label="Bigger text" title="Bigger">' + ic('plus') + '</button></span>' +
         swatch('textColor', l.fill || l.color, 'Text color') + SEP +
-        tb('bold', 'bold', 'Bold (Ctrl+B)', { pressed: (l.weight || 400) >= 600 }) + tb('italic', 'italic', 'Italic (Ctrl+I)', { pressed: !!l.italic }) +
-        tb('underline', 'underline', 'Underline (Ctrl+U)', { pressed: !!l.underline }) + tb('strike', 'strike', 'Strikethrough', { pressed: !!l.strike }) +
-        tb('upper', 'upper', 'Uppercase', { pressed: !!l.uppercase }) +
-        tb('align', l.align === 'center' ? 'alignC' : l.align === 'right' ? 'alignR' : 'alignL', 'Alignment') + tb('list', 'list', 'Bulleted list') + tb('spacing', 'spacing', 'Spacing') + SEP +
-        tb('effects', 'sparkle', 'Effects', { text: true }) + common(l);
+        tb('bold', 'bold', 'Bold (Ctrl+B)', { pressed: (l.weight || 400) >= 600, pri: 2 }) + tb('italic', 'italic', 'Italic (Ctrl+I)', { pressed: !!l.italic, pri: 2 }) +
+        tb('underline', 'underline', 'Underline (Ctrl+U)', { pressed: !!l.underline, pri: 3 }) + tb('strike', 'strike', 'Strikethrough', { pressed: !!l.strike, pri: 3 }) +
+        tb('upper', 'upper', 'Uppercase', { pressed: !!l.uppercase, pri: 3 }) +
+        tb('align', l.align === 'center' ? 'alignC' : l.align === 'right' ? 'alignR' : 'alignL', 'Alignment', { pri: 2 }) + tb('list', 'list', 'Bulleted list', { pri: 3 }) + tb('spacing', 'spacing', 'Spacing', { pri: 3, popup: 'dialog' }) + SEP +
+        tb('effects', 'sparkle', 'Effects', { text: true, pri: 3 }) + common(l);
     } else if (kind === 'shape') {
-      html = swatch('fill', l.fill, 'Fill color') + tb('stroke', null, 'Border', { text: true }) + tb('edit', 'adjust', 'Edit shape', { text: true }) + tb('effects', 'sparkle', 'Effects', { text: true }) + tb('flipMenu', 'flip', 'Flip') + common(l);
+      html = swatch('fill', l.fill, 'Fill color') + tb('stroke', null, 'Border', { text: true, pri: 2, popup: 'dialog' }) + tb('edit', 'adjust', 'Edit shape', { text: true, pri: 1 }) + tb('effects', 'sparkle', 'Effects', { text: true, pri: 3 }) + tb('flipMenu', 'flip', 'Flip', { pri: 3, popup: 'menu' }) + common(l);
     } else if (kind === 'svg') {
       var tint = /^(lucide|phosphor):/.test(l.assetId || '') || (!l.assetId && l.color);
       var wi = /^withicons:/.test(l.assetId || '');
       var qr = /^qr:/.test(l.assetId || '');
-      html = (wi ? tb('iconColors', 'palette', 'Colours', { text: true }) + tb('swapStyle', 'swap', 'Swap style', { text: true }) : qr ? tb('editQr', 'qr', 'Edit QR code', { text: 'Edit QR' }) : tint ? swatch('svgColor', l.color || '#17131F', 'Icon color') : tb('tintSticker', 'palette', 'Tint', { text: true })) +
-        (qr ? '' : tb('edit', 'adjust', 'Edit', { text: true })) + tb('effects', 'sparkle', 'Effects', { text: true }) + tb('flipMenu', 'flip', 'Flip') + common(l);
+      html = (wi ? tb('iconColors', 'palette', 'Colours', { text: true, pri: 1 }) + tb('swapStyle', 'swap', 'Swap style', { text: true, pri: 2 }) : qr ? tb('editQr', 'qr', 'Edit QR code', { text: 'Edit QR', pri: 1 }) : tint ? swatch('svgColor', l.color || '#17131F', 'Icon color') : tb('tintSticker', 'palette', 'Tint', { text: true, pri: 1 })) +
+        (qr ? '' : tb('edit', 'adjust', 'Edit', { text: true, pri: 1 })) + tb('effects', 'sparkle', 'Effects', { text: true, pri: 3 }) + tb('flipMenu', 'flip', 'Flip', { pri: 3, popup: 'menu' }) + common(l);
     } else if (kind === 'path') {
-      html = swatch('pathColor', l.color, 'Ink color') + tb('edit', 'adjust', 'Edit drawing', { text: true }) + common(l);
+      html = swatch('pathColor', l.color, 'Ink color') + tb('edit', 'adjust', 'Edit drawing', { text: true, pri: 1 }) + common(l);
     } else if (kind === 'group') {
-      html = tb('ungroup', 'ungroup', 'Ungroup (Ctrl+Shift+G)', { text: true }) + tb('effects', 'sparkle', 'Effects', { text: true }) + common(l);
+      html = tb('ungroup', 'ungroup', 'Ungroup (Ctrl+Shift+G)', { text: true, pri: 1 }) + tb('effects', 'sparkle', 'Effects', { text: true, pri: 3 }) + common(l);
     } else if (kind === 'multi') {
-      html = tb('group', 'group', 'Group (Ctrl+G)', { text: true }) + tb('alignMenu', 'alC', 'Align', { text: true }) + SEP + tb('opacity', 'opacity', 'Transparency') + tb('position', 'position', 'Position', { text: true }) + SEP + tb('dup', 'copy', 'Duplicate') + tb('del', 'trash', 'Delete');
+      html = tb('group', 'group', 'Group (Ctrl+G)', { text: true, pri: 1 }) + tb('alignMenu', 'alC', 'Align', { text: true, pri: 1, popup: 'menu' }) + SEP + tb('opacity', 'opacity', 'Transparency', { pri: 3, popup: 'dialog' }) + tb('position', 'position', 'Position', { text: true, pri: 3 }) + SEP + tb('dup', 'copy', 'Duplicate', { pri: 1 }) + tb('del', 'trash', 'Delete', { pri: 1, cls: 'is-danger' }) + moreBtn();
     } else {
       var bg = doc().background || {};
-      html = S.project ? tb('resize', 'resize', 'Resize', { text: true }) + swatch('pageBg', bg.type === 'gradient' ? { type: 'gradient', kind: bg.kind, colors: bg.colors, angle: bg.angle } : (bg.color || '#ffffff'), 'Background color') + (fire('toolbar', 'page') || '') + SEP +
-        tb('addPhoto', 'image', 'Add photo', { text: true }) + tb('addText', 'text', 'Add text', { text: true }) + tb('elements', 'elements', 'Elements', { text: true }) + SEP +
-        tb('replaceAll', 'swap', 'Replace colours & fonts', { text: 'Replace all' }) + tb('pagesPanel', 'pages', 'Pages') + '<span class="sx-grow"></span>' + tb('compareHold', 'compare', 'Hold to compare', { cls: 'sx-hold' }) : '<span class="sx-tb-label">' + ic('shield') + 'Private by design — nothing leaves this device</span>';
+      html = S.project ? tb('resize', 'resize', 'Resize', { text: true, pri: 1 }) + swatch('pageBg', bg.type === 'gradient' ? { type: 'gradient', kind: bg.kind, colors: bg.colors, angle: bg.angle } : (bg.color || '#ffffff'), 'Background color') + (fire('toolbar', 'page') || '') + SEP +
+        tb('addPhoto', 'image', 'Add photo', { text: true, pri: 1 }) + tb('addText', 'text', 'Add text', { text: true, pri: 1 }) + tb('elements', 'elements', 'Elements', { text: true, pri: 2 }) + SEP +
+        tb('replaceAll', 'swap', 'Replace colours & fonts', { text: 'Replace all', pri: 3 }) + tb('pagesPanel', 'pages', 'Pages', { pri: 3 }) + '<span class="sx-grow"></span>' + tb('compareHold', 'compare', 'Hold to compare', { cls: 'sx-hold', pri: 3 }) +
+        tb('tbMore', 'more', 'More', { pri: 0, hidden: true, popup: 'menu' }) : '<span class="sx-tb-label">' + ic('shield') + 'Private by design — nothing leaves this device</span>';
     }
     html += fireAll('toolbar-add', kind, l);
     var custom = fire('toolbar', kind, l);
-    if (typeof custom === 'string') html = custom;
+    if (typeof custom === 'string') html = custom + (/data-cmd="(tbMore|more)"/.test(custom) ? '' : tb('tbMore', 'more', 'More', { pri: 0, hidden: true, popup: 'menu' }));
+    /* Same toolbar as before (an autosave, a re-select): leave the DOM alone so keyboard focus and hover stay put. */
+    if (html === S.tbHtml && kind === E.tool.getAttribute('data-kind') && E.tool.childElementCount) { fitToolbar(); return; }
+    var act = document.activeElement;
+    var focusCmd = act && E.tool.contains(act) ? (act.getAttribute('data-cmd') || '') : null;
+    S.tbHtml = html;
     E.tool.innerHTML = html;
     E.tool.setAttribute('data-kind', kind);
     var fs = byId('sx-fsize');
     if (fs) fs.addEventListener('change', function () { var v = clamp(Number(fs.value) || 12, 4, 2000); patch(sel(), { size: v }, gesture()); });
+    fitToolbar();
+    if (focusCmd != null) {
+      var twin = focusCmd && E.tool.querySelector('[data-cmd="' + focusCmd + '"]:not([hidden])');
+      if (!twin || twin.offsetParent === null) twin = E.tool.querySelector('[data-cmd="more"]:not([hidden]), [data-cmd="tbMore"]:not([hidden])') || E.tool.querySelector('button:not([hidden])');
+      if (twin) try { twin.focus({ preventScroll: true }); } catch (e) {}
+    }
+  }
+  function fitToolbar() {
+    var t = E.tool;
+    S.tbOverflow = [];
+    if (!t.offsetParent) return;
+    var items = [].slice.call(t.querySelectorAll(':scope > [data-pri], :scope > button'));
+    var more = t.querySelector(':scope > [data-cmd="more"], :scope > [data-cmd="tbMore"]');
+    t.classList.remove('is-compact', 'is-tight');
+    items.forEach(function (n) { n.hidden = false; });
+    if (more && more.getAttribute('data-cmd') === 'tbMore') more.hidden = true;
+    t.querySelectorAll(':scope > .sx-tb-sep').forEach(function (n) { n.hidden = false; });
+    function over() { return t.scrollWidth > t.clientWidth + 1; }
+    if (!over()) return;
+    if (!isPhone()) { t.classList.add('is-compact'); if (!over()) return; }
+    if (more) more.hidden = false;
+    function pri(n) { return Number(n.getAttribute('data-pri') == null ? 2 : n.getAttribute('data-pri')); }
+    var gone = [];
+    [3, 2].forEach(function (p) {
+      for (var i = items.length - 1; i >= 0 && over(); i--) {
+        var n = items[i];
+        if (pri(n) !== p || n === more || n.hidden) continue;
+        n.hidden = true;
+        gone.push(n);
+      }
+    });
+    /* still too wide with only the essentials: narrow the font button too */
+    if (over()) t.classList.add('is-tight');
+    /* second pass: bring back anything that fits again (a wide item may have gone after a narrow one) */
+    gone.slice().sort(function (a, b) { return pri(a) - pri(b) || items.indexOf(a) - items.indexOf(b); }).forEach(function (n) {
+      n.hidden = false;
+      if (over()) n.hidden = true;
+    });
+    items.forEach(function (n) { if (n.hidden && n !== more && n.tagName === 'BUTTON' && n.getAttribute('data-cmd')) S.tbOverflow.push(n); });
+    /* tidy separators next to hidden items */
+    var vis = [].slice.call(t.children).filter(function (n) { return !n.hidden && !n.classList.contains('sx-grow'); });
+    vis.forEach(function (n, i) { if (n.classList.contains('sx-tb-sep') && (i === 0 || i === vis.length - 1 || vis[i - 1].classList.contains('sx-tb-sep'))) n.hidden = true; });
+  }
+  var fitToolbarSoon = debounce(fitToolbar, 80);
+  function overflowHtml() {
+    return (S.tbOverflow || []).map(function (n) {
+      var label = (n.getAttribute('aria-label') || '').replace(/\s*\(.*\)$/, '');
+      var art = n.querySelector('svg, i');
+      var pressed = n.getAttribute('aria-pressed');
+      return '<button type="button" data-cmd="' + esc(n.getAttribute('data-cmd')) + '" data-from-more' + (pressed ? ' aria-checked="' + pressed + '"' : '') + (n.disabled ? ' disabled' : '') + '>' + (art ? art.outerHTML.replace(/^<i /, '<i class="sx-menu-sw" ') : '') + esc(label) + (pressed === 'true' ? ic('check', 'sx-menu-on') : '') + '</button>';
+    }).join('');
   }
   var renderToolbarSoon = debounce(function () { if (!S.pointer) renderToolbar(); }, 120);
 
-  /* ---------- Mini toolbar ---------- */
+  /* ---------- Mini toolbar (desktop only: on a phone the bottom toolbar already has these, and on short laptops it covers the subject) ---------- */
   function placeMini() {
     var ids = sel();
     var m = E.mini;
-    if (!ids.length || S.pointer || S.tool !== 'select' || S.editing || S.preview || !S.project) { m.hidden = true; return; }
+    if (!ids.length || S.pointer || S.tool !== 'select' || S.editing || S.preview || !S.project || isPhone() || innerHeight < 640) { m.hidden = true; return; }
     var rect = null;
     ids.forEach(function (id) {
       var r = scene.screenRect(id);
@@ -855,7 +1211,7 @@
     var l = ids.length === 1 ? L(ids[0]) : null;
     var key = ids.join(',') + (l && l.locked ? 'L' : '');
     if (m._key !== key) {
-      m.innerHTML = tb('dup', 'copy', 'Duplicate') + tb('del', 'trash', 'Delete') + tb(l && l.locked ? 'unlock' : 'lock', l && l.locked ? 'lock' : 'unlock', l && l.locked ? 'Unlock' : 'Lock') + tb('more', 'more', 'More');
+      m.innerHTML = tb('dup', 'copy', 'Duplicate') + tb('del', 'trash', 'Delete') + tb(l && l.locked ? 'unlock' : 'lock', l && l.locked ? 'lock' : 'unlock', l && l.locked ? 'Unlock' : 'Lock') + tb('more', 'more', 'More', { popup: 'menu' });
       m._key = key;
       m.classList.remove('is-pop');
       void m.offsetWidth;
@@ -903,7 +1259,20 @@
     });
     paintZoom();
   }
+  /* Phone: the footer is hidden, so the canvas carries a page pill (more than one page) and a Fit chip (after zooming). */
+  E.chips = h('<div class="sx-stage-chips" aria-label="Canvas"></div>');
+  E.stage.appendChild(E.chips);
+  function paintChips() {
+    var p = S.project;
+    var many = p && p.pages.length > 1;
+    var key = (p ? p.activePage + '/' + p.pages.length : '') + (S.autoFit ? '' : 'z');
+    if (E.chips._key === key) return;
+    E.chips._key = key;
+    E.chips.innerHTML = (many ? '<button type="button" class="sx-chipbtn" data-cmd="pages" aria-label="Pages" aria-haspopup="dialog">' + ic('pages') + '<span>' + (p.activePage + 1) + ' / ' + p.pages.length + '</span></button>' : '') +
+      (p && !S.autoFit ? '<button type="button" class="sx-chipbtn" data-cmd="fit" aria-label="Fit to screen">' + ic('fit') + '<span>Fit</span></button>' : '');
+  }
   function paintZoom() {
+    paintChips();
     var z = byId('sx-zoom'), v = byId('sx-zoomv');
     var zz = scene.zoom();
     if (z && document.activeElement !== z) {
@@ -919,15 +1288,17 @@
     var c = LE.fit(canvas, max || 240);
     return LE.toBlob(c, type || 'image/jpeg', 0.82);
   }
-  var urlCache = {};
+  /* Asset thumbnails as object URLs: bounded (least recently used revoked) and released when a design closes. */
+  var urlCache = PANELS._urlCache ? PANELS._urlCache('thumbs', 160) : { m: {}, get: function (k) { return this.m[k]; }, set: function (k, v) { this.m[k] = v; return v; }, clear: function () {}, size: function () { return 0; } };
   function thumbUrl(id) {
-    if (urlCache[id]) return Promise.resolve(urlCache[id]);
+    var hit = urlCache.get(id);
+    if (hit) return Promise.resolve(hit);
     return LE.project.assetRecord(id).then(function (rec) {
       if (!rec) return '';
-      urlCache[id] = URL.createObjectURL(rec.thumb || rec.blob);
-      return urlCache[id];
+      return urlCache.get(id) || urlCache.set(id, URL.createObjectURL(rec.thumb || rec.blob));
     }).catch(function () { return ''; });
   }
+  function releaseUrls() { if (PANELS._releaseUrls) PANELS._releaseUrls(); else urlCache.clear(); }
   function decode(blob, name) {
     return LE.load(new File([blob], name || 'image', { type: blob.type || 'image/png' }));
   }
@@ -1072,6 +1443,7 @@
     E.file.value = '';
     if (mode === 'replace') { replaceImage(files[0]); return; }
     if (mode === 'tray') { addFiles(files, { trayOnly: true }); return; }
+    if (mode === 'size') { openPhotoSized(files); return; }
     addFiles(files);
   });
   E.fileProject.addEventListener('change', function () {
@@ -1294,8 +1666,9 @@
     S.preview.target = { W: Math.round(W), H: Math.round(H), label: label || (Math.round(W) + ' × ' + Math.round(H)), o: o, src: src };
     replaceDoc(d, false);
     scene.select([]);
-    fit();
     showSizeBar();
+    peekSheet();
+    fit();
     renderToolbar();
   }
   function cancelPreview() {
@@ -1305,8 +1678,8 @@
     replaceDoc(p.pre, false);
     S.silent = false;
     if (p.sel) scene.select(p.sel);
-    fit();
     hideBar();
+    fit();
     setSave(S.dirty ? 'dirty' : 'saved');
     renderToolbar();
     renderFoot();
@@ -1327,8 +1700,8 @@
     st.focal = t.o.focal;
     st.scaleContent = t.o.scaleContent;
     pushSize({ type: 'resize', label: t.label, from: { w: p.pre.width, h: p.pre.height }, to: { w: t.W, h: t.H }, fit: t.o.fit, source: t.src.source, scaleContent: t.o.scaleContent, before: p.pre });
-    fit();
     hideBar();
+    fit();
     renderFoot();
     renderToolbar();
     markDirty();
@@ -1382,7 +1755,7 @@
     var st = sizeOpts();
     var t = p.target;
     E.bar.hidden = false;
-    E.bar.className = 'sx-bar is-size';
+    E.bar.className = 'sx-bar is-size' + (isPhone() ? ' is-top' : '');
     E.bar.innerHTML = '<div class="sx-bar-info"><span class="sx-eyebrow">Previewing</span><strong>' + esc(t.label) + '</strong><small>' + t.W + ' × ' + t.H + ' px · from ' + (t.src.source === 'original' ? 'original' : 'current result') + '</small></div>' +
       '<div class="sx-bar-fit"></div><div class="sx-bar-act"><button type="button" class="btn btn-sm btn-ghost" data-cmd="sizeCancel">Cancel</button><button type="button" class="btn btn-sm btn-gold" data-cmd="sizeUse">' + ic('check') + 'Use this size</button></div>';
     var fitHost = E.bar.querySelector('.sx-bar-fit');
@@ -1447,6 +1820,7 @@
 
   /* ---------- Project lifecycle ---------- */
   function setProject(p) {
+    if (S.project && (!p || S.project.id !== p.id)) releaseUrls();
     S.project = p;
     S.baseId = (p.meta && p.meta.studio && p.meta.studio.baseId) || null;
     S.known = {};
@@ -1460,6 +1834,8 @@
     S.silent = true;
     scene.load(p.pages[p.activePage]);
     S.silent = false;
+    S.layerCount = layerCount();
+    setTimeout(function () { coachMark(0); }, 700);
     S.autoFit = true;
     fit();
     hideStart();
@@ -1539,7 +1915,14 @@
     }).catch(function (err) { toast(err.message || 'Could not export the project.'); });
   }
   function safeName(n) { return String(n || 'design').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase().slice(0, 60) || 'design'; }
-  function download(blob, name) { if (window.IT && IT.download) IT.download(blob, name); else { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); } }
+  function download(blob, name) {
+    if (window.IT && IT.download) { IT.download(blob, name); return; }
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
 
   function syncProject() {
     var p = S.project;
@@ -1625,6 +2008,90 @@
     E.start.hidden = true;
     root.classList.remove('is-start');
     E.start.innerHTML = '';
+  }
+
+  /* Start screen shortcut: "Instagram post from a photo" = pick the photo, and it opens already cropped to that size. */
+  function photoTo(w, hh, label) {
+    S.pendingSize = { w: w, h: hh, label: label || (w + ' × ' + hh) };
+    E.file.dataset.mode = 'size';
+    E.file.click();
+  }
+  function openPhotoSized(files) {
+    var ps = S.pendingSize;
+    S.pendingSize = null;
+    var imgs = files.filter(function (f) { return !f.type || /^image\//.test(f.type); });
+    if (!ps || !imgs.length) { addFiles(files); return; }
+    cancelPreview();
+    return newFromPhoto(imgs[0]).then(function () {
+      applySizeNow(ps.w, ps.h, ps.label, { fit: 'cover' });
+      toast(ps.label + ' · ' + ps.w + ' × ' + ps.h + ' — your photo fills it', { action: { label: 'Add text', fn: function () { openPanel('text'); } } });
+      if (imgs.length > 1) return addFiles(imgs.slice(1));
+    }).catch(function (err) { toast((err && err.message) || 'Could not read that image.'); });
+  }
+
+  /* ---------- First-run guidance ----------
+     At most three coach marks, each tied to a real control, shown once to a first-time visitor and never again. They do not
+     block anything: a tap anywhere (it still does what it would have done) or Esc moves on. Returning visitors see none. */
+  var COACH_KEY = 'le-studio-coach';
+  var COACH = [
+    { target: function () { return (isPhone() ? E.tabs : E.rail).querySelector('[data-panel-btn="text"]'); }, text: function () { return 'Add text, photos and graphics from here.'; } },
+    { target: function () { return E.tool; }, text: function () { return say('Tools for what you select appear here. Double-click text to type.', 'Tools for what you tap appear here. Double-tap text to type.'); } },
+    { target: function () { return E.head.querySelector('.sx-download'); }, text: function () { return 'It saves itself on this device. Download when you are ready.'; } }
+  ];
+  function coachStep() { var v = lsGet(COACH_KEY, 0); return v === 'done' ? 99 : Number(v) || 0; }
+  function coachDone(all) { lsSet(COACH_KEY, all ? 'done' : coachStep() + 1); hideCoach(); }
+  function hideCoach() {
+    var n = S.coachEl;
+    S.coachEl = null;
+    S.coachShown = -1;
+    document.removeEventListener('pointerdown', onCoachTap, true);
+    document.removeEventListener('keydown', onCoachKey, true);
+    if (n) { n.classList.remove('is-on'); setTimeout(function () { n.remove(); }, 200); }
+  }
+  function onCoachTap() { coachDone(false); }
+  function onCoachKey(e) { if (e.key === 'Escape') { coachDone(true); } else if (e.key === 'Enter' || e.key === 'Tab') coachDone(false); }
+  /* ctx.coach(i) shows mark i if it is the next one due; ctx.coach('off') turns guidance off for good. */
+  function coachMark(i) {
+    if (i === 'off') { lsSet(COACH_KEY, 'done'); hideCoach(); return; }
+    if (S.coachEl || coachStep() !== i || !COACH[i] || !S.project || S.editing) return;
+    if (!E.toast.hidden) { clearTimeout(S.coachWait); S.coachWait = setTimeout(function () { coachMark(i); }, 2800); return; }
+    var t = COACH[i].target();
+    if (!t || !t.offsetParent) return;
+    var r = t.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    var n = h('<div class="sx-coach" role="status" aria-live="polite"><b>' + esc(COACH[i].text()) + '</b><small>' + (i + 1) + ' of ' + COACH.length + ' · ' + esc(say('Click anywhere or press Esc', 'Tap anywhere to continue')) + '</small></div>');
+    document.body.appendChild(n);
+    var nw = n.offsetWidth, nh = n.offsetHeight;
+    if (r.right < 140 && r.height < innerHeight / 2) {
+      /* a control in the left rail: the mark sits to its right */
+      var yy = clamp(r.top + r.height / 2 - nh / 2, 8, innerHeight - nh - 8);
+      n.style.left = Math.round(r.right + 12) + 'px';
+      n.style.top = Math.round(yy) + 'px';
+      n.style.setProperty('--ay', Math.round(clamp(r.top + r.height / 2 - yy, 14, nh - 14)) + 'px');
+      n.classList.add('is-right');
+    } else {
+      var below = r.top + r.height / 2 < innerHeight / 2;
+      var y = below ? r.bottom + 12 : r.top - nh - 12;
+      var cx = t === E.tool ? Math.min(r.left + 120, r.left + r.width / 2) : r.left + r.width / 2;
+      var x = clamp(cx - nw / 2, 10, innerWidth - nw - 10);
+      n.style.left = Math.round(x) + 'px';
+      n.style.top = Math.round(clamp(y, 8, innerHeight - nh - 8)) + 'px';
+      n.style.setProperty('--ax', Math.round(clamp(cx - x, 16, nw - 16)) + 'px');
+      n.classList.add(below ? 'is-below' : 'is-above');
+    }
+    /* never sit on the thing the person just selected: try again at the next selection */
+    var nb = n.getBoundingClientRect();
+    var hit = sel().some(function (id) { var q = scene.screenRect(id); return q && q.left < nb.right && q.right > nb.left && q.top < nb.bottom && q.bottom > nb.top; });
+    if (hit && i === 1) { n.remove(); return; }
+    S.coachEl = n;
+    S.coachShown = i;
+    requestAnimationFrame(function () { n.classList.add('is-on'); });
+    setTimeout(function () {
+      document.addEventListener('pointerdown', onCoachTap, true);
+      document.addEventListener('keydown', onCoachKey, true);
+    }, 0);
+    clearTimeout(S.coachT);
+    S.coachT = setTimeout(function () { if (S.coachEl === n) coachDone(false); }, 9000);
   }
 
   /* ---------- Pages ---------- */
@@ -2054,7 +2521,7 @@
       case 'sizeCancel': cancelPreview(); break;
       case 'versionRestore': restoreVersion(); break;
       case 'versionCancel': cancelPreview(); break;
-      case 'newDesign': closePop(); flushSave(); S.project = null; scene.load(LE.Scene.blank(1080, 1080)); renderHead(); showStart(); break;
+      case 'newDesign': closePop(); flushSave(); releaseUrls(); S.project = null; scene.load(LE.Scene.blank(1080, 1080)); renderHead(); showStart(); break;
       case 'openPhoto': closePop(); pickFiles('add'); break;
       case 'importProject': closePop(); pickFiles('project'); break;
       case 'exportProject': closePop(); exportProject(); break;
@@ -2068,6 +2535,11 @@
       case 'replaceAll': closePop(); openPanel('replace'); break;
       case 'pagesPanel': closePop(); openPanel('pages'); break;
       case 'brandKit': closePop(); openPanel('brand'); break;
+      case 'openPanel': closePop(); openPanel(arg); break;
+      case 'tool': closePop(); openTool(arg); break;
+      case 'railMore': railMoreMenu(el); break;
+      case 'tbMore': openPop(el, '<div class="sx-menu">' + overflowHtml() + '</div>', { cls: 'sx-pop-menu' }); break;
+      case 'textDone': if (scene._commitEdit) scene._commitEdit(true); else keyEvent('Escape'); break;
       default:
         if (PANELS._cmds && PANELS._cmds[name]) PANELS._cmds[name](ctx, arg, el, e);
         else if (PANELS._cmd) PANELS._cmd(ctx, name, arg, el, e);
@@ -2155,13 +2627,14 @@
   function moreMenu(el) {
     var ids = sel();
     var l = ids.length === 1 ? L(ids[0]) : null;
-    var html = '<div class="sx-menu">' +
+    var extra = el && el.closest && el.closest('#sx-tool') ? overflowHtml() : '';
+    var html = '<div class="sx-menu">' + (extra ? extra + '<hr>' : '') +
       '<button type="button" data-cmd="order:front">' + ic('front') + 'Bring to front<kbd>]</kbd></button>' +
       '<button type="button" data-cmd="order:forward">' + ic('front') + 'Bring forward</button>' +
       '<button type="button" data-cmd="order:backward">' + ic('back2') + 'Send backward<kbd>[</kbd></button>' +
       '<button type="button" data-cmd="order:back">' + ic('back2') + 'Send to back</button><hr>';
     if (l && l.type === 'image') {
-      html += '<button type="button" data-cmd="crop">' + ic('crop') + 'Crop<kbd>dbl-click</kbd></button><button type="button" data-cmd="replace">' + ic('replace') + ((l.slot || !l.src) ? 'Replace photo' : 'Replace image') + '</button><button type="button" data-cmd="setBg">' + ic('background') + 'Set as background</button><button type="button" data-cmd="removeBg">' + ic('wand') + 'Remove flat background</button><button type="button" data-cmd="resetLayer">' + ic('reset') + 'Reset edits</button><hr>';
+      html += '<button type="button" data-cmd="crop">' + ic('crop') + 'Crop' + (coarse() ? '' : '<kbd>dbl-click</kbd>') + '</button><button type="button" data-cmd="replace">' + ic('replace') + ((l.slot || !l.src) ? 'Replace photo' : 'Replace image') + '</button><button type="button" data-cmd="setBg">' + ic('background') + 'Set as background</button><button type="button" data-cmd="removeBg">' + ic('wand') + 'Remove flat background</button><button type="button" data-cmd="resetLayer">' + ic('reset') + 'Reset edits</button><hr>';
     }
     if (l && l.type === 'text') html += '<button type="button" data-cmd="editText">' + ic('text') + 'Edit text<kbd>Enter</kbd></button><hr>';
     if (ids.length > 1) html += '<button type="button" data-cmd="group">' + ic('group') + 'Group<kbd>Ctrl G</kbd></button>';
@@ -2223,6 +2696,7 @@
     var key = ids.join(',');
     renderToolbar();
     placeMini();
+    if (ids.length) coachMark(1);
     if (key !== S.selKey) {
       S.selKey = key;
       fire('select', ids);
@@ -2230,8 +2704,14 @@
       if (spec && spec.select && !S.preview) renderPanel(true);
     }
   }
+  function layerCount() { return scene._doc && scene._doc.layers ? scene._doc.layers.length : 0; }
   function onChange() {
     if (S.silent || S.preview) return;
+    /* Something was added: lower the phone sheet so the new thing is in view (and selected) above it. */
+    var n = layerCount();
+    if (n > S.layerCount && !S.pointer) peekSheet();
+    S.layerCount = n;
+    if (S.coachShown !== 2 && coachStep() === 2) coachMark(2);
     styleNewPaths();
     markDirty();
     renderToolbarSoon();
@@ -2281,11 +2761,13 @@
   scene.on('tool', onTool);
   scene.on('edit-text', function (e) { S.editing = !!e.editing; placeMini(); renderToolbar(); });
 
-  E.sceneEl.addEventListener('pointerdown', function () { S.pointer = true; E.mini.hidden = true; closePop(); }, true);
+  E.sceneEl.addEventListener('pointerdown', function () { S.pointer = true; E.mini.hidden = true; closePop({ keepFocus: true }); }, true);
   window.addEventListener('pointerup', function () {
     if (!S.pointer) return;
     S.pointer = false;
     setTimeout(function () { placeMini(); renderToolbar(); refreshPanelSoon(); }, 0);
+    /* Working on the canvas lowers the phone sheet to a peek, so the person sees what they touched. */
+    if (S.tool !== 'crop') setTimeout(peekSheet, 0);
   });
   window.addEventListener('pointercancel', function () { S.pointer = false; });
 
@@ -2301,13 +2783,15 @@
   });
   E.pop.addEventListener('click', function (e) {
     var c = e.target.closest('[data-cmd]');
+    /* An item moved into the toolbar's More menu acts as if its own toolbar button was pressed (pops anchor on "More"). */
+    if (c && !c.disabled && c.hasAttribute('data-from-more')) { var mb = liveAnchor(popAnchor) || popAnchor; closePop({ keepFocus: true }); cmd(c.getAttribute('data-cmd'), mb, e); return; }
     if (c && !c.disabled) cmd(c.getAttribute('data-cmd'), c, e);
     else if (e.target.closest('[data-theme-toggle]')) setTimeout(closePop, 0);
   });
   document.addEventListener('pointerdown', function (e) {
     if (E.pop.hidden) return;
     if (E.pop.contains(e.target) || (popAnchor && popAnchor.contains(e.target))) return;
-    closePop();
+    closePop({ keepFocus: true });
   });
   function holdBind() {
     function down(e) { var b = e.target.closest('[data-cmd="compareHold"]'); if (!b) return; e.preventDefault(); compareHold(true); }
@@ -2444,7 +2928,11 @@
     } catch (e) {}
   }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   if (window.ResizeObserver) new ResizeObserver(function () { if (S.autoFit) { clearTimeout(S.roT); S.roT = setTimeout(fit, 30); } placeMini(); placePop(); }).observe(E.stage);
-  window.addEventListener('resize', debounce(function () { if (S.panel && isPhone()) openSheet(S.sheet || 0); else if (!isPhone()) closeSheet(); placePop(); }, 150));
+  if (window.ResizeObserver) new ResizeObserver(function () { fitToolbarSoon(); }).observe(E.tool);
+  window.addEventListener('resize', debounce(function () {
+    if (S.panel && isPhone()) openSheet(S.sheet || 'half'); else if (!isPhone()) closeSheet();
+    placePop(); fitRail(); fitToolbar(); placeToast();
+  }, 150));
 
   window.addEventListener('beforeunload', function (e) {
     if (S.dirty && S.project) { saveNow(); e.preventDefault(); e.returnValue = ''; }
@@ -2487,7 +2975,10 @@
     setDraw: setDraw, stopDraw: stopDraw, exportImage: exportImage, estimate: estimate, maxScale: maxScale, download: download, safeName: safeName,
     startPick: startPick, endPick: endPick, addPage: addPage, switchPage: switchPage, fontCss: fontCss, lsGet: lsGet, lsSet: lsSet, resetLayer: resetLayer,
     deletePage: deletePage, loadPage: loadPage, center: center, svgAspect: svgAspect, docPoint: docPoint, renderFoot: renderFoot, placeMini: placeMini,
-    fire: fire, I: I, newId: newId, colorPopBasic: colorPopBasic, renderHead: renderHead, placePop: placePop, toHex: toHex, onHistory: onHistory
+    fire: fire, I: I, newId: newId, colorPopBasic: colorPopBasic, renderHead: renderHead, placePop: placePop, toHex: toHex, onHistory: onHistory,
+    /* Shell patterns (docs/DESIGN.md "Studio shell patterns"). */
+    sheet: sheet, coarse: coarse, say: say, openTool: openTool, railItems: railItems, renderRail: renderRail, fitToolbar: fitToolbar,
+    placeToast: placeToast, releaseUrls: releaseUrls, coach: coachMark, photoTo: photoTo
   };
   window.LEStudio = ctx;
 
@@ -2502,8 +2993,18 @@
     metadata: ['apps', { app: 'metadata' }], compare: ['apps', { app: 'compare' }], batch: ['apps', { app: 'batch' }], upscale: ['apps', { app: 'upscale' }],
     background: 'background', draw: 'draw', layers: 'layers', position: ['layers', { tab: 'arrange' }], recipes: 'recipes', export: 'export', download: 'export',
     resize: ['design', { tab: 'sizes' }], social: ['design', { tab: 'sizes' }], design: 'design', templates: ['design', { tab: 'templates' }], history: 'history',
-    uploads: 'uploads', projects: 'projects', apps: 'apps', settings: 'settings', edit: 'edit'
+    uploads: 'uploads', projects: 'projects', apps: 'apps', settings: 'settings', edit: 'edit',
+    brand: 'brand', cutout: 'cutout', 'remove-background': 'cutout', redact: 'redact', thumbnail: ['apps', { app: 'thumbnail' }],
+    make: ['apps', { app: 'make' }], makers: ['apps', { app: 'make' }], 'export-sizes': ['export', { tab: 'sizes' }],
+    carousel: ['export', { tab: 'slides' }], slides: ['export', { tab: 'slides' }], replay: ['export', { tab: 'replay' }],
+    share: ['export', { tab: 'image' }], 'design-file': 'projects'
   };
+  /* Open a tool by its public name (?tool= names, the More sheet's shortcuts). */
+  function openTool(t) {
+    var m = TOOL_MAP[t];
+    if (!m) { if (PANELS[t] && t.charAt(0) !== '_') openPanel(t); return; }
+    openPanel(typeof m === 'string' ? m : m[0], typeof m === 'string' ? {} : Object.assign({}, m[1]));
+  }
   function applyToolParam() {
     var t = new URLSearchParams(location.search).get('tool');
     if (!t || !TOOL_MAP[t]) return;
@@ -2537,6 +3038,7 @@
       var last = null;
       try { last = localStorage.getItem('le-studio-last'); } catch (e) {}
       if (!last) return null;
+      if (coachStep() < 1) coachMark('off');
       return openProject(last, {
         toast: 'Restored your last design',
         action: { label: 'Start new', fn: function () { cmd('newDesign'); } }
