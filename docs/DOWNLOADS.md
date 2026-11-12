@@ -83,6 +83,8 @@ LE.downloads.renderSettings(el), studioRow(ctx, host), ready (Promise of packs),
 | Basic editor + models | both |
 | Everything | Basic + Models + Expert, plus `LE.fonts.saveOffline('all')` (or `saveAllOffline`) and `LE.assets.saveStyleOffline('all')` |
 
+**Parts (docs/INSTALL.md).** `packs.json` also splits the Basic editor into `parts` (shared core, design studio, PDF studio, tools and pages) and lists the three installable `apps` with their parts and sizes. A studio installed on its own keeps only the core and its part offline (`LE.downloads.keep()`, marker `./__packs/app` in `le-packs-v1`); the suite and a plain browser visit keep everything, as described here. The settings section shows "Kept offline" with one row per part.
+
 Not in any pack: labs pages, `pdf-lib-crypt`, the lucide/phosphor/emoji search data, collage sample photos and layouts (they stay on demand).
 
 Sizes: `raw`, `gzip` (level 9) and `transfer` — gzip for text files of 1,000 bytes to 10 MB (what CloudFront compresses; it may

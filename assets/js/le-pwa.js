@@ -110,8 +110,86 @@
     } catch (e) {}
     return navigator.standalone === true;
   }
-  function isInstalled() { return standalone() || early.installed || (!!state().installedAt && !early.prompt); }
-  function installKind() { return isInstalled() ? 'installed' : early.prompt ? 'prompt' : platform(); }
+  /* ---------- Three apps from one site (docs/INSTALL.md) ----------
+     "LocalEditor" (everything, scope /), "LocalEditor Design" (scope /studio/) and "LocalEditor PDF" (scope /pdf-studio/).
+     Pages link the suite's manifest; choosing a single studio switches the link, and Chromium then offers a fresh
+     install prompt for that app (checked in Chromium 153, docs/INSTALL.md). Paths are relative to the site root. */
+  var APPS = {
+    suite: { name: 'LocalEditor', short: 'LocalEditor', title: 'Everything', manifest: 'manifest.webmanifest', scope: '', start: '', about: 'The design studio, the PDF studio and every tool, in one app.' },
+    design: { name: 'LocalEditor Design', short: 'LE Design', title: 'Design studio only', manifest: 'manifest-design.webmanifest', scope: 'studio/', start: 'studio/?app=design', about: 'Photos, layouts, collages and text. Opens straight into the design studio.' },
+    pdf: { name: 'LocalEditor PDF', short: 'LE PDF', title: 'PDF studio only', manifest: 'manifest-pdf.webmanifest', scope: 'pdf-studio/', start: 'pdf-studio/?app=pdf', about: 'Sign, fill, organise and protect PDFs. Opens straight into the PDF studio.' }
+  };
+  var APP_IDS = ['suite', 'design', 'pdf'];
+  function siteUrl(rel) { return new URL(BASE + (rel || ''), location.href); }
+  function inScope(app, url) {
+    var u = url ? new URL(url, location.href) : location;
+    return u.pathname.indexOf(siteUrl(APPS[app].scope).pathname) === 0;
+  }
+  /* The single studio whose page this is (pre-selected in the chooser), else the suite. */
+  function pageApp() { return inScope('pdf') ? 'pdf' : inScope('design') ? 'design' : 'suite'; }
+  function manifestLink() {
+    var l = document.querySelector('link[rel="manifest"]');
+    if (!l) { l = document.createElement('link'); l.rel = 'manifest'; l.href = BASE + APPS.suite.manifest; document.head.appendChild(l); }
+    return l;
+  }
+  function linkedApp() {
+    var href = (document.querySelector('link[rel="manifest"]') || {}).href || '';
+    var m = /manifest-(design|pdf)\.webmanifest/.exec(href);
+    return m ? m[1] : 'suite';
+  }
+  var pageManifest = null;
+  /* Point the page at one app's manifest. Safari reads it (and the home-screen title) when the person adds the page. */
+  function linkManifest(app) {
+    if (pageManifest == null) pageManifest = linkedApp();
+    var l = manifestLink();
+    var want = siteUrl(APPS[app].manifest).href;
+    if (l.href !== want) { l.href = want; early.prompt = null; early.promptFor = null; }
+    var t = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (!t) { t = document.createElement('meta'); t.name = 'apple-mobile-web-app-title'; document.head.appendChild(t); }
+    t.setAttribute('content', APPS[app].short);
+  }
+  function restoreManifest() { if (pageManifest && linkedApp() !== pageManifest) linkManifest(pageManifest); }
+  /* Which app this window is: the start page of each app carries ?app=, kept for the life of the window. */
+  var WIN_KEY = 'le-pwa-window-app';
+  function currentApp() {
+    if (!standalone()) return null;
+    var v = null;
+    try { v = sessionStorage.getItem(WIN_KEY); } catch (e) {}
+    return APPS[v] ? v : null;
+  }
+  function noteWindowApp() {
+    if (!standalone()) return;
+    var q = new URLSearchParams(location.search).get('app');
+    var v = null;
+    try { v = sessionStorage.getItem(WIN_KEY); } catch (e) {}
+    if (APPS[q]) v = q;
+    if (!APPS[v]) {
+      /* No marker (opened from a link): the most specific installed app whose pages include this one. */
+      var known = Object.keys(state().apps || {});
+      v = ['pdf', 'design'].filter(function (a) { return known.indexOf(a) >= 0 && inScope(a); })[0] || 'suite';
+    }
+    try { sessionStorage.setItem(WIN_KEY, v); } catch (e) {}
+    /* First launch of an app this browser did not see being installed (Safari's Add to Home Screen): remember it now. */
+    if (!(state().apps || {})[v]) recordInstall(v, true);
+  }
+  /* The apps installed from this browser, as far as it can know: what it saw installed (appinstalled, or a launch), and the
+     app this window is. A prompt the browser offers again for an app means that app was removed since. */
+  function installedApps() {
+    var s = state();
+    var list = Object.keys(s.apps || {}).filter(function (a) { return APPS[a]; });
+    if (!list.length && s.installedAt) list = ['suite']; /* installed before there were three apps */
+    if (early.prompt && early.promptFor && !standalone()) list = list.filter(function (a) { return a !== early.promptFor; });
+    var cur = currentApp();
+    if (cur && list.indexOf(cur) < 0) list.push(cur);
+    return list;
+  }
+  function isInstalled(app) {
+    if (app) return installedApps().indexOf(app) >= 0;
+    return standalone() || !!early.installed || installedApps().length > 0;
+  }
+  /* Nothing left to offer: this is an app window, or the whole suite is installed (it holds both studios). */
+  function nothingToInstall() { return standalone() || installedApps().indexOf('suite') >= 0; }
+  function installKind() { return nothingToInstall() ? 'installed' : early.prompt ? 'prompt' : platform(); }
   function canInstall() { var k = installKind(); return k !== 'installed' && k !== 'desktop-firefox'; }
   function refreshInstall() {
     var k = installKind();
@@ -121,39 +199,81 @@
     root.setAttribute('data-le-install-state', k === 'installed' ? 'installed' : k === 'prompt' ? 'prompt' : 'help');
     [].forEach.call(document.querySelectorAll('.install-btn'), function (b) { b.classList.toggle('show', canInstall()); });
   }
+  var promptWaiters = [];
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     early.prompt = e;
+    early.promptFor = linkedApp();
+    early.seen = true;
     refreshInstall();
-    emit('installable', { kind: 'prompt' });
+    emit('installable', { kind: 'prompt', app: early.promptFor });
+    promptWaiters.splice(0).forEach(function (fn) { fn(); });
   });
+  /* Resolves with a prompt for that app's manifest, or null when the browser offers none within ms. */
+  function promptFor(app, ms) {
+    if (early.prompt && early.promptFor === app) return Promise.resolve(early.prompt);
+    return new Promise(function (resolve) {
+      var done = false;
+      var t = setTimeout(function () { if (!done) { done = true; resolve(null); } }, ms || 4000);
+      (function wait() {
+        promptWaiters.push(function () {
+          if (done) return;
+          if (early.promptFor === app) { done = true; clearTimeout(t); resolve(early.prompt); } else wait();
+        });
+      })();
+    });
+  }
+  var pendingApp = null;
+  function recordInstall(app, quiet) {
+    app = APPS[app] ? app : 'suite';
+    var s = state();
+    var apps = s.apps || {};
+    if (!apps[app]) apps[app] = Date.now();
+    state({ apps: apps, installedAt: s.installedAt || Date.now() });
+    /* What stays offline follows the installed app (LE.downloads keeps the choice where the worker can read it). */
+    whenDownloads(function (D) { if (D.chooseApp) D.chooseApp(app); });
+    refreshInstall();
+    emit('installed', { app: app, quiet: !!quiet });
+  }
+  function whenDownloads(fn) {
+    var D = window.LE && LE.downloads;
+    if (D && D.__real) { fn(D); return; }
+    window.addEventListener('le-downloads-ready', function go() { window.removeEventListener('le-downloads-ready', go); if (window.LE && LE.downloads) fn(LE.downloads); });
+  }
   window.addEventListener('appinstalled', function () {
+    var app = pendingApp || early.promptFor || linkedApp();
     early.installed = true;
     early.prompt = null;
-    state({ installedAt: Date.now() });
+    pendingApp = null;
     hideNotice('install');
-    refreshInstall();
-    emit('installed', {});
-    toast('LocalEditor is installed. Find it with your other apps.');
+    recordInstall(app);
+    toast(APPS[app].name + ' is installed. Find it with your other apps.');
   });
 
-  function install() {
+  /* The Install entries (menus, the nudge) open the chooser. Installed already, or inside another app's viewer: as before. */
+  function install(opts) {
     var k = installKind();
-    if (k === 'installed') { toast('LocalEditor is already installed on this device.'); return Promise.resolve('installed'); }
-    if (k === 'prompt') {
-      var ev = early.prompt;
-      early.prompt = null;
+    if (k === 'installed') { toast((currentApp() ? APPS[currentApp()].name : 'LocalEditor') + ' is already installed on this device.'); return Promise.resolve('installed'); }
+    if (k === 'in-app') { openInstallHelp('in-app'); return Promise.resolve('sheet'); }
+    openChooser(opts || {});
+    return Promise.resolve('chooser');
+  }
+  /* Fires the browser's own install prompt for one app. Chromium needs a recent tap; if it has expired, one more tap does it. */
+  function firePrompt(ev, app, note) {
+    early.prompt = null;
+    pendingApp = app;
+    refreshInstall();
+    return Promise.resolve().then(function () { return ev.prompt(); }).then(function () { return ev.userChoice; }).then(function (choice) {
+      var outcome = choice && choice.outcome === 'accepted' ? 'accepted' : 'dismissed';
+      if (outcome === 'accepted') recordInstall(app); else { pendingApp = null; snooze(); }
+      hideNotice('install');
       refreshInstall();
-      return Promise.resolve().then(function () { return ev.prompt(); }).then(function () { return ev.userChoice; }).then(function (choice) {
-        var outcome = choice && choice.outcome === 'accepted' ? 'accepted' : 'dismissed';
-        if (outcome === 'accepted') state({ installedAt: Date.now() }); else snooze();
-        hideNotice('install');
-        refreshInstall();
-        return outcome;
-      }, function () { openInstallHelp(); return 'sheet'; });
-    }
-    openInstallHelp();
-    return Promise.resolve('sheet');
+      return outcome;
+    }, function (err) {
+      if (err && err.name === 'NotAllowedError') { early.prompt = ev; early.promptFor = app; if (note) note('Ready. Tap Install once more to finish.'); return 'tap-again'; }
+      pendingApp = null;
+      return 'failed';
+    });
   }
 
   var ICON = {
@@ -175,20 +295,21 @@
   };
 
   /* Each platform gets one short, illustrated recipe. */
-  function helpFor(kind) {
+  function helpFor(kind, name) {
+    var N = esc(name || 'LocalEditor');
     var iPad = /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     var where = iPad ? 'at the top right of Safari' : 'in the toolbar at the bottom of Safari';
     var H = {
       'ios-safari': {
-        title: 'Add LocalEditor to your Home Screen',
+        title: 'Add ' + N + ' to your Home Screen',
         steps: [
           { art: 'safari-bar', text: '<b>Tap Share</b> ' + ICON.share + ' ' + where + '. If you do not see it, tap ' + ICON.more + ' first.' },
           { art: 'share-sheet', text: 'Scroll down and tap <b>Add to Home Screen</b> ' + ICON.plus + '.' },
-          { art: 'add', text: 'Tap <b>Add</b>. LocalEditor now opens full screen and works with no connection.' }
+          { art: 'add', text: 'Tap <b>Add</b>. ' + N + ' now opens full screen and works with no connection.' }
         ]
       },
       'ios-other': {
-        title: 'Add LocalEditor to your Home Screen',
+        title: 'Add ' + N + ' to your Home Screen',
         steps: [
           { art: 'safari-bar', text: '<b>Tap Share</b> ' + ICON.share + ' next to the address bar (in some browsers it is inside the ' + ICON.more + ' menu).' },
           { art: 'share-sheet', text: 'Tap <b>Add to Home Screen</b> ' + ICON.plus + ', then <b>Add</b>.' }
@@ -196,51 +317,51 @@
         note: 'Needs iOS 16.4 or later. If you do not see the option, open this page in Safari.'
       },
       'mac-safari': {
-        title: 'Add LocalEditor to your Dock',
+        title: 'Add ' + N + ' to your Dock',
         steps: [
           { art: 'mac-menu', text: 'In the menu bar, choose <b>File</b>, then <b>Add to Dock</b> ' + ICON.dock + '.' },
-          { art: 'add', text: 'Click <b>Add</b>. LocalEditor opens in its own window, even offline.' }
+          { art: 'add', text: 'Click <b>Add</b>. ' + N + ' opens in its own window, even offline.' }
         ],
         note: 'Needs macOS Sonoma (Safari 17) or later.'
       },
       'android': {
-        title: 'Install LocalEditor',
+        title: 'Install ' + N,
         steps: [
           { art: 'menu', text: 'Tap the browser menu ' + ICON.dots + ' at the top right.' },
           { art: 'install', text: 'Tap <b>Install app</b> (or <b>Add to Home screen</b>), then <b>Install</b>.' }
         ]
       },
       'android-samsung': {
-        title: 'Install LocalEditor',
+        title: 'Install ' + N,
         steps: [
           { art: 'menu', text: 'Tap the menu ' + ICON.menu + ' at the bottom right.' },
           { art: 'install', text: 'Tap <b>Add page to</b>, then <b>Apps screen</b> or <b>Home screen</b>.' }
         ]
       },
       'android-firefox': {
-        title: 'Install LocalEditor',
+        title: 'Install ' + N,
         steps: [
           { art: 'menu', text: 'Tap the menu ' + ICON.dots + '.' },
           { art: 'install', text: 'Tap <b>Install</b> (or <b>Add to Home screen</b>), then <b>Add</b>.' }
         ]
       },
       'desktop': {
-        title: 'Install LocalEditor',
+        title: 'Install ' + N,
         steps: [
           { art: 'desktop-bar', text: 'Click the install icon ' + ICON.install + ' at the right end of the address bar.' },
-          { art: 'menu', text: 'No icon? Open the browser menu ' + ICON.dots + ' and choose <b>Install LocalEditor</b> (Chrome: <b>Cast, save and share</b> &rsaquo; <b>Install page as app</b>; Edge: <b>Apps</b> &rsaquo; <b>Install this site as an app</b>).' }
+          { art: 'menu', text: 'No icon? Open the browser menu ' + ICON.dots + ' and choose <b>Install ' + N + '</b> (Chrome: <b>Cast, save and share</b> &rsaquo; <b>Install page as app</b>; Edge: <b>Apps</b> &rsaquo; <b>Install this site as an app</b>).' }
         ]
       },
       'desktop-firefox': {
         title: 'Firefox cannot install web apps yet',
         steps: [
-          { art: 'offline', text: 'LocalEditor still works offline in this tab after your first visit, and everything stays on this device.' },
+          { art: 'offline', text: N + ' still works offline in this tab after your first visit, and everything stays on this device.' },
           { art: 'desktop-bar', text: 'For an app window with its own icon, open this page in <b>Chrome</b>, <b>Edge</b> or <b>Safari</b> and install it there.' }
         ],
         copy: true
       },
       'in-app': {
-        title: 'Open LocalEditor in your browser',
+        title: 'Open ' + N + ' in your browser',
         steps: [
           { art: 'menu', text: 'You are inside another app’s viewer, which cannot install apps or keep your work. Tap ' + ICON.more + ' or ' + ICON.dots + ' in the corner.' },
           { art: 'open', text: 'Choose <b>Open in browser</b> (or <b>Open in Safari</b> / <b>Open in Chrome</b>), then install from there.' }
@@ -305,6 +426,164 @@
     d.addEventListener('close', function () { snooze(); });
     showModal(d);
     return d;
+  }
+
+
+  /* ---------- The install chooser: three choices, one sentence and a size each ----------
+     Browsers with an install prompt (Chromium): the chosen app's manifest is linked, a fresh prompt arrives and is fired from
+     the same tap. Browsers without one (Safari, Firefox for Android, Samsung Internet without a prompt): the steps for this
+     browser, after linking the chosen manifest; a studio chosen on another page first opens that studio (?install=). */
+  function promptCapable() {
+    if (early.prompt || early.seen) return true;
+    var u = navigator.userAgent || '';
+    return /Chrome|Chromium|Edg\//.test(u) && !/iPad|iPhone|iPod|CriOS|EdgiOS/.test(u) && platform() !== 'in-app';
+  }
+  function sizeText(id, sep) {
+    var D = window.LE && LE.downloads;
+    var a = D && D.apps ? D.apps().filter(function (x) { return x.id === id; })[0] : null;
+    return a ? 'About ' + fmt(a.raw) + ' on this device' + (sep || '') : '';
+  }
+  function goInstall(app) {
+    var start = APPS[app].start;
+    location.href = BASE + start + (start.indexOf('?') >= 0 ? '&' : '?') + 'install=' + app;
+  }
+  var chooser = null;
+  function openChooser(opts) {
+    opts = opts || {};
+    if (chooser && chooser.open) return chooser;
+    var installed = installedApps();
+    var pick = APPS[opts.app] ? opts.app : pageApp();
+    if (installed.indexOf(pick) >= 0) pick = APP_IDS.filter(function (a) { return installed.indexOf(a) < 0; })[0] || pick;
+    var kind = platform();
+    var withPrompt = promptCapable();
+    var d = sheet('lp-install lp-choose', 'Install LocalEditor');
+    chooser = d;
+    d.firstChild.innerHTML = headHTML('Install LocalEditor', 'Pick one. You can add the others later. Nothing is uploaded.') +
+      '<div class="lp-apps" role="radiogroup" aria-label="What to install">' + APP_IDS.map(function (id) {
+        var a = APPS[id], has = installed.indexOf(id) >= 0;
+        return '<label class="lp-app" data-lp-app="' + id + '"><input type="radio" name="lp-app" value="' + id + '"' + (id === pick ? ' checked' : '') + (has ? ' disabled' : '') + '>' +
+          '<span class="lp-app-tx"><b>' + esc(a.title) + (id === 'suite' ? ' <em class="lp-rec">Recommended</em>' : '') + '</b>' +
+          '<small>' + esc(a.about) + '</small>' +
+          '<small class="lp-app-mb"><span data-lp-size="' + id + '">' + (has ? 'Installed on this device · ' : esc(sizeText(id, ' · '))) + '</span>shows as <span class="lp-nw">“' + esc(a.short) + '”</span></small></span></label>';
+      }).join('') + '</div>' +
+      '<div class="lp-how" data-lp-how hidden></div>' +
+      '<p class="lp-note lp-choose-msg" data-lp-msg role="status" aria-live="polite"></p>' +
+      '<div class="lp-actions"><button type="button" class="lp-btn" data-lp-close>Not now</button><button type="button" class="lp-btn lp-primary" data-lp-go>Install</button></div>';
+    bindClose(d);
+    var go = d.querySelector('[data-lp-go]');
+    var how = d.querySelector('[data-lp-how]');
+    var msg = d.querySelector('[data-lp-msg]');
+    function chosen() { var r = d.querySelector('input[name="lp-app"]:checked'); return r ? r.value : 'suite'; }
+    function say(t) { msg.textContent = t || ''; }
+    /* Without an install prompt the steps are the answer: link the chosen app now (Safari reads it when the person adds it). */
+    function paintHow() {
+      say('');
+      if (withPrompt) { how.hidden = true; go.textContent = 'Install'; go.removeAttribute('data-lp-close'); return; }
+      var app = chosen();
+      if (kind === 'desktop-firefox') {
+        how.hidden = false;
+        var ff = helpFor(kind, APPS[app].name);
+        how.innerHTML = '<p><b>' + esc(ff.title) + '</b></p>' + stepsHTML(ff);
+        go.textContent = 'Got it'; go.setAttribute('data-lp-close', '');
+        return;
+      }
+      if (app !== 'suite' && !inScope(app)) {
+        how.hidden = false;
+        how.innerHTML = '<p class="lp-sub">' + esc(APPS[app].name) + ' opens in its own studio. Go there first, then add it from that page.</p>';
+        go.textContent = app === 'design' ? 'Open the design studio' : 'Open the PDF studio';
+        go.removeAttribute('data-lp-close');
+        return;
+      }
+      linkManifest(app);
+      var info = helpFor(kind, APPS[app].name);
+      how.hidden = false;
+      how.innerHTML = stepsHTML(info) + (info.note ? '<p class="lp-note">' + esc(info.note) + '</p>' : '');
+      go.textContent = 'Got it'; go.setAttribute('data-lp-close', '');
+    }
+    d.addEventListener('change', function (e) { if (e.target && e.target.name === 'lp-app') paintHow(); });
+    go.addEventListener('click', function () {
+      if (go.hasAttribute('data-lp-close')) return; /* "Got it": bindClose closes it */
+      var app = chosen();
+      if (installedApps().indexOf(app) >= 0) { say(APPS[app].name + ' is already installed. Find it with your other apps.'); return; }
+      if (!withPrompt) { goInstall(app); return; }
+      go.disabled = true;
+      say('');
+      linkManifest(app);
+      promptFor(app, 4000).then(function (ev) {
+        go.disabled = false;
+        if (ev) {
+          return firePrompt(ev, app, say).then(function (outcome) {
+            if (outcome === 'accepted') { d._accepted = true; d.close(); }
+            else if (outcome === 'dismissed') say('Not installed. You can install it any time from the menu.');
+            else if (outcome === 'failed') { how.hidden = false; how.innerHTML = stepsHTML(helpFor(kind, APPS[app].name)); }
+          });
+        }
+        /* No prompt for it here: this browser wants the app's own page, or it is installed already, or it installs from its menu. */
+        if (app !== 'suite' && !inScope(app)) { goInstall(app); return; }
+        how.hidden = false;
+        how.innerHTML = '<p class="lp-sub">This browser did not offer to install ' + esc(APPS[app].name) + ' just now. If it is not installed yet, use the browser menu:</p>' + stepsHTML(helpFor(kind === 'desktop-firefox' ? 'desktop' : kind, APPS[app].name));
+      });
+    });
+    d.addEventListener('close', function () {
+      if (chooser === d) chooser = null;
+      /* Chromium: the page goes back to offering the whole suite. Safari keeps the chosen link: the person adds it after closing this. */
+      if (withPrompt) restoreManifest();
+      if (!opts.quiet && !d._accepted) snooze();
+    });
+    /* Sizes come from packs.json, which may still be loading. */
+    whenDownloads(function (D) {
+      (D.ready || Promise.resolve()).then(function () {
+        APP_IDS.forEach(function (id) { var el = d.querySelector('[data-lp-size="' + id + '"]'); if (el && installed.indexOf(id) < 0) el.textContent = sizeText(id, ' · '); });
+      });
+    });
+    paintHow();
+    if (opts.note) say(opts.note);
+    showModal(d);
+    return d;
+  }
+  function stepsHTML(info) {
+    return '<ol class="lp-steps">' + info.steps.map(function (s, i) {
+      return '<li><span class="lp-num">' + (i + 1) + '</span><div>' + art(s.art) + '<p>' + s.text + '</p></div></li>';
+    }).join('') + '</ol>';
+  }
+  /* Arriving from the chooser on another page (?install=design): link that app here and finish with one more tap. */
+  function installLanding() {
+    var q = new URLSearchParams(location.search);
+    var app = q.get('install');
+    if (!APPS[app]) return;
+    q.delete('install');
+    var qs = q.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+    if (standalone() || (app !== 'suite' && !inScope(app))) return;
+    linkManifest(app);
+    var name = APPS[app].name;
+    openChooser({ app: app, quiet: true, note: promptCapable() ? 'Tap Install to add ' + name + '.' : '' });
+  }
+  /* In a studio installed on its own, a link to the rest of LocalEditor opens outside this app's window: in the whole
+     LocalEditor or LocalEditor PDF when they are installed (Chromium sends new windows to the app that owns the page),
+     otherwise in the browser. Offline, a page that is not kept here says so instead of opening an empty window. */
+  function crossLinks() {
+    document.addEventListener('click', function (e) {
+      var cur = currentApp();
+      if (!cur || cur === 'suite' || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a || a.hasAttribute('download') || (a.target && a.target !== '_self')) return;
+      var u;
+      try { u = new URL(a.getAttribute('href'), location.href); } catch (x) { return; }
+      if (u.origin !== location.origin || inScope(cur, u.href) || /^\/(sw\.js|__share)/.test(u.pathname)) return;
+      e.preventDefault();
+      var open = function () { var w = window.open(u.href, '_blank'); if (w) { try { w.opener = null; } catch (x) {} } else location.href = u.href; };
+      if (navigator.onLine !== false || !hasCaches()) { open(); return; }
+      caches.match(u.href, { ignoreSearch: true }).then(function (hit) {
+        if (hit) { open(); return; }
+        var what = inScope('pdf', u.href) ? 'The PDF studio' : inScope('design', u.href) ? 'The design studio' : 'That page';
+        showNotice('offline', {
+          icon: ICON.offline, title: what + ' is not kept offline here',
+          text: 'Connect to the internet to open it. To keep it offline, add it in Storage, under Downloads for offline use.',
+          actions: [{ label: 'Storage', run: function () { openStorage(); } }], ms: 9000
+        });
+      });
+    }, true);
   }
 
   function confirmBox(opts) {
@@ -373,7 +652,7 @@
     state({ snoozedAt: Date.now(), snoozes: (s.snoozes || 0) + 1 });
   }
   function nudgeAllowed() {
-    if (!canInstall() || installKind() === 'in-app') return false;
+    if (!canInstall() || installKind() === 'in-app' || installedApps().length) return false;
     var s = state();
     if ((s.uses || 0) < 2) return false;
     var n = s.snoozes || 0;
@@ -888,7 +1167,8 @@
     [/^le-pwa-limits$/, 'Storage limits you set here'],
     [/^le-pwa/, 'Install and storage reminders'],
     [/^le-downloads-usage$/, 'What you use, for offline downloads', 'Counts of the features you open, kept on this device to decide what to download next.'],
-    [/^le-downloads$/, 'Offline download choices']
+    [/^le-downloads$/, 'Offline download choices'],
+    [/^le-downloads-keep$/, 'Which parts are kept offline', 'Which studios this device keeps for offline use (set when you install one on its own). The offline files themselves are listed under App files.']
   ];
   function settingsRows() {
     var out = [];
@@ -1392,8 +1672,14 @@
     if (m.heapUsed) rows.push(['This page is using', fmt(m.heapUsed) + ' of ' + fmt(m.heapLimit)]);
     m.editors.forEach(function (e) { if (e.stats && e.stats.text) rows.push([e.name, e.stats.text]); });
     if (r.version) rows.push(['App version', r.version]);
-    rows.push(['Installed', isInstalled() ? 'Yes' : canInstall() ? 'No — <button type="button" class="lp-link" data-lp-install>install</button>' : 'No']);
+    rows.push(['Installed', installedText() + (canInstall() ? ' — <button type="button" class="lp-link" data-lp-install>' + (installedApps().length ? 'add more' : 'install') + '</button>' : '')]);
     return '<dl class="lp-dl">' + rows.map(function (x) { return '<div><dt>' + esc(x[0]) + '</dt><dd>' + (x[0] === 'Installed' ? x[1] : esc(x[1])) + '</dd></div>'; }).join('') + '</dl>' + '<p class="lp-sub"><a class="lp-link" href="' + BASE + 'device-check/">What works on this device</a></p>';
+  }
+  function installedText() {
+    var l = installedApps();
+    if (!l.length) return standalone() ? 'Yes' : 'No';
+    if (l.indexOf('suite') >= 0) return 'Yes, the whole LocalEditor';
+    return l.map(function (a) { return a === 'design' ? 'Design studio' : 'PDF studio'; }).join(' and ') + (l.length === 1 ? ' only' : '');
   }
   function busyBtn(b, text) { b.disabled = true; b._label = b.innerHTML; b.textContent = text; }
   function bindStorage(d, body, r) {
@@ -1582,13 +1868,44 @@
   function deepLink() {
     if (/[?&]storage=1(&|$)/.test(location.search) || location.hash === '#storage') openStorage();
   }
+  /* Files opened with LocalEditor PDF (.pdf, .lepdfworkflow) reach the PDF studio through its public PS.addFiles. */
+  function pdfLaunchBridge() {
+    if (!inScope('pdf')) return;
+    var hook = function () {
+      var PS = window.PS;
+      if (!PS || !PS.addFiles || hook.done) return;
+      hook.done = true;
+      onLaunchFiles(function (files) {
+        var flows = files.filter(function (f) { return /\.lepdfworkflow$/i.test(f.name); });
+        var docs = files.filter(function (f) { return flows.indexOf(f) < 0; });
+        if (docs.length) PS.addFiles(docs);
+        if (flows.length && PS.office && PS.office.open && PS.pickFiles) {
+          PS.office.open('workflows');
+          setTimeout(function () {
+            var b = document.querySelector('[data-po="wf-import"]');
+            if (!b) return;
+            var orig = PS.pickFiles;
+            PS.pickFiles = function () { PS.pickFiles = orig; return Promise.resolve([flows[0]]); };
+            b.click();
+          }, 400);
+        }
+      });
+    };
+    if (document.readyState === 'complete') hook(); else window.addEventListener('load', hook);
+  }
   function boot() {
+    if (early.prompt && !early.promptFor) early.promptFor = linkedApp();
+    noteWindowApp();
+    if (early.installed && !installedApps().length) recordInstall(linkedApp(), true);
     refreshInstall();
     syncThemeColor();
     wrapAssets();
     swInit();
     pickUpShared();
     deepLink();
+    installLanding();
+    crossLinks();
+    pdfLaunchBridge();
     window.addEventListener('hashchange', function () { if (location.hash === '#storage') openStorage(); });
     if (/[?&]erased=1/.test(location.search)) {
       history.replaceState(null, '', location.pathname);
@@ -1612,6 +1929,8 @@
     caches: CACHES,
     /* install */
     install: install, canInstall: canInstall, isInstalled: isInstalled, platform: platform, installKind: installKind, openInstallHelp: openInstallHelp, markUsed: markUsed,
+    /* three apps (docs/INSTALL.md) */
+    apps: APPS, openChooser: openChooser, installedApps: installedApps, currentApp: currentApp, pageApp: pageApp, linkManifest: linkManifest, linkedApp: linkedApp,
     /* updates */
     update: update, checkForUpdate: checkForUpdate, updateReady: function () { return !!waiting; }, versions: versions,
     /* storage */

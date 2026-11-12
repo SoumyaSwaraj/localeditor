@@ -344,8 +344,81 @@ function manifestJSON() {
   };
 }
 
+/* ---------- Three installable apps from one site (docs/INSTALL.md) ----------
+   "LocalEditor" is the whole suite (manifest.webmanifest above, unchanged). "LocalEditor Design" and "LocalEditor PDF"
+   are the two studios on their own: own id, scope and start page, the same icon set, and only the files they open.
+   Pages keep linking the suite manifest; le-pwa.js switches the link when the person picks a single studio.
+   start_url carries ?app=<id> so a window can tell which app it is (display-mode alone cannot). Ids never change. */
+const APP_MANIFEST_FILES = { suite: 'manifest.webmanifest', design: 'manifest-design.webmanifest', pdf: 'manifest-pdf.webmanifest' };
+const APPS = {
+  design: {
+    id: '/studio/', name: 'LocalEditor Design', short_name: 'LE Design', scope: './studio/', start_url: './studio/?app=design',
+    description: 'The LocalEditor design studio on its own: photos, layouts, collages and text. Everything stays on your device and works offline.',
+    categories: ['photo', 'graphics', 'design'],
+    shortcuts: [
+      { name: 'New design', short_name: 'New', description: 'Start a new design', url: './studio/?app=design', icon: 'studio' },
+      { name: 'Make a collage', short_name: 'Collage', description: 'Arrange several photos', url: './studio/?tool=collage&app=design', icon: 'collage' },
+      { name: 'Remove a background', short_name: 'Cut out', description: 'Cut out a photo on this device', url: './studio/?tool=cutout&app=design', icon: 'studio' },
+    ],
+    file_handlers: [{
+      action: './studio/?app=design',
+      accept: Object.assign({
+        'application/vnd.localeditor.project+zip': ['.leproject'],
+        'application/vnd.localeditor.design+json': ['.ledesign.json'],
+        'application/vnd.localeditor.workflow+json': ['.leworkflow'],
+      }, IMAGE_TYPES),
+    }],
+    share_target: { action: './studio/?share-target=1&app=design', accept: ['image/*', '.leproject', '.ledesign.json', '.leworkflow'] },
+  },
+  pdf: {
+    id: '/pdf-studio/', name: 'LocalEditor PDF', short_name: 'LE PDF', scope: './pdf-studio/', start_url: './pdf-studio/?app=pdf',
+    description: 'The LocalEditor PDF studio on its own: sign, fill, organise, protect and clean PDFs. Files stay on your device and it works offline.',
+    categories: ['productivity', 'business', 'utilities'],
+    shortcuts: [
+      { name: 'Open a PDF', short_name: 'Open', description: 'Edit, sign and fill a PDF', url: './pdf-studio/?app=pdf', icon: 'pdf' },
+      { name: 'Merge PDFs', short_name: 'Merge', description: 'Combine several PDFs into one', url: './pdf-studio/?panel=bulk&job=merge&app=pdf', icon: 'pdf' },
+      { name: 'Protect a PDF', short_name: 'Protect', description: 'Lock a PDF with a password, on this device', url: './pdf-studio/?panel=bulk&job=protect&app=pdf', icon: 'protect' },
+      { name: 'Safe to send', short_name: 'Clean', description: 'Remove hidden data before it leaves your hands', url: './pdf-studio/?panel=security&job=send&app=pdf', icon: 'protect' },
+    ],
+    file_handlers: [{
+      action: './pdf-studio/?app=pdf',
+      accept: { 'application/pdf': ['.pdf'], 'application/vnd.localeditor.pdf-workflow+json': ['.lepdfworkflow'] },
+    }],
+    share_target: { action: './pdf-studio/?share-target=1&app=pdf', accept: ['application/pdf', '.pdf', '.lepdfworkflow'] },
+  },
+};
+function appManifestJSON(app) {
+  const suite = manifestJSON();
+  if (!APPS[app]) return suite;
+  const a = APPS[app];
+  const exists = (rel) => fs.existsSync(path.join(ROOT, rel));
+  const icon192 = [{ src: 'assets/icons/icon-192.png', sizes: '192x192', type: 'image/png' }];
+  const m = {
+    id: a.id, name: a.name, short_name: a.short_name, description: a.description,
+    lang: suite.lang, dir: suite.dir, start_url: a.start_url, scope: a.scope,
+    display: suite.display, display_override: suite.display_override, orientation: suite.orientation,
+    background_color: suite.background_color, theme_color: suite.theme_color,
+    categories: a.categories, prefer_related_applications: false,
+    icons: suite.icons,
+    screenshots: suite.screenshots.filter((s) => app === 'design' ? /studio/.test(s.src) : false),
+    shortcuts: a.shortcuts.map((s) => {
+      const file = `assets/icons/shortcuts/${s.icon}-96.png`;
+      return { name: s.name, short_name: s.short_name, description: s.description, url: s.url, icons: exists(file) ? [{ src: file, sizes: '96x96', type: 'image/png' }] : icon192 };
+    }),
+    file_handlers: a.file_handlers.map((f) => Object.assign({}, f, { icons: icon192, launch_type: 'single-client' })),
+    share_target: {
+      action: a.share_target.action, method: 'POST', enctype: 'multipart/form-data',
+      params: { title: 'title', text: 'text', url: 'url', files: [{ name: 'media', accept: a.share_target.accept }] },
+    },
+    launch_handler: suite.launch_handler,
+  };
+  if (!m.screenshots.length) delete m.screenshots;
+  return m;
+}
+
 function buildMeta() {
   fs.writeFileSync(path.join(ROOT, 'manifest.webmanifest'), JSON.stringify(manifestJSON(), null, 2) + '\n');
+  Object.keys(APPS).forEach((app) => fs.writeFileSync(path.join(ROOT, APP_MANIFEST_FILES[app]), JSON.stringify(appManifestJSON(app), null, 2) + '\n'));
 
 
   const today = new Date().toISOString().slice(0, 10);
@@ -388,8 +461,12 @@ function buildOffline() {
   }).replace('<meta name="robots" content="index,follow,max-image-preview:large">', '<meta name="robots" content="noindex">') +
     '<main id="main" class="container" style="max-width:720px"><section class="hero"><span class="eyebrow">Offline</span><h1>This page is not on this device yet</h1>' +
     '<p class="lead">You are offline, and this page was never opened here before. Everything below is saved on this device and works without a connection.</p></section>' +
-    '<div class="content"><section class="card"><ul>' + links.map(([u, n]) => `<li><a href="/${u}">${n}</a></li>`).join('') + '</ul>' +
-    '<p style="margin-top:1em"><a class="btn" href="">Try again</a></p></section></div></main>' + foot('/');
+    '<div class="content"><section class="card"><p id="le-off-part" hidden></p><ul id="le-off-links">' + links.map(([u, n]) => `<li><a href="/${u}">${n}</a></li>`).join('') + '</ul>' +
+    '<p style="margin-top:1em"><a class="btn" href="">Try again</a></p></section></div></main>' +
+    /* A single-studio install keeps only its own part offline (docs/INSTALL.md): name the part that is missing and list only what is here. */
+    `<script>(function(){var P=[['/pdf-studio/','The PDF studio'],['/studio/','The design studio']],p=location.pathname,m=P.filter(function(x){return p.indexOf(x[0])===0})[0],el=document.getElementById('le-off-part');
+if(m){el.textContent=m[1]+' is not kept offline on this device. Connect to the internet to open it; it is then saved as you use it. To keep it offline, open Storage on this device, then Downloads for offline use.';el.hidden=false}
+if(!window.caches)return;[].forEach.call(document.querySelectorAll('#le-off-links a'),function(a){caches.match(a.href,{ignoreSearch:true}).then(function(r){if(!r)a.parentNode.hidden=true})})})();</script>` + foot('/');
   fs.writeFileSync(path.join(ROOT, 'offline.html'), html);
 }
 
@@ -525,12 +602,112 @@ function packsJSON(version) {
     features: featureFiles
   };
 }
+/* ---------- App parts: what each installed app keeps offline (docs/INSTALL.md) ----------
+   The Basic editor is split four ways, by following what each studio page really loads:
+     core   the shell every page needs (app.js, styles, install/downloads/support code, icons, manifests, home, offline
+            page) plus what both studios load (engine, objects, fonts, assets)
+     design what only the design studio loads (and the Expert files when they join the first download)
+     pdf    what only the PDF studio loads
+     tools  everything else: tool pages, hubs, feature pages, convert, makers pages, their images
+   "Loads" = <script src>, <link href>, LE.modules.defer srcs and url() in the pages, then string paths such as
+   'assets/vendor/pdf.min.js' inside the code they load, followed to the end. A folder named in code with three or more
+   segments ('assets/js/makers/') counts as all of its files. Installed suite = all four parts (as before). */
+const APP_PARTS = { suite: ['core', 'design', 'pdf', 'tools'], design: ['core', 'design'], pdf: ['core', 'pdf'] };
+const PART_NAMES = { core: 'Shared app files', design: 'Design studio', pdf: 'PDF studio', tools: 'Tools and pages' };
+const PART_PAGES = { design: 'studio/index.html', pdf: 'pdf-studio/index.html', core: 'offline.html' };
+let partCache = null;
+function refsOf(f, known) {
+  const text = fs.readFileSync(path.join(ROOT, f), 'utf8');
+  const dir = path.posix.dirname(f);
+  const out = new Set();
+  const add = (rel, base) => {
+    rel = rel.split(/[?#]/)[0];
+    if (!rel || /^(https?:|data:|blob:|#|mailto:)/.test(rel)) return;
+    const p = path.posix.normalize(rel.startsWith('/') ? rel.slice(1) : path.posix.join(base, rel)).replace(/\/$/, '');
+    if (known.has(p)) out.add(p);
+    else if (known.has(p.replace(/\/?$/, '/index.html'))) out.add(p.replace(/\/?$/, '/index.html'));
+    else if (/\/$/.test(rel) && p.split('/').length >= 3) known.forEach((k) => { if (k.indexOf(p + '/') === 0 && k.slice(p.length + 1).indexOf('/') < 0) out.add(k); });
+  };
+  const byName = (name) => { const hits = []; known.forEach((k) => { if (k.indexOf('assets/') === 0 && path.posix.basename(k) === name) hits.push(k); }); if (hits.length === 1) out.add(hits[0]); };
+  /* Pages: what they load (src=, and href= on <link>), not where their links go. */
+  if (/\.html$/.test(f)) {
+    let m; const re = /\ssrc\s*=\s*["']([^"']+)["']/g; while ((m = re.exec(text))) add(m[1], dir);
+    const lk = /<link\b[^>]*\shref\s*=\s*["']([^"']+)["'][^>]*>/g; while ((m = lk.exec(text))) if (!/rel=["']?(canonical|alternate)/.test(m[0])) add(m[1], dir);
+  }
+  if (/\.(html|css)$/.test(f)) { let m; const re = /url\(\s*["']?([^"')]+)["']?\s*\)/g; while ((m = re.exec(text))) add(m[1], dir); }
+  /* Code and inline scripts name files from the site root (BASE + 'assets/...') or relative to the page ('../assets/...'). */
+  let m; const re = /["'`]((?:\.\.\/|\.\/)*assets\/[\w./-]+)["'`]/g;
+  while ((m = re.exec(text))) { const rel = m[1]; add(rel.replace(/^(\.\.\/|\.\/)+/, ''), ''); if (/^\.\.\//.test(rel)) add(rel, dir); }
+  /* Code that builds a path from a folder and a bare file name (asset('mammoth.browser.min.js')): match the name when it is unique. */
+  if (/\.js$/.test(f)) { const bare = /["']([\w.-]+\.(?:js|css|wasm|json))["']/g; while ((m = bare.exec(text))) byName(m[1]); }
+  return out;
+}
+function closure(start, known) {
+  const seen = new Set();
+  const queue = start.filter((f) => known.has(f));
+  while (queue.length) {
+    const f = queue.shift();
+    if (seen.has(f)) continue;
+    seen.add(f);
+    if (/\.(html|js|css)$/.test(f)) refsOf(f, known).forEach((r) => { if (!seen.has(r)) queue.push(r); });
+  }
+  return seen;
+}
+/* { core, design, pdf, tools }: lists of file rows (same rows as the Basic pack), plus the part of every url. */
+function appParts() {
+  if (partCache) return partCache;
+  const s = packSizes();
+  const d = packDecision();
+  const rows = s.basic.concat(d.expertWithBasic ? s.expert : []);
+  const fileOf = (u) => u.slice(2).replace(/(^|\/)$/, '$1index.html');
+  const known = new Set(rows.map((r) => fileOf(r.u)));
+  const shell = closure([PART_PAGES.core, 'assets/js/app.js', 'assets/css/app.css'], known);
+  const design = closure([PART_PAGES.design], known);
+  const pdf = closure([PART_PAGES.pdf], known);
+  const always = (f) => /^manifest[\w-]*\.webmanifest$/.test(f) || /^assets\/icons\//.test(f) || f === 'index.html' || f === 'offline.html' || f === PACKS_JSON;
+  const partOfFile = (f) => {
+    if (shell.has(f) || always(f) || (design.has(f) && pdf.has(f))) return 'core';
+    if (EXPERT.test(f) || design.has(f)) return 'design';
+    if (pdf.has(f)) return 'pdf';
+    return 'tools';
+  };
+  const out = { core: [], design: [], pdf: [], tools: [] };
+  const of = {};
+  rows.forEach((r) => { const p = partOfFile(fileOf(r.u)); out[p].push(r); of[r.u] = p; });
+  partCache = { parts: out, of };
+  return partCache;
+}
+/* Precache list of one app: the suite list filtered to its parts (the suite itself is unchanged). */
+function precacheListFor(app) {
+  const list = precacheList();
+  if (!APPS[app]) return list;
+  const { of } = appParts();
+  const keep = APP_PARTS[app];
+  return list.filter((u) => keep.indexOf(of[u] || 'core') >= 0);
+}
+function partsJSON() {
+  const { parts } = appParts();
+  const t = (l) => totals(l);
+  const out = {};
+  Object.keys(parts).forEach((p) => { out[p] = Object.assign({ id: p, name: PART_NAMES[p] }, t(parts[p]), { files: parts[p].map((r) => r.u) }); });
+  const apps = {};
+  Object.keys(APP_PARTS).forEach((a) => {
+    const x = APP_PARTS[a].reduce((acc, p) => ({ count: acc.count + out[p].count, raw: acc.raw + out[p].raw, gzip: acc.gzip + out[p].gzip, transfer: acc.transfer + out[p].transfer }), { count: 0, raw: 0, gzip: 0, transfer: 0 });
+    apps[a] = Object.assign({ id: a, parts: APP_PARTS[a], manifest: APP_MANIFEST_FILES[a], scope: a === 'suite' ? '/' : APPS[a].scope.replace(/^\./, ''), start: a === 'suite' ? '/' : APPS[a].start_url.replace(/^\./, '') }, x);
+  });
+  return { parts: out, apps };
+}
+
 function buildPacks() {
   const j = packsJSON();
+  Object.assign(j, partsJSON());
   fs.writeFileSync(path.join(ROOT, PACKS_JSON), JSON.stringify(j) + '\n');
   const mb = (n) => (n / PACK_MB).toFixed(1) + ' MB';
   j.packs.forEach((p) => console.log(`  ${p.name.padEnd(22)} ${String(p.count).padStart(4)} files  raw ${mb(p.raw).padStart(9)}  gzip ${mb(p.gzip).padStart(9)}  transfer ${mb(p.transfer).padStart(9)}`));
   console.log('  ' + j.decision.text);
+  console.log('Parts and apps (docs/INSTALL.md):');
+  Object.keys(j.parts).forEach((k) => { const p = j.parts[k]; console.log(`  ${p.name.padEnd(22)} ${String(p.count).padStart(4)} files  raw ${mb(p.raw).padStart(9)}  transfer ${mb(p.transfer).padStart(9)}`); });
+  Object.keys(j.apps).forEach((k) => { const a = j.apps[k]; console.log(`  app ${k.padEnd(18)} ${String(a.count).padStart(4)} files  raw ${mb(a.raw).padStart(9)}  transfer ${mb(a.transfer).padStart(9)}  (${a.parts.join(' + ')})`); });
   return j;
 }
 
@@ -544,8 +721,11 @@ function buildPacks() {
      le-models-v1      on-device AI: model files are stored by the feature that downloads them (with an
                        x-le-model header) and only served from here; the AI engine (assets/vendor/ort*)
                        is stored here on first use. Never precached, never trimmed automatically.
-     le-share-v1       files shared to the app from the system share sheet until the studio picks them up. */
-function swMain(VERSION, ASSETS, CRITICAL, EXPERT_FILES) {
+     le-share-v1       files shared to the app from the system share sheet until the studio picks them up.
+   PARTS (docs/INSTALL.md): { parts: { core, design, pdf, tools: [urls] }, bytes: { part: transfer }, full, limit }.
+   le-packs-v1 ./__packs/app holds { app, keep: [parts] } once a single studio is installed; without it (a browser visit or
+   the whole suite) a version downloads ASSETS exactly as before. */
+function swMain(VERSION, ASSETS, CRITICAL, EXPERT_FILES, PARTS) {
   'use strict';
   var CACHE = 'le-app-' + VERSION;
   var RT = { fonts: 'le-fonts-v1', assets: 'le-assets-v1', photos: 'le-photos-v1', models: 'le-models-v1', share: 'le-share-v1' };
@@ -571,9 +751,31 @@ function swMain(VERSION, ASSETS, CRITICAL, EXPERT_FILES) {
   }
   /* One missing file must not break the install: six lanes, failures collected, only CRITICAL files are fatal. */
   /* The Expert files join a version's own download when they are not part of the first visit but the person downloaded them once. */
+  /* What this device keeps offline: the installed app's parts plus the shared core (a cache entry, so it survives updates). */
+  var OPTIONAL = ['design', 'pdf', 'tools'];
+  function kept() {
+    return caches.open(RT.packs).then(function (c) { return c.match('./__packs/app'); }).then(function (r) { return r ? r.json() : null; }).then(function (j) {
+      var keep = j && Array.isArray(j.keep) ? j.keep.filter(function (p) { return OPTIONAL.indexOf(p) >= 0; }) : null;
+      return keep && OPTIONAL.some(function (p) { return keep.indexOf(p) < 0; }) ? keep : null;
+    }).catch(function () { return null; });
+  }
+  function partFiles(keep) {
+    if (!keep || !PARTS || !PARTS.parts) return ASSETS;
+    var ids = ['core'].concat(keep);
+    var urls = [];
+    var bytes = 0;
+    ids.forEach(function (p) { urls = urls.concat(PARTS.parts[p] || []); bytes += (PARTS.bytes && PARTS.bytes[p]) || 0; });
+    /* Under the 25 MB rule the kept parts come whole, as the suite does; above it only their critical files. */
+    if (PARTS.full || bytes < PARTS.limit) return urls;
+    return ASSETS.filter(function (u) { return urls.indexOf(u) >= 0; });
+  }
   function appFiles() {
-    if (!EXPERT_FILES.length) return Promise.resolve(ASSETS);
-    return caches.open(RT.packs).then(function (c) { return c.match('./__packs/expert'); }).then(function (hit) { return hit ? ASSETS.concat(EXPERT_FILES) : ASSETS; }, function () { return ASSETS; });
+    var expert = EXPERT_FILES.length ? caches.open(RT.packs).then(function (c) { return c.match('./__packs/expert'); }).then(function (hit) { return !!hit; }, function () { return false; }) : Promise.resolve(false);
+    return Promise.all([expert, kept()]).then(function (r) {
+      var list = partFiles(r[1]);
+      if (r[0] && (!r[1] || r[1].indexOf('design') >= 0)) list = list.concat(EXPERT_FILES);
+      return list;
+    }, function () { return ASSETS; });
   }
   /* First use of an Expert file that was not part of the first visit: keep the whole Expert editor offline from now on. */
   var EXPERT_ABS = EXPERT_FILES.map(function (u) { return new URL(u, self.location).href; });
@@ -713,6 +915,11 @@ function swMain(VERSION, ASSETS, CRITICAL, EXPERT_FILES) {
       return next(0).then(function (hit) {
         if (hit) return hit;
         return fetch(req).then(function (res) {
+          /* A page this version did not download up front (a part the installed app does not keep): keep it as used. */
+          if (nav && res.status === 200 && res.type === 'basic' && !res.redirected && /^text\/html/.test(res.headers.get('content-type') || '')) {
+            var page = res.clone();
+            e.waitUntil(c.put(url.origin + url.pathname.replace(/index\.html$/, ''), page).catch(function () {}));
+          }
           if (!nav && res.status === 200 && res.type === 'basic' && url.pathname.indexOf('/assets/') >= 0) {
             var copy = res.clone();
             e.waitUntil(c.put(req, copy).catch(function () {}));
@@ -728,8 +935,9 @@ function swMain(VERSION, ASSETS, CRITICAL, EXPERT_FILES) {
   }
 
   /* Android share sheet: POST multipart, park the files in le-share-v1, open the studio, which picks them up. */
-  function receiveShare(e) {
-    var studio = new URL('./studio/', self.location).href;
+  function receiveShare(e, url) {
+    var app = /^(design|pdf)$/.test(url.searchParams.get('app') || '') ? '&app=' + url.searchParams.get('app') : '';
+    var studio = new URL(/\/pdf-studio\/$/.test(url.pathname) ? './pdf-studio/' : './studio/', self.location).href;
     return e.request.formData().then(function (form) {
       var files = form.getAll('media').filter(function (f) { return f && typeof f !== 'string'; }).slice(0, 20);
       var id = String(Date.now());
@@ -738,15 +946,15 @@ function swMain(VERSION, ASSETS, CRITICAL, EXPERT_FILES) {
           var h = { 'content-type': f.type || 'application/octet-stream', 'x-le-name': encodeURIComponent(f.name || 'shared-' + i), 'x-le-at': id, 'x-le-bytes': String(f.size) };
           return c.put(new Request(new URL('./__share/' + id + '/' + i, self.location).href), new Response(f, { headers: h }));
         }));
-      }).then(function () { return Response.redirect(studio + '?shared=' + id, 303); });
-    }).catch(function () { return Response.redirect(studio + '?shared=failed', 303); });
+      }).then(function () { return Response.redirect(studio + '?shared=' + id + app, 303); });
+    }).catch(function () { return Response.redirect(studio + '?shared=failed' + app, 303); });
   }
 
   self.addEventListener('fetch', function (e) {
     var req = e.request;
     var url = new URL(req.url);
     if (url.origin !== self.location.origin) return;
-    if (req.method === 'POST' && /\/studio\/$/.test(url.pathname) && url.searchParams.has('share-target')) { e.respondWith(receiveShare(e)); return; }
+    if (req.method === 'POST' && /\/(pdf-)?studio\/$/.test(url.pathname) && url.searchParams.has('share-target')) { e.respondWith(receiveShare(e, url)); return; }
     if (req.method !== 'GET' || req.headers.has('range')) return;
     var p = url.pathname;
     if (/\/sw\.js$/.test(p) || p.indexOf('/__share/') >= 0) return;
@@ -887,11 +1095,18 @@ function expertOnDemand() {
   if (packDecision().expertWithBasic) return [];
   return walk(ROOT).filter((f) => EXPERT.test(f)).map(asUrl).sort();
 }
+/* The part lists the worker needs to download only an installed studio's files (docs/INSTALL.md). */
+function workerParts() {
+  const { parts } = appParts();
+  const out = { parts: {}, bytes: {}, full: packDecision().basicFirstVisit, limit: WHOLE_EDITOR_LIMIT };
+  Object.keys(parts).forEach((p) => { out.parts[p] = parts[p].map((r) => r.u).sort(); out.bytes[p] = totals(parts[p]).transfer; });
+  return out;
+}
 function swSource(opts = {}) {
   const version = opts.version || VERSION;
   const files = opts.files || precacheList();
   return `/* LocalEditor service worker, version ${version}. Generated by scripts/build.js; edit the generator, not this file. */\n` +
-    `(${swMain.toString()})(${JSON.stringify(version)}, ${JSON.stringify(files)}, ${JSON.stringify(CRITICAL)}, ${JSON.stringify(opts.expert || expertOnDemand())});\n`;
+    `(${swMain.toString()})(${JSON.stringify(version)}, ${JSON.stringify(files)}, ${JSON.stringify(CRITICAL)}, ${JSON.stringify(opts.expert || expertOnDemand())}, ${JSON.stringify(opts.parts || workerParts())});\n`;
 }
 
 function buildSW() {
@@ -900,7 +1115,7 @@ function buildSW() {
   return files.length;
 }
 
-module.exports = { ROOT, VERSION, ON_DEMAND, CRITICAL, EXPERT, MODELS, WHOLE_EDITOR_LIMIT, manifestJSON, precacheList, swSource, packSizes, packsJSON, packDecision, TOOLS, CATS, I };
+module.exports = { ROOT, VERSION, ON_DEMAND, CRITICAL, EXPERT, MODELS, WHOLE_EDITOR_LIMIT, manifestJSON, appManifestJSON, APPS, APP_MANIFEST_FILES, APP_PARTS, appParts, partsJSON, precacheListFor, precacheList, swSource, packSizes, packsJSON, packDecision, TOOLS, CATS, I };
 
 if (require.main === module) {
   buildIndex(); buildAbout(); buildOffline();
