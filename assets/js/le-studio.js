@@ -572,7 +572,10 @@
       if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v)) pick(v, true);
     });
     var eye = custom.querySelector('[data-eye]');
-    if (eye) eye.onclick = function () { new window.EyeDropper().open().then(function (r) { pick(r.sRGBHex, true); }).catch(function () {}); };
+    if (eye) eye.onclick = function () {
+      var go = function () { return new window.EyeDropper().open().then(function (r) { pick(r.sRGBHex, true); if (LE.support) LE.support.reportSuccess('studio.eyedropper'); }); };
+      (LE.support && LE.support.gate ? LE.support.gate('studio.eyedropper', { title: 'Pick a colour from the screen', run: go }) : go()).catch(function () {});
+    };
     var none = custom.querySelector('[data-none]');
     if (none) none.onclick = function () { pick(o.none === 'null' ? null : { type: 'none' }, true); };
     body.appendChild(custom);
@@ -933,6 +936,7 @@
   var INGEST_CEIL = { older: 4096, modern: 6000, desktop: 8000 };
   var INGEST_UP = { older: 'modern', modern: 'desktop', desktop: 'huge' };
   var REENCODE_BYTES = 25 * 1024 * 1024;
+  var LARGE_PX = 24e6;   /* 24 megapixels and up count as "large" for the device-support check */
   function ingestPolicy() {
     var mode = (LE.perf && typeof LE.perf.mode === 'function') ? LE.perf.mode() : 'auto';
     var pm = (LE.perf && typeof LE.perf.previewMax === 'function') ? LE.perf.previewMax() : 2400;
@@ -970,7 +974,19 @@
     var pol = ingestPolicy();
     var tooBig = function () { return new Error('That photo is too large for this browser.'); };
     var name = file.name || 'photo';
+    var large = false;
     return decode(file, name).then(function (canvas) {
+      /* Device support: a very large photo is where memory runs out first. Ask (via LE.support) only when the
+         verdict is not ok; a cancel releases the decoded pixels. */
+      if (!canvas || canvas.width * canvas.height < LARGE_PX || !(LE.support && LE.support.gate)) return canvas;
+      large = true;
+      var ran = false;
+      return LE.support.gate('studio.large-photos', { title: 'Open a large photo', run: function () { ran = true; return canvas; } }).then(function (cv) {
+        if (ran) return cv;
+        try { canvas.width = 1; canvas.height = 1; } catch (e) {}
+        var err = new Error('The photo was not opened.'); err.cancelled = true; throw err;
+      });
+    }).then(function (canvas) {
       if (!canvas || !canvas.width) throw new Error('Could not read that image.');
       var edge = Math.max(canvas.width, canvas.height);
       var shrink = edge > pol.trigger;
@@ -1007,8 +1023,12 @@
         S.mem[meta.id] = { meta: meta, canvas: pair.canvas };
         scene.addAsset(meta.id, pair.canvas);
         if (S.project) S.project.assets[meta.id] = meta;
+        if (large && LE.support) LE.support.reportSuccess('studio.large-photos');
         return meta;
       });
+    }).then(null, function (err) {
+      if (large && LE.support && !(err && err.cancelled) && !/too large for this browser/.test(String(err && err.message))) LE.support.reportFailure('studio.large-photos', err);
+      throw err;
     });
   }
   function assetMeta(rec, canvas) {

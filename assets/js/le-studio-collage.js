@@ -596,9 +596,10 @@
       else go.textContent = build.pick.length ? 'Make collage · ' + build.pick.length + ' photo' + (build.pick.length === 1 ? '' : 's') : 'Make ' + build.empty + ' empty cells';
       go.disabled = !!build.picking && !build.pick.length;
     }
-    go.onclick = function () {
+    function make() {
       go.disabled = true;
-      ensureUploads(c, build.pick.slice()).then(function (ready) {
+      var many = build.pick.length >= MANY_PHOTOS;
+      return ensureUploads(c, build.pick.slice()).then(function (ready) {
         if (build.picking) {
           build.picking = false;
           addToCells(c, ready);
@@ -610,7 +611,13 @@
         build.pick = [];
         build.picked = true;
         c.renderPanel();
+        if (many && window.LE && LE.support) LE.support.reportSuccess('studio.collage');
       });
+    }
+    /* Many photos at once is where a phone runs short of memory: LE.support explains first when the verdict is not ok. */
+    go.onclick = function () {
+      if (build.pick.length < MANY_PHOTOS || !(window.LE && LE.support && LE.support.gate)) { make(); return; }
+      LE.support.gate('studio.collage', { title: 'Collage with ' + build.pick.length + ' photos', run: make }).catch(function (err) { go.disabled = false; c.toast((err && err.message) || 'The collage could not be made.'); });
     };
     paintCount();
   }
@@ -1267,8 +1274,14 @@
       stockState.loading = true;
       paintGrid();
       var q = stockState.q || 'nature';
-      api.search(q, { provider: p.id, page: stockState.page, perPage: 20, orientation: stockState.orient || undefined }).then(function (res) {
+      /* Device support: offline is known before any request; the panel's own "You are offline" state explains it
+         (a sheet on every keystroke would not help). Searches that work are reported. */
+      var sup = window.LE && LE.support;
+      var offline = sup && sup.has && sup.has('online') === false;
+      (offline ? Promise.reject(Object.assign(new TypeError('You are offline.'), { code: 'offline' })) :
+        api.search(q, { provider: p.id, page: stockState.page, perPage: 20, orientation: stockState.orient || undefined })).then(function (res) {
         if (gen !== stockState.gen) return;
+        if (sup && sup.reportSuccess) sup.reportSuccess('studio.stock');
         var hits = (res && res.hits) || [];
         var seen = {};
         stockState.hits.forEach(function (h0) { seen[h0.provider + h0.id] = 1; });

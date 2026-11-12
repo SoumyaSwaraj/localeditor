@@ -877,7 +877,16 @@
     }
     actions(c, body, {
       download: function () {
-        return c.exportImage({ name: fname() }).then(function (blob) { if (blob) c.toast('Downloaded ' + c.fmtBytes(blob.size)); });
+        /* A PDF of every page holds them all in memory at once: LE.support explains first when that is not ok here. */
+        var pdfAll = o.format === 'pdf' && multi && o.pages === 'all';
+        function go() {
+          return c.exportImage({ name: fname() }).then(function (blob) {
+            if (!blob) return;
+            c.toast('Downloaded ' + c.fmtBytes(blob.size));
+            if (pdfAll && LE.support && LE.support.reportSuccess) LE.support.reportSuccess('studio.pdf-export');
+          });
+        }
+        return pdfAll && LE.support && LE.support.gate ? LE.support.gate('studio.pdf-export', { title: 'PDF of all ' + c.S.project.pages.length + ' pages', run: go }) : go();
       },
       share: function () { return items().then(function (list) { if (list.length) return shareOrDownload(c, list, c.safeName(fname()) + '.zip'); }); }
     });

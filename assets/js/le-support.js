@@ -505,7 +505,7 @@
     { id: 'studio.pdf-export', name: 'Multi-page PDF export', group: 'Photo studio', url: 'studio/', needs: ['canvas-2d'], wants: ['fetch'], memoryMB: 400 },
     { id: 'studio.projects', name: 'Projects and version history', group: 'Photo studio', url: 'studio/', needs: ['indexeddb'], wants: ['compression-stream', 'persistent-storage', 'storage-estimate'], note: 'Designs are saved in this browser only.' },
     { id: 'studio.collage', name: 'Collage', group: 'Photo studio', url: 'studio/?tool=collage', needs: ['canvas-2d', 'fetch'], wants: ['intersection-observer', 'cache-storage'], memoryMB: 400 },
-    { id: 'studio.recipes', name: 'Recipes and batch', group: 'Photo studio', url: 'recipes/', needs: ['canvas-2d'], wants: ['compression-stream', 'web-share-files'], memoryMB: 400, note: 'Batch runs one photo at a time to save memory.' },
+    { id: 'studio.recipes', name: 'Recipes and batch', group: 'Photo studio', url: 'recipes/', needs: ['canvas-2d'], wants: ['compression-stream'], memoryMB: 400, note: 'Batch runs one photo at a time to save memory. Results download as a zip.' },
     { id: 'studio.background', name: 'Background photo editing', group: 'Photo studio', url: 'studio/', needs: ['canvas-2d'], wants: ['canvas-filter'], memoryMB: 300 },
     { id: 'studio.stock', name: 'Stock photo search', group: 'Photo studio', url: 'studio/', needs: ['online', 'fetch'], wants: ['createimagebitmap'], note: 'Needs a connection. Searches go to the photo provider you choose.' },
     { id: 'studio.eyedropper', name: 'Pick a colour from the screen', group: 'Photo studio', url: 'studio/', needs: [], wants: ['eyedropper'], note: 'Without it you can still pick colours from your design.' },
@@ -729,6 +729,8 @@
   var LABELS = { ok: 'Runs well here', limited: 'Works, with limits', slow: 'May be slow here', unknown: 'Might work here', unsupported: 'Not available in this browser', failed: 'Did not work last time' };
 
   function capsOf(id) { var d = defs[id]; return d ? d.needs.concat(d.wants) : []; }
+  /* No async probe of this feature is still to run. */
+  function settled(id) { return capsOf(id).every(function (c) { return own(overrides, c) || !CAPS[c] || !CAPS[c].async || probed[c]; }); }
   function checkAsync(id) { return probeAll(capsOf(id)).then(function () { return check(id); }); }
   function checkAll() { return features().map(function (d) { return check(d.id); }); }
 
@@ -741,6 +743,12 @@
       return new Promise(function (resolve) { resolve(run()); }).then(null, function (err) { if (isDeviceFailure(err)) reportFailure(id, err); throw err; });
     }
     var fallback = opts.fallback && typeof opts.fallback.run === 'function' ? opts.fallback : null;
+    /* Already known to be fine: run in this same task, so APIs that need the tap (clipboard, eyedropper, share)
+       still see the user gesture. */
+    if (settled(id)) {
+      var now = check(id);
+      if (now.status === 'ok' || (now.canForce && now.forced)) return go();
+    }
     return checkAsync(id).then(function (r) {
       if (r.status === 'ok' || (r.canForce && r.forced)) return go();
       return new Promise(function (resolve, reject) {
