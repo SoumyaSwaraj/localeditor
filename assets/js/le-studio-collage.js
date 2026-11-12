@@ -725,7 +725,7 @@
       var lay = G().layouts(typeof n === 'number' ? n : 4, w / h)[0];
       slots = lay.cells.map(function (cl) { return { x: cl[0] * 0.92 + 0.04, y: cl[1] * 0.92 + 0.04, w: cl[2] * 0.92 - 0.02, h: cl[3] * 0.92 - 0.02 }; });
     }
-    var html = '<span class="sx-cg-art" style="--sx-ar:' + (w / h) + (bg ? ';background:' + c.esc(bg) : '') + '">';
+    var html = '<span class="sx-cg-art ' + (w >= h ? 'is-wide' : 'is-tall') + '" style="--sx-ar:' + (w / h) + (bg ? ';background:' + c.esc(bg) : '') + '">';
     slots.forEach(function (s, i) {
       var shape = s.mask === 'ellipse' || s.mask === 'circle' ? 'border-radius:50%;' : s.mask === 'heart' || s.mask === 'star' || s.mask === 'p' ? 'border-radius:40%;' : '';
       html += '<i class="sx-cg-slot" style="left:' + (s.x * 100).toFixed(2) + '%;top:' + (s.y * 100).toFixed(2) + '%;width:' + (s.w * 100).toFixed(2) + '%;height:' + (s.h * 100).toFixed(2) + '%;background:' + FILLS[i % FILLS.length] + ';' + shape + (s.rot ? 'transform:rotate(' + s.rot + 'deg)' : '') + '"></i>';
@@ -1466,7 +1466,7 @@
         var s = it.source;
         var li = c.h('<li><span class="sx-credits-thumb"><img alt=""></span><span><b></b><small></small></span></li>');
         li.querySelector('b').textContent = s.photographer || providerName(s.provider);
-        li.querySelector('small').textContent = it.text;
+        li.querySelector('small').textContent = [s.license, providerName(s.provider)].filter(Boolean).join(' · ');
         c.thumbUrl(it.src).then(function (u) { if (u) li.querySelector('img').src = u; });
         ul.appendChild(li);
       });
@@ -1505,7 +1505,7 @@
     var show = null, mode = 'hover';
     if (c.S.project && c.S.tool === 'select' && !c.S.preview && !c.S.editing && !c.S.pointer) {
       var cur = c.one();
-      if ((c.isPhone() || coarse()) && cur && cur.type === 'image' && cur.slot) { show = cur.id; mode = 'touch'; }
+      if ((c.isPhone() || coarse()) && cur && cur.type === 'image' && cur.slot) { if (!(c.isPhone() && c.S.panel)) { show = cur.id; mode = 'touch'; } }
       else if (hoverId) {
         var hv = c.L(hoverId);
         if (hv && hv.type === 'image' && hv.slot) show = hoverId;
@@ -1523,7 +1523,8 @@
     chipEl.hidden = false;
     var w = chipEl.offsetWidth || 96, h = chipEl.offsetHeight || 32;
     var x = rect.left + rect.width / 2 - stage.left - w / 2;
-    var y = mode === 'touch' ? rect.bottom - stage.top - h - 10 : rect.top - stage.top + 8;
+    /* Touch: centred in the cell, clear of the floating mini toolbar and the rotate handle. */
+    var y = mode === 'touch' ? rect.top + rect.height / 2 - stage.top - h / 2 : rect.top - stage.top + 8;
     x = Math.max(8, Math.min(x, stage.width - w - 8));
     y = Math.max(8, Math.min(y, stage.height - h - 8));
     chipEl.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
@@ -1549,6 +1550,7 @@
     if (c.scene && c.scene.on) {
       c.scene.on('hover', function (e) { hoverId = e && e.id; placeChip(c); });
       c.scene.on('zoom', function () { placeChip(c); });
+      c.scene.on('tool', function () { setTimeout(function () { placeChip(c); placeAttr(c); }, 0); });
       c.scene.on('slot-swap', function () { c.toast('Photos swapped'); refreshSoon(c); });
     }
     /* A tap on an empty cell opens the picker; drags and double-taps are left to the engine. */
