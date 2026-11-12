@@ -13,9 +13,9 @@
     summary: 'A set of store screenshots: a headline over each screen in a simple device frame.',
     keywords: ['app store', 'play store', 'screenshots', 'app', 'mockup', 'device', 'phone', 'tablet', 'launch', 'listing', 'marketing'],
     sizes: [
-      { id: 'phone', name: 'Phone 1290×2796', w: 1290, h: 2796 },
+      { id: 'phone', name: 'Phone', w: 1290, h: 2796 },
       { id: 'phone916', name: 'Phone 9:16', w: 1080, h: 1920 },
-      { id: 'tablet', name: 'Tablet 2048×2732', w: 2048, h: 2732 }
+      { id: 'tablet', name: 'Tablet', w: 2048, h: 2732 }
     ],
     inputs: [
       { key: 'shots', label: 'Screens', type: 'list', columns: ['Headline', 'Sub-line'], required: true, max: 6, cellMax: 60, placeholder: 'Plan your week in a minute', hint: 'One line per page, in order. Up to six.' },

@@ -34,7 +34,7 @@
     summary: 'A sign with a code that joins your Wi-Fi, and the password in print.',
     keywords: ['wifi', 'wi-fi', 'wireless', 'password', 'network', 'qr', 'guest', 'cafe', 'airbnb', 'home', 'office', 'sign', 'table tent'],
     sizes: [
-      { id: 'tent', name: 'Table tent 4×6', w: 1200, h: 1800 },
+      { id: 'tent', name: 'Tent 4×6', w: 1200, h: 1800 },
       { id: 'a5', name: 'A5', w: 1240, h: 1754 },
       'square'
     ],

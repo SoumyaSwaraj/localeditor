@@ -65,7 +65,7 @@ cases['each maker offers 4–6 styles; the social makers square, 4:5 and 9:16'] 
   const list = await page.evaluate(() => LE.makers.list().map((m) => ({ id: m.id, styles: m.styles.length, sizes: m.sizes.map((s) => s.w + 'x' + s.h) })));
   const ids = list.map((m) => m.id);
   h.assert.equal(ids.slice(0, 6).join(','), 'quote,review,receipt,milestone,palette,film');
-  ['payposter', 'wifisign', 'qrinvite', 'eventkit'].forEach((id) => h.assert(ids.indexOf(id) >= 0, id + ' registered'));
+  ['payposter', 'wifisign', 'qrinvite', 'eventkit', 'movieposter', 'albumcover', 'frontpage', 'appshots', 'linkcard'].forEach((id) => h.assert(ids.indexOf(id) >= 0, id + ' registered'));
   const social = ['quote', 'review', 'receipt', 'milestone', 'palette', 'film'];
   list.forEach((m) => {
     h.assert(m.styles >= 4 && m.styles <= 6, m.id + ' styles');

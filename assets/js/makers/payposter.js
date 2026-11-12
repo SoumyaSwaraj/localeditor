@@ -42,7 +42,7 @@
     keywords: ['upi', 'pay', 'payment', 'qr', 'scan to pay', 'shop', 'counter', 'india', 'gpay', 'phonepe', 'paytm', 'bhim', 'donation', 'tip'],
     sizes: [
       { id: 'a5', name: 'A5', w: 1240, h: 1754 },
-      { id: 'tent', name: 'Table tent 4×6', w: 1200, h: 1800 },
+      { id: 'tent', name: 'Tent 4×6', w: 1200, h: 1800 },
       'square'
     ],
     inputs: [

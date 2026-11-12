@@ -21,9 +21,9 @@
     summary: 'A social preview card or a README and profile banner for your project or post.',
     keywords: ['og image', 'open graph', 'social card', 'link preview', 'twitter card', 'readme', 'banner', 'github', 'repository', 'header', 'blog', 'developer', 'project'],
     sizes: [
-      { id: 'og', name: 'Card 1200×630', w: 1200, h: 630 },
-      { id: 'repo', name: 'Repo 1280×640', w: 1280, h: 640 },
-      { id: 'header', name: 'Header 1500×500', w: 1500, h: 500 }
+      { id: 'og', name: 'Card', w: 1200, h: 630 },
+      { id: 'repo', name: 'Repo', w: 1280, h: 640 },
+      { id: 'header', name: 'Header', w: 1500, h: 500 }
     ],
     inputs: [
       { key: 'title', label: 'Title', type: 'text', required: true, max: 70, placeholder: 'tinyqueue' },

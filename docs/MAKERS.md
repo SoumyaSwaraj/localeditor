@@ -56,7 +56,7 @@ Then add `'badge'` to `FILES` in `le-makers.js`, run `node tests/run.js makers`,
 | Field | Meaning |
 |---|---|
 | `id` | `^[a-z][a-z0-9-]{1,39}$`. Also the file name and the `?make=` id. |
-| `name`, `category`, `summary`, `keywords` | Gallery card, category chips and search. Categories in use: Social, Business, Life, Photo. |
+| `name`, `category`, `summary`, `keywords` | Gallery card, category chips and search. Categories in use: Social, Business, Life, Photo, Events. |
 | `sizes` | `[{ id, name, w, h }]` or ids from `LE.makers.SIZES` (`square` 1080×1080, `portrait` 1080×1350, `story` 1080×1920). First is the default. |
 | `inputs` | `{ key, label, type, required, max, placeholder, options, default, hint }`. See types below. |
 | `styles` | `[{ id, name }]`, 4–6 genuinely different looks. First is the default. |
