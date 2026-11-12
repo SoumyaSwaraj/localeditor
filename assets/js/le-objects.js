@@ -320,6 +320,20 @@
     return { id: id, label: label, photo: photo };
   }
 
+  /* Subject cut-out (layer.cutout): an alpha-mask asset applied to the photo before crop and adjust. Non-destructive. */
+  function cutoutOf(c) {
+    if (!c || typeof c !== 'object' || Array.isArray(c) || typeof c.asset !== 'string') return null;
+    var asset = c.asset.replace(/[^\w:.-]/g, '').slice(0, 80);
+    if (!asset) return null;
+    var o = c.outline && typeof c.outline === 'object' ? c.outline : null;
+    return {
+      asset: asset, enabled: c.enabled !== false,
+      model: typeof c.model === 'string' ? c.model.replace(/[^\w.-]/g, '').slice(0, 40) : '',
+      feather: clamp(num(c.feather, 0), 0, 50), refine: c.refine === 'none' ? 'none' : 'guided', version: 1,
+      outline: o && num(o.width, 0) > 0 ? { color: safePaint(o.color) || '#ffffff', width: clamp(num(o.width, 0), 0, 200) } : null
+    };
+  }
+
   /* Collage meta (doc.collage): plain data the collage builder re-opens from. */
   function collageOf(c) {
     if (!c || typeof c !== 'object' || Array.isArray(c)) return null;
@@ -418,6 +432,8 @@
       if (maskPath) layer.maskPath = maskPath;
       var slot = slotOf(src.slot);
       if (slot) layer.slot = slot;
+      var cutout = cutoutOf(src.cutout);
+      if (cutout) layer.cutout = cutout;
     } else if (type === 'text') {
       layer.text = src.text == null ? 'Text' : String(src.text);
       layer.font = src.font || 'Plus Jakarta Sans';
@@ -1283,7 +1299,12 @@
       if (slot) layer.slot = slot;
       else delete layer.slot;
     }
-    if (layer.type === 'image' && (patch.src != null || patch.crop || patch.adjust || patch.filter || patch.removeBg)) {
+    if (layer.type === 'image' && patch.cutout !== undefined) {
+      var cut = cutoutOf(layer.cutout);
+      if (cut) layer.cutout = cut;
+      else delete layer.cutout;
+    }
+    if (layer.type === 'image' && (patch.src != null || patch.crop || patch.adjust || patch.filter || patch.removeBg || patch.cutout !== undefined)) {
       this._scheduleImage(layer.id);
     }
     if (layer.type === 'svg' && (patch.assetId != null || patch.svg != null || patch.color != null || patch.strokeWidth != null || patch.w != null || patch.h != null)) {
@@ -1620,7 +1641,7 @@
     return Math.ceil(target / 128) * 128;
   };
   P._imageKey = function (layer) {
-    return JSON.stringify([layer.src, layer.crop, layer.adjust, layer.filter, layer.removeBg, this._level(), this._imageBucket(layer)]);
+    return JSON.stringify([layer.src, layer.crop, layer.adjust, layer.filter, layer.removeBg, layer.cutout || null, this._level(), this._imageBucket(layer)]);
   };
   P._dropCanvas = function (canvas) {
     if (!canvas || typeof canvas.getContext !== 'function') return;
@@ -1679,18 +1700,111 @@
     var rec = this._assets[layer.src];
     var self = this;
     if (!rec) return Promise.resolve(null);
-    return Promise.resolve(rec.ready).then(function () {
+    var cut = layer.cutout && layer.cutout.enabled !== false ? layer.cutout : null;
+    var mrec = cut ? this._assets[cut.asset] : null;
+    return Promise.all([rec.ready, mrec ? Promise.resolve(mrec.ready).catch(function () { return null; }) : null]).then(function () {
       var src = assetCanvas(rec);
       if (!src) return null;
       var base = src;
       if (LE.fit && Math.max(src.width, src.height) > targetMax) base = LE.fit(src, targetMax);
+      /* Cut-out first, so crop, adjust, filters and the outline all see the subject on transparency. */
+      if (cut && mrec) base = cutoutApply(base, mrec, cut.feather * base.width * ((layer.crop && layer.crop.w) || 1) / Math.max(1, layer.w));
+      function finish(c) { return cut && cut.outline && c ? cutoutOutline(c, cut.outline.width * c.width / Math.max(1, layer.w), cut.outline.color) : c; }
       var steps = imageSteps(layer, preview && self._level() === 'low');
-      if (!steps.length) return cloneCanvas(base);
-      if (!LE.applySteps) return cloneCanvas(base);
+      if (!steps.length || !LE.applySteps) return finish(base === src ? cloneCanvas(base) : base);
       var tier = (LE.device && LE.device.tier) ? LE.device.tier() : 'desktop';
-      return LE.applySteps(base, steps, { tier: tier }).then(function (res) { return res.canvas; });
+      return LE.applySteps(base, steps, { tier: tier }).then(function (res) { return finish(res.canvas); });
     }, function () { return null; });
   };
+  /* The mask asset as a canvas whose alpha is the mask. An opaque greyscale mask (white = keep) is read by luminance. */
+  function cutoutAlpha(mrec) {
+    var m = assetCanvas(mrec);
+    if (!m || !m.width) return null;
+    if (mrec._cutOf === m && mrec._cutAlpha) return mrec._cutAlpha;
+    var w = m.width, h = m.height, d = m.getContext('2d').getImageData(0, 0, w, h).data, opaque = true, i;
+    for (i = 3; i < d.length; i += 4) if (d[i] < 255) { opaque = false; break; }
+    var out = m;
+    if (opaque) {
+      out = document.createElement('canvas');
+      out.width = w; out.height = h;
+      var oc = out.getContext('2d'), img = oc.createImageData(w, h), o = img.data;
+      for (i = 0; i < d.length; i += 4) { o[i] = o[i + 1] = o[i + 2] = 255; o[i + 3] = Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]); }
+      oc.putImageData(img, 0, 0);
+    }
+    mrec._cutOf = m;
+    mrec._cutAlpha = out;
+    return out;
+  }
+  function cutoutApply(base, mrec, feather) {
+    var mask = cutoutAlpha(mrec);
+    if (!mask) return base;
+    var c = document.createElement('canvas');
+    c.width = base.width; c.height = base.height;
+    var ctx = c.getContext('2d');
+    ctx.drawImage(base, 0, 0);
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    if (feather >= 0.5 && filterBlur()) {
+      ctx.filter = 'blur(' + (feather / 2).toFixed(2) + 'px)';
+      ctx.drawImage(mask, 0, 0, c.width, c.height);
+      ctx.filter = 'none';
+    } else if (feather >= 0.5) {
+      var k = Math.max(1, Math.round(feather)), sm = document.createElement('canvas');
+      sm.width = Math.max(1, Math.round(c.width / k)); sm.height = Math.max(1, Math.round(c.height / k));
+      sm.getContext('2d').drawImage(mask, 0, 0, sm.width, sm.height);
+      ctx.drawImage(sm, 0, 0, c.width, c.height);
+    } else ctx.drawImage(mask, 0, 0, c.width, c.height);
+    return c;
+  }
+  /* Sticker outline: a solid band of `width` px around everything at least half opaque (chamfer distance transform). */
+  function cutoutOutline(canvas, width, color) {
+    if (!(width >= 0.5)) return canvas;
+    var w = canvas.width, h = canvas.height, n = w * h, x, y, i;
+    var d = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+    var dist = new Float32Array(n), BIG = 1e7, D = Math.SQRT2;
+    for (i = 0; i < n; i++) dist[i] = d[i * 4 + 3] >= 128 ? 0 : BIG;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = y * w + x;
+      var v = dist[i];
+      if (!v) continue;
+      if (x > 0 && dist[i - 1] + 1 < v) v = dist[i - 1] + 1;
+      if (y > 0) {
+        if (dist[i - w] + 1 < v) v = dist[i - w] + 1;
+        if (x > 0 && dist[i - w - 1] + D < v) v = dist[i - w - 1] + D;
+        if (x < w - 1 && dist[i - w + 1] + D < v) v = dist[i - w + 1] + D;
+      }
+      dist[i] = v;
+    }
+    for (y = h - 1; y >= 0; y--) for (x = w - 1; x >= 0; x--) {
+      i = y * w + x;
+      var u = dist[i];
+      if (!u) continue;
+      if (x < w - 1 && dist[i + 1] + 1 < u) u = dist[i + 1] + 1;
+      if (y < h - 1) {
+        if (dist[i + w] + 1 < u) u = dist[i + w] + 1;
+        if (x < w - 1 && dist[i + w + 1] + D < u) u = dist[i + w + 1] + D;
+        if (x > 0 && dist[i + w - 1] + D < u) u = dist[i + w - 1] + D;
+      }
+      dist[i] = u;
+    }
+    var out = document.createElement('canvas');
+    out.width = w; out.height = h;
+    var octx = out.getContext('2d');
+    octx.fillStyle = color || '#ffffff';
+    octx.fillRect(0, 0, 1, 1);
+    var rgb = octx.getImageData(0, 0, 1, 1).data;
+    var band = octx.createImageData(w, h), b = band.data;
+    for (i = 0; i < n; i++) {
+      var a = width + 0.5 - dist[i];
+      if (a <= 0) continue;
+      var j = i * 4;
+      b[j] = rgb[0]; b[j + 1] = rgb[1]; b[j + 2] = rgb[2]; b[j + 3] = a >= 1 ? rgb[3] : Math.round(a * rgb[3]);
+    }
+    octx.putImageData(band, 0, 0);
+    octx.drawImage(canvas, 0, 0);
+    return out;
+  }
 
   P._svgMarkup = function (layer) {
     var raw = '';
@@ -2338,7 +2452,9 @@
       if ((!cached || cached.key !== key) && layer.src) this._scheduleImage(layer.id);
     }
     var node = null;
-    if (!bitmap) node = assetNode(this._assets[layer.src]);
+    var cutPending = !bitmap && layer.cutout && layer.cutout.enabled !== false;
+    if (!bitmap && !cutPending) node = assetNode(this._assets[layer.src]);
+    if (cutPending) return;
     var clip = this._imageClip(layer);
     var empty = !bitmap && !node;
     ctx.save();

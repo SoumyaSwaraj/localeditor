@@ -1,4 +1,4 @@
-/* LocalEditor background remover: inference worker.
+/* LocalEditor background remover: inference worker (loaded by assets/js/le-bgremove.js, only when a cut-out is asked for).
  *
  * Owns onnxruntime-web, the model session and every pixel-heavy step (resize, normalise, run, upscale the mask,
  * edge refinement, foreground decontamination, compose). The page only sends bytes and an ImageBitmap, so the UI
@@ -299,10 +299,21 @@
       for (i = 0; i < n; i++) { var q = (alpha[i] - lo) * inv; q = q < 0 ? 0 : q > 1 ? 1 : q; alpha[i] = q * q * (3 - 2 * q); }
     }
     if (o.stats) st.edgeAfter = edgeScore(getLum(), alpha, w, h);
+    /* Coverage: the share of clearly opaque pixels. Under 3 % or over 97 % means "no clear subject". */
+    var solid = 0;
+    for (i = 0; i < n; i++) if (alpha[i] > 0.5) solid++;
+    st.coverage = solid / n;
     t.refineMs = now() - T; T = now();
 
     /* 7. compose */
     var rgba = img.data;
+    if (o.maskOnly) {
+      var mOnly = new Uint8ClampedArray(n);
+      for (i = 0; i < n; i++) mOnly[i] = Math.round(alpha[i] * 255);
+      t.composeMs = now() - T; t.totalMs = Object.keys(t).reduce(function (a2, kk) { return a2 + (typeof t[kk] === 'number' ? t[kk] : 0); }, 0);
+      if (bmp.close) bmp.close();
+      return { payload: { width: w, height: h, mask: mOnly.buffer, cut: null, timings: t, stats: st, raw: t.raw }, transfer: [mOnly.buffer] };
+    }
     if (o.decontaminate) decontaminate(rgba, alpha, w, h, Math.max(2, Math.round(Math.max(w, h) / 160)));
     var maskData = new Uint8ClampedArray(n);
     for (i = 0; i < n; i++) {
