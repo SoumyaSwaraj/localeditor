@@ -427,7 +427,7 @@
     return layer;
   }
   /* Asset ids a layer's expert data and cut-out point at (masks, LUTs, retouch, maps), so projects keep them. */
-  function expertAssets(l) { return JSON.stringify([l.fx, l.layerMask, l.retouch, l.maps, l.cutout]).match(/[a-f0-9]{64}/g) || []; }
+  function expertAssets(l) { return JSON.stringify([l.fx, l.layerMask, l.retouch, l.maps, l.cutout, l.raw && l.raw.source]).match(/[a-f0-9]{64}/g) || []; }
 
   /* Print meta (doc.print): the physical page this page is meant for, in mm, and the pixels per inch it was laid out at.
      PDF export uses it for the page size. */
