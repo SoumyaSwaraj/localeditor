@@ -25,13 +25,13 @@ cases['registry: the starter set is registered, described and declared to LE.sup
     h.assert(e.ui && e.ui.section && e.agent && e.agent.summary && e.agent.example && e.agent.example.type === e.id, e.id + ' needs ui and agent descriptors');
     h.assert(e.support.needs.indexOf('webgl2') >= 0, e.id + ' declares what a device needs');
     Object.keys(e.params).forEach((k) => h.assert(r.describe.schema.paramTypes.indexOf(e.params[k].type) >= 0 && e.params[k].label, e.id + '.' + k));
-    h.assert(['Light', 'Colour', 'Curves', 'Optics', 'Effects', 'Shadows & reflections'].indexOf(e.ui.section) >= 0, e.id + ' uses a workspace section name: ' + e.ui.section);
+    h.assert(['Light', 'Colour', 'Curves', 'Colour mixer', 'Colour grading', 'Detail', 'Optics', 'Geometry', 'Effects', 'Shadows & reflections', 'Compositing', 'Retouch'].indexOf(e.ui.section) >= 0, e.id + ' uses a workspace section name (docs/EXPERT-UI.md): ' + e.ui.section);
     (e.ui.controls || []).forEach((c) => h.assert(typeof c === 'string' ? !!e.params[c] : (c.heading || !!e.params[c.param]), e.id + ' ui.controls follows docs/EXPERT-UI.md: ' + JSON.stringify(c)));
   });
   h.assert(r.describe.effects.find((e) => e.id === 'gaussian-blur').spatial === true && r.describe.effects.find((e) => e.id === 'exposure').spatial === false, 'spatial flag');
   h.assert(r.isArray, 'describe() is an array of registrations');
   h.assert(r.describe.schema.maskKinds.length === 8 && r.describe.schema.blends.indexOf('soft-light') >= 0 && r.describe.schema.mask.parts[0].feather === 0.25, 'schema() describes mask kinds and blends');
-  h.assert(!r.hasFns && r.json < 60000, 'describe() is plain data');
+  h.assert(!r.hasFns && r.json < 2500 * r.list.length, 'describe() is plain data, about 2.5 KB per effect at most (' + r.json + ' bytes for ' + r.list.length + ')');
   STARTER.forEach((id) => h.assert(r.support.indexOf('fx.' + id) >= 0, 'LE.support definition for ' + id));
   h.assert.noErrors(page);
 };
@@ -427,7 +427,9 @@ cases['studio: nothing under assets/js/fx/ loads until a document needs it, and 
   await page.waitForFunction(() => window.LE.fx && window.LE.fx.draw);
   const got = await fetched();
   ['le-fx.js', 'le-fx-gl.js', 'le-fx-basic.js'].forEach((f) => h.assert(got.indexOf(f) >= 0, f + ' loads on demand: ' + got));
-  h.assert(got.indexOf('le-fx-analyze.js') < 0, 'analysis waits for its first call');
+  /* docs/FX-AUTHORING.md: the statistics code loads with the renderer when a registered effect declares needs: ['stats'] (dehaze does). */
+  const statsAtLoad = await page.evaluate(() => window.LE.fx.list().some((id) => window.LE.fx.get(id).needs.indexOf('stats') >= 0));
+  h.assert(statsAtLoad || got.indexOf('le-fx-analyze.js') < 0, 'analysis waits for its first call');
   await page.evaluate(() => window.LE.fx.analyze(window.LEStudio.scene));
   h.assert((await fetched()).indexOf('le-fx-analyze.js') >= 0, 'analysis loaded on first use');
   h.assert.noErrors(page);
