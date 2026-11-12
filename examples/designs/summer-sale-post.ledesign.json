@@ -1,0 +1,23 @@
+{
+  "$schema": "https://localeditor.net/schema/design-1.json",
+  "format": "localeditor-design",
+  "version": 1,
+  "name": "Summer sale post",
+  "pages": [
+    {
+      "id": "post",
+      "width": 1080,
+      "height": 1080,
+      "background": "#FFF3E2",
+      "layers": [
+        { "id": "sun-disc", "type": "shape", "shape": "ellipse", "fill": "#F4B740", "x": 600, "y": -160, "w": 640, "h": 640 },
+        { "id": "sun-ring", "type": "shape", "shape": "ellipse", "fill": "none", "stroke": { "width": 6, "color": "#F4B740" }, "x": 520, "y": -240, "w": 800, "h": 800 },
+        { "id": "sun-icon", "type": "icon", "icon": "lucide:sun", "color": "#FFF3E2", "strokeWidth": 1.6, "x": 820, "y": 60, "w": 200, "h": 200 },
+        { "id": "eyebrow", "type": "text", "text": "THIS WEEKEND ONLY", "font": "Inter", "weight": 700, "size": 34, "letterSpacing": 6, "color": "#C2410C", "x": 90, "y": 420, "w": 700 },
+        { "id": "title", "type": "text", "text": "SUMMER\nSALE", "font": "Anton", "size": 230, "lineHeight": 0.95, "color": "#17131F", "x": 84, "y": 500, "w": 900 },
+        { "id": "offer", "type": "text", "text": "Up to 50% off", "font": "Inter", "weight": 700, "size": 52, "lineHeight": 1.6, "color": "#FFFFFF", "background": { "color": "#C2410C", "radius": 999, "padding": 26 }, "x": 116, "y": 930, "w": 560 },
+        { "id": "shop", "type": "text", "text": "shop.example.com", "font": "Inter", "weight": 400, "size": 30, "color": "#5E5967", "align": "right", "x": 650, "y": 954, "w": 340 }
+      ]
+    }
+  ]
+}

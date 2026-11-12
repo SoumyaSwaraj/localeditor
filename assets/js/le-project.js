@@ -687,6 +687,20 @@
       return o;
     });
     if (fx) out.fx = fx;
+    /* Open design format (le-design.js): template variables, remix credit and page ids, all plain text. */
+    if (Array.isArray(m.variables)) {
+      out.variables = m.variables.slice(0, 50).map(function (v) {
+        if (!v || typeof v !== 'object' || typeof v.key !== 'string' || !/^[A-Za-z_][\w.-]{0,39}$/.test(v.key)) return null;
+        var o = { key: v.key, label: str(v.label, 80).replace(/[<>]/g, ''), type: oneOf(v.type, ['text', 'image'], 'text') };
+        if (typeof v.default === 'string') o.default = v.default.slice(0, 2000);
+        return o;
+      }).filter(Boolean);
+    }
+    if (m.remix && typeof m.remix === 'object') {
+      var rn = str(m.remix.name, 160).replace(/[<>]/g, '').trim(), rb = str(m.remix.by, 80).replace(/[<>]/g, '').trim();
+      if (rn || rb) out.remix = { name: rn, by: rb };
+    }
+    if (Array.isArray(m.pageIds)) out.pageIds = m.pageIds.slice(0, LIMITS.pages).map(function (p) { return idOk(p, 48) ? p : ''; });
     if (m.guides && typeof m.guides === 'object') {
       var gd = {};
       ['x', 'y'].forEach(function (a) { gd[a] = (Array.isArray(m.guides[a]) ? m.guides[a] : []).slice(0, 40).map(function (n) { return clamp(num(n, 0), -20000, 40000); }); });

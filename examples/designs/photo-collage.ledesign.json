@@ -1,0 +1,23 @@
+{
+  "$schema": "https://localeditor.net/schema/design-1.json",
+  "format": "localeditor-design",
+  "version": 1,
+  "name": "Weekend collage",
+  "pages": [
+    {
+      "id": "collage",
+      "width": 1080,
+      "height": 1350,
+      "background": "#FBF8F3",
+      "collage": { "layout": "r-2.3", "spacing": 14, "margin": 40, "radius": 18 },
+      "layers": [
+        { "id": "photo-1", "type": "image", "slot": { "id": "photo-1", "label": "Photo 1" } },
+        { "id": "photo-2", "type": "image", "slot": { "id": "photo-2", "label": "Photo 2" } },
+        { "id": "photo-3", "type": "image", "slot": { "id": "photo-3", "label": "Photo 3" } },
+        { "id": "photo-4", "type": "image", "slot": { "id": "photo-4", "label": "Photo 4" } },
+        { "id": "photo-5", "type": "image", "slot": { "id": "photo-5", "label": "Photo 5" } },
+        { "id": "label", "type": "text", "text": "the weekend, in pictures", "font": "Caveat", "weight": 700, "size": 58, "color": "#2A1F0A", "align": "center", "background": { "color": "#FBF8F3", "radius": 999, "padding": 28 }, "x": "center", "y": 625, "w": 640 }
+      ]
+    }
+  ]
+}

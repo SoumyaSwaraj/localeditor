@@ -1040,7 +1040,9 @@
   function addFiles(files, opts) {
     opts = opts || {};
     files = (files || []).filter(Boolean);
-    var proj = files.filter(function (f) { return /\.leproject$/i.test(f.name) || f.type === 'application/zip'; });
+    var design = LE.design && LE.design.isDesignFile ? files.filter(LE.design.isDesignFile)[0] : null;
+    if (design) { LE.design.studioImport(ctx, design); return Promise.resolve(); }
+    var proj =files.filter(function (f) { return /\.leproject$/i.test(f.name) || f.type === 'application/zip'; });
     if (proj.length) { importProject(proj[0]); return Promise.resolve(); }
     var imgs = files.filter(function (f) { return !f.type || /^image\//.test(f.type); });
     if (!imgs.length) { toast('Choose an image file.'); return Promise.resolve(); }
@@ -1465,6 +1467,7 @@
     });
   }
   function importProject(file) {
+    if (LE.design && LE.design.isDesignFile && LE.design.isDesignFile(file)) return LE.design.studioImport(ctx, file);
     toast('Importing ' + (file.name || 'project') + '…', { ms: 1600 });
     return LE.project.importFile(file).then(function (p) {
       var warn = p.warnings || [];
@@ -2000,6 +2003,7 @@
       case 'openPhoto': closePop(); pickFiles('add'); break;
       case 'importProject': closePop(); pickFiles('project'); break;
       case 'exportProject': closePop(); exportProject(); break;
+      case 'openDesignFile': case 'saveDesignFile': case 'shareTemplate': closePop(); if (LE.design) LE.design.studioCmd(ctx, name); break;
       case 'checkpoint': closePop(); checkpoint(); break;
       case 'projects': closePop(); openPanel('projects'); break;
       case 'addPage': closePop(); addPage(false); break;
@@ -2122,6 +2126,9 @@
       '<button type="button" data-cmd="brandKit">' + ic('brand') + 'Brand kit</button><hr>' +
       '<button type="button" data-cmd="importProject">' + ic('file') + 'Import .leproject…</button>' +
       '<button type="button" data-cmd="exportProject"' + (S.project ? '' : ' disabled') + '>' + ic('share') + 'Export .leproject</button>' +
+      (LE.design ? '<button type="button" data-cmd="openDesignFile">' + ic('file') + 'Open design file (.ledesign.json)…</button>' +
+        '<button type="button" data-cmd="saveDesignFile"' + (S.project ? '' : ' disabled') + '>' + ic('save') + 'Save as design file (.ledesign.json)</button>' +
+        '<button type="button" data-cmd="shareTemplate"' + (S.project ? '' : ' disabled') + '>' + ic('share') + 'Share as template link</button>' : '') +
       '<button type="button" data-cmd="export"' + (S.project ? '' : ' disabled') + '>' + ic('download') + 'Download image…<kbd>Ctrl E</kbd></button><hr>' +
       '<button type="button" data-cmd="settings">' + ic('gauge') + 'Performance</button>' +
       '<button type="button" data-theme-toggle>' + ic('moon') + (document.documentElement.getAttribute('data-theme') === 'dark' ? 'Light mode' : 'Dark mode') + '</button>' +
@@ -2473,7 +2480,9 @@
       showStart();
     });
   }
-  boot();
+  /* Template links (#d=…) open a preview sheet once the studio is ready; design files share the project picker. */
+  if (E.fileProject && LE.design) E.fileProject.accept = '.leproject,application/zip,.ledesign.json,.json,application/json';
+  boot().then(function () { if (LE.design && LE.design.studioBoot) LE.design.studioBoot(ctx); });
 
   /* Install hooks (le-pwa.js): files opened from the system or shared to the app, saving before an update,
      and the memory guard that lets big bitmaps go while the tab is in the background. */

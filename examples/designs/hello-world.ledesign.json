@@ -1,0 +1,16 @@
+{
+  "$schema": "https://localeditor.net/schema/design-1.json",
+  "format": "localeditor-design",
+  "version": 1,
+  "name": "Hello world",
+  "pages": [
+    {
+      "width": 1080,
+      "height": 1080,
+      "background": "#F6F1E7",
+      "layers": [
+        { "id": "title", "type": "text", "text": "Hello, world", "font": "Fraunces", "size": 128, "color": "#17131F", "align": "center", "w": "84%", "x": "center", "y": "center" }
+      ]
+    }
+  ]
+}

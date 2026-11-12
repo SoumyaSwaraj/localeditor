@@ -1,0 +1,321 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://localeditor.net/schema/design-1.json",
+  "title": "LocalEditor design (.ledesign.json), version 1",
+  "description": "One editable design as plain JSON. Accepts the long form the studio writes and the shorthand an agent may write. The studio's reader (LE.design.parse) is the authority: it also checks limits this schema cannot express (12 MB file, 600 layers per page, unique ids, safe SVG). Spec: docs/FORMAT-DESIGN.md.",
+  "type": "object",
+  "required": ["format", "version", "pages"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "format": { "const": "localeditor-design" },
+    "version": { "const": 1 },
+    "name": { "type": "string", "maxLength": 160 },
+    "remix": {
+      "description": "Credit for a template shared as a link. Plain text.",
+      "type": "object",
+      "properties": { "name": { "$ref": "#/$defs/plainText160" }, "by": { "$ref": "#/$defs/plainText80" } },
+      "additionalProperties": false
+    },
+    "variables": {
+      "description": "Template variables. {{key}} tokens in text are ordinary text until a bulk-create tool fills them.",
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": ["key"],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[A-Za-z_][\\w.-]{0,39}$" },
+          "label": { "$ref": "#/$defs/plainText80" },
+          "type": { "enum": ["text", "image"], "default": "text" },
+          "default": { "type": "string", "maxLength": 2000 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "pages": { "type": "array", "minItems": 1, "maxItems": 50, "items": { "$ref": "#/$defs/page" } }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[\\w:.-]{1,48}$" },
+    "plainText80": { "type": "string", "maxLength": 80, "not": { "pattern": "[<>]" } },
+    "plainText160": { "type": "string", "maxLength": 160, "not": { "pattern": "[<>]" } },
+    "color": {
+      "description": "#RGB, #RGBA, #RRGGBB, #RRGGBBAA, rgb()/rgba()/hsl()/hsla(), or a CSS colour name.",
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^(#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})|(rgb|hsl)a?\\(\\s*[\\d.%\\s,/-]+\\)|[a-zA-Z]{3,24})$"
+    },
+    "percent": { "type": "string", "pattern": "^-?\\d+(\\.\\d+)?%$" },
+    "size": { "description": "Pixels, or a percentage of the page width (w) or height (h).", "oneOf": [{ "type": "number" }, { "$ref": "#/$defs/percent" }] },
+    "posX": { "oneOf": [{ "type": "number" }, { "$ref": "#/$defs/percent" }, { "enum": ["left", "center", "middle", "right"] }] },
+    "posY": { "oneOf": [{ "type": "number" }, { "$ref": "#/$defs/percent" }, { "enum": ["top", "center", "middle", "bottom"] }] },
+    "imageSrc": {
+      "description": "A data: URI (base64 PNG/JPEG/WebP/GIF/AVIF/BMP), a relative path such as assets/photo.jpg, an https: URL (downloaded only after the person agrees), or a 64-hex asset id already on the device.",
+      "type": "string",
+      "anyOf": [
+        { "pattern": "^data:image/(png|jpeg|jpg|webp|gif|avif|bmp);base64,[A-Za-z0-9+/=\\s]+$" },
+        { "pattern": "^https://[^\\s<>\"']+$", "maxLength": 2000 },
+        { "pattern": "^[a-f0-9]{64}$" },
+        { "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!.*(^|/)\\.\\.(/|$))[^\\\\<>\"'?#]{1,300}$" }
+      ]
+    },
+    "fill": {
+      "oneOf": [
+        { "$ref": "#/$defs/color" },
+        { "const": "none" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "enum": ["solid", "linear", "radial", "none"], "default": "solid" },
+            "color": { "$ref": "#/$defs/color" },
+            "colors": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/color" } },
+            "angle": { "type": "number", "minimum": -360, "maximum": 360, "default": 0 }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "shadow": {
+      "type": "object",
+      "properties": { "color": { "$ref": "#/$defs/color" }, "blur": { "type": "number", "minimum": 0, "maximum": 500, "default": 16 }, "x": { "type": "number", "default": 0 }, "y": { "type": "number", "default": 8 } },
+      "additionalProperties": false
+    },
+    "crop": {
+      "description": "Region of the source photo, as fractions 0–1.",
+      "type": "object",
+      "properties": { "x": { "type": "number", "minimum": 0, "maximum": 1 }, "y": { "type": "number", "minimum": 0, "maximum": 1 }, "w": { "type": "number", "minimum": 0.001, "maximum": 1 }, "h": { "type": "number", "minimum": 0.001, "maximum": 1 } },
+      "additionalProperties": false
+    },
+    "adjust": {
+      "type": "object",
+      "propertyNames": { "enum": ["brightness", "contrast", "saturation", "warmth", "temperature", "tint", "exposure", "highlights", "shadows", "vibrance", "sharpness", "blur", "vignette", "grain", "hue", "fade", "clarity", "splitShadowHue", "splitShadowAmount", "splitHighlightHue", "splitHighlightAmount", "splitBalance", "black", "white", "gamma", "recipe"] },
+      "additionalProperties": { "type": "number", "minimum": -1000, "maximum": 1000 },
+      "properties": { "recipe": { "$ref": "#/$defs/recipeMarker" } }
+    },
+    "filter": {
+      "oneOf": [
+        { "type": "string", "pattern": "^[a-z-]{1,30}$" },
+        { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "pattern": "^[a-z-]{1,30}$" }, "intensity": { "type": "number", "minimum": 0, "maximum": 100, "default": 100 } }, "additionalProperties": false }
+      ]
+    },
+    "recipeMarker": {
+      "description": "Long form written by the studio: what the recipe added, so it can be re-tuned or removed.",
+      "type": "object",
+      "required": ["id", "add"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[\\w.-]{1,80}$" },
+        "name": { "type": "string", "maxLength": 120 },
+        "strength": { "type": "number", "minimum": 0, "maximum": 200 },
+        "add": { "type": "object", "additionalProperties": { "type": "number" } },
+        "prev": { "type": "object", "additionalProperties": { "type": ["number", "null"] } },
+        "filter": { "type": "boolean" },
+        "prevFilter": { "type": ["object", "null"] }
+      }
+    },
+    "recipe": {
+      "oneOf": [
+        { "description": "Shorthand: a built-in or saved recipe id, applied at its default strength.", "type": "string", "pattern": "^[\\w.-]{1,80}$" },
+        { "description": "Shorthand with a strength.", "type": "object", "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[\\w.-]{1,80}$" }, "strength": { "type": "number", "minimum": 0, "maximum": 100 } }, "additionalProperties": false },
+        { "$ref": "#/$defs/recipeMarker" }
+      ]
+    },
+    "background": {
+      "oneOf": [
+        { "$ref": "#/$defs/color" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "enum": ["color", "gradient", "image", "pattern", "texture"] },
+            "color": { "$ref": "#/$defs/color" },
+            "kind": { "enum": ["linear", "radial"] },
+            "colors": { "type": "array", "minItems": 2, "maxItems": 8, "items": { "$ref": "#/$defs/color" } },
+            "angle": { "type": "number", "minimum": -360, "maximum": 360 },
+            "src": { "$ref": "#/$defs/imageSrc" },
+            "source": { "$ref": "#/$defs/source" },
+            "fit": { "description": "fill = cover the page (default), fit = whole photo visible, stretch = distort to the page, tile = repeat.", "enum": ["fill", "fit", "stretch", "tile", "cover", "contain"] },
+            "crop": { "$ref": "#/$defs/crop" },
+            "x": { "type": "number", "minimum": -10, "maximum": 10 },
+            "y": { "type": "number", "minimum": -10, "maximum": 10 },
+            "scale": { "type": "number", "minimum": 0.05, "maximum": 50 },
+            "rotation": { "type": "number" },
+            "flipX": { "type": "boolean" },
+            "flipY": { "type": "boolean" },
+            "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+            "blur": { "type": "number", "minimum": 0, "maximum": 250 },
+            "dim": { "type": "object", "properties": { "color": { "$ref": "#/$defs/color" }, "amount": { "type": "number", "minimum": 0, "maximum": 1 } }, "additionalProperties": false },
+            "adjust": { "$ref": "#/$defs/adjust" },
+            "filter": { "$ref": "#/$defs/filter" },
+            "tile": { "type": "object", "properties": { "size": { "type": "number", "minimum": 0.02, "maximum": 4 }, "gap": { "type": "number", "minimum": 0, "maximum": 1 } }, "additionalProperties": false },
+            "id": { "description": "Pattern or texture id (with type pattern / texture).", "type": "string", "maxLength": 60 },
+            "fg": { "$ref": "#/$defs/color" },
+            "bg": { "$ref": "#/$defs/color" },
+            "spec": { "description": "Gradient, pattern or texture recipe the studio can redraw at any size.", "type": "object" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "source": {
+      "description": "Stock photo credit kept with the image.",
+      "type": "object",
+      "properties": { "provider": { "type": "string" }, "photographer": { "type": "string" }, "pageUrl": { "type": "string" }, "photographerUrl": { "type": "string" }, "license": { "type": "string" }, "attribution": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "collage": {
+      "type": "object",
+      "properties": {
+        "layout": { "description": "r-2.3 = rows of 2 and 3; c-… columns; h-l-62 hero left at 62%; m-2 mosaic seed 2.", "type": "string", "pattern": "^[\\w.:-]{1,40}$" },
+        "template": { "description": "A collage style id from the catalogue.", "type": "string", "pattern": "^[a-z0-9-]{1,48}$" },
+        "count": { "description": "Shorthand: number of cells to create when the page has no slot layers and the layout id does not say.", "type": "integer", "minimum": 1, "maximum": 20 },
+        "aspect": { "type": "string" },
+        "spacing": { "type": "number", "minimum": 0, "maximum": 4000 },
+        "margin": { "type": "number", "minimum": 0, "maximum": 4000 },
+        "radius": { "type": "number", "minimum": 0, "maximum": 4000 },
+        "border": { "type": "object", "properties": { "width": { "type": "number", "minimum": 0, "maximum": 400 }, "color": { "$ref": "#/$defs/color" } }, "additionalProperties": false },
+        "cells": { "type": "array", "maxItems": 60, "items": { "type": "array", "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }, { "type": "number" }], "minItems": 4, "maxItems": 4 } },
+        "order": { "type": "array", "maxItems": 60, "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "page": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string" },
+        "width": { "type": "number", "minimum": 16, "maximum": 20000, "default": 1080 },
+        "height": { "type": "number", "minimum": 16, "maximum": 20000, "default": 1080 },
+        "background": { "$ref": "#/$defs/background" },
+        "collage": { "$ref": "#/$defs/collage" },
+        "layers": { "type": "array", "maxItems": 600, "items": { "$ref": "#/$defs/layer" } }
+      },
+      "additionalProperties": false
+    },
+    "common": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "maxLength": 120 },
+        "x": { "$ref": "#/$defs/posX" },
+        "y": { "$ref": "#/$defs/posY" },
+        "w": { "$ref": "#/$defs/size" },
+        "h": { "$ref": "#/$defs/size" },
+        "rotation": { "type": "number", "minimum": -3600, "maximum": 3600, "default": 0 },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 },
+        "blend": { "enum": ["source-over", "normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"] },
+        "visible": { "type": "boolean", "default": true },
+        "locked": { "type": "boolean", "default": false },
+        "flipX": { "type": "boolean", "default": false },
+        "flipY": { "type": "boolean", "default": false },
+        "groupId": { "$ref": "#/$defs/id" },
+        "shadow": { "$ref": "#/$defs/shadow" }
+      }
+    },
+    "layer": {
+      "type": "object",
+      "required": ["type"],
+      "properties": { "type": { "enum": ["image", "text", "shape", "svg", "icon", "path", "group"] } },
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        { "if": { "properties": { "type": { "const": "text" } } }, "then": { "$ref": "#/$defs/textLayer" } },
+        { "if": { "properties": { "type": { "const": "image" } } }, "then": { "$ref": "#/$defs/imageLayer" } },
+        { "if": { "properties": { "type": { "const": "shape" } } }, "then": { "$ref": "#/$defs/shapeLayer" } },
+        { "if": { "properties": { "type": { "const": "svg" } } }, "then": { "$ref": "#/$defs/svgLayer" } },
+        { "if": { "properties": { "type": { "const": "icon" } } }, "then": { "$ref": "#/$defs/iconLayer" } },
+        { "if": { "properties": { "type": { "const": "path" } } }, "then": { "$ref": "#/$defs/pathLayer" } }
+      ]
+    },
+    "textLayer": {
+      "required": ["text"],
+      "properties": {
+        "h": { "oneOf": [{ "$ref": "#/$defs/size" }, { "const": "auto" }] },
+        "text": { "type": "string", "maxLength": 8000 },
+        "font": { "type": "string", "pattern": "^[\\w \\-]{1,80}$", "default": "Plus Jakarta Sans" },
+        "weight": { "oneOf": [{ "type": "number", "minimum": 100, "maximum": 900 }, { "enum": ["normal", "regular", "bold"] }], "default": 700 },
+        "italic": { "type": "boolean" },
+        "size": { "type": "number", "minimum": 1, "maximum": 5000, "default": 48 },
+        "color": { "$ref": "#/$defs/color", "default": "#17131F" },
+        "fill": { "$ref": "#/$defs/fill" },
+        "align": { "enum": ["left", "center", "right"], "default": "left" },
+        "lineHeight": { "type": "number", "minimum": 0.5, "maximum": 5, "default": 1.2 },
+        "letterSpacing": { "type": "number", "minimum": -200, "maximum": 2000, "default": 0 },
+        "uppercase": { "type": "boolean" },
+        "underline": { "type": "boolean" },
+        "strike": { "type": "boolean" },
+        "stroke": { "type": "object", "properties": { "width": { "type": "number", "minimum": 0, "maximum": 500 }, "color": { "$ref": "#/$defs/color" } }, "additionalProperties": false },
+        "background": { "oneOf": [{ "$ref": "#/$defs/color" }, { "type": "object", "properties": { "color": { "$ref": "#/$defs/color" }, "radius": { "type": "number", "default": 999 }, "padding": { "type": "number", "default": 8 } }, "additionalProperties": false }] },
+        "curve": { "type": "number", "minimum": -360, "maximum": 360, "default": 0 },
+        "fit": { "description": "shrink: the largest size at which the text fits its w × h box.", "enum": ["shrink", "none"] }
+      }
+    },
+    "imageLayer": {
+      "properties": {
+        "src": { "$ref": "#/$defs/imageSrc" },
+        "source": { "$ref": "#/$defs/source" },
+        "crop": { "$ref": "#/$defs/crop" },
+        "fit": { "description": "Used only when crop is missing: cover (default) crops to fill the frame, contain shrinks the frame to the photo, stretch keeps the whole photo.", "enum": ["cover", "contain", "stretch", "fill"] },
+        "radius": { "type": "number", "minimum": 0 },
+        "border": { "type": "object", "properties": { "width": { "type": "number", "minimum": 0, "maximum": 2000 }, "color": { "$ref": "#/$defs/color" } }, "additionalProperties": false },
+        "mask": { "type": "string", "pattern": "^[\\w-]{1,40}$" },
+        "maskPath": { "type": "string", "maxLength": 20000, "pattern": "^[MmLlCcQqAaZzHhVv0-9eE+.,\\s-]+$" },
+        "slot": {
+          "oneOf": [
+            { "type": "boolean" },
+            { "type": "object", "properties": { "id": { "type": "string", "pattern": "^[\\w.-]{0,40}$" }, "label": { "type": "string", "maxLength": 80 }, "photo": { "type": "string", "maxLength": 80 } }, "additionalProperties": false }
+          ]
+        },
+        "adjust": { "$ref": "#/$defs/adjust" },
+        "recipe": { "$ref": "#/$defs/recipe" },
+        "filter": { "$ref": "#/$defs/filter" },
+        "removeBg": { "type": "object", "properties": { "color": { "$ref": "#/$defs/color" }, "tolerance": { "type": "number", "minimum": 0, "maximum": 255 } }, "additionalProperties": false },
+        "fx": {
+          "description": "Baked photo effect: src is the original photo, the layer's src is the result.",
+          "type": "object",
+          "properties": { "src": { "$ref": "#/$defs/imageSrc" }, "kind": { "enum": ["duotone", "outline", "blurbg"] } }
+        }
+      }
+    },
+    "shapeLayer": {
+      "properties": {
+        "shape": { "description": "A shape id from the catalogue, e.g. rectangle, rounded-rectangle, ellipse, triangle, star, burst, heart, arrow-right, line.", "type": "string", "pattern": "^[\\w-]{1,40}$", "default": "rectangle" },
+        "params": { "type": "object", "maxProperties": 16, "additionalProperties": { "oneOf": [{ "type": "number" }, { "type": "array" }] } },
+        "radius": { "type": "number", "minimum": 0 },
+        "fill": { "$ref": "#/$defs/fill" },
+        "stroke": {
+          "oneOf": [
+            { "$ref": "#/$defs/color" },
+            { "type": "object", "properties": { "width": { "type": "number", "minimum": 0, "maximum": 2000 }, "color": { "$ref": "#/$defs/color" }, "dash": { "type": "array", "maxItems": 8, "items": { "type": "number", "minimum": 0 } }, "cap": { "enum": ["butt", "round", "square"] }, "join": { "enum": ["miter", "round", "bevel"] } }, "additionalProperties": false }
+          ]
+        }
+      }
+    },
+    "svgLayer": {
+      "properties": {
+        "assetId": { "type": "string", "pattern": "^[\\w-]{1,24}:(?:[\\w-]{1,40}/)?[\\w-]{1,80}$" },
+        "icon": { "type": "string", "pattern": "^[\\w-]{1,24}:(?:[\\w-]{1,40}/)?[\\w-]{1,80}$" },
+        "svg": { "description": "SVG markup; no script, event handlers, foreignObject or external links. Not written when assetId names a catalogue icon.", "type": "string", "maxLength": 200000 },
+        "color": { "$ref": "#/$defs/color" },
+        "strokeWidth": { "type": "number", "minimum": 0, "maximum": 48 },
+        "iconStyle": { "description": "Icon picker state (style, name, palette, colours).", "type": "object" },
+        "qr": { "description": "QR code settings.", "type": "object", "properties": { "text": { "type": "string", "maxLength": 1200 }, "fg": { "$ref": "#/$defs/color" }, "bg": { "$ref": "#/$defs/color" }, "ec": { "enum": ["L", "M", "Q", "H"] } } }
+      }
+    },
+    "iconLayer": {
+      "required": ["icon"],
+      "properties": {
+        "icon": { "description": "lucide:<name>, phosphor:<name>, emoji:<name>, stickers:<name> or withicons:<style>/<icon>.", "type": "string", "pattern": "^[\\w-]{1,24}:(?:[\\w-]{1,40}/)?[\\w-]{1,80}$" },
+        "color": { "$ref": "#/$defs/color" },
+        "strokeWidth": { "type": "number", "minimum": 0, "maximum": 48 },
+        "iconStyle": { "type": "object" }
+      }
+    },
+    "pathLayer": {
+      "required": ["points"],
+      "properties": {
+        "points": { "type": "array", "maxItems": 20000, "items": { "type": "array", "minItems": 2, "maxItems": 3, "items": { "type": "number" } } },
+        "smoothing": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.55 },
+        "width": { "type": "number", "minimum": 0.5, "maximum": 2000, "default": 4 },
+        "color": { "$ref": "#/$defs/color" },
+        "mode": { "enum": ["pen", "marker", "highlighter"], "default": "pen" }
+      }
+    }
+  }
+}
