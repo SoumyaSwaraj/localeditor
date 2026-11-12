@@ -120,7 +120,7 @@ An **id** is 1–48 characters of letters, digits, `-`, `_`, `.` or `:`, unique 
 | `filter` | name or `{ name, intensity 0–100 }` | none | A key of `LE.presets.filters`. |
 | `recipe` | recipe id, `{ id, strength }`, or the long form | none | Shorthand: applies that recipe's look on top of `adjust`. The studio writes the long form `{ id, name, strength, add, prev, filter, prevFilter }` so the look can be re-tuned or removed. |
 | `removeBg` | `{ color, tolerance 0–255 }` | none | Colour-key removal. |
-| `fx` | `{ src, kind, … }` | none | Baked photo effect (`duotone`, `outline`, `blurbg`); `src` is the original photo. |
+| `fx` | `{ src, kind, … }` | none | Baked photo effect (`duotone`, `outline`, `blurbg`); `src` is the original photo. A **list** here is the effect stack instead: see Expert fields. |
 | `source` | `{ provider, photographer, pageUrl, photographerUrl, license, attribution }` | none | Stock credit kept with the photo. |
 
 If `w` and `h` are both missing and the photo is known, the image is as wide as the page with the photo's proportions; with one of them missing, the other follows the photo.
@@ -163,6 +163,50 @@ The studio writes icons as `{ "type": "svg", "assetId": "lucide:sun", … }` wit
 ### Group
 
 A `group` layer is a box; members point at it with `groupId`. Members are listed after the group as ordinary layers.
+
+## Expert fields
+
+Optional, on any layer. The model is in `docs/EXPERT-MODE.md`; effect ids, parameters and ranges come from the effect registry (`LE.fx.describe()` in the studio, `docs/FX-AUTHORING.md` for the contract). A design that uses them still opens in the simple studio and draws the same.
+
+| Key | Type | Notes |
+|---|---|---|
+| `fx` | list of entries | The effect stack, first runs first. On image layers an **object** here is the older baked photo effect (see Image); when a layer has both, the baked one is written as `fxBaked`. |
+| `fxMask` | `{ parts: [...] }` | The layer mask. On an image layer, `mask` given as an object means the same (`mask` as a string stays the frame shape). |
+| `transform` | `{ quad: [[x,y],[x,y],[x,y],[x,y]] }` | Perspective or distort: the four corners in page units, top-left, top-right, bottom-right, bottom-left. Set `x y w h` to the quad's bounding box. Moving, resizing or rotating the layer afterwards carries the distortion with it. Photo layers only for now. |
+| `retouch` | `{ asset, version }` | An RGBA overlay drawn over the source photo before crop and effects. `asset` is an image source. |
+| `maps` | `{ depth: { asset, model, version }, normals: {…}, face: { landmarks, parts: { asset }, model, version } }` | Derived maps; each `asset` is an image source. Safe to delete: they can be regenerated. |
+| `raw` | `{ profile, wb: { temp, tint }, exposure, … }` | Develop settings for RAW and HDR sources. Kept as data until the RAW step is built. |
+
+**An effect entry:** `{ "id", "type", "on": true, "amount": 1, "blend": "normal", "mask": null, "p": { … } }`. Only `type` is required. `amount` 0–1 mixes the effect with what was there; `blend` is one of `normal multiply screen overlay soft-light hard-light darken lighten difference color luminosity`; `mask` limits the effect to part of the layer. Up to 32 entries. Starter types: `exposure` (`ev`), `white-balance` (`temperature`, `tint`), `contrast` (`amount`, `pivot`), `highlights-shadows` (`highlights`, `shadows`, `whites`, `blacks`), `levels`, `curves` (`master`, `red`, `green`, `blue` as control points), `saturation` (`saturation`, `vibrance`), `gaussian-blur` (`radius`), `grain` (`amount`, `size`, `luminance`, `color`, `seed`), `drop-shadow` (`x`, `y`, `blur`, `spread`, `color`, `opacity`).
+
+**A mask:** up to 8 parts combined in order. Every part has `kind`, `mode` (`add`, `subtract`, `intersect`), `invert`, `density` (0–1) and `feather`; coordinates are fractions of the layer box.
+
+| kind | fields |
+|---|---|
+| `linear` | `x0 y0 x1 y1`: 0 at the first point, 1 at the second |
+| `radial` | `cx cy rx ry rotation`; `feather` 0–1 is the soft part of the radius |
+| `luma` | `min max soft` (0–1) |
+| `color` | `h` (0–360), `s l range soft` (0–1) |
+| `asset` | `asset`: an image source; its alpha, or its brightness when it has none |
+| `subject` | the layer's cut-out |
+| `depth` | `near far soft`; needs `maps.depth` |
+| `face` | `part`: `skin eyes lips teeth brows under-eyes`; needs `maps.face` |
+
+For `asset`, `luma`, `color`, `subject`, `depth` and `face`, `feather` is a blur in document pixels.
+
+**Adjustment layer:** `{ "type": "adjust", "fx": [...], "fxMask": …, "clip": false }`. Its stack applies to everything beneath it inside its box; without `w` and `h` it covers the page. `clip: true` applies it to the layer directly below only. `opacity` fades it.
+
+```json
+{ "id": "hero", "type": "image", "src": "assets/hero.jpg", "x": 0, "y": 0, "w": 1080, "h": 1080,
+  "fx": [
+    { "type": "white-balance", "p": { "temperature": 12 } },
+    { "type": "highlights-shadows", "p": { "highlights": -40, "shadows": 30 } },
+    { "type": "gaussian-blur", "p": { "radius": 14 }, "mask": { "parts": [{ "kind": "radial", "cx": 0.5, "cy": 0.45, "rx": 0.35, "ry": 0.4, "feather": 0.5, "invert": true }] } },
+    { "type": "grain", "p": { "amount": 18, "seed": 4 } }
+  ] }
+```
+
+What the reader does with them: the shape is checked always (sizes, types, forbidden keys); when the effect registry can be loaded, every entry is checked against its effect: unknown parameters are dropped and out-of-range values clamped, each with a warning. An entry whose `type` is not known is kept in the file and not drawn (warning `unknown-type`), so a file made by a newer build survives a round trip through an older one. In the long form, an entry is written as `id`, `type`, then `on`, `amount`, `blend`, `mask` when they are not the defaults, then `p` with its keys sorted and every parameter present.
 
 ## Fills and colours
 

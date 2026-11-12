@@ -206,13 +206,18 @@
         "flipX": { "type": "boolean", "default": false },
         "flipY": { "type": "boolean", "default": false },
         "groupId": { "$ref": "#/$defs/id" },
-        "shadow": { "$ref": "#/$defs/shadow" }
+        "shadow": { "$ref": "#/$defs/shadow" },
+        "fxMask": { "$ref": "#/$defs/fxMask" },
+        "transform": { "description": "Perspective or distort: where the four corners of the layer go, in page units (top-left, top-right, bottom-right, bottom-left). The layer box is the quad's bounding box. Photo layers only for now.", "type": "object", "properties": { "quad": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "minimum": -100000, "maximum": 100000 } } } }, "required": ["quad"], "additionalProperties": false },
+        "retouch": { "description": "An RGBA overlay drawn over the source photo before anything else (healing, cloning, dodge and burn).", "type": "object", "properties": { "asset": { "$ref": "#/$defs/imageSrc" }, "version": { "type": "integer", "minimum": 0 } }, "required": ["asset"], "additionalProperties": false },
+        "maps": { "description": "Derived maps that can be regenerated: depth, normals, face. Each records the model and version that made it.", "type": "object", "maxProperties": 24 },
+        "raw": { "description": "Develop settings when the source is a RAW or HDR set.", "type": "object", "maxProperties": 24 }
       }
     },
     "layer": {
       "type": "object",
       "required": ["type"],
-      "properties": { "type": { "enum": ["image", "text", "shape", "svg", "icon", "path", "group"] } },
+      "properties": { "type": { "enum": ["image", "text", "shape", "svg", "icon", "path", "group", "adjust"] } },
       "allOf": [
         { "$ref": "#/$defs/common" },
         { "if": { "properties": { "type": { "const": "text" } } }, "then": { "$ref": "#/$defs/textLayer" } },
@@ -220,7 +225,9 @@
         { "if": { "properties": { "type": { "const": "shape" } } }, "then": { "$ref": "#/$defs/shapeLayer" } },
         { "if": { "properties": { "type": { "const": "svg" } } }, "then": { "$ref": "#/$defs/svgLayer" } },
         { "if": { "properties": { "type": { "const": "icon" } } }, "then": { "$ref": "#/$defs/iconLayer" } },
-        { "if": { "properties": { "type": { "const": "path" } } }, "then": { "$ref": "#/$defs/pathLayer" } }
+        { "if": { "properties": { "type": { "const": "path" } } }, "then": { "$ref": "#/$defs/pathLayer" } },
+        { "if": { "properties": { "type": { "const": "adjust" } } }, "then": { "$ref": "#/$defs/adjustLayer" } },
+        { "if": { "not": { "properties": { "type": { "const": "image" } } } }, "then": { "properties": { "fx": { "$ref": "#/$defs/fxStack" } } } }
       ]
     },
     "textLayer": {
@@ -254,7 +261,7 @@
         "fit": { "description": "Used only when crop is missing: cover (default) crops to fill the frame, contain shrinks the frame to the photo, stretch keeps the whole photo.", "enum": ["cover", "contain", "stretch", "fill"] },
         "radius": { "type": "number", "minimum": 0 },
         "border": { "type": "object", "properties": { "width": { "type": "number", "minimum": 0, "maximum": 2000 }, "color": { "$ref": "#/$defs/color" } }, "additionalProperties": false },
-        "mask": { "type": "string", "pattern": "^[\\w-]{1,40}$" },
+        "mask": { "description": "A shape id such as ellipse or heart (the frame), or a mask object, which is the same as fxMask.", "oneOf": [{ "type": "string", "pattern": "^[\\w-]{1,40}$" }, { "$ref": "#/$defs/fxMask" }] },
         "maskPath": { "type": "string", "maxLength": 20000, "pattern": "^[MmLlCcQqAaZzHhVv0-9eE+.,\\s-]+$" },
         "slot": {
           "oneOf": [
@@ -267,10 +274,13 @@
         "filter": { "$ref": "#/$defs/filter" },
         "removeBg": { "type": "object", "properties": { "color": { "$ref": "#/$defs/color" }, "tolerance": { "type": "number", "minimum": 0, "maximum": 255 } }, "additionalProperties": false },
         "fx": {
-          "description": "Baked photo effect: src is the original photo, the layer's src is the result.",
-          "type": "object",
-          "properties": { "src": { "$ref": "#/$defs/imageSrc" }, "kind": { "enum": ["duotone", "outline", "blurbg"] } }
-        }
+          "description": "A list is the effect stack (see fxStack). An object is the older baked photo effect: src is the original photo, the layer's src is the result.",
+          "oneOf": [
+            { "$ref": "#/$defs/fxStack" },
+            { "$ref": "#/$defs/fxBaked" }
+          ]
+        },
+        "fxBaked": { "$ref": "#/$defs/fxBaked" }
       }
     },
     "shapeLayer": {
@@ -316,6 +326,64 @@
         "color": { "$ref": "#/$defs/color" },
         "mode": { "enum": ["pen", "marker", "highlighter"], "default": "pen" }
       }
+    },
+    "adjustLayer": {
+      "description": "An adjustment layer: its fx stack applies to everything beneath it inside its box (the whole page when w and h are missing), or only to the layer below when clip is true.",
+      "required": ["fx"],
+      "properties": {
+        "fx": { "$ref": "#/$defs/fxStack" },
+        "clip": { "type": "boolean", "default": false }
+      }
+    },
+    "fxBaked": {
+      "type": "object",
+      "properties": { "src": { "$ref": "#/$defs/imageSrc" }, "kind": { "enum": ["duotone", "outline", "blurbg"] } }
+    },
+    "fxStack": {
+      "description": "Effects, first runs first. Types and parameters come from the effect registry: LE.fx.describe() in the studio, docs/FX-AUTHORING.md for the contract.",
+      "type": "array",
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/fxEntry" }
+    },
+    "fxEntry": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[\\w.-]{1,40}$" },
+        "type": { "description": "An effect id, e.g. exposure, white-balance, contrast, highlights-shadows, levels, curves, saturation, gaussian-blur, grain, drop-shadow.", "type": "string", "pattern": "^[a-z][a-z0-9-]{1,39}$" },
+        "on": { "type": "boolean", "default": true },
+        "amount": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 },
+        "blend": { "enum": ["normal", "multiply", "screen", "overlay", "soft-light", "hard-light", "darken", "lighten", "difference", "color", "luminosity"], "default": "normal" },
+        "mask": { "oneOf": [{ "$ref": "#/$defs/fxMask" }, { "type": "null" }] },
+        "p": { "description": "The effect's parameters. Unknown keys are dropped and out-of-range values clamped, with a warning.", "type": "object", "maxProperties": 24 }
+      },
+      "additionalProperties": false
+    },
+    "fxMask": {
+      "description": "A mask made of parts combined in order. Coordinates are fractions of the layer box.",
+      "type": "object",
+      "required": ["parts"],
+      "properties": { "parts": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/fxMaskPart" } } },
+      "additionalProperties": false
+    },
+    "fxMaskPart": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["asset", "linear", "radial", "luma", "color", "subject", "depth", "face"] },
+        "mode": { "enum": ["add", "subtract", "intersect"], "default": "add" },
+        "invert": { "type": "boolean", "default": false },
+        "feather": { "description": "radial: 0–1, the soft part of the radius. Other kinds: blur in document pixels. Not used by linear.", "type": "number", "minimum": 0, "maximum": 500, "default": 0 },
+        "density": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 },
+        "asset": { "$ref": "#/$defs/imageSrc" },
+        "x0": { "type": "number" }, "y0": { "type": "number" }, "x1": { "type": "number" }, "y1": { "type": "number" },
+        "cx": { "type": "number" }, "cy": { "type": "number" }, "rx": { "type": "number" }, "ry": { "type": "number" }, "rotation": { "type": "number", "minimum": -360, "maximum": 360 },
+        "min": { "type": "number", "minimum": 0, "maximum": 1 }, "max": { "type": "number", "minimum": 0, "maximum": 1 }, "soft": { "type": "number", "minimum": 0, "maximum": 1 },
+        "h": { "type": "number", "minimum": 0, "maximum": 360 }, "s": { "type": "number", "minimum": 0, "maximum": 1 }, "l": { "type": "number", "minimum": 0, "maximum": 1 }, "range": { "type": "number", "minimum": 0, "maximum": 1 },
+        "near": { "type": "number", "minimum": 0, "maximum": 1 }, "far": { "type": "number", "minimum": 0, "maximum": 1 },
+        "part": { "enum": ["skin", "eyes", "lips", "teeth", "brows", "under-eyes"] }
+      },
+      "additionalProperties": false
     }
   }
 }
