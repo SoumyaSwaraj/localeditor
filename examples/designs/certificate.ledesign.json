@@ -1,0 +1,36 @@
+{
+  "$schema": "https://localeditor.net/schema/design-1.json",
+  "format": "localeditor-design",
+  "version": 1,
+  "name": "Certificate of achievement",
+  "variables": [
+    { "key": "name", "label": "Recipient name", "type": "text", "default": "Alex Morgan" },
+    { "key": "course", "label": "Course", "type": "text", "default": "Introduction to Photography" },
+    { "key": "date", "label": "Date", "type": "text", "default": "12 November 2026" }
+  ],
+  "pages": [
+    {
+      "width": 1600,
+      "height": 1131,
+      "background": "#FFFDF8",
+      "layers": [
+        { "id": "border", "type": "shape", "shape": "rectangle", "fill": "none", "stroke": { "width": 18, "color": "#1E2A4A" }, "x": 40, "y": 40, "w": 1520, "h": 1051 },
+        { "id": "border-gold", "type": "shape", "shape": "rectangle", "fill": "none", "stroke": { "width": 3, "color": "#C9A24A" }, "x": 76, "y": 76, "w": 1448, "h": 979 },
+        { "id": "title", "type": "text", "text": "CERTIFICATE", "font": "Cormorant Garamond", "weight": 700, "size": 104, "letterSpacing": 14, "color": "#1E2A4A", "align": "center", "x": "center", "y": 150, "w": "80%" },
+        { "id": "subtitle", "type": "text", "text": "OF ACHIEVEMENT", "font": "Montserrat", "weight": 400, "size": 30, "letterSpacing": 10, "color": "#9A7426", "align": "center", "x": "center", "y": 280, "w": "60%" },
+        { "id": "presented", "type": "text", "text": "This certificate is proudly presented to", "font": "Lora", "weight": 400, "italic": true, "size": 34, "color": "#4A5470", "align": "center", "x": "center", "y": 380, "w": "70%" },
+        { "id": "recipient", "type": "text", "text": "{{name}}", "font": "Great Vibes", "weight": 400, "size": 150, "color": "#1E2A4A", "align": "center", "x": "center", "y": 430, "w": "80%", "h": 200, "fit": "shrink" },
+        { "id": "name-line", "type": "shape", "shape": "rectangle", "fill": "#C9A24A", "x": "center", "y": 640, "w": 760, "h": 2 },
+        { "id": "reason", "type": "text", "text": "for completing {{course}} with distinction.", "font": "Lora", "weight": 400, "size": 34, "color": "#4A5470", "align": "center", "x": "center", "y": 680, "w": "70%" },
+        { "id": "seal", "type": "shape", "shape": "burst", "fill": "#C9A24A", "x": 718, "y": 790, "w": 164, "h": 164 },
+        { "id": "seal-icon", "type": "icon", "icon": "lucide:award", "color": "#FFFDF8", "strokeWidth": 1.6, "x": 760, "y": 832, "w": 80 },
+        { "id": "date-line", "type": "shape", "shape": "rectangle", "fill": "#1E2A4A", "x": 220, "y": 900, "w": 380, "h": 2 },
+        { "id": "date", "type": "text", "text": "{{date}}", "font": "Lora", "weight": 400, "size": 30, "color": "#1E2A4A", "align": "center", "x": 220, "y": 850, "w": 380 },
+        { "id": "date-label", "type": "text", "text": "DATE", "font": "Montserrat", "weight": 700, "size": 20, "letterSpacing": 4, "color": "#5E6782", "align": "center", "x": 220, "y": 914, "w": 380 },
+        { "id": "sign-line", "type": "shape", "shape": "rectangle", "fill": "#1E2A4A", "x": 1000, "y": 900, "w": 380, "h": 2 },
+        { "id": "signature", "type": "text", "text": "J. Okafor", "font": "Mr Dafoe", "weight": 400, "size": 64, "color": "#1E2A4A", "align": "center", "x": 1000, "y": 820, "w": 380 },
+        { "id": "sign-label", "type": "text", "text": "COURSE DIRECTOR", "font": "Montserrat", "weight": 700, "size": 20, "letterSpacing": 4, "color": "#5E6782", "align": "center", "x": 1000, "y": 914, "w": 380 }
+      ]
+    }
+  ]
+}

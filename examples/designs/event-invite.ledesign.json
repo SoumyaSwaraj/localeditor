@@ -1,0 +1,27 @@
+{
+  "$schema": "https://localeditor.net/schema/design-1.json",
+  "format": "localeditor-design",
+  "version": 1,
+  "name": "Garden party invite",
+  "pages": [
+    {
+      "width": 1080,
+      "height": 1350,
+      "background": "#F6F0E6",
+      "layers": [
+        { "id": "frame", "type": "shape", "shape": "rectangle", "fill": "none", "stroke": { "width": 3, "color": "#B08D57" }, "x": 54, "y": 54, "w": 972, "h": 1242 },
+        { "id": "frame-inner", "type": "shape", "shape": "rectangle", "fill": "none", "stroke": { "width": 1.5, "color": "#B08D57" }, "x": 72, "y": 72, "w": 936, "h": 1206 },
+        { "id": "sprig", "type": "icon", "icon": "lucide:sparkle", "color": "#B08D57", "strokeWidth": 1.4, "x": "center", "y": 150, "w": 70 },
+        { "id": "invited", "type": "text", "text": "You're invited", "font": "Great Vibes", "weight": 400, "size": 120, "color": "#5B4630", "align": "center", "x": "center", "y": 250, "w": "80%" },
+        { "id": "to", "type": "text", "text": "TO A GARDEN PARTY FOR", "font": "Montserrat", "weight": 400, "size": 28, "letterSpacing": 6, "color": "#7A6448", "align": "center", "x": "center", "y": 440, "w": "80%" },
+        { "id": "names", "type": "text", "text": "Maya & Theo", "font": "Playfair Display", "weight": 700, "size": 104, "color": "#3B2C1C", "align": "center", "x": "center", "y": 500, "w": "84%" },
+        { "id": "divider", "type": "shape", "shape": "rectangle", "fill": "#B08D57", "x": "center", "y": 680, "w": 160, "h": 3 },
+        { "id": "date-icon", "type": "icon", "icon": "lucide:calendar", "color": "#7A6448", "strokeWidth": 1.6, "x": 250, "y": 760, "w": 44 },
+        { "id": "date", "type": "text", "text": "Saturday 14 June · 4 pm", "font": "Montserrat", "weight": 400, "size": 36, "color": "#3B2C1C", "x": 316, "y": 760, "w": 560 },
+        { "id": "place-icon", "type": "icon", "icon": "lucide:map-pin", "color": "#7A6448", "strokeWidth": 1.6, "x": 250, "y": 840, "w": 44 },
+        { "id": "place", "type": "text", "text": "The Old Orchard, Hill Lane", "font": "Montserrat", "weight": 400, "size": 36, "color": "#3B2C1C", "x": 316, "y": 840, "w": 560 },
+        { "id": "note", "type": "text", "text": "Lemonade, music and long tables under the trees.\nKindly reply by 1 June.", "font": "Lora", "weight": 400, "italic": true, "size": 34, "lineHeight": 1.5, "color": "#5B4630", "align": "center", "x": "center", "y": 980, "w": "76%" }
+      ]
+    }
+  ]
+}

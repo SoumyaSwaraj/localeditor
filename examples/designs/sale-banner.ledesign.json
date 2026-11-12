@@ -1,0 +1,24 @@
+{
+  "$schema": "https://localeditor.net/schema/design-1.json",
+  "format": "localeditor-design",
+  "version": 1,
+  "name": "Web sale banner",
+  "pages": [
+    {
+      "width": 1200,
+      "height": 628,
+      "background": { "type": "pattern", "id": "dots", "fg": "#E6DFF7", "bg": "#F5F1FF", "scale": 1 },
+      "layers": [
+        { "id": "panel", "type": "shape", "shape": "rectangle", "fill": "#2B1D63", "x": 0, "y": 0, "w": 560, "h": 628 },
+        { "id": "tag", "type": "icon", "icon": "lucide:tag", "color": "#F3CC7C", "strokeWidth": 2, "x": 64, "y": 70, "w": 64 },
+        { "id": "kicker", "type": "text", "text": "SPRING CLEARANCE", "font": "Inter", "weight": 700, "size": 26, "letterSpacing": 4, "color": "#F3CC7C", "x": 64, "y": 162, "w": 460 },
+        { "id": "discount", "type": "text", "text": "40% OFF", "font": "Bebas Neue", "size": 150, "lineHeight": 1, "color": "#FFFFFF", "x": 60, "y": 220, "w": 480 },
+        { "id": "terms", "type": "text", "text": "On everything in the home range.\nEnds Sunday at midnight.", "font": "DM Sans", "weight": 400, "size": 26, "lineHeight": 1.4, "color": "#CFC7EE", "x": 64, "y": 410, "w": 460 },
+        { "id": "cta-bg", "type": "shape", "shape": "rounded-rectangle", "params": { "radius": 36 }, "fill": "#F3CC7C", "x": 640, "y": 404, "w": 300, "h": 84 },
+        { "id": "cta", "type": "text", "text": "Shop the sale", "font": "Inter", "weight": 700, "size": 30, "color": "#2A1F0A", "align": "center", "x": 640, "y": 427, "w": 300 },
+        { "id": "headline", "type": "text", "text": "Fresh rooms,\nfriendly prices.", "font": "Fraunces", "weight": 700, "size": 66, "lineHeight": 1.08, "color": "#2B1D63", "x": 640, "y": 150, "w": 500 },
+        { "id": "spark", "type": "icon", "icon": "lucide:sparkles", "color": "#7457F0", "strokeWidth": 1.8, "x": 1060, "y": 60, "w": 80 }
+      ]
+    }
+  ]
+}

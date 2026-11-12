@@ -1,0 +1,21 @@
+{
+  "$schema": "https://localeditor.net/schema/design-1.json",
+  "format": "localeditor-design",
+  "version": 1,
+  "name": "Travel story",
+  "pages": [
+    {
+      "id": "story",
+      "width": 1080,
+      "height": 1920,
+      "background": { "type": "gradient", "kind": "linear", "colors": ["#FDE7D3", "#F7B7A3", "#8F6BB5"], "angle": 90 },
+      "layers": [
+        { "id": "kicker", "type": "text", "text": "TRAVEL DIARY · DAY 04", "font": "Inter", "weight": 700, "size": 32, "letterSpacing": 5, "color": "#3B2A4F", "align": "center", "x": "center", "y": 170, "w": "80%" },
+        { "id": "title", "type": "text", "text": "Golden hour\nin Lisbon", "font": "Playfair Display", "weight": 700, "italic": true, "size": 120, "lineHeight": 1.05, "color": "#2A1B3D", "align": "center", "x": "center", "y": 240, "w": "88%" },
+        { "id": "photo", "name": "Your photo", "type": "image", "slot": true, "recipe": "golden-hour", "radius": 48, "border": { "width": 14, "color": "#FFFFFF" }, "shadow": { "color": "rgba(42,27,61,.35)", "blur": 60, "x": 0, "y": 30 }, "x": "center", "y": 560, "w": 860, "h": 1060 },
+        { "id": "caption", "type": "text", "text": "Trams, tiles and the best pastel de nata of my life.", "font": "DM Sans", "weight": 400, "size": 40, "lineHeight": 1.35, "color": "#FFFFFF", "align": "center", "x": "center", "y": 1680, "w": "78%" },
+        { "id": "swipe", "type": "icon", "icon": "lucide:chevrons-up", "color": "#FFFFFF", "strokeWidth": 2, "x": "center", "y": 1800, "w": 72 }
+      ]
+    }
+  ]
+}
