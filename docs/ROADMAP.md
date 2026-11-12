@@ -108,6 +108,20 @@ Order: D3, D4, D1, D2, D6 first (the security story), then D8, D5, D12, D13, D7 
 | M2 | Makers: V3 movie poster, album cover, newspaper front page; V14 event kit; V15 invitations with QR; V19 payment and Wi-Fi QR posters; V21 app-store screenshot sets; V22 link preview cards and README banners. |
 | M3 | Print makers: V12 printables with cut marks; V13 photo book and zine layouts; V18 catalogue or price list from a spreadsheet. |
 
+## Wave 2F — fonts, weight and agent mode (added by the owner, 12 November 2026)
+
+| Id | Work |
+|---|---|
+| F1 | **Font library of 200+ families.** The best-known free-for-commercial-use families (OFL or Apache only), self-hosted, loaded only when used, with an optional "Save for offline" per font, per collection or for all. Scripts beyond Latin. A picker that stays fast with 200+ entries. |
+| F2 | **Twenty original typefaces**, five in each of four intents: attention, trust, positive feeling, tension. Built from a parametric generator, grounded in published research on how letterforms affect perception, with a research note and specimens. |
+| L1 | **Light first load.** A small core loads first; each feature downloads when first used and then in the background, so the app still becomes fully offline. Starts after F1, F2 and the current wave merge. |
+| G2 | **Fast path for agents: command line, MCP server and local API.** The same operations as agent mode, run on the real engine in a headless browser with no animation, for agents that just need the work done. Reads and writes `.ledesign.json` files; renders previews; can link a file to an open tab so a person can watch. The browser mode (G1) is for working together; this is for speed. |
+| G1 | **Agent mode in the browser.** A coding agent (Cursor, Claude Code and others) drives the open studio through a documented control API, a typed console, or links; the person watches each change happen, can pause, stop, undo any single change, leave notes and take over. Interruptions by the person midway are handled: batches are atomic, the agent waits while the person edits, and conflicting changes are reported back. |
+
+## Expert mode (added by the owner, 12 November 2026)
+
+Studio-level editing for agents first and for people who switch to Expert: professional shadows and reflections, creative optical effects, RAW and HDR, relighting, liquify, frequency separation, skin retouching, colour grading, compositing. Architecture, document model and build order are in `docs/EXPERT-MODE.md`. Fable plans and builds the core renderer; Opus and Sonnet build the workspace, the feature sets and the tests.
+
 ## Wave 3 — agents
 
 | Id | Work |

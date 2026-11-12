@@ -85,7 +85,44 @@ Headings: weight 650–720, tracking −0.015em (h3) to −0.045em (display). `t
 | 44 px targets, 16 px inputs, test at 360 | Hover-only affordances on phone; sideways scroll |
 | Check light and dark, check `#2A1F0A` on gold | Pale text on gold; hard-coded `#fff` glyphs that break in a light tile |
 
-## Studio polish backlog (for a later wave; nothing changed in studio files now)
+## Studio shell patterns (roadmap 2.11)
+
+How the photo studio shell works on a phone and on a laptop, and the hooks panel authors use. Everything here is additive; the
+older extension points (`window.LEStudioPanels` specs, `_hooks`, `_cmds`, `fire(...)`, `ctx`, `data-cmd`, `data-panel-btn`, `TOOL_MAP`) are unchanged.
+
+**The phone model.** One canvas, one toolbar, one sheet. The bottom tab bar has the four jobs people start with (Design, Elements, Text, Uploads) and **More**, a grid sheet with every other tool (Collage first, then Adjust, Filters, Background, Draw, Layers, Recipes, Projects, Apps, Download and anything registered later). Every tool is at most two taps away and nothing scrolls sideways. The contextual toolbar above the tab bar is the only place for selection actions (no floating mini bar on phones). The header keeps Undo, Redo and a labelled gold **Download**. Before a design exists the tab bar and header actions are hidden: the start screen is the only thing to do.
+
+**Registering a tool.** The rail and the More sheet are built from `RAIL` plus:
+- `LEStudioPanels._rail.push({ id, label, icon, order })` (array form `[id, label, icon, order]` also works), or
+- a panel spec with `rail: { label, icon, order }` (or `rail: true`).
+`icon` is a name from the shell's icon set (`ctx.I`) or the inner markup of a 24×24 stroke icon. The four phone tabs are fixed; everything else lands in More automatically. `ctx.renderRail()` redraws after a late registration. `ctx.openTool(name)` opens a tool by its `?tool=` name (`TOOL_MAP`), e.g. `'collage'`.
+
+**Sheet snaps (phone).** The sheet has three heights: `peek` (title and one row, about 150 px), `half` (40 % of the space between header and tabs, the default) and `full` (90 %). The canvas always fits into the space above the sheet.
+- A panel asks for its height with `spec.sheet: 'peek' | 'half' | 'full'` (or a function `(ctx, opts) => name`); a caller can override with `openPanel(id, { sheet: 'full' })` (`{ full: true }` still works).
+- `ctx.sheet(name)` moves the open sheet; `ctx.sheet()` returns the current snap (`null` on desktop or with no panel).
+- The shell lowers the sheet to `peek` when the person works on the canvas (any pointer gesture that ends on the stage) and after anything is added to the page, so a new heading is visible and selected above the sheet. A panel that must stay up sets `spec.keepSheet: true`.
+- Dragging a range input inside the sheet "scrubs": the sheet shrinks to that slider (it stays under the finger, everything else in the sheet hides) and the canvas takes the room; it returns on release.
+- The grip: drag to any snap, drag below the peek to close, tap to step up (peek → half → full → half).
+
+**Sticky primary action.** A panel's main button never sits below the fold. Either put it in `ctx.ui.actions([button, ...])` (a `.sx-sheet-actions` footer, sticky at the bottom of the side panel or sheet, gold button gets two thirds of the width), or make it a direct child `.btn-gold.sx-block` of the panel body (it sticks the same way). Only one gold button per view.
+
+**Toolbar priority and overflow.** Toolbar buttons carry `data-pri`: `0` never hides (More, Done), `1` always shown (the type's main actions, Duplicate, Delete; Lock on desktop), `2` common, `3` first to go. The shell measures: on desktop it first drops text labels, then moves priority 3 and then 2 into the **More** menu, in place of a hidden scrollbar. Buttons from `fire('toolbar', ...)` hooks without `data-pri` count as 2. Items in the More menu act exactly like the toolbar button (`data-cmd`, anchored on More). Destructive actions are `is-danger`; Delete and Duplicate are always visible. Re-rendering keeps keyboard focus on the same command; an unchanged toolbar is not redrawn.
+
+**Menus, dialogs, focus.** `ctx.openPop(anchor, html, { cls: 'sx-pop-menu' })` is a keyboard menu: `role="menu"`, items `menuitem`, focus moves to the first item, arrows/Home/End move, Esc or Tab returns focus to the opener (`aria-expanded` is kept in sync). A pop with a `title` is a small dialog (Tab stays inside). `ctx.openModal(title, ...)` names the dialog with the plain text of the title, traps Tab and returns focus to the control that opened it. Every icon button needs an `aria-label`.
+
+**Toasts.** `ctx.toast(msg, { action: { label, fn }, ms })` appears in the free area: above the phone tab bar, toolbar and sheet; above the desktop footer, centred on the canvas. Tap to dismiss. Silent no-ops get a toast.
+
+**Phone copy rules.** Never write mouse-only instructions where a touch screen will read them. Use `ctx.say(mouseText, touchText)` (or `ctx.coarse()`): "Double-tap" not "Double-click", "Tap and hold" not "Shift-click", "Choose photos" not "Drop" or "Ctrl V". Keyboard shortcuts belong in `<kbd>` and only on desktop.
+
+**First-run guidance.** At most three coach marks (`ctx.coach(i)`), each tied to a real control (the tools, the toolbar, Download), shown once to a first-time visitor and never again (`localStorage['le-studio-coach']`), nothing for returning visitors. They never block a tap: a tap anywhere does what it would have done and moves on; Esc turns them off (`ctx.coach('off')`). Prefer a good empty state to a tour.
+
+**Handles on touch.** 44 px hit areas with 14 px knobs, edge handles only where the object has room (a heading keeps its side handles, not top and bottom, so its middle always drags), corner hit areas move outward on tiny objects, the rotate knob flips below or inside when the top would clip it, and the page is fitted with a 24 px inset.
+
+**Memory.** Object-URL memo caches go through `LEStudioPanels._urlCache(name, max)` (least recently used URL revoked) and are emptied when a design closes (`ctx.releaseUrls()`).
+
+## Studio polish backlog
+
+Studio items 1, 2, 3, 7, 8 and 10 were done in 2.11 (phone canvas inset, toolbar overflow, no aurora in the studio, neutral size cards, no stage wash, gold ink from `--gold-ink`). Items 4, 6 (PDF studio) and 9 are still open; 5 belongs to the Design panel.
 
 In priority order. Files: `studio/index.html`, `assets/css/studio.css`, `assets/css/pdf-studio.css`.
 
