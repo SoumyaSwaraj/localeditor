@@ -3768,4 +3768,14 @@
 
   if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', function () { setTimeout(addEntryPoints, 0); });
   else setTimeout(addEntryPoints, 0);
+
+  /* ?panel=office&job=<details|compare|bundle|stamps|workflows|fingerprint>: the studio opens the panel; the job opens here. */
+  function deepJob() {
+    var params;
+    try { params = new URLSearchParams(global.location.search); } catch (e) { return; }
+    var job = (params.get('job') || '').replace(/[^a-z-]/g, '');
+    if (params.get('panel') !== 'office' || !JOBS.some(function (j) { return j.id === job; })) return;
+    setTimeout(function () { openJob(job); }, 0);
+  }
+  if (d.readyState === 'complete') deepJob(); else global.addEventListener('load', deepJob);
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -661,5 +661,12 @@ module.exports = {
       h.assert.noErrors(page);
       await page.context().close();
     }
+  },
+
+  'studio: ?panel=office&job=compare opens the compare workbench': async ({ browser, base, h }) => {
+    const page = await h.open(browser, base, '/pdf-studio/?panel=office&job=compare');
+    await page.waitForFunction(() => document.body.getAttribute('data-panel') === 'office' && document.querySelector('.po-work') && !document.querySelector('.po-work').hidden);
+    h.assert.equal(await page.textContent('#po-work-title'), 'Compare two versions', 'job opened');
+    h.assert.noErrors(page);
   }
 };
