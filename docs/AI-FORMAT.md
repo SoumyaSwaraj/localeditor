@@ -72,7 +72,7 @@ Layers are listed back to front. Layer types today: `image`, `text`, `shape`, `s
 | `"src"` as a relative path, `data:` URI or `https:` URL | A stored image asset. Remote URLs are downloaded only after the person agrees, and the host is shown. |
 | `"slot": true` and no `src` | An empty photo slot the person fills |
 | `"recipe": "golden-hour"` on an image | That recipe's adjustments on the layer |
-| `"template": "collage:grid-3"` on a page | The template expanded into layers |
+| `"collage": { "template": "coquette-01" }` or `"collage": { "layout": "r-2.3" }` on a page, with photo slot layers | The collage laid out from the catalogue template or the generated layout |
 
 Normalised documents written back by the studio use the long form, keys in a fixed order, two-space indent, so text diffs stay small.
 
@@ -143,3 +143,25 @@ Engine entry points: `scene.setBackground(bg, opts)`, `scene.background()`, `LE.
 
 ### Subject cut-out on an image layer — proposed, not built
 From the background-remover prototype (`docs/research/background-remover.md`): `layer.cutout = { asset, model, feather, refine, version }`, where `asset` is an 8-bit alpha mask PNG at the source photo's resolution. The original photo is untouched, so the cut-out stays editable (restore and erase brush write into the mask asset). Engine work needed: sanitise `cutout`, apply the mask in `_processImage` before crop and adjust, add it to `_imageKey`.
+
+### Collage on a page (`page.collage`) — merged
+A builder grid:
+
+```
+collage: {
+  v: 1,
+  layout: "r-2.3",            // rows of 2 and 3 cells | "c-…" columns | "h-l-62" hero left at 62% | "m-2" mosaic seed
+  cells: [[x, y, w, h], …],   // fractions 0–1 of the content box (page minus margin); the authoritative geometry; max 60
+  order: ["cell1", "cell2"],  // cell i holds the image layer whose slot.id is order[i]
+  spacing: 16, margin: 24, radius: 0,          // px
+  border: { width: 0, color: "#FFFFFF" },
+  aspect: "1:1" | "4:5" | "9:16" | "16:9" | "3:2" | "2:3" | "custom"
+}
+```
+
+A collage from a catalogue style is `{ v: 1, template: "<template id>", order: [slotIds] }` with no cells. Cells are ordinary image layers with `slot: { id, label, photo }`. An agent can write `collage` with only `layout` (or `cells` and `order`) plus the slot layers; `LEStudioCollage.reapply` lays them out. Pure helpers: `LE.collage.layouts(n, aspect)`, `LE.collage.layoutFor(id, n, aspect)`, `LE.collage.rects(meta, W, H)`.
+
+### Recipe look on an image layer — merged
+- Recipe format 1.1 adds adjust keys: `fade` 0–100, `clarity` −100–100, `splitShadowHue` / `splitHighlightHue` 0–360, `splitShadowAmount` / `splitHighlightAmount` 0–100, `splitBalance` −100–100, plus `black`, `white`, `gamma`. The editor draws them in its own image pipeline.
+- An applied recipe is recorded at `layer.adjust.recipe = { id, name, strength, add: {key: amount}, prev: {key: value|null}, filter: bool, prevFilter }`, so it can be removed or re-tuned without losing manual edits. In the open format this should surface as `layer.recipe`, outside `adjust`.
+- The file format itself is specified in `docs/FORMAT-WORKFLOW.md`. Share links are `/recipes/#r=<tag><base64url>`.
