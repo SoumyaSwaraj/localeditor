@@ -1924,11 +1924,102 @@
     }
   };
 
+  /* ---------- Expert effects (LE.fx; docs/FX-AUTHORING.md "Agent plumbing") ----------
+     One contained block. The operations are LE.fx.ops, run on the batch's working copy like every other operation, so they share
+     its atomic commit, conflict checks, change feed and undo. Layers are named by id or unique name ("layer"); an effect entry by
+     its id or, when the layer has only one of that kind, by its type ("id"). The renderer loads on first use. */
+  var FX_OPS = { 'fx.add': 'layer', 'fx.update': 'layer', 'fx.remove': 'layer', 'fx.reorder': 'layer', 'mask.set': 'layer', 'transform.set': 'layer', 'adjust.add': 'above' };
+  function fxLoad(path) {
+    if (!LE.fxBoot) return Promise.reject(err('unsupported', 'Expert effects are not available on this page.', path));
+    return LE.fxBoot.load().catch(function () { throw err('unsupported', 'The effect renderer could not be loaded.', path); });
+  }
+  Object.keys(FX_OPS).forEach(function (name) {
+    OPS[name] = function (W, op, path, B) {
+      var o = clone(op), key = FX_OPS[name], pi, hit = null;
+      delete o.page;
+      if (o[key] != null) { hit = findLayer(W, String(o[key]), op.page, path + '/' + key, B); pi = hit.page; o[key] = hit.layer.id; }
+      else if (name === 'adjust.add') pi = pageIndex(W, op.page, path + '/page');
+      else throw err('invalid', '"' + name + '" needs "layer": the id or name of a layer.', path + '/layer');
+      /* An entry may be named by its type when that is unambiguous. */
+      ['id', 'fx'].forEach(function (k) {
+        if (!hit || typeof o[k] !== 'string' || (k === 'id' && !/^fx\.(update|remove|reorder)$/.test(name)) || (k === 'fx' && name !== 'mask.set')) return;
+        var st = Array.isArray(hit.layer.fx) ? hit.layer.fx : [];
+        if (st.some(function (e) { return e.id === o[k]; })) return;
+        var same = st.filter(function (e) { return e.type === o[k]; });
+        if (same.length === 1) o[k] = same[0].id;
+        else if (same.length > 1) throw err('invalid', 'The layer has ' + same.length + ' "' + o[k] + '" effects. Use an entry id: ' + same.map(function (e) { return e.id; }).join(', ') + '.', path + '/' + k);
+      });
+      return fxLoad(path).then(function (fx) {
+        var r = fx.ops.apply(W.pages[pi], o);
+        if (!r.ok) throw err('invalid', r.errors[0].message + (name === 'fx.add' && r.errors[0].code === 'unknown-type' ? ' See catalog("fx").' : ''), path + (r.errors[0].path || ''));
+        W.pages[pi] = r.doc;
+        if (name === 'adjust.add') { W.added = (W.added || []).concat([{ page: pi, id: r.id }]); touch(W, pi, r.id); return { added: [r.id], warnings: r.warnings }; }
+        touch(W, pi, hit.layer.id);
+        return { layer: hit.layer.id, id: r.id, warnings: r.warnings };
+      });
+    };
+  });
+  /* LEAgent.analyze(target?, { region, kinds }): the numbers to grade by. target: nothing or "page" (the whole page), or a layer id or name. */
+  function analyze(target, o) {
+    if (isObj(target) && !o) { o = target; target = o.target != null ? o.target : o.layer; }
+    o = o || {};
+    var c = C();
+    if (!c || !c.scene) return Promise.resolve(fail('invalid', 'No design is open.'));
+    var layerId = null;
+    if (target != null && target !== 'page' && target !== '') {
+      var doc = c.scene.toJSON(), i = findOn(doc, String(target));
+      if (i < 0) return Promise.resolve(fail('invalid', i === -2 ? 'More than one layer is named ' + quote(target) + '. Use its id.' : 'No layer ' + quote(target) + ' on this page. Layers: ' + (suggest(doc) || 'none') + '.'));
+      layerId = doc.layers[i].id;
+    }
+    return fxLoad('').then(function (fx) {
+      return fx.analyze(layerId ? { scene: c.scene, layer: layerId } : c.scene, { region: o.region, kinds: o.kinds });
+    }).then(function (stats) { return { ok: true, target: layerId || 'page', stats: stats }; }, function (e) { return fail(e && e.code ? e.code : 'invalid', String(e && e.message || e).slice(0, 300)); });
+  }
+  /* catalog("fx"): the index; catalog("fx", "<effect id>"): one effect in full; "schema" and "actions" for the rest; any other word searches. */
+  var catalogBase = catalog;
+  catalog = function (kind, q, o) {
+    var K = String(kind || '').toLowerCase();
+    if (K !== 'fx' && K !== 'effects' && K !== 'effect') return catalogBase(kind, q, o);
+    o = isObj(q) ? q : (o || {});
+    if (isObj(q)) q = q.q;
+    q = q == null ? '' : String(q).trim();
+    return fxLoad('').then(function (fx) {
+      if (q === 'schema') return { ok: true, kind: 'fx', schema: fx.schema() };
+      if (q === 'actions') return { ok: true, kind: 'fx', actions: fx.actions.list() };
+      var one = q ? fx.describe(q) : null;
+      if (one) return { ok: true, kind: 'fx', effect: one };
+      var items = fx.describe().filter(function (e) { return match(q, e.id + ' ' + e.name + ' ' + e.group + ' ' + e.section + ' ' + e.summary); });
+      var out = paged('fx', items, o, null);
+      out.hint = 'catalog("fx", "<id>") gives one effect in full (parameters, ranges, tips, an example entry); catalog("fx", "schema") the blends, mask kinds and limits.';
+      return out;
+    }, function (e) { return fail(e.code || 'unsupported', e.message); });
+  };
+  var commandBase = command;
+  command = function (o) { return isObj(o) && o.op === 'analyze' ? analyze(o.target != null ? o.target : o.layer, o) : commandBase(o); };
+  var helpBase = help;
+  help = function () {
+    var r = helpBase();
+    try {
+      r.methods = r.methods || {};
+      r.methods['analyze(target?, { region, kinds })'] = 'Numbers to grade by: histogram and percentiles, clipping, white-balance estimate and suggestion, saturation, sharpness, hue. target: nothing (the page) or a layer id or name.';
+      r.methods['catalog("fx", q?)'] = 'Expert effects: the index, or one effect in full by id; "schema" for blends, mask kinds and limits; "actions" for auto and import/export helpers.';
+      r.operations = r.operations || {};
+      r.operations['fx.add'] = { example: { op: 'fx.add', layer: 'photo', entry: { type: 'exposure', p: { ev: 0.4 } } }, fields: 'Adds an effect to a layer\'s stack (index optional). Types and parameters: catalog("fx").' };
+      r.operations['fx.update'] = { example: { op: 'fx.update', layer: 'photo', id: 'exposure', p: { ev: 0.2 }, amount: 0.8 }, fields: 'id is the entry id, or its type when the layer has one of that kind. p is merged; on, amount, blend, mask can be set.' };
+      r.operations['fx.remove'] = { example: { op: 'fx.remove', layer: 'photo', id: 'exposure' }, fields: 'Removes one entry.' };
+      r.operations['fx.reorder'] = { example: { op: 'fx.reorder', layer: 'photo', id: 'grain', index: 0 }, fields: 'Moves an entry inside its stack; the first runs first.' };
+      r.operations['mask.set'] = { example: { op: 'mask.set', layer: 'photo', fx: 'gaussian-blur', mask: { parts: [{ kind: 'radial', cx: 0.5, cy: 0.4, rx: 0.3, ry: 0.3, feather: 0.5, invert: true }] } }, fields: 'Without fx it sets the layer mask; mask: null clears.' };
+      r.operations['adjust.add'] = { example: { op: 'adjust.add', fx: [{ type: 'contrast', p: { amount: 15 } }], name: 'Grade', above: 'photo' }, fields: 'An adjustment layer over the page (or x, y, w, h); clip: true limits it to the layer below.' };
+      r.operations['transform.set'] = { example: { op: 'transform.set', layer: 'photo', quad: [[0, 40], [1000, 0], [1000, 800], [0, 760]] }, fields: 'Perspective: four corners in page units; quad: null clears.' };
+    } catch (e) { /* help keeps its own shape */ }
+    return r;
+  };
+
   window.LEAgent = {
     version: VERSION, protocol: PROTOCOL, headless: HEADLESS, codes: Object.keys(CODES),
     help: help, begin: begin, end: end, state: state, apply: apply, applyExternal: applyExternal,
     find: function (q) { return Promise.resolve(findApi(q)); }, catalog: catalog, check: check, export: exportImage,
-    notes: notes, resolveNote: resolveNote, on: on, result: result, load: load, save: save, toLink: toLink, command: command,
+    analyze: analyze, notes: notes, resolveNote: resolveNote, on: on, result: result, load: load, save: save, toLink: toLink, command: command,
     configure: function (o) { o = o || {}; if (typeof o.resolve === 'function') A.config.resolve = o.resolve; if (o.speed) person.setSpeed(o.speed); return { ok: true }; },
     get paused() { return A.paused; },
     get rev() { return A.rev; },
