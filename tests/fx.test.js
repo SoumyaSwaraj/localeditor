@@ -25,8 +25,8 @@ cases['registry: the starter set is registered, described and declared to LE.sup
     h.assert(e.ui && e.ui.section && e.agent && e.agent.summary && e.agent.example && e.agent.example.type === e.id, e.id + ' needs ui and agent descriptors');
     h.assert(e.support.needs.indexOf('webgl2') >= 0, e.id + ' declares what a device needs');
     Object.keys(e.params).forEach((k) => h.assert(r.describe.schema.paramTypes.indexOf(e.params[k].type) >= 0 && e.params[k].label, e.id + '.' + k));
-    h.assert(['Light', 'Colour', 'Curves', 'Optics', 'Effects', 'Shadows & reflections'].indexOf(e.ui.section) >= 0, e.id + ' uses a workspace section name: ' + e.ui.section);
-    (e.ui.controls || []).forEach((c) => h.assert(typeof c === 'string' ? !!e.params[c] : (c.heading || !!e.params[c.param]), e.id + ' ui.controls follows docs/EXPERT-UI.md: ' + JSON.stringify(c)));
+    h.assert(['Light', 'Colour', 'Curves', 'Colour mixer', 'Colour grading', 'Detail', 'Optics', 'Geometry', 'Effects', 'Shadows & reflections', 'Compositing', 'Retouch'].indexOf(e.ui.section) >= 0, e.id + ' uses a workspace section name: ' + e.ui.section);
+    (e.ui.controls || []).forEach((c) => h.assert(typeof c === 'string' ? !!e.params[c] : (c.heading || (c.control === 'mixer' ? Object.keys(c.rows || {}).every((r) => c.rows[r].every((k) => !!e.params[k])) : (c.control === 'wheels' || c.control === 'line') ? (c.params || []).length > 0 && c.params.every((k) => !!e.params[k]) : !!e.params[c.param])), e.id + ' ui.controls follows docs/EXPERT-UI.md: ' + JSON.stringify(c)));
   });
   h.assert(r.describe.effects.find((e) => e.id === 'gaussian-blur').spatial === true && r.describe.effects.find((e) => e.id === 'exposure').spatial === false, 'spatial flag');
   h.assert(r.isArray, 'describe() is an array of registrations');
