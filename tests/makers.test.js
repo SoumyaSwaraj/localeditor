@@ -38,15 +38,20 @@ cases['every maker, style and size builds clean with sample, minimal and worst-c
             try { r = await LE.makers.build(m.id, cs[cn], { style: st.id, size: sz.id, images: window.__imgs, today: '2026-11-12' }); }
             catch (e) { out.problems.push(m.id + '/' + st.id + '/' + sz.id + '/' + cn + ' threw ' + e.message); continue; }
             out.builds++;
-            const pg = r.pages[0];
-            if (pg.width !== sz.w || pg.height !== sz.h) out.problems.push(m.id + ' wrong size');
-            if (!pg.maker || pg.maker.id !== m.id || pg.maker.style !== st.id || pg.maker.size !== sz.id) out.problems.push(m.id + ' maker meta missing');
-            LE.makers.check(pg).forEach((p) => out.problems.push(m.id + '/' + st.id + '/' + sz.id + '/' + cn + ' ' + p.kind + ': ' + p.message));
-            pg.layers.forEach((l) => {
-              if (l.type === 'text' && fonts.indexOf(l.font) < 0) out.problems.push(m.id + ' font ' + l.font);
-              if (['text', 'image', 'shape', 'svg'].indexOf(l.type) < 0) out.problems.push(m.id + ' layer type ' + l.type);
-              if (l.type === 'image' && !l.slot) out.problems.push(m.id + ' photo without slot');
-            });
+            /* Every page of multi-page makers (books, catalogues), first and last page of long ones. */
+            const pgs = r.pages.length > 3 ? [r.pages[0], r.pages[1], r.pages[r.pages.length - 1]] : r.pages;
+            for (const pg of pgs) {
+              if (pg.width !== sz.w || pg.height !== sz.h) out.problems.push(m.id + ' wrong size');
+              if (!pg.maker || pg.maker.id !== m.id || pg.maker.style !== st.id || pg.maker.size !== sz.id) out.problems.push(m.id + ' maker meta missing');
+              if (sz.print && !(pg.print && pg.print.paper === sz.print.paper)) out.problems.push(m.id + ' print meta missing');
+              LE.makers.check(pg).forEach((p) => out.problems.push(m.id + '/' + st.id + '/' + sz.id + '/' + cn + ' ' + p.kind + ': ' + p.message));
+              pg.layers.forEach((l) => {
+                if (l.type === 'text' && fonts.indexOf(l.font) < 0) out.problems.push(m.id + ' font ' + l.font);
+                if (['text', 'image', 'shape', 'svg', 'group'].indexOf(l.type) < 0) out.problems.push(m.id + ' layer type ' + l.type);
+                if (l.type === 'image' && !l.slot) out.problems.push(m.id + ' photo without slot');
+                if (l.groupId && !pg.layers.some((g) => g.id === l.groupId && g.type === 'group')) out.problems.push(m.id + ' orphan group member');
+              });
+            }
           }
         }
       }
@@ -58,12 +63,13 @@ cases['every maker, style and size builds clean with sample, minimal and worst-c
   h.assert.noErrors(page);
 };
 
-cases['each maker offers 4–6 styles and square, 4:5 and 9:16'] = async ({ browser, base, h }) => {
+cases['each maker offers 4–6 styles and square, 4:5 and 9:16 (print makers: paper sizes)'] = async ({ browser, base, h }) => {
   const page = await studio(h, browser, base);
-  const list = await page.evaluate(() => LE.makers.list().map((m) => ({ id: m.id, styles: m.styles.length, sizes: m.sizes.map((s) => s.w + 'x' + s.h) })));
-  h.assert.equal(list.map((m) => m.id).join(','), 'quote,review,receipt,milestone,palette,film');
+  const list = await page.evaluate(() => LE.makers.list().map((m) => ({ id: m.id, category: m.category, styles: m.styles.length, sizes: m.sizes.map((s) => s.w + 'x' + s.h), print: m.sizes.every((s) => s.print && s.print.dpi === 300) })));
+  h.assert.equal(list.slice(0, 6).map((m) => m.id).join(','), 'quote,review,receipt,milestone,palette,film');
   list.forEach((m) => {
     h.assert(m.styles >= 4 && m.styles <= 6, m.id + ' styles');
+    if (m.category === 'Print') { h.assert(m.print, m.id + ' print sizes'); return; }
     ['1080x1080', '1080x1350', '1080x1920'].forEach((s) => h.assert(m.sizes.indexOf(s) >= 0, m.id + ' ' + s));
   });
 };
@@ -273,7 +279,7 @@ cases['gallery and form at phone size: no sideways scroll, 44px targets'] = asyn
     await page.waitForTimeout(400);
     h.assert(await page.evaluate(() => !!document.querySelector('.mk-start .mk-card')), 'start screen row');
     await page.evaluate(() => LEStudio.openPanel('apps', { app: 'make' }));
-    await page.waitForFunction(() => document.querySelectorAll('.mk-grid .mk-card').length === 6);
+    await page.waitForFunction(() => document.querySelectorAll('.mk-grid .mk-card').length === LE.makers.list().length);
     h.assert(await h.noOverflow(page), vp + ' gallery overflow');
     await page.evaluate(() => { const i = document.querySelector('.mk-search input'); i.value = 'receipt'; i.dispatchEvent(new Event('input')); });
     await page.waitForTimeout(300);
