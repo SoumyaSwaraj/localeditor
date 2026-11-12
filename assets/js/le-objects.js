@@ -1745,7 +1745,14 @@
       var src = assetCanvas(rec);
       if (!src) return null;
       var base = src;
-      if (LE.fit && Math.max(src.width, src.height) > targetMax) base = LE.fit(src, targetMax);
+      if (LE.fit && Math.max(src.width, src.height) > targetMax) {
+        /* Preview only: shrink a big original once to preview size and reuse it, so a zoom or resize does not re-scale 48 MP each time. */
+        var pm = preview ? self._previewMax() : 0;
+        if (preview && LE.fit && Math.max(src.width, src.height) > pm * 1.5 && targetMax <= pm) {
+          if (!rec._prev || rec._prevFor !== src) { rec._prev = LE.fit(src, pm); rec._prevFor = src; }
+          base = Math.max(rec._prev.width, rec._prev.height) > targetMax ? LE.fit(rec._prev, targetMax) : cloneCanvas(rec._prev);
+        } else base = LE.fit(src, targetMax);
+      }
       /* Cut-out first, so crop, adjust, filters and the outline all see the subject on transparency. */
       if (cut && mrec) base = cutoutApply(base, mrec, cut.feather * base.width * ((layer.crop && layer.crop.w) || 1) / Math.max(1, layer.w));
       function finish(c) { return cut && cut.outline && c ? cutoutOutline(c, cut.outline.width * c.width / Math.max(1, layer.w), cut.outline.color) : c; }
@@ -1936,7 +1943,8 @@
     var w = Math.max(1, Math.round(this._doc.width * scale));
     var h = Math.max(1, Math.round(this._doc.height * scale));
     var maxEdge = 16384;
-    var maxArea = 32000000;
+    var tierNow = (LE.device && LE.device.tier) ? LE.device.tier() : 'desktop';
+    var maxArea = tierNow === 'desktop' ? 120000000 : tierNow === 'modern' ? 48000000 : 17000000;
     if (w > maxEdge || h > maxEdge || w * h > maxArea) {
       var fit = Math.min(maxEdge / w, maxEdge / h, Math.sqrt(maxArea / (w * h)));
       w = Math.max(1, Math.round(w * fit));
@@ -3014,6 +3022,7 @@
         else if (only) this._placeRect(this._selEl, { x: only.x, y: only.y, w: only.w, h: only.h });
       } else this._placeRect(this._selEl, this._union(this._sel));
       this._cursors();
+      this._fitHandles();
     }
     var hover = this._hover && this._find(this._hover);
     var showHover = hover && this._sel.indexOf(this._hover) < 0 && this._sel.indexOf(this._topGroup(this._hover)) < 0;
@@ -3029,6 +3038,21 @@
     }
     if (this._editing) this._placeEditor();
     this._paintGuides();
+  };
+  /* Handles fit the object: edge handles only where there is room (so the middle of a small heading stays draggable), corner
+     hit areas move outward on tiny objects, and the rotate knob flips below (or inside) when the top of the view would clip it. */
+  P._fitHandles = function () {
+    var el = this._selEl;
+    var w = parseFloat(el.style.width) || el.offsetWidth, hh = parseFloat(el.style.height) || el.offsetHeight;
+    var touch = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    var room = touch ? 104 : 44;
+    el.classList.toggle('no-ns', hh < room || w < room * 0.75);
+    el.classList.toggle('no-ew', w < room || hh < room * 0.4);
+    el.classList.toggle('is-tiny', w < (touch ? 64 : 24) || hh < (touch ? 64 : 24));
+    var top = parseFloat(el.style.top) || 0, vh = this.el.clientHeight;
+    var need = touch ? 62 : 44;
+    el.classList.toggle('rot-below', top < need && top + hh + need <= vh);
+    el.classList.toggle('rot-inside', top < need && top + hh + need > vh);
   };
   P._cursors = function () {
     var rot = 0;

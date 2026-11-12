@@ -11,7 +11,7 @@ async function download(page, h, format, scale) {
   await page.getByRole('button', { name: format, exact: true }).click();
   if (scale) await page.locator('.sx-chip', { hasText: new RegExp('^' + scale + '×') }).click();
   await page.waitForTimeout(150);
-  return h.capture(page, () => page.locator('#sx-panel-body .btn-gold.btn-lg').click());
+  return h.capture(page, () => page.locator('#sx-panel-body [data-act="download"]').click());
 }
 
 /* ---------- export ---------- */
@@ -64,12 +64,12 @@ cases['export a 3-page design as one PDF with 3 pages, and as a ZIP of images'] 
   await h.openPanel(page, 'export');
   await page.getByRole('button', { name: 'PDF', exact: true }).click();
   await page.getByText(/All 3 pages/).click();
-  const r = await h.capture(page, () => page.locator('#sx-panel-body .btn-gold.btn-lg').click(), 60000);
+  const r = await h.capture(page, () => page.locator('#sx-panel-body [data-act="download"]').click(), 60000);
   const info = await h.pdfRead(browser, base, r.buf);
   h.assert.equal(info.pages, 3, 'PDF has 3 pages');
   await page.getByRole('button', { name: 'PNG', exact: true }).click();
   await page.getByText(/All 3 pages/).click();
-  const z = await h.capture(page, () => page.locator('#sx-panel-body .btn-gold.btn-lg').click(), 60000);
+  const z = await h.capture(page, () => page.locator('#sx-panel-body [data-act="download"]').click(), 60000);
   h.assert(/\.zip$/.test(z.name) && z.buf.slice(0, 2).toString() === 'PK', 'a zip: ' + z.name);
   h.assert((z.buf.toString('latin1').match(/-page-\d\.png/g) || []).length >= 3, 'three page images inside the zip');
 };
@@ -85,15 +85,15 @@ cases['Ctrl+E opens the export panel and the estimate line shows size and weight
 cases['the Download button in the header opens Export and a download works'] = async ({ browser, base, h }) => {
   const page = await exportPage(browser, base, h);
   await page.click('#sx-head .sx-download');
-  await page.waitForSelector('#sx-panel-body .btn-gold.btn-lg');
-  const r = await h.capture(page, () => page.locator('#sx-panel-body .btn-gold.btn-lg').click());
+  await page.waitForSelector('#sx-panel-body [data-act="download"]');
+  const r = await h.capture(page, () => page.locator('#sx-panel-body [data-act="download"]').click());
   h.assert(r.size > 1000, 'something downloaded');
 };
 cases['export file name field sets the downloaded name'] = async ({ browser, base, h }) => {
   const page = await exportPage(browser, base, h);
   await h.openPanel(page, 'export');
   await page.locator('#sx-panel-body input.sx-input[maxlength="80"]').fill('my launch post');
-  const r = await h.capture(page, () => page.locator('#sx-panel-body .btn-gold.btn-lg').click());
+  const r = await h.capture(page, () => page.locator('#sx-panel-body [data-act="download"]').click());
   h.assert(/^my[-_ ]launch[-_ ]post\.png$/i.test(r.name), 'name ' + r.name);
 };
 
@@ -219,7 +219,7 @@ cases['a large (4000x3000) photo opens, keeps its shape and exports as a valid P
   h.assert(i.type === 'png' && i.w === d.width && i.h === d.height, 'export matches the page ' + JSON.stringify(i));
   h.assert.noErrors(page);
 };
-cases['KNOWN-BUG: a 4000x3000 photo exported at 1x keeps its original pixel size (QA-015: it is cut to 2400x1800 on opening)'] = async ({ browser, base, h }) => {
+cases['a 4000x3000 photo exported at 1x keeps its original pixel size (QA-015)'] = async ({ browser, base, h }) => {
   const file = await h.makeJpeg(browser, base, 4000, 3000);
   const page = await h.openPhotoDesign(browser, base, 'desktop', file);
   const r = await download(page, h, 'PNG', '1');

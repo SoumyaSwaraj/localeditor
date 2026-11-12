@@ -41,6 +41,7 @@ const I = { // 24x24 stroke icons
   para: '<path d="M13 4v16M17 4v16M19 4H9.5a4.5 4.5 0 0 0 0 9H13"/>',
   id: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h2M15 12h2M7 16h10"/>',
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
   numbers: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M10 18h4M12 12v6"/>',
 };
 
@@ -83,6 +84,7 @@ const TOOLS = [
   ['dev', 'unit-converter', 'Unit Converter', 'Length, weight, temperature, data and 6 more categories.', 'ruler'],
   ['dev', 'color-converter', 'Color Converter', 'HEX, RGB, HSL, CMYK conversion with contrast checker.', 'palette'],
   ['dev', 'uuid-generator', 'UUID Generator', 'Bulk-generate UUID v4 and v7 and validate UUIDs.', 'id'],
+  ['dev', 'device-check', 'Device Check', 'See which features work on this device and browser, and which browser unlocks more.', 'phone'],
 ].map(([cat, slug, name, desc, icon]) => ({ cat, slug, name, desc, icon }));
 
 const svg = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k]}</svg>`;
@@ -288,7 +290,7 @@ const SHORTCUTS = [
   { name: 'Photo studio', short_name: 'Studio', description: 'Start a new design', url: './studio/', icon: 'studio' },
   { name: 'Make a collage', short_name: 'Collage', description: 'Arrange several photos', url: './studio/?tool=collage', icon: 'collage' },
   { name: 'PDF studio', short_name: 'PDF', description: 'Edit, sign and fill PDFs', url: './pdf-studio/', icon: 'pdf' },
-  { name: 'Compress a photo', short_name: 'Compress', description: 'Shrink a photo for the web or email', url: './image-compressor/', icon: 'compress' },
+  { name: 'Protect a PDF', short_name: 'Protect', description: 'Lock a PDF with a password, on this device', url: './pdf-studio/?panel=bulk&job=protect', icon: 'protect' },
 ];
 const IMAGE_TYPES = { 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/webp': ['.webp'], 'image/gif': ['.gif'], 'image/avif': ['.avif'] };
 
@@ -402,7 +404,7 @@ function walk(dir, out = []) {
   return out;
 }
 /* Downloaded on request and owned by a runtime cache (listed in the storage manager), never precached. */
-const ON_DEMAND = /^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
+const ON_DEMAND = /^assets\/vendor\/tesseract\/|^assets\/vendor\/pdf-lib-crypt|^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
 /* If one of these fails to download, the new version is not installed (the old one keeps working). */
 const CRITICAL = ['./', './offline.html', './studio/', './assets/js/app.js', './assets/css/app.css', './assets/js/le-pwa.js', './assets/css/le-pwa.css', './manifest.webmanifest'];
 

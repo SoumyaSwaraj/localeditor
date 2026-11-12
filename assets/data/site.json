@@ -14,15 +14,16 @@
       "metaTitle": "Free photo editor and design studio, private and offline",
       "description": "Edit photos, make collages, add text and size posts for every platform in your browser. Nothing is uploaded, no account, works offline.",
       "tagline": "Edit photos, make collages and posts",
-      "summary": "A photo studio with layers, text, collages, filters and every social size, plus one-step tools for quick fixes. Everything runs in your browser.",
+      "summary": "A photo studio with layers, text, collages, filters, cut-outs and every social size, plus one-step tools for quick fixes. Everything runs in your browser.",
       "audience": "For anyone with a photo to fix or a post to make, on a phone or a computer, who would rather not hand their pictures to a website.",
       "launch": "studio/",
       "launchLabel": "Open the photo studio",
       "art": "collage",
       "sections": [
-        { "title": "Design in the studio", "items": ["photo-editor", "photo-backgrounds", "text-on-photos", "collage-maker", "social-sizes", "batch-edit", "brand-kit", "background-remover", "thumbnail-maker", "quick-makers", "export-every-size", "carousel-maker", "process-replay", "template-links", "open-design-format"] },
-        { "title": "Quick fixes in the studio", "items": ["meme", "frames", "upscale", "compare", "redact-photo"] },
-        { "title": "One-step image tools", "items": ["tool:image-compressor", "tool:image-resizer", "tool:image-converter", "tool:image-cropper", "tool:rotate-flip-image", "tool:image-filters", "tool:watermark-image", "tool:color-picker", "tool:favicon-generator", "tool:image-to-base64"] }
+        {"title": "Design in the studio", "items": ["photo-editor", "photo-backgrounds", "text-on-photos", "collage-maker", "social-sizes", "batch-edit", "brand-kit", "background-remover", "thumbnail-maker", "quick-makers", "export-every-size", "carousel-maker", "process-replay", "template-links", "open-design-format"]},
+        {"title": "Quick fixes in the studio", "items": ["meme", "frames", "upscale", "compare", "redact-photo"]},
+        {"title": "Quick makers", "items": ["quote-cards", "review-cards", "receipt-lists", "milestone-cards", "palette-poster", "film-looks"]},
+        {"title": "One-step image tools", "items": ["tool:image-compressor", "tool:image-resizer", "tool:image-converter", "tool:image-cropper", "tool:rotate-flip-image", "tool:image-filters", "tool:watermark-image", "tool:color-picker", "tool:favicon-generator", "tool:image-to-base64", "tool:photo-privacy"]}
       ],
       "privacy": "Photos are opened, edited and saved by your browser on this device. They are not sent to a server, so there is nothing for us to keep, scan or lose. The studio only reaches the internet when you ask it to, for example to search a stock photo library.",
       "faq": [
@@ -43,18 +44,18 @@
       "eyebrow": "PDF and documents",
       "headline": "Sign, fill and fix PDFs {on your own device.}",
       "metaTitle": "Free PDF editor: sign, fill, merge and convert without uploading",
-      "description": "Sign and fill PDFs, merge and split pages, and turn Word, Excel and PowerPoint files into PDFs in your browser. Files are never uploaded.",
+      "description": "Sign and fill PDFs, merge and split pages, convert Word, Excel and PowerPoint, and check, protect or redact PDFs in your browser. Files are never uploaded.",
       "tagline": "Sign, fill, merge and convert PDFs",
-      "summary": "A PDF studio for signing, filling and annotating, a converter for office files, and single-step tools for merging, splitting and numbering pages.",
+      "summary": "A PDF studio for signing, filling and annotating, a converter for office files, tools to check and protect a PDF before you send it, bulk jobs, and single-step tools for merging, splitting and numbering pages.",
       "audience": "For anyone who has to sign a form, send a contract or tidy up a stack of pages, and does not want that file sitting on someone else's server.",
       "launch": "pdf-studio/",
       "launchLabel": "Open the PDF studio",
       "art": "doc",
       "sections": [
-        { "title": "Edit, sign and convert", "items": ["pdf-editor", "word-to-pdf", "camera-scan", "searchable-scans", "compress-to-size"] },
-        { "title": "Check and protect", "items": ["pdf-reveal", "pdf-safety", "pdf-redaction", "find-sensitive", "safe-to-send", "pdf-password"] },
-        { "title": "Many files at once", "items": ["mail-merge", "split-by-text", "bulk-watermarks"] },
-        { "title": "One-step PDF tools", "items": ["tool:merge-pdf", "tool:split-pdf", "tool:organize-pdf", "tool:rotate-pdf", "tool:add-page-numbers", "tool:watermark-pdf", "tool:jpg-to-pdf", "tool:pdf-to-jpg"] }
+        {"title": "Edit, sign and convert", "items": ["pdf-editor", "word-to-pdf", "camera-scan", "searchable-scans", "compress-to-size"]},
+        {"title": "Check and protect", "items": ["pdf-reveal", "pdf-safety", "pdf-redaction", "find-sensitive", "safe-to-send", "pdf-password"]},
+        {"title": "Many files at once", "items": ["mail-merge", "split-by-text", "bulk-watermarks"]},
+        {"title": "One-step PDF tools", "items": ["tool:merge-pdf", "tool:split-pdf", "tool:organize-pdf", "tool:rotate-pdf", "tool:add-page-numbers", "tool:watermark-pdf", "tool:jpg-to-pdf", "tool:pdf-to-jpg"]}
       ],
       "privacy": "PDFs are read and written by your browser using open-source libraries that ship with the site. Your documents are not uploaded, so a contract, a payslip or a signed form stays on the device you opened it on.",
       "faq": [
@@ -75,18 +76,18 @@
       "eyebrow": "Privacy tools",
       "headline": "See what your files say, {and what this device keeps.}",
       "metaTitle": "Privacy tools: photo metadata, storage and offline use",
-      "description": "Read the hidden data in a photo, see and clear what this browser stores, and use the app offline. Every check runs on your device.",
-      "tagline": "Hidden photo data, storage and offline use",
-      "summary": "Small, plain tools for checking a file before you share it and for keeping control of what the app stores on this device.",
+      "description": "Read the hidden data in a photo or PDF, hide faces and text for good, see what works on your device, and clear what this browser stores. Everything runs on your device.",
+      "tagline": "Check photos and PDFs before you share them",
+      "summary": "Small, plain tools for checking a photo or a PDF before you share it, and for keeping control of what the app stores on this device.",
       "audience": "For anyone who shares photos and documents and wants to know what goes with them, and for anyone who cares what a website leaves behind on their device.",
       "launch": "studio/?tool=metadata",
       "launchLabel": "Read a photo's hidden data",
       "panel": "apps",
       "art": "privacy",
       "sections": [
-        { "title": "Check before you share", "items": ["photo-privacy", "metadata", "redact-photo", "pdf-reveal", "pdf-safety", "find-sensitive", "pdf-redaction", "safe-to-send"] },
-        { "title": "Control this device", "items": ["storage-manager", "install-offline", "device-check"] },
-        { "title": "Small tools that help", "items": ["tool:password-generator", "tool:hash-generator", "tool:watermark-pdf", "tool:watermark-image"] }
+        {"title": "Check before you share", "items": ["photo-privacy", "metadata", "redact-photo", "pdf-reveal", "pdf-safety", "find-sensitive", "pdf-redaction", "safe-to-send"]},
+        {"title": "Control this device", "items": ["storage-manager", "install-offline", "device-check"]},
+        {"title": "Small tools that help", "items": ["tool:password-generator", "tool:hash-generator", "tool:watermark-pdf", "tool:watermark-image"]}
       ],
       "privacy": "None of these tools send a file anywhere. Reading a photo's camera data, listing what is stored and clearing it are all done by your browser. The storage manager shows the app's own caches and saved work, so you can delete any of it in one place.",
       "faq": [
@@ -116,9 +117,10 @@
       "panel": "design",
       "art": "sizes",
       "sections": [
-        { "title": "Make the post", "items": ["social-sizes", "collage-maker", "text-on-photos", "photo-editor", "photo-backgrounds", "carousel-maker", "thumbnail-maker", "background-remover", "quick-makers"] },
-        { "title": "Keep your look", "items": ["batch-edit", "brand-kit", "template-links", "export-every-size", "process-replay"] },
-        { "title": "Quick extras", "items": ["meme", "frames", "tool:image-compressor", "tool:qr-code-generator"] }
+        {"title": "Make the post", "items": ["social-sizes", "collage-maker", "text-on-photos", "photo-editor", "photo-backgrounds", "carousel-maker", "thumbnail-maker", "background-remover", "quick-makers"]},
+        {"title": "Keep your look", "items": ["batch-edit", "brand-kit", "template-links", "export-every-size", "process-replay"]},
+        {"title": "Make something quick", "items": ["quote-cards", "review-cards", "receipt-lists", "milestone-cards", "palette-poster", "film-looks"]},
+        {"title": "Quick extras", "items": ["meme", "frames", "tool:image-compressor", "tool:qr-code-generator"]}
       ],
       "privacy": "Drafts and unposted photos stay on your device until you choose to post them. Nothing is uploaded while you edit, there is no account to link, and no watermark is added to what you export.",
       "faq": [
@@ -127,7 +129,15 @@
         ["Can I post straight to Instagram?", "Download the image and post it from your phone's gallery. The app never connects to your social accounts."]
       ],
       "related": ["photo", "business", "privacy-tools"],
-      "keywords": ["instagram", "story", "reel", "youtube thumbnail", "pinterest", "creator", "social media"]
+      "keywords": [
+        "instagram",
+        "story",
+        "reel",
+        "youtube thumbnail",
+        "pinterest",
+        "creator",
+        "social media"
+      ]
     },
     {
       "id": "business",
@@ -147,9 +157,9 @@
       "launchLabel": "Open the photo studio",
       "art": "shop",
       "sections": [
-        { "title": "Your look, every time", "items": ["brand-kit", "batch-edit", "photo-backgrounds", "background-remover", "social-sizes", "collage-maker", "text-on-photos", "quick-makers", "template-links"] },
-        { "title": "Paperwork", "items": ["pdf-editor", "word-to-pdf", "tool:merge-pdf", "tool:watermark-pdf", "mail-merge", "compress-to-size"] },
-        { "title": "Handy tools", "items": ["tool:qr-code-generator", "tool:watermark-image", "tool:image-compressor", "tool:color-picker"] }
+        {"title": "Your look, every time", "items": ["brand-kit", "batch-edit", "photo-backgrounds", "background-remover", "social-sizes", "collage-maker", "text-on-photos", "quick-makers", "template-links", "review-cards", "quote-cards"]},
+        {"title": "Paperwork", "items": ["pdf-editor", "word-to-pdf", "tool:merge-pdf", "tool:watermark-pdf", "mail-merge", "compress-to-size"]},
+        {"title": "Handy tools", "items": ["tool:qr-code-generator", "tool:watermark-image", "tool:image-compressor", "tool:color-picker"]}
       ],
       "privacy": "Customer documents, prices and unreleased product photos stay on your device. Nothing is uploaded, there is no account, and the files you export are yours with nothing added.",
       "faq": [
@@ -499,8 +509,9 @@
       "description": "Save your brand colours, fonts and logos in the studio and use them in every design. Stored only in your browser, free, no account.",
       "tagline": "Your colours, fonts and logos in every design",
       "summary": "Keep your brand's colours, fonts and logos in one place. They appear first whenever you pick a colour or a font, so every design matches.",
-      "launch": "studio/",
-      "launchLabel": "Open the studio",
+      "launch": "studio/?tool=brand",
+      "launchLabel": "Open the Brand kit",
+      "panel": "brand",
       "art": "brand",
       "does": [
         "Brand colours at the top of every colour picker",
@@ -510,7 +521,7 @@
         "Replace colours or fonts across a whole design in one step"
       ],
       "steps": [
-        "Open the studio, open the menu and choose Brand kit.",
+        "Open the Brand kit in the studio.",
         "Add your colours, fonts and logo.",
         "Pick them from the top of any colour or font list."
       ],
@@ -631,7 +642,7 @@
         ["Do I have to install it?", "No. Everything works in a normal browser tab. Installing makes it open faster and work offline more reliably."],
         ["How do I uninstall it?", "Remove it like any other app from your home screen or your browser's app settings, and clear its storage in the storage manager first if you want."]
       ],
-      "related": ["storage-manager", "pdf-editor", "photo-editor"],
+      "related": ["storage-manager", "device-check", "pdf-editor", "photo-editor"],
       "keywords": ["install", "pwa", "offline", "home screen", "app"]
     },
     {
@@ -668,7 +679,7 @@
         ["Will clearing storage delete my designs?", "Clearing saved work does. Clearing fonts or graphics only removes downloads, which come back when you use them again."],
         ["Why would the browser delete my work?", "Browsers can clear site data when the device is low on space. Asking for persistent storage makes that less likely, and saving a project file keeps a copy you control."]
       ],
-      "related": ["install-offline", "metadata", "brand-kit"],
+      "related": ["install-offline", "device-check", "metadata", "brand-kit"],
       "keywords": ["storage", "cache", "clear data", "space", "offline files"]
     },
 
@@ -699,27 +710,41 @@
     },
 
     {
-      "id": "photo-privacy", "kind": "tool", "status": "soon", "title": "Photo privacy check", "icon": "shield",
-      "tagline": "What a photo reveals about you, stripped in one tap", "launch": "photo-privacy/",
-      "keywords": ["photo privacy", "exif", "location", "strip metadata"],
-      "$note": "A real tool page built by another engineer. Never generate a page at this URL; flipping to live only lists it."
+      "id": "photo-privacy",
+      "kind": "tool",
+      "status": "live",
+      "title": "Photo privacy check",
+      "icon": "shield",
+      "tagline": "See what a photo reveals about you, and remove it in one tap",
+      "launch": "photo-privacy/",
+      "keywords": ["photo privacy", "exif", "location", "strip metadata"]
     },
     {
-      "id": "device-check", "kind": "tool", "status": "soon", "title": "Device check", "icon": "phone",
-      "tagline": "What works on this device and browser", "launch": "device-check/",
-      "keywords": ["browser support", "compatibility", "device"],
-      "$note": "A real tool page built by another engineer. Never generate a page at this URL; flipping to live only lists it."
+      "id": "device-check",
+      "kind": "tool",
+      "status": "live",
+      "title": "Device check",
+      "icon": "phone",
+      "tagline": "What works on this device and browser, and what would unlock more",
+      "launch": "device-check/",
+      "keywords": ["browser support", "compatibility", "device", "which browser"]
     },
     {
-      "id": "redact-photo", "kind": "tool", "status": "soon", "title": "Redact a photo", "icon": "redact",
-      "tagline": "Blur, pixelate or box out faces, plates and text", "launch": "studio/?tool=redact",
-      "keywords": ["redact", "blur face", "pixelate", "hide"]
+      "id": "redact-photo",
+      "kind": "tool",
+      "status": "live",
+      "title": "Redact a photo",
+      "icon": "redact",
+      "tagline": "Box, pixelate or blur faces, plates, names and numbers",
+      "launch": "studio/?tool=redact",
+      "keywords": ["redact", "blur face", "pixelate", "hide", "blur license plate", "cover text"],
+      "panel": "redact"
     },
 
     {
       "id": "background-remover",
       "kind": "feature",
-      "status": "soon",
+      "status": "beta",
       "url": "background-remover/",
       "title": "Background remover",
       "icon": "cutout",
@@ -727,35 +752,46 @@
       "audiences": ["social", "business"],
       "headline": "Remove a background {on your own device.}",
       "metaTitle": "Remove a photo background in your browser, no upload",
-      "description": "Cut out a person or product from a photo with an on-device model. Choose a model for speed or detail, touch up with a brush. Nothing is uploaded.",
-      "tagline": "Cut out a subject with an on-device model",
-      "summary": "Cut out a person or a product with a model that runs in your browser. Pick a model for speed or detail, touch up the edges with a brush, and place the cut-out on any background.",
+      "description": "Cut a subject out of a photo with a model that runs on your device. Beta: best with one clear subject, with a brush for touch-ups. Nothing is uploaded.",
+      "tagline": "Cut out one clear subject on this device, with a brush for touch-ups",
+      "summary": "Remove the background from a photo with a model that runs in your browser. It works best on one clear subject, such as a person, a pet or a product, and you can fix the edges with a brush.",
       "launch": "studio/?tool=cutout",
       "launchLabel": "Remove a background",
+      "panel": "cutout",
       "art": "background",
       "does": [
-        "Fast, Detailed and People models, each with its download size",
-        "Tells you whether this device can run each model",
-        "Brush to restore or erase edges by touch",
-        "Place the cut-out on a colour, gradient or new photo"
+        "Three quality options: Quick (about 5 MB), More detail and People and portraits (about 44 MB each)",
+        "Says whether this device can run each option before you download it",
+        "Brush to erase or restore edges, or to cut a subject out by hand",
+        "Put the subject on a transparent, colour or blurred backdrop, with an optional outline",
+        "Your original photo is kept: show it again at any time"
       ],
       "steps": [
-        "Open the background remover and choose a model.",
-        "Add a photo and wait for the cut-out.",
-        "Touch up the edges and place it on a new background."
+        "Open a photo in the studio, then choose Remove background.",
+        "The first time, a one-off model download is explained before it starts. Then the cut-out runs on this device.",
+        "Touch up the edges with the brush, choose a backdrop and download."
       ],
-      "privacy": "The model is downloaded once and runs on this device. Your photo is never sent to a server, and the model is listed in the storage manager so you can delete it.",
+      "privacy": "The model is downloaded to this browser once and runs on this device. Your photo is never sent to a server. The model is listed in the storage manager, where you can delete it.",
       "faq": [
-        ["Why is it labelled beta?", "Results depend on the photo and the model. Busy backgrounds and fine hair can need touching up with the brush."],
-        ["How big is the download?", "Each model shows its size before you download it. It is stored once and works offline afterwards."]
+        ["Why is it labelled Beta?", "Results depend on the photo. It works best on one clear subject that stands out from its background. Crowded scenes, fine hair and glass can need touching up with the brush."],
+        ["How big is the download?", "Quick is about 5 MB. More detail and People and portraits are about 44 MB each. The panel tells you before anything downloads, and after that the model works offline."],
+        ["What if it cannot find a subject?", "It says so and changes nothing. You can try the More detail option, or cut the subject out by hand with the brush."],
+        ["Does it change my original photo?", "No. The cut-out is a mask on top of the photo, so you can switch back to the original at any time."]
       ],
       "related": ["photo-backgrounds", "thumbnail-maker", "photo-editor"],
-      "keywords": ["remove background", "background remover", "cut out", "transparent png"]
+      "keywords": [
+        "remove background",
+        "background remover",
+        "cut out",
+        "transparent png",
+        "cutout",
+        "remove bg"
+      ]
     },
     {
       "id": "thumbnail-maker",
       "kind": "feature",
-      "status": "soon",
+      "status": "beta",
       "url": "thumbnail-maker/",
       "title": "Thumbnail maker",
       "icon": "thumbnail",
@@ -763,23 +799,39 @@
       "audiences": ["social"],
       "headline": "Bold thumbnails {that read at a glance.}",
       "metaTitle": "Make YouTube thumbnails with cut-outs and bold text, privately",
-      "description": "Make video thumbnails with a cut-out subject, an outline and bold text, at the right size. In your browser, nothing uploaded.",
-      "tagline": "Cut-out, outline and bold text at 1280 × 720",
-      "summary": "Put a cut-out subject, a clean outline and big readable text on a 1280 × 720 canvas, ready for a video platform.",
+      "description": "Make a 1280 × 720 video thumbnail from one photo: cut out the subject, add a bold headline and pick one of eight layouts. Every part stays editable.",
+      "tagline": "A cut-out, a bold headline and eight layouts at 1280 × 720",
+      "summary": "Pick a photo, type a short headline and choose one of eight layouts. The thumbnail is built at 1280 × 720 and every part stays an editable layer in the studio.",
       "launch": "studio/?tool=thumbnail",
       "launchLabel": "Make a thumbnail",
+      "panel": "apps",
+      "panelOpts": {"app": "thumbnail"},
       "art": "sizes",
-      "does": ["Cut-out subject with an outline", "Bold text styles that stay readable when small", "Correct thumbnail size and a small-size preview"],
-      "steps": ["Open the thumbnail maker.", "Add a photo and a title.", "Check the small preview and download."],
-      "privacy": "Your photos and unreleased video titles stay on this device.",
-      "faq": [["What size is a thumbnail?", "1280 × 720 pixels, a 16:9 ratio."], ["Do I need the background remover?", "No, but a cut-out subject usually reads better at small sizes."]],
+      "does": [
+        "Eight layouts, each previewed with your photo and your headline",
+        "Cuts the subject out for you, or uses the whole photo",
+        "Bold headline fonts with a stroke or shadow so the words read when small",
+        "Built at 1280 × 720, a 16:9 shape",
+        "The result is ordinary layers you can keep editing"
+      ],
+      "steps": [
+        "Open the thumbnail maker and pick or upload a photo.",
+        "Type a headline. Two to four words read best on a phone.",
+        "Pick a layout. The thumbnail opens in the studio, ready to edit and download."
+      ],
+      "privacy": "Your photo and headline stay on this device. The cut-out runs here too, with a model that is downloaded once.",
+      "faq": [
+        ["What size is a thumbnail?", "1280 × 720 pixels, a 16:9 ratio."],
+        ["Do I need to cut out the subject?", "No. Choose Use the whole photo instead. A cut-out subject often stands out more at small sizes."],
+        ["Why is it labelled Beta?", "The cut-out uses the background remover, which works best on one clear subject."]
+      ],
       "related": ["background-remover", "text-on-photos", "social-sizes"],
-      "keywords": ["youtube thumbnail", "thumbnail maker"]
+      "keywords": ["youtube thumbnail", "thumbnail maker", "video thumbnail", "cover image"]
     },
     {
       "id": "export-every-size",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "export-every-size/",
       "title": "Export for every size",
       "icon": "sizes",
@@ -787,24 +839,38 @@
       "audiences": ["social", "business"],
       "headline": "One design, {every size in one zip.}",
       "metaTitle": "Export one design in every social size at once",
-      "description": "Pick the sizes you need and get one zip with a version of your design for each. Copy to clipboard or share from your phone. Nothing uploaded.",
-      "tagline": "Pick sizes, get one zip",
-      "summary": "Choose the sizes you need and download a zip with a version of the design for each one, or copy and share straight from the studio.",
-      "launch": "studio/?tool=export",
-      "launchLabel": "Export sizes",
+      "description": "Pick the sizes you need, check a preview of each, and download one zip as JPG, PNG or WebP. Share from your phone if your browser allows. Made on your device.",
+      "tagline": "Tick the sizes you need, get one zip",
+      "summary": "Choose from the platform sizes or add your own, check a preview of each one, and download a zip with a version of the design for every size. The page you are working on is not changed.",
+      "launch": "studio/?tool=export-sizes",
+      "launchLabel": "Open Every size",
       "panel": "export",
+      "panelOpts": {"tab": "sizes"},
       "art": "sizes",
-      "does": ["Pick several sizes at once", "One zip with every version", "Copy to clipboard or use the share sheet"],
-      "steps": ["Finish your design.", "Open Export and tick the sizes you need.", "Download the zip or share."],
-      "privacy": "Every version is rendered by your browser and saved on this device.",
-      "faq": [["Will each size look right?", "Each version is laid out for its size; check the previews before you download."], ["Can I share directly?", "On phones that support it, the share sheet sends the image to the app you choose."]],
+      "does": [
+        "Tick several platform sizes, or add your own from 16 to 8,000 pixels",
+        "See a preview of each size and choose Fill, Fit or Stretch and what to keep in view",
+        "JPG, PNG or WebP, all in one zip",
+        "Share from your phone where the browser has a share sheet"
+      ],
+      "steps": [
+        "Finish your design.",
+        "Open Download, choose Every size and tick the sizes.",
+        "Check the previews, then download the zip or share."
+      ],
+      "privacy": "Every version is drawn by your browser and saved on this device. Exported images carry no camera data such as location, device or time.",
+      "faq": [
+        ["Will each size look right?", "Each version is laid out for its size from the same design. Tap a preview to change how the photo fits and what stays in view, and check every preview before you download."],
+        ["Can I share directly?", "Where your browser supports it, the share sheet sends the images to the app you choose. Otherwise you get the zip."],
+        ["Does it change my design?", "No. The open page stays as it is. The sizes are made only for the export."]
+      ],
       "related": ["social-sizes", "carousel-maker", "brand-kit"],
-      "keywords": ["export", "all sizes", "zip", "share"]
+      "keywords": ["export", "all sizes", "zip", "share", "resize for every platform"]
     },
     {
       "id": "carousel-maker",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "carousel-maker/",
       "title": "Carousel maker",
       "icon": "carousel",
@@ -812,23 +878,39 @@
       "audiences": ["social", "business"],
       "headline": "One wide design, {split into seamless slides.}",
       "metaTitle": "Make seamless Instagram carousels in your browser",
-      "description": "Design one wide canvas and split it into seamless carousel slides, with guides while you edit. Private and free, nothing uploaded.",
-      "tagline": "Seamless slides from one wide design",
-      "summary": "Design across one wide canvas with slide guides, then export it as separate slides that line up when people swipe.",
+      "description": "Turn one wide design into carousel slides that line up when people swipe. Dashed guides mark the slide edges while you edit. Made on your device.",
+      "tagline": "One wide design, split into slides that line up",
+      "summary": "Make a page one wide canvas of side-by-side slides, from 2 to 20. Anything that crosses a slide edge carries on across it when people swipe, and dashed guides show where the edges are.",
       "launch": "studio/?tool=carousel",
-      "launchLabel": "Make a carousel",
+      "launchLabel": "Open Slides",
+      "panel": "export",
+      "panelOpts": {"tab": "slides"},
       "art": "sizes",
-      "does": ["Slide guides while you design", "Photos and text can cross from one slide to the next", "Exports numbered slides in order"],
-      "steps": ["Choose how many slides.", "Design across the guides.", "Export the slides and post them in order."],
+      "does": [
+        "Two to twenty slides, and you can add or remove slides as you go",
+        "Dashed guides mark the slide edges, and layers snap to them",
+        "Photos and text can cross from one slide to the next",
+        "Start a new Instagram carousel at 1080 × 1350 per slide",
+        "A swipe preview, then numbered slides in a zip as JPG or PNG"
+      ],
+      "steps": [
+        "Open Download, choose Slides, and pick how many slides.",
+        "Design across the dashed slide guides.",
+        "Check the swipe preview, then download the numbered slides and post them in order."
+      ],
       "privacy": "Slides are cut and saved on this device.",
-      "faq": [["How many slides can I make?", "Choose the count when you start; you can add or remove slides later."], ["Which sizes work?", "Square and portrait post sizes."]],
+      "faq": [
+        ["How many slides can I make?", "Two to twenty. Choose the count when you start, then add or remove slides in the Slides panel."],
+        ["Which sizes work?", "Start a new Instagram carousel at 1080 × 1350 per slide, or turn any page you already have into slides."],
+        ["Will the seams line up?", "Use the swipe preview to check before you post. On a phone, a very wide carousel is drawn in pieces, so a photo or gradient background can show a faint seam."]
+      ],
       "related": ["export-every-size", "social-sizes", "collage-maker"],
-      "keywords": ["carousel", "instagram carousel", "seamless", "slides"]
+      "keywords": ["carousel", "instagram carousel", "seamless", "slides", "swipe"]
     },
     {
       "id": "process-replay",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "process-replay/",
       "title": "Process replay",
       "icon": "play",
@@ -836,23 +918,39 @@
       "audiences": ["social"],
       "headline": "Show how you made it, {as a short video.}",
       "metaTitle": "Export the making of a design as a short video",
-      "description": "Turn the steps of a design into a short video you can post. Rendered in your browser, nothing uploaded.",
-      "tagline": "The making of a design, as a video",
-      "summary": "Replay the edits that built a design and export them as a short video for a reel or a story.",
+      "description": "Turn the making of a design into a short video for a reel or story. Choose a length from 6 to 20 seconds. Recorded on your device, nothing uploaded.",
+      "tagline": "The making of a design, as a short video",
+      "summary": "Replay the edits you made, in order, and save them as a short video for a reel or a story. If no edits were recorded, the layers build in one by one instead.",
       "launch": "studio/?tool=replay",
-      "launchLabel": "Make a replay",
+      "launchLabel": "Open Replay",
+      "panel": "export",
+      "panelOpts": {"tab": "replay"},
       "art": "edit",
-      "does": ["Replays your edits in order", "Exports a short video", "Works for designs made by a person or an agent"],
-      "steps": ["Finish a design.", "Open Replay and pick a length.", "Export the video."],
-      "privacy": "The video is rendered on this device.",
-      "faq": [["Which video format is exported?", "A format your browser can record; the export shows it before you save."], ["Does it include my photos?", "Yes, as they appear in the design."]],
+      "does": [
+        "Plays back the edits made in this session, in order",
+        "Or builds the design layer by layer, back to front",
+        "Choose a length from 6 to 20 seconds, a pace, and how long to hold the last frame",
+        "MP4 or WebM, depending on what your browser can record, at 30 frames a second",
+        "An optional “Made with LocalEditor” end tag, off by default"
+      ],
+      "steps": [
+        "Make or open a design and edit it.",
+        "Open Download, choose Replay, and set a length and pace.",
+        "Make the replay, watch it, then download or share it."
+      ],
+      "privacy": "The video is recorded on this device. The edit history behind it is kept in memory for this session only.",
+      "faq": [
+        ["Which video format do I get?", "MP4 or WebM, depending on your browser. The panel shows the format and the file size before you save. If the browser cannot record video, you can download the frames as a zip of JPEGs instead."],
+        ["Is my edit history saved?", "No. Recorded edits last for this session. After you reload, the replay builds the design layer by layer instead."],
+        ["Does it include my photos?", "Yes, as they appear in the design, drawn on your device."]
+      ],
       "related": ["export-every-size", "social-sizes", "text-on-photos"],
-      "keywords": ["timelapse", "process video", "replay"]
+      "keywords": ["timelapse", "process video", "replay", "speed art", "making of"]
     },
     {
       "id": "template-links",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "template-links/",
       "title": "Template links",
       "icon": "link",
@@ -860,23 +958,39 @@
       "audiences": ["social", "business", "teachers"],
       "headline": "Share a template {as a link, never your photos.}",
       "metaTitle": "Share a design template as a link that never reaches a server",
-      "description": "Share the layout, text and styles of a design as a link with empty photo slots. The template lives in the link itself and never reaches a server.",
-      "tagline": "Layout and text in a link, photos stay home",
-      "summary": "Send a link that opens your layout, text and styles with empty photo slots. The template lives in the part of the link that browsers never send to a server.",
+      "description": "Share a design as a link that opens as a copy with empty photo slots. The template sits after the # in the link and never reaches a server.",
+      "tagline": "Layout and text in a link; photos stay home",
+      "summary": "Make a link that opens a copy of your layout, text, colours and shapes. Photos are not included, so whoever opens it adds their own. The template sits after the # in the link, the part browsers do not send to a server.",
       "launch": "studio/?tool=share",
-      "launchLabel": "Share a template",
+      "launchLabel": "Open the share options",
+      "panel": "export",
+      "panelOpts": {"tab": "image"},
       "art": "brand",
-      "does": ["Layout, text and styles in one link", "Photo slots are left empty for the person opening it", "Fill in names or prices with template fields"],
-      "steps": ["Open a design and choose Share as template.", "Copy the link.", "Whoever opens it adds their own photos."],
-      "privacy": "The template is stored in the link itself. Your photos are never part of it.",
-      "faq": [["Can a template link run code?", "No. It holds data only and is checked before it opens."], ["How do I share a design with photos?", "Save it as a project file and send the file."]],
+      "does": [
+        "Layout, text, colours, shapes and icons in one link",
+        "Photos are left out: the person who opens it fills the empty photo slots",
+        "An optional credit line, shown as Originally by you",
+        "A QR code to scan, when the link is short enough",
+        "If a design is too big for a link, it says so and offers a design file instead"
+      ],
+      "steps": [
+        "Open your design and choose Share as template link, from the File menu or the Download panel.",
+        "Add a credit if you like, and copy the link.",
+        "Whoever opens it sees a preview, then adds their own photos."
+      ],
+      "privacy": "The template is stored in the link itself, after the #, which browsers do not send to a server. Photos are never part of it.",
+      "faq": [
+        ["Can a template link run code?", "No. A link carries design data only. The studio checks it against a fixed list of allowed fields, and shows a preview before anything is opened."],
+        ["How do I share a design with its photos?", "Save it as a design file with photos included, or as a project file, and send the file."],
+        ["How long can a link be?", "Up to about 30,000 characters. A meter shows how full it is."]
+      ],
       "related": ["brand-kit", "open-design-format", "collage-maker"],
-      "keywords": ["template", "share link", "remix"]
+      "keywords": ["template", "share link", "remix", "share design"]
     },
     {
       "id": "open-design-format",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "open-design-format/",
       "title": "Open design file format",
       "icon": "code",
@@ -884,23 +998,38 @@
       "audiences": [],
       "headline": "Designs as plain files {people and agents can edit.}",
       "metaTitle": "An open, readable design file format for people and AI agents",
-      "description": "Designs saved as readable JSON that a person or an AI agent can write, validate and open live in the studio. Data only, never code.",
+      "description": "Save a design as one readable JSON file that a person or an AI agent can write, check and open in the studio. Data only, never code.",
       "tagline": "Readable design files for people and agents",
-      "summary": "A design is a readable file: pages, layers, text and styles as plain data. An agent can write one, a person can open it in the studio, and both can keep editing.",
-      "launch": "studio/",
-      "launchLabel": "Open the studio",
+      "summary": "A design is one plain file: pages, layers, text and styles as data. A person or an agent can write one, open it in the studio and keep editing, and the studio saves the same format back.",
+      "launch": "studio/?tool=design-file",
+      "launchLabel": "Open Your designs",
+      "panel": "projects",
       "art": "code",
-      "does": ["Readable JSON with a published schema", "Validated on import; data only", "Short-hand for agents writing designs"],
-      "steps": ["Write or export a .ledesign.json file.", "Open it in the studio.", "Edit and save it back."],
-      "privacy": "Design files are opened locally and checked against a fixed list of fields.",
-      "faq": [["Can a design file contain scripts?", "No. Anything that is not plain design data is rejected."], ["Where is the format documented?", "In the format guide linked from llms.txt."]],
+      "does": [
+        "Readable JSON with a published schema",
+        "Save with the photos inside, or as a template with empty photo slots",
+        "Checked on opening: anything that is not plain design data is refused, and problems are listed with where they are",
+        "Shorthand for agents, such as \"x\": \"center\" and \"w\": \"90%\"",
+        "Every layer has a short readable id, so a request can say “change the title”"
+      ],
+      "steps": [
+        "In the studio, choose File, then Save as design file. Or write a .ledesign.json file yourself.",
+        "Open it from File, Open design file, or from the Your designs panel.",
+        "Edit it in the studio and save it back."
+      ],
+      "privacy": "Design files are opened on this device and checked against a fixed list of fields. Nothing is uploaded.",
+      "faq": [
+        ["Can a design file contain scripts?", "No. Scripts, HTML and anything else that is not plain design data are refused when you open the file."],
+        ["Where is the format described?", "The JSON Schema is published at localeditor.net/schema/design-1.json."],
+        ["Are my photos kept in the file?", "Your choice. Save with photos for one self-contained file, or as a template, where photos become empty photo slots."]
+      ],
       "related": ["template-links", "brand-kit"],
-      "keywords": ["design format", "json", "ai agent", "ledesign"]
+      "keywords": ["design format", "json", "ai agent", "ledesign", "design file", "open format"]
     },
     {
       "id": "quick-makers",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "quick-makers/",
       "title": "Quick makers",
       "icon": "spark",
@@ -908,26 +1037,118 @@
       "audiences": ["social", "business", "teachers"],
       "headline": "Fill in a form, {get an editable design.}",
       "metaTitle": "Quick makers: quote cards, invitations, posters and more",
-      "description": "Fill in a short form and get a finished, editable design: quote cards, review cards, invitations, posters and more. Private, in your browser.",
+      "description": "Fill in a short form and get a finished, editable design: quote cards, review cards, receipt lists, milestone cards, palette posters and film looks.",
       "tagline": "A short form in, an editable design out",
-      "summary": "Pick a maker, fill in a few fields, and get a finished design you can keep editing in the studio.",
-      "launch": "studio/?tool=makers",
+      "summary": "Pick a maker, fill in a few fields, add a photo if it asks for one, and get a finished design made of ordinary layers that you can keep editing in the studio.",
+      "launch": "studio/?tool=make",
       "launchLabel": "Open the makers",
+      "panel": "apps",
+      "panelOpts": {"app": "make"},
       "art": "brand",
-      "items": ["quote-cards", "review-cards", "receipt-lists", "milestone-cards", "palette-poster", "film-looks", "movie-poster", "event-kit", "invitations-qr", "qr-posters", "app-store-screenshots", "link-preview-cards", "printables", "photo-books", "catalogue"],
-      "does": ["Each maker is a short form", "The result is a normal design you can edit", "Uses your brand kit when you have one"],
-      "steps": ["Pick a maker.", "Fill in the fields and add photos.", "Edit anything you like and download."],
-      "privacy": "What you type into a maker stays on this device.",
-      "faq": [["Can I edit the result?", "Yes. Every maker produces an ordinary design with editable layers."], ["Do makers use my brand?", "They pick up your brand kit colours and fonts when you have one."]],
+      "items": [
+        "quote-cards",
+        "review-cards",
+        "receipt-lists",
+        "milestone-cards",
+        "palette-poster",
+        "film-looks",
+        "movie-poster",
+        "event-kit",
+        "invitations-qr",
+        "qr-posters",
+        "app-store-screenshots",
+        "link-preview-cards",
+        "printables",
+        "photo-books",
+        "catalogue"
+      ],
+      "does": [
+        "Six makers: quote card, review card, receipt list, milestone card, palette poster and film camera look",
+        "Four or five styles each, in square, portrait and story sizes",
+        "A live preview while you fill in the form",
+        "The result is a normal design: tap any part to edit it",
+        "Edit details reopens the form to remake the page later"
+      ],
+      "steps": [
+        "Pick a maker from the gallery.",
+        "Fill in the fields, add a photo if you like, and choose a style and size.",
+        "Tap Make it, then edit any part or download."
+      ],
+      "privacy": "What you type and the photos you add stay on this device. The preview and the finished design are drawn in your browser.",
+      "faq": [
+        ["Can I edit the result?", "Yes. A maker produces ordinary layers. Tap any part to change it, or use Edit details to reopen the form."],
+        ["Do makers use my brand kit?", "No. Some makers have an accent colour that you can set yourself."],
+        ["Can I link straight to a maker?", "Yes. Add ?make= and the maker name to the studio address, for example /studio/?make=quote."]
+      ],
       "related": ["brand-kit", "text-on-photos", "social-sizes"],
-      "keywords": ["maker", "generator", "template"]
+      "keywords": ["maker", "generator", "template", "form", "quick makers"]
     },
-    { "id": "quote-cards", "kind": "tool", "status": "soon", "title": "Quote cards", "icon": "text", "tagline": "A quote and a name, styled for posting", "launch": "studio/?tool=makers&maker=quote", "keywords": ["quote"] },
-    { "id": "review-cards", "kind": "tool", "status": "soon", "title": "Review cards", "icon": "star", "tagline": "Turn a customer review into a post", "launch": "studio/?tool=makers&maker=review", "keywords": ["review", "testimonial card"] },
-    { "id": "receipt-lists", "kind": "tool", "status": "soon", "title": "Receipt-style lists", "icon": "recipes", "tagline": "Top fives and recaps as a till receipt", "launch": "studio/?tool=makers&maker=receipt", "keywords": ["receipt", "list"] },
-    { "id": "milestone-cards", "kind": "tool", "status": "soon", "title": "Milestone cards", "icon": "spark", "tagline": "Birthdays, anniversaries and firsts", "launch": "studio/?tool=makers&maker=milestone", "keywords": ["milestone", "baby", "anniversary"] },
-    { "id": "palette-poster", "kind": "tool", "status": "soon", "title": "Palette poster", "icon": "palette", "tagline": "A photo and the colours in it", "launch": "studio/?tool=makers&maker=palette", "keywords": ["palette"] },
-    { "id": "film-looks", "kind": "tool", "status": "soon", "title": "Film camera looks", "icon": "filters", "tagline": "Date stamps and film borders", "launch": "studio/?tool=makers&maker=film", "keywords": ["film", "disposable camera"] },
+    {
+      "id": "quote-cards",
+      "kind": "tool",
+      "status": "live",
+      "title": "Quote cards",
+      "icon": "text",
+      "tagline": "A quote and who said it, in five styles",
+      "launch": "studio/?make=quote",
+      "maker": "quote",
+      "keywords": ["quote", "quote card", "saying", "poem", "lyrics"]
+    },
+    {
+      "id": "review-cards",
+      "kind": "tool",
+      "status": "live",
+      "title": "Review cards",
+      "icon": "star",
+      "tagline": "A customer review with stars, in five styles",
+      "launch": "studio/?make=review",
+      "maker": "review",
+      "keywords": ["review", "testimonial", "customer review", "stars"]
+    },
+    {
+      "id": "receipt-lists",
+      "kind": "tool",
+      "status": "live",
+      "title": "Receipt-style lists",
+      "icon": "recipes",
+      "tagline": "A year, a trip or a week as a receipt, ticket or ledger",
+      "launch": "studio/?make=receipt",
+      "maker": "receipt",
+      "keywords": ["receipt", "year in review", "recap", "list"]
+    },
+    {
+      "id": "milestone-cards",
+      "kind": "tool",
+      "status": "live",
+      "title": "Milestone cards",
+      "icon": "spark",
+      "tagline": "“6 months today” for a baby, pet, couple or work",
+      "launch": "studio/?make=milestone",
+      "maker": "milestone",
+      "keywords": ["milestone", "baby", "anniversary", "months old"]
+    },
+    {
+      "id": "palette-poster",
+      "kind": "tool",
+      "status": "live",
+      "title": "Palette poster",
+      "icon": "palette",
+      "tagline": "The colours of a photo, as a poster with hex codes",
+      "launch": "studio/?make=palette",
+      "maker": "palette",
+      "keywords": ["palette", "colours", "hex", "swatches"]
+    },
+    {
+      "id": "film-looks",
+      "kind": "tool",
+      "status": "live",
+      "title": "Film camera looks",
+      "icon": "filters",
+      "tagline": "Your photo on 35mm, an instant print or a disposable",
+      "launch": "studio/?make=film",
+      "maker": "film",
+      "keywords": ["film", "35mm", "polaroid", "date stamp", "disposable camera"]
+    },
     { "id": "movie-poster", "kind": "tool", "status": "soon", "title": "Movie poster", "icon": "image", "tagline": "Album covers and front pages too", "launch": "studio/?tool=makers&maker=poster", "keywords": ["movie poster", "album cover", "newspaper"] },
     { "id": "event-kit", "kind": "tool", "status": "soon", "title": "Event kit", "icon": "calendar", "tagline": "One event, every size it needs", "launch": "studio/?tool=makers&maker=event", "keywords": ["event", "flyer"] },
     { "id": "invitations-qr", "kind": "tool", "status": "soon", "title": "Invitations with QR", "icon": "qr", "tagline": "Invitations that link to the details", "launch": "studio/?tool=makers&maker=invitation", "keywords": ["invitation", "rsvp"] },
@@ -941,7 +1162,7 @@
     {
       "id": "pdf-redaction",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "redact-pdf/",
       "title": "PDF redaction",
       "icon": "redact",
@@ -949,23 +1170,40 @@
       "audiences": ["office", "teachers"],
       "headline": "Redact a PDF {for real, then check it.}",
       "metaTitle": "Redact PDFs properly in your browser, with a verify pass",
-      "description": "Remove the text and images under a redaction, not just cover them, and re-read the saved file to check. On your device, nothing uploaded.",
-      "tagline": "Removes the text underneath, then verifies",
-      "summary": "Mark what must go and the redaction removes the underlying text and image data, not just draws a box. A verify pass re-reads the saved file to check nothing is left.",
-      "launch": "pdf-studio/?panel=redact",
+      "description": "Black out text and pictures so they are removed from the file, not just covered, then re-open the saved copy to check. On your device, nothing uploaded.",
+      "tagline": "Removes what is under the boxes, then verifies",
+      "summary": "Draw boxes over what must go, or find sensitive data first. Redact and verify makes a new copy with the covered content removed, then opens that copy again and checks that nothing from under the boxes is left. Your original is not changed.",
+      "launch": "pdf-studio/?panel=security&job=redact",
       "launchLabel": "Redact a PDF",
+      "panel": "security",
+      "job": "redact",
       "art": "office",
-      "does": ["Removes the content under each mark", "Verify pass re-reads the saved file", "Redacts text found by search across every page"],
-      "steps": ["Open the PDF and mark areas or search for text.", "Apply the redactions.", "Save, and read the verify report."],
-      "privacy": "The document is redacted on this device and never uploaded.",
-      "faq": [["Why not just draw a black box?", "A box can be moved or the text under it copied. Redaction removes that content from the file."], ["Can a redaction be undone after saving?", "No. Keep your original if you might need it."]],
+      "does": [
+        "Draw boxes on any page, or add the matches from Find sensitive data",
+        "By default, pages with boxes are rebuilt as a picture of the page, so nothing under a box can be copied or recovered; their text can no longer be selected",
+        "Optional: keep other text selectable where a box covers only plain text",
+        "A verify report: the saved file is opened again and searched, and each box is checked to be solid black",
+        "Choose picture quality (Standard, High or Best) and an optional label such as REDACTED"
+      ],
+      "steps": [
+        "Open the PDF, choose Protect, then Hide information for good.",
+        "Draw boxes over what to hide, or use Find sensitive data to mark it.",
+        "Choose Redact and verify, read the report, and download the new copy."
+      ],
+      "privacy": "The file is redacted and checked on this device and never uploaded. Your original stays as it is; the redacted copy is a new file.",
+      "faq": [
+        ["Why not just draw a black box?", "A box drawn on top can be moved or deleted, and the text under it can still be copied. Redaction removes that content from the file."],
+        ["What does “verified” check?", "The saved copy is opened again. It checks that the page count is unchanged, that no text is left under a box, that the hidden words are not stored anywhere in the file, that every box is solid black and that no earlier version is inside. If a check fails it says so and tells you not to send the file. It does not replace reading the result yourself."],
+        ["Why can I not select text on a redacted page?", "Pages with boxes become pictures by default, so nothing under a box can be recovered. Pages without boxes stay as they were. The option to keep other text selectable keeps text only where a box covers plain text."],
+        ["Can a redaction be undone after saving?", "No. Keep your original if you might need it. A PDF locked with a password has to be unlocked first."]
+      ],
       "related": ["find-sensitive", "safe-to-send", "pdf-reveal"],
-      "keywords": ["redact pdf", "black out", "remove text"]
+      "keywords": ["redact pdf", "black out", "remove text", "redaction", "hide information"]
     },
     {
       "id": "pdf-reveal",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "pdf-reveal/",
       "title": "What does this PDF reveal?",
       "icon": "eye",
@@ -973,23 +1211,39 @@
       "audiences": ["office", "teachers"],
       "headline": "See what a PDF carries {before you send it.}",
       "metaTitle": "See and strip a PDF's hidden data: author, comments, attachments",
-      "description": "Find the author, software, dates, hidden text, comments, attachments and form data in a PDF, and strip them in one step. On your device.",
+      "description": "See the author, software, dates, comments, attachments, hidden text and earlier versions inside a PDF, then remove them. Done on your device.",
       "tagline": "Author, comments, attachments and hidden text",
-      "summary": "Lists what travels with a PDF besides the visible pages, such as author and software names, dates, comments, attachments, hidden text and form data, and strips it.",
-      "launch": "pdf-studio/?panel=reveal",
+      "summary": "Lists what travels with a PDF besides the visible pages, in plain language: who made it and when, comments, attached files, form answers, hidden text, earlier versions and more. Then you can remove it in one step.",
+      "launch": "pdf-studio/?panel=security&job=reveal",
       "launchLabel": "Check a PDF",
+      "panel": "security",
+      "job": "reveal",
       "art": "privacy",
-      "does": ["Author, software and dates", "Comments, attachments and form data", "Hidden or off-page text", "Strip all of it in one step"],
-      "steps": ["Open the PDF.", "Read the report.", "Strip what you do not want to send and save."],
-      "privacy": "The check runs on this device.",
-      "faq": [["Does stripping change the visible pages?", "No. It removes data around the pages, not the content you see."], ["Is every hidden item found?", "The common ones are. Unusual files may hold data the check does not recognise."]],
+      "does": [
+        "Who made it, with what software, and when",
+        "Comments, attached files, form answers and links to outside addresses",
+        "Text you cannot see: invisible, white on white, off the page, or under a picture or shape",
+        "Earlier versions and unused leftovers still inside the file",
+        "Page previews, and camera or location details in pictures"
+      ],
+      "steps": [
+        "Open the PDF, choose Protect, then What does this PDF reveal?",
+        "Read the report, grouped by kind of detail.",
+        "Remove what you do not want to send, or all of it, and download the cleaned copy."
+      ],
+      "privacy": "The check runs on this device. Nothing is uploaded.",
+      "faq": [
+        ["Does removing this change the pages?", "No. It removes data around the pages, not the content you see. The check reads the file as you opened it, not later edits in the studio."],
+        ["Is every hidden item found?", "The common ones are. An unusual file may hold something the check does not recognise, so read important files yourself too."],
+        ["What about a password-protected PDF?", "The details can be read in some cases, but they can only be removed once the password has been taken off the file."]
+      ],
       "related": ["pdf-safety", "safe-to-send", "pdf-redaction"],
-      "keywords": ["pdf metadata", "hidden data", "author"]
+      "keywords": ["pdf metadata", "hidden data", "author", "pdf properties", "strip metadata"]
     },
     {
       "id": "pdf-safety",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "pdf-safety-check/",
       "title": "Is this PDF safe to open?",
       "icon": "shield",
@@ -997,23 +1251,38 @@
       "audiences": ["office"],
       "headline": "Check a PDF {before you open it elsewhere.}",
       "metaTitle": "Check a PDF for scripts, embedded files and auto actions",
-      "description": "Flags scripts, embedded files, auto-launch actions and outside links in a PDF, without running any of them. On your device.",
-      "tagline": "Flags scripts, embedded files and auto actions",
-      "summary": "Looks inside a PDF for scripts, embedded files, actions that run on open and links to outside addresses, and lists them without running anything.",
-      "launch": "pdf-studio/?panel=safety",
+      "description": "Look inside a PDF for scripts, automatic actions, attached files and outside links without running any of them. Not a virus scan. On your device.",
+      "tagline": "Looks for scripts, automatic actions and attached programs",
+      "summary": "Reads the inside of a PDF for scripts, actions that run on their own, attached files and links to outside addresses, and reports what it finds in plain language. Nothing in the file is run.",
+      "launch": "pdf-studio/?panel=security&job=safety",
       "launchLabel": "Check a PDF",
+      "panel": "security",
+      "job": "safety",
       "art": "privacy",
-      "does": ["Scripts and auto-run actions", "Embedded files", "Links to outside addresses"],
-      "steps": ["Open the PDF.", "Read the findings.", "Remove active content and save a clean copy."],
-      "privacy": "Nothing in the PDF is run and nothing is uploaded.",
-      "faq": [["Is this a virus scanner?", "No. It reports risky PDF features; it does not replace security software."], ["Can it clean the file?", "It can save a copy with active content removed."]],
+      "does": [
+        "Scripts and actions that run when the file opens",
+        "Attached files, including programs",
+        "Links to outside addresses",
+        "Tricks such as disguised names, extra data after the end of the file and earlier versions inside"
+      ],
+      "steps": [
+        "Open the PDF, choose Protect, then Is it safe to open?",
+        "Read the verdict and each finding.",
+        "If something is flagged, make a safe copy: active content is removed and attached files are left out. The pages stay the same."
+      ],
+      "privacy": "The file is only read. Nothing in it is run and nothing is uploaded.",
+      "faq": [
+        ["Is this a virus scanner?", "No. It reports risky features of a PDF, such as scripts and automatic actions. It does not replace security software."],
+        ["Does it open or run the file?", "No. The file is read as data. Nothing inside it is executed."],
+        ["What does the safe copy change?", "It removes active content and leaves out attached files. The pages look the same."]
+      ],
       "related": ["pdf-reveal", "safe-to-send"],
-      "keywords": ["pdf javascript", "malicious pdf", "safe"]
+      "keywords": ["pdf javascript", "malicious pdf", "safe", "suspicious pdf", "embedded files"]
     },
     {
       "id": "safe-to-send",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "safe-to-send/",
       "title": "Safe to send",
       "icon": "send",
@@ -1021,23 +1290,39 @@
       "audiences": ["office"],
       "headline": "One step {before a PDF leaves your hands.}",
       "metaTitle": "Flatten, scrub and compress a PDF in one step before sending",
-      "description": "Flatten, remove hidden data and active content, and compress a PDF in one step before you send it. On your device.",
-      "tagline": "Flatten, scrub and compress in one step",
-      "summary": "Flattens forms and annotations, removes hidden data and active content, and compresses the file, in one step.",
-      "launch": "pdf-studio/?panel=safe-send",
+      "description": "One step before you send a PDF: remove scripts, hidden details, attachments and earlier versions, optionally flatten forms and shrink the file, then check the copy.",
+      "tagline": "Clean a PDF in one step before it leaves your hands",
+      "summary": "Makes a new copy of a PDF that is ready to send: scripts and automatic actions removed; author, software, dates, attachments, hidden text and earlier versions removed; forms and comments flattened and the file made smaller, if you leave those on. The new copy is checked and a list shows what changed.",
+      "launch": "pdf-studio/?panel=security&job=send",
       "launchLabel": "Make it safe to send",
+      "panel": "security",
+      "job": "send",
       "art": "office",
-      "does": ["Flattens forms and annotations", "Removes hidden data and active content", "Compresses the result"],
-      "steps": ["Open the PDF.", "Choose Safe to send.", "Save the cleaned copy."],
-      "privacy": "Everything happens on this device.",
-      "faq": [["Will people still be able to fill the form?", "No. Flattening makes the current answers part of the page."], ["Does it redact?", "No. Use redaction for content on the page."]],
+      "does": [
+        "Removes scripts, automatic actions and attached files",
+        "Removes author, software, dates, hidden text and earlier versions",
+        "Flattens forms and comments: how they look stays, the data behind them goes (on by default)",
+        "Options to remove clickable links, and to make the file smaller (on by default)",
+        "Checks the new copy and lists what was done"
+      ],
+      "steps": [
+        "Open the PDF, choose Protect, then Make it safe to send.",
+        "Choose the options: flatten, remove links, make smaller.",
+        "Prepare the copy, read the checks and download it."
+      ],
+      "privacy": "Everything happens on this device. Your original file is not changed.",
+      "faq": [
+        ["Will people still be able to fill in the form?", "Not with the default setting. Flattening makes the current answers part of the page. Turn it off to keep the form."],
+        ["Does it redact?", "No. What is visible on the page stays. Use redaction to remove content from the page."],
+        ["Does it work on a password-protected PDF?", "Not directly. Take the password off the file first, then clean it."]
+      ],
       "related": ["pdf-reveal", "pdf-safety", "compress-to-size"],
-      "keywords": ["flatten pdf", "clean pdf", "send"]
+      "keywords": ["flatten pdf", "clean pdf", "send", "sanitize pdf", "remove metadata"]
     },
     {
       "id": "find-sensitive",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "find-sensitive-data/",
       "title": "Find sensitive data",
       "icon": "search",
@@ -1045,23 +1330,39 @@
       "audiences": ["office", "teachers"],
       "headline": "Find emails, numbers and IDs, {then redact them.}",
       "metaTitle": "Find emails, phone and ID numbers in a PDF and redact them",
-      "description": "Find email addresses, phone numbers and account or ID numbers in a PDF automatically, then redact them in one click. On your device.",
+      "description": "Find email addresses, phone numbers, card and bank numbers, IDs and dates of birth in a PDF, plus words you choose, then mark them for redaction. On your device.",
       "tagline": "Emails, phone and ID numbers, found for you",
-      "summary": "Searches a PDF's text for email addresses, phone numbers and account or ID numbers, lists them, and redacts the ones you choose.",
-      "launch": "pdf-studio/?panel=find",
+      "summary": "Searches the text of a PDF for common kinds of personal data and for words you type, lists every match so you can choose, and puts boxes over the ones you select, ready for Redact and verify.",
+      "launch": "pdf-studio/?panel=security&job=find",
       "launchLabel": "Find sensitive data",
+      "panel": "security",
+      "job": "find",
       "art": "office",
-      "does": ["Email addresses and phone numbers", "Account and ID number patterns", "Review each match, then redact"],
-      "steps": ["Open the PDF.", "Review the matches.", "Redact and save."],
-      "privacy": "The text is searched on this device.",
-      "faq": [["Does it work on scanned pages?", "Only once the scan has searchable text."], ["Will it find everything?", "It finds common patterns. Always read the document yourself as well."]],
+      "does": [
+        "Email addresses, phone numbers, web and IP addresses, and dates of birth",
+        "Payment card numbers, IBANs, US Social Security, Aadhaar and PAN numbers, listed only when their check digits are valid for cards, IBANs and Aadhaar",
+        "Possible ID and bank numbers, shown unticked for you to decide",
+        "Your own names or words, matched exactly",
+        "Review each match with a thumbnail of its page, then add boxes"
+      ],
+      "steps": [
+        "Open the PDF, choose Protect, then Hide information for good, then Find sensitive data.",
+        "Search, and tick the matches you want to hide.",
+        "Add the boxes, then choose Redact and verify."
+      ],
+      "privacy": "The text is searched on this device. Nothing is uploaded.",
+      "faq": [
+        ["Does it read scanned pages?", "No. It reads the text stored in the PDF, so a page that is only a picture has nothing to search. The page is flagged so you know."],
+        ["Will it find everything?", "It finds common patterns and the words you give it. Always read the document yourself as well."],
+        ["Does finding something hide it?", "No. Nothing is hidden until you add the boxes and choose Redact and verify."]
+      ],
       "related": ["pdf-redaction", "safe-to-send"],
-      "keywords": ["pii", "personal data", "find email"]
+      "keywords": ["pii", "personal data", "find email", "sensitive data", "find phone numbers"]
     },
     {
       "id": "pdf-password",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "password-protect-pdf/",
       "title": "Password-protect a PDF",
       "icon": "lock",
@@ -1069,23 +1370,39 @@
       "audiences": ["office"],
       "headline": "Lock or unlock a PDF {on this device.}",
       "metaTitle": "Password-protect or unlock a PDF without uploading it",
-      "description": "Add a password to a PDF or remove one you know, in your browser. The file and the password never leave your device.",
-      "tagline": "Add or remove a password locally",
-      "summary": "Add an open password to a PDF, or remove one you know, without the file or the password leaving this device.",
-      "launch": "pdf-studio/?panel=protect",
+      "description": "Add a password to a PDF with AES-256, or remove one you know. One file or many, in your browser. The file and the password never leave your device.",
+      "tagline": "Add or remove a password on this device",
+      "summary": "Lock one or many PDFs so that opening them needs a password, or take a password off a file whose password you know. You choose what readers may do, such as printing and copying. The original file is not changed.",
+      "launch": "pdf-studio/?panel=bulk&job=protect",
       "launchLabel": "Protect a PDF",
+      "panel": "bulk",
+      "job": "protect",
       "art": "office",
-      "does": ["Add an open password", "Remove a password you know", "Choose the encryption strength"],
-      "steps": ["Open the PDF.", "Set a password.", "Save the protected copy."],
-      "privacy": "The password is used on this device and never stored or sent.",
-      "faq": [["Can it remove a password I do not know?", "No."], ["What if I forget the password?", "It cannot be recovered. Keep your original."]],
+      "does": [
+        "AES-256 encryption, with AES-128 for older apps",
+        "Set what readers may do: printing, copying, changing, comments and forms. These are requests that some apps ignore",
+        "A password suggestion and strength meter",
+        "Lock or unlock several PDFs at once and get a zip",
+        "Remove a password you know"
+      ],
+      "steps": [
+        "Open Bulk, then Password-protect or unlock, and choose the PDFs.",
+        "Type a password twice, or tap Suggest.",
+        "Protect, then download the locked copy and test it once with the password."
+      ],
+      "privacy": "The file and the password stay on this device. Passwords are not stored or sent anywhere, and your original file is not changed.",
+      "faq": [
+        ["What if I forget the password?", "It cannot be recovered, not by LocalEditor and not by anyone else. Keep the password safe, and keep your original."],
+        ["Can it remove a password I do not know?", "No. To remove a password you have to type the current one."],
+        ["Will every PDF app open the file?", "AES-256 is the default and AES-128 is offered for older apps. Open the protected copy once with the password before you send it."]
+      ],
       "related": ["mail-merge", "safe-to-send"],
-      "keywords": ["password pdf", "encrypt pdf", "unlock pdf"]
+      "keywords": ["password pdf", "encrypt pdf", "unlock pdf", "protect pdf", "aes-256"]
     },
     {
       "id": "mail-merge",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "pdf-mail-merge/",
       "title": "Mail-merge PDFs",
       "icon": "stack",
@@ -1093,23 +1410,39 @@
       "audiences": ["office", "business"],
       "headline": "One template, {one PDF per person.}",
       "metaTitle": "Mail-merge PDFs from a spreadsheet, each with its own password",
-      "description": "Combine a PDF template with a spreadsheet to make one PDF per person, each with its own password if you like. On your device.",
+      "description": "Fill a PDF template from a spreadsheet and get one PDF per person in a zip, each with its own password and name watermark if you like. On your device.",
       "tagline": "A spreadsheet in, one PDF per person out",
-      "summary": "Fill a PDF template from each row of a spreadsheet and get one file per person, optionally each with its own password.",
-      "launch": "pdf-studio/?panel=merge-mail",
+      "summary": "Use a PDF with form fields, or with {{column}} placeholders, as the template. Add a spreadsheet, match the columns and get one PDF per row. Name the files from a column, and add a password per person and a name watermark if you want.",
+      "launch": "pdf-studio/?panel=bulk&job=merge",
       "launchLabel": "Start a mail-merge",
+      "panel": "bulk",
+      "job": "merge",
       "art": "office",
-      "does": ["Fields from spreadsheet columns", "One file per row in a zip", "Optional password per file"],
-      "steps": ["Open a template.", "Add a spreadsheet and match fields.", "Download the zip."],
+      "does": [
+        "Templates: a PDF form, or text with {{column}} placeholders typed in the studio or in Word before saving as PDF",
+        "Data: CSV, TSV, Excel or ODS files, or pasted rows, up to 2,000 rows",
+        "Matches columns for you; change any that are wrong, and step through the rows to check each one",
+        "One file per row in a zip, named from your columns",
+        "Optional password per person, from a column or a pattern, and the person’s name as a watermark"
+      ],
+      "steps": [
+        "Open Bulk, then Mail-merge, and choose the template.",
+        "Add the spreadsheet and match the columns.",
+        "Set file names and passwords, check a few rows, and download the zip."
+      ],
       "privacy": "The spreadsheet and every output file stay on this device.",
-      "faq": [["Which spreadsheets work?", "Excel and CSV."], ["How are files named?", "From a column you choose."]],
+      "faq": [
+        ["Which spreadsheets work?", "CSV, TSV, Excel (.xlsx, .xlsm, .xls) and OpenDocument (.ods) files, or rows you paste in. The first row holds the column names."],
+        ["Can each person get a different password?", "Yes, if you choose: from a column, or built from a pattern. Keep your own list of them, since a lost password cannot be recovered."],
+        ["How are files named?", "From the columns you choose, so each file can carry the person’s name or ID."]
+      ],
       "related": ["pdf-password", "split-by-text"],
-      "keywords": ["mail merge", "bulk pdf", "payslips"]
+      "keywords": ["mail merge", "bulk pdf", "payslips", "certificates", "personalised pdf"]
     },
     {
       "id": "split-by-text",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "split-pdf-by-text/",
       "title": "Split by text",
       "icon": "split",
@@ -1117,23 +1450,39 @@
       "audiences": ["office", "teachers"],
       "headline": "One long file {into one file per person.}",
       "metaTitle": "Split a PDF into one file per employee or student by text",
-      "description": "Split one long PDF into separate files wherever a name or ID changes, such as one file per employee or student. On your device.",
+      "description": "Split one long PDF into separate files wherever a name or ID changes, or every few pages, by bookmarks, at blank pages or by file size. Downloaded as a zip.",
       "tagline": "One file per employee or student",
-      "summary": "Splits a long PDF wherever a name or ID changes and names each file after it.",
-      "launch": "pdf-studio/?panel=split-text",
+      "summary": "Turns one long PDF into one file per employee, student or invoice. Choose how to find where each file starts, check the list of parts, and download a zip with each file named after what was found.",
+      "launch": "pdf-studio/?panel=bulk&job=split",
       "launchLabel": "Split by text",
+      "panel": "bulk",
+      "job": "split",
       "art": "office",
-      "does": ["Split where a name or ID changes", "Name files from the text found", "Download as a zip"],
-      "steps": ["Open the long PDF.", "Choose the text to split on.", "Check the list and download."],
-      "privacy": "The file is split on this device.",
-      "faq": [["Does it work on scans?", "Only when the scan has searchable text."], ["Can I check before splitting?", "Yes, the list of files is shown first."]],
+      "does": [
+        "Split on a label in the page text, such as “Employee ID”; click the value on the page preview to fill the label in",
+        "Or split every few pages, by top-level bookmarks, at blank pages, or by file size",
+        "Name the files from the text found, the part number or the original name",
+        "See the list of parts before anything is saved",
+        "Download everything as one zip"
+      ],
+      "steps": [
+        "Open Bulk, then Split by text, and choose the long PDF.",
+        "Choose where a new file starts, and how to name the files.",
+        "Check the list of parts and download the zip."
+      ],
+      "privacy": "The file is split on this device. Nothing is uploaded.",
+      "faq": [
+        ["Does it work on scanned pages?", "Only where the page contains text. A scan that is just a picture has no text to find, and the preview tells you so."],
+        ["Can I check before splitting?", "Yes. The parts are listed first, and nothing is saved until you download."],
+        ["What if the PDF has a password?", "Unlock it first with Password-protect or unlock."]
+      ],
       "related": ["mail-merge", "tool:split-pdf"],
-      "keywords": ["split pdf by name", "bulk split"]
+      "keywords": ["split pdf by name", "bulk split", "split pdf by text", "one pdf per employee"]
     },
     {
       "id": "bulk-watermarks",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "bulk-pdf-watermarks/",
       "title": "Per-recipient watermarks",
       "icon": "stamp",
@@ -1141,23 +1490,38 @@
       "audiences": ["office"],
       "headline": "A watermark per recipient, {so a leak can be traced.}",
       "metaTitle": "Watermark a PDF with each recipient's name, in bulk",
-      "description": "Make one copy of a PDF per recipient, each watermarked with their name, so a leaked copy can be traced. On your device.",
+      "description": "Make one copy of a PDF per recipient, each watermarked with their name and a hidden copy number, so a leaked copy can be traced. On your device.",
       "tagline": "One named copy per recipient",
-      "summary": "Makes one copy of a document for each recipient, each with their name in the watermark.",
-      "launch": "pdf-studio/?panel=watermarks",
+      "summary": "Type or paste a list of recipients, or load a spreadsheet, and get one copy of the PDF for each person with their name in the watermark. A hidden copy number and a summary.csv help you find out whose copy was shared.",
+      "launch": "pdf-studio/?panel=bulk&job=watermark",
       "launchLabel": "Watermark copies",
+      "panel": "bulk",
+      "job": "watermark",
       "art": "office",
-      "does": ["Names from a list or spreadsheet", "Choose position and opacity", "One file per recipient"],
-      "steps": ["Open the PDF.", "Add the recipient list.", "Download the copies."],
-      "privacy": "The copies are made on this device.",
-      "faq": [["Can a watermark be removed?", "A determined person may be able to; it deters and traces, it does not prevent."], ["Is the name visible?", "You choose how visible it is."]],
+      "does": [
+        "Recipients one per line, or from a spreadsheet",
+        "Watermark text with the recipient’s name, today’s date and a copy number",
+        "Diagonal, tiled or footer style",
+        "A hidden copy number in the file’s properties and in tiny print on every page, listed in summary.csv",
+        "All copies in one zip"
+      ],
+      "steps": [
+        "Open Bulk, then Watermark copies, and choose the PDF.",
+        "Add the recipients and set the watermark text and style.",
+        "Check the preview and download the zip."
+      ],
+      "privacy": "The copies are made on this device. Nothing is uploaded.",
+      "faq": [
+        ["Can a watermark be removed?", "A determined person can crop, cover or retype content. A watermark deters and traces; it does not prevent."],
+        ["Is the name visible?", "Yes, in the style you choose. The copy number is also hidden in the file and printed small on each page."]
+      ],
       "related": ["tool:watermark-pdf", "mail-merge"],
-      "keywords": ["watermark", "leak", "confidential"]
+      "keywords": ["watermark", "leak", "confidential", "per recipient", "trace"]
     },
     {
       "id": "compress-to-size",
       "kind": "feature",
-      "status": "soon",
+      "status": "live",
       "url": "compress-pdf/",
       "title": "Compress to a target size",
       "icon": "compress",
@@ -1165,18 +1529,33 @@
       "audiences": ["office", "business"],
       "headline": "Get a PDF {under the upload limit.}",
       "metaTitle": "Compress a PDF to a target size such as under 2 MB",
-      "description": "Compress a PDF to a size you choose, such as under 2 MB, in your browser. Nothing is uploaded.",
-      "tagline": "\"Under 2 MB\" in one step",
-      "summary": "Pick a target size and the PDF is compressed to fit, with a preview so you can check the quality.",
-      "launch": "pdf-studio/?panel=compress",
+      "description": "Make a PDF small enough to email: pick Email (10 MB), under 2 MB, under 500 KB or your own size. Text stays sharp unless you choose otherwise. On your device.",
+      "tagline": "“Under 2 MB” in one step",
+      "summary": "Pick a target size and the PDF is tidied first, then photos and scans are made lighter step by step until it fits. Text and drawings stay sharp and selectable. If the target cannot be reached that way, you decide whether pages may become pictures.",
+      "launch": "pdf-studio/?panel=bulk&job=compress",
       "launchLabel": "Compress a PDF",
+      "panel": "bulk",
+      "job": "compress",
       "art": "doc",
-      "does": ["Choose a target size", "Preview the quality", "Keeps text sharp where possible"],
-      "steps": ["Open the PDF.", "Pick a target size.", "Check the preview and save."],
-      "privacy": "Compression runs on this device.",
-      "faq": [["Will text stay sharp?", "Text usually does; images are what get smaller."], ["What if it cannot reach the size?", "It tells you the smallest size it reached."]],
+      "does": [
+        "Targets: Email (10 MB), under 2 MB, under 500 KB, or a size you type",
+        "Tidies the file first, with no change in quality",
+        "Then makes photos lighter, one step at a time; text and drawings stay sharp",
+        "Several PDFs at once, as a zip",
+        "Optionally removes document details such as author and dates"
+      ],
+      "steps": [
+        "Open Bulk, then Compress to a size, and choose the PDFs.",
+        "Pick a target size.",
+        "Compress, and download the result."
+      ],
+      "privacy": "Compression runs on this device. Nothing is uploaded.",
+      "faq": [
+        ["Will text stay sharp?", "Yes, by default. Only photos are made lighter, and some images, such as CMYK and scans, are left exactly as they are."],
+        ["What if it cannot reach the size?", "It says which files could not reach it and offers to turn pages into pictures to get there. That makes the file smaller, but text can no longer be selected or searched, and links stop working."]
+      ],
       "related": ["safe-to-send", "tool:image-compressor"],
-      "keywords": ["compress pdf", "reduce pdf size"]
+      "keywords": ["compress pdf", "reduce pdf size", "pdf under 2mb", "email pdf"]
     },
     {
       "id": "searchable-scans",

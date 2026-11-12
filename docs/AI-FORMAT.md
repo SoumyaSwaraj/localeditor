@@ -165,3 +165,19 @@ A collage from a catalogue style is `{ v: 1, template: "<template id>", order: [
 - Recipe format 1.1 adds adjust keys: `fade` 0–100, `clarity` −100–100, `splitShadowHue` / `splitHighlightHue` 0–360, `splitShadowAmount` / `splitHighlightAmount` 0–100, `splitBalance` −100–100, plus `black`, `white`, `gamma`. The editor draws them in its own image pipeline.
 - An applied recipe is recorded at `layer.adjust.recipe = { id, name, strength, add: {key: amount}, prev: {key: value|null}, filter: bool, prevFilter }`, so it can be removed or re-tuned without losing manual edits. In the open format this should surface as `layer.recipe`, outside `adjust`.
 - The file format itself is specified in `docs/FORMAT-WORKFLOW.md`. Share links are `/recipes/#r=<tag><base64url>`.
+
+## Wave 2 fields (merged 12 November 2026)
+
+The open format itself is now implemented: see `docs/FORMAT-DESIGN.md`, `schema/design-1.json` and `examples/designs/`. The entries below are the page and layer fields added by wave 2 features; the format and schema must carry each of them.
+
+| Field | Where | Shape | Owner module |
+|---|---|---|---|
+| `carousel` | page | `{ v: 1, slides: 1–20, slideWidth }`; `slideWidth × slides = page width` | `le-studio-export.js` |
+| `maker` | page | `{ v: 1, id, style, size, values: {…}, sig }`; an agent can write only this block and the page is generated | `le-makers.js` |
+| `redact` | shape layer | `{ mode: "solid" \| "pixelate" \| "blur", amount: 0–500 (0 = automatic), color }`; affects everything drawn beneath it | `le-studio-privacy.js` |
+| `cutout` | image layer | `{ asset, enabled, model, feather: 0–50, refine, version: 1, outline: { color, width } \| null }`; `asset` is a mask image (alpha, or white = keep) | `le-studio-cutout.js` |
+| `variables` | document (`meta.studio.variables`) | `[{ key, label, type: "text" \| "image", default }]`; `{{key}}` in text | `le-design.js` (bulk create not built yet) |
+| `remix` | document (`meta.studio.remix`) | `{ name, by }` plain text credit that travels with a template link | `le-design.js` |
+| `pageIds` | document (`meta.studio.pageIds`) | Page ids by position; wrong after a page is deleted or reordered in the studio | `le-design.js` |
+
+Not yet in the open format or schema: `carousel`, `maker`, `redact`, `cutout`. Template links are `/studio/#d=<tag><base64url>`; quick makers open with `/studio/?make=<id>&style=&size=&v=<base64url>`.

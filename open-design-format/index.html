@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>An open, readable design file format for people and AI agents | LocalEditor</title>
+<meta name="description" content="Save a design as one readable JSON file that a person or an AI agent can write, check and open in the studio. Data only, never code.">
+<link rel="canonical" href="https://localeditor.net/open-design-format/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="generator" content="scripts/build-pages.js">
+<meta name="theme-color" content="#F7F6F3">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<link rel="preload" href="../assets/fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LocalEditor">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LocalEditor">
+<meta property="og:title" content="An open, readable design file format for people and AI agents">
+<meta property="og:description" content="Save a design as one readable JSON file that a person or an AI agent can write, check and open in the studio. Data only, never code.">
+<meta property="og:url" content="https://localeditor.net/open-design-format/">
+<meta property="og:image" content="https://localeditor.net/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<link rel="stylesheet" href="../assets/css/pages.css">
+<script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Open design file format — LocalEditor","url":"https://localeditor.net/open-design-format/","description":"Save a design as one readable JSON file that a person or an AI agent can write, check and open in the studio. Data only, never code.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Readable JSON with a published schema","Save with the photos inside, or as a template with empty photo slots","Checked on opening: anything that is not plain design data is refused, and problems are listed with where they are","Shorthand for agents, such as \"x\": \"center\" and \"w\": \"90%\"","Every layer has a short readable id, so a request can say “change the title”"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Photo and design","item":"https://localeditor.net/photo/"},{"@type":"ListItem","position":3,"name":"Open design file format","item":"https://localeditor.net/open-design-format/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Can a design file contain scripts?","acceptedAnswer":{"@type":"Answer","text":"No. Scripts, HTML and anything else that is not plain design data are refused when you open the file."}},{"@type":"Question","name":"Where is the format described?","acceptedAnswer":{"@type":"Answer","text":"The JSON Schema is published at localeditor.net/schema/design-1.json."}},{"@type":"Question","name":"Are my photos kept in the file?","acceptedAnswer":{"@type":"Answer","text":"Your choice. Save with photos for one self-contained file, or as a template, where photos become empty photo slots."}}]}]}</script>
+</head>
+<body class="le-built pg-body">
+<a class="skip" href="#main">Skip to content</a>
+<div class="le-app">
+  <aside class="le-side" data-fill aria-label="Menu"></aside>
+  <div class="le-main">
+    <header class="le-top" data-fill></header>
+    <main id="main" class="le-content">
+      <div class="pg">
+        <nav class="pg-crumbs" aria-label="Breadcrumb"><ol><li><a href="../">Home</a></li><li><a href="../photo/">Photo and design</a></li><li aria-current="page">Open design file format</li></ol></nav>
+        <section class="pg-hero" aria-labelledby="pg-title">
+          <div class="pg-hero-copy">
+            <p class="eyebrow">Open design file format</p>
+            <h1 id="pg-title">Designs as plain files <em>people and agents can edit.</em></h1>
+            <p class="pg-lead">A design is one plain file: pages, layers, text and styles as data. A person or an agent can write one, open it in the studio and keep editing, and the studio saves the same format back.</p>
+            <div class="hp-cta">
+              <a class="btn btn-gold btn-lg" href="../studio/?tool=design-file">Open Your designs<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+              
+            </div>
+            <p class="hp-kicker pg-kicker"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Free</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>No account</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Nothing uploaded</span></p>
+          </div>
+          <figure class="pg-art pg-art-code" aria-hidden="true"><div class="pg-code"><pre><code>{ "page": { "w": 1080, "h": 1350 },
+  "layers": [ { "type": "text",
+    "name": "Title", "text": "Hello" } ] }</code></pre></div></figure>
+        </section>
+        <section class="pg-how" aria-label="What it does and how it works">
+          <div>
+            <h2 class="pg-label">What it does</h2>
+            <ul class="pg-checks">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Readable JSON with a published schema</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Save with the photos inside, or as a template with empty photo slots</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Checked on opening: anything that is not plain design data is refused, and problems are listed with where they are</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Shorthand for agents, such as &quot;x&quot;: &quot;center&quot; and &quot;w&quot;: &quot;90%&quot;</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Every layer has a short readable id, so a request can say “change the title”</span></li>
+            </ul>
+          </div>
+          <div>
+            <h2 class="pg-label">How it works</h2>
+            <ol class="pg-steps">
+              <li><span>In the studio, choose File, then Save as design file. Or write a .ledesign.json file yourself.</span></li>
+              <li><span>Open it from File, Open design file, or from the Your designs panel.</span></li>
+              <li><span>Edit it in the studio and save it back.</span></li>
+            </ol>
+          </div>
+        </section>
+        <section class="pg-privacy" aria-labelledby="pg-privacy-title">
+          <span class="pg-privacy-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <div>
+            <h2 id="pg-privacy-title">Your files stay on this device</h2>
+            <p>Design files are opened on this device and checked against a fixed list of fields. Nothing is uploaded.</p>
+          </div>
+        </section>
+        <section class="hp-section hp-faq pg-faq" aria-labelledby="pg-faq-title">
+          <div class="hp-head">
+            <p class="eyebrow">Questions</p>
+            <h2 id="pg-faq-title">Short, honest answers.</h2>
+            <p>More on the <a href="../about/">privacy and install page</a>.</p>
+          </div>
+          <div class="faq">
+            <details><summary>Can a design file contain scripts?</summary><p>No. Scripts, HTML and anything else that is not plain design data are refused when you open the file.</p></details>
+            <details><summary>Where is the format described?</summary><p>The JSON Schema is published at localeditor.net/schema/design-1.json.</p></details>
+            <details><summary>Are my photos kept in the file?</summary><p>Your choice. Save with photos for one self-contained file, or as a template, where photos become empty photo slots.</p></details>
+          </div>
+        </section>
+        <section class="pg-group" aria-labelledby="pg-rel-title">
+          <h2 class="pg-label" id="pg-rel-title">Goes well with</h2>
+          <ul class="pg-list">
+          <li class="pg-row">
+            <a class="pg-row-main" href="../template-links/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span><span><b>Template links</b><small>Layout and text in a link; photos stay home</small></span></a>
+            <a class="pg-row-go" href="../studio/?tool=share" aria-label="Open Template links">Open</a>
+          </li>
+          <li class="pg-row">
+            <a class="pg-row-main" href="../brand-kit/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.3 4.7 5.2.8-3.8 3.6.9 5.2L12 15.4l-4.6 2.4.9-5.2-3.8-3.6 5.2-.8z"/><path d="M5 21h14"/></svg></span><span><b>Brand kit</b><small>Your colours, fonts and logos in every design</small></span></a>
+            <a class="pg-row-go" href="../studio/?tool=brand" aria-label="Open Brand kit">Open</a>
+          </li>
+          </ul>
+        </section>
+        <p class="pg-also">Part of <a href="../photo/">Photo and design</a>.</p>
+        <section class="hp-close pg-close" aria-labelledby="pg-close-title">
+          <h2 id="pg-close-title">Open design file format, <em>on this device.</em></h2>
+          <p>Readable design files for people and agents. It opens in this browser and keeps your files on this device.</p>
+          <div class="hp-cta"><a class="btn btn-gold btn-lg" href="../studio/?tool=design-file">Open Your designs</a></div>
+        </section>
+        <footer class="hp-foot pg-foot">
+          <div class="hp-foot-top">
+            <a class="le-brand" href="../"><span class="le-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#E9BE6A"/><circle cx="16" cy="16" r="7.5" fill="none" stroke="#2A1F0A" stroke-width="1.9"/><circle cx="16" cy="16" r="2" fill="#2A1F0A"/></svg></span><span><strong>LocalEditor</strong></span></a>
+            <nav aria-label="Footer">
+              <a href="../studio/">Photo studio</a>
+              <a href="../pdf-studio/">PDF studio</a>
+              <a href="../recipes/">Recipes</a>
+              <a href="../about/">Privacy</a>
+              <button type="button" data-le-install>Install</button>
+              <button type="button" data-le-storage>Storage</button>
+              <a href="../llms.txt">llms.txt</a>
+            </nav>
+          </div>
+          <nav class="pg-foot-hubs" aria-label="Browse by need">
+              <a href="../photo/">Photo and design</a>
+              <a href="../pdf/">PDF and documents</a>
+              <a href="../privacy-tools/">Privacy tools</a>
+              <a href="../social/">Social and creators</a>
+              <a href="../business/">Small business</a>
+              <a href="../teachers/">Teachers</a>
+              <a href="../office/">Office work</a>
+              <a href="../tools/">Every tool</a>
+          </nav>
+          <p>&copy; 2026 LocalEditor. Files stay on your device.</p>
+        </footer>
+      </div>
+    </main>
+  </div>
+</div>
+<button class="le-scrim" type="button" data-scrim hidden tabindex="-1" aria-label="Close menu"></button>
+<script src="../assets/js/app.js"></script>
+</body>
+</html>
