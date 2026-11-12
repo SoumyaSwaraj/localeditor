@@ -47,6 +47,16 @@
       }).catch(function () {});
     })).then(function () { return map; });
   }
+  /* File names of the photos, so a maker can match photos to rows by name (sample:x → x.jpg). */
+  function namesOf(c, m, values) {
+    var out = {};
+    photoIds(m, values).forEach(function (id) {
+      if (/^sample:/.test(id)) { out[id] = id.slice(7) + '.jpg'; return; }
+      var meta = (c && c.mem && c.mem[id] && c.mem[id].meta) || (c && c.S && c.S.project && c.S.project.assets && c.S.project.assets[id]);
+      if (meta && meta.name) out[id] = String(meta.name).slice(0, 120);
+    });
+    return out;
+  }
   /* Sample photos become real assets of the design when it is made. */
   function ingestSamples(c, m, values) {
     var out = clone(values), jobs = [];
@@ -260,6 +270,8 @@
       }
     } else if (t === 'list') {
       ctl = listField(F, inp, set);
+    } else if (t === 'table') {
+      ctl = tableField(F, inp, set);
     } else if (t === 'photo' || t === 'photos') {
       ctl = photoField(F, inp, set);
     }
@@ -303,6 +315,73 @@
       if (rows.length >= max) box.appendChild(el('<small class="mk-hint">That is the most lines this design holds.</small>'));
     }
     draw();
+    return box;
+  }
+  /* A table from pasted spreadsheet cells or a CSV / Excel file, with a simple column mapping. */
+  function tableField(F, inp, set) {
+    var T = M.table, cols = inp.columns, max = inp.max || 300;
+    var box = el('<div class="mk-table" style="display:grid;gap:8px"></div>');
+    var ta = el('<textarea class="sx-input mk-area" rows="5" spellcheck="false"></textarea>');
+    ta.id = 'mk-' + inp.key;
+    ta.placeholder = inp.placeholder || ('Paste rows from a spreadsheet, with a header row (' + cols.map(function (c) { return c.label; }).join(', ') + ')');
+    var bar = el('<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><label class="btn btn-sm mk-file">' + F.c.ic('file') + '<span>CSV or Excel file</span><input type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.ods,text/csv" hidden></label><small class="mk-hint" aria-live="polite"></small></div>');
+    var note = bar.querySelector('small');
+    var map = el('<div class="mk-map" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px"></div>');
+    var st = { grid: [], match: { map: {}, header: false } };
+    var cur = F.values[inp.key];
+    if (cur) ta.value = [cols.map(function (c) { return c.label; })].concat(T.unpack(cur, cols.length)).map(function (r) { return r.join('\t'); }).join('\n');
+    function commit() {
+      var r = T.rows(cols, st.grid, st.match, max);
+      var bits = [r.rows.length + (r.rows.length === 1 ? ' row' : ' rows')];
+      if (r.dropped) bits.push(r.dropped + ' more than the ' + max + ' this design holds were left out');
+      if (r.shortened) bits.push(r.shortened + ' long ' + (r.shortened === 1 ? 'cell was' : 'cells were') + ' shortened');
+      note.textContent = st.grid.length ? bits.join(' · ') : '';
+      set(r.rows);
+    }
+    function drawMap() {
+      map.innerHTML = '';
+      if (!st.grid.length) return;
+      var heads = st.match.header ? st.grid[0] : st.grid[0].map(function (_, i) { return 'Column ' + (i + 1); });
+      cols.forEach(function (c) {
+        var lab = el('<label class="mk-hint" style="display:grid;gap:2px"><span></span><select class="sx-input"></select></label>');
+        lab.querySelector('span').textContent = c.label;
+        var sel = lab.querySelector('select');
+        sel.setAttribute('aria-label', 'Column for ' + c.label);
+        [['-1', '(none)']].concat(heads.map(function (hd, i) { return [String(i), String(hd || 'Column ' + (i + 1)).slice(0, 40)]; })).forEach(function (o) {
+          var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; sel.appendChild(op);
+        });
+        sel.value = String(st.match.map[c.key]);
+        sel.onchange = function () { st.match.map[c.key] = Number(sel.value); commit(); };
+        map.appendChild(lab);
+      });
+    }
+    function read(keepMap) {
+      st.grid = T.parse(ta.value);
+      if (!keepMap) st.match = T.match(cols, st.grid);
+      drawMap();
+      commit();
+    }
+    var timer = 0;
+    ta.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(function () { read(false); }, 250); });
+    bar.querySelector('input').onchange = function (e) {
+      var f = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!f) return;
+      note.textContent = 'Reading ' + f.name + '…';
+      var sheet = /\.(xlsx|xlsm|xls|ods)$/i.test(f.name);
+      var job = !sheet ? f.text().then(function (t) { return T.parse(t, /\.tsv$/i.test(f.name) ? '\t' : null); }) :
+        (LE.pdfBulk && LE.pdfBulk.parseTable ? Promise.resolve() : LE.lazy(root() + 'assets/js/le-pdf-bulk.js')).then(function () {
+          return LE.pdfBulk.parseTable(f);
+        }).then(function (t) { return [t.columns].concat(t.rows.map(function (r) { return t.columns.map(function (k) { return r[k] == null ? '' : String(r[k]); }); })); });
+      job.then(function (grid) {
+        ta.value = grid.slice(0, max + 1).map(function (r) { return r.map(function (x) { return String(x).replace(/[\t\n\r]+/g, ' '); }).join('\t'); }).join('\n');
+        read(false);
+      }).catch(function (err) { note.textContent = (err && err.message) || 'That file could not be read.'; });
+    };
+    box.appendChild(ta);
+    box.appendChild(bar);
+    box.appendChild(map);
+    if (ta.value) { st.grid = T.parse(ta.value); st.match = T.match(cols, st.grid); drawMap(); note.textContent = T.unpack(cur, cols.length).length + ' rows'; }
     return box;
   }
   function photoField(F, inp, set) {
@@ -417,7 +496,7 @@
       var vals = clone(F.values);
       images(F.c, F.m, vals).then(function (imgs) {
         if (token !== F.token) return null;
-        return M.build(F.m.id, vals, { style: F.style, size: F.size, images: imgs }).then(function (out) {
+        return M.build(F.m.id, vals, { style: F.style, size: F.size, images: imgs, names: namesOf(F.c, F.m, vals) }).then(function (out) {
           if (token !== F.token) return null;
           var box = F.canvas.getBoundingClientRect();
           var dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -455,15 +534,15 @@
     btn.textContent = 'Making…';
     return ingestSamples(c, m, v.values).then(function (finalVals) {
       return images(c, m, finalVals).then(function (imgs) {
-        return M.build(m.id, finalVals, { style: F.style, size: F.size, images: imgs });
+        return M.build(m.id, finalVals, { style: F.style, size: F.size, images: imgs, names: namesOf(c, m, finalVals) });
       });
     }).then(function (out) {
-      var page = normalize(out.pages[0]);
-      page.maker.sig = M.signature(page.layers);
+      var pages = out.pages.map(function (pg) { var n = normalize(pg); n.maker.sig = M.signature(n.layers); return n; });
       var edit = F.edit;
       close();
-      place(c, page, out.name, edit);
-      return page;
+      if (pages.length > 1 || m.maxPages > 1) placeAll(c, pages, out.name, edit, m);
+      else place(c, pages[0], out.name, edit);
+      return pages[0];
     }).catch(function (err) {
       btn.disabled = false;
       btn.textContent = F.edit ? 'Remake page' : 'Make it';
@@ -484,6 +563,40 @@
     c.markDirty();
     if (c.renderFoot) c.renderFoot();
     c.toast(edit ? 'Page remade' : 'Made. Tap any part to edit it.', { action: { label: 'Edit details', fn: function () { editDetails(c); } } });
+  }
+  /* Makers that make several pages (books, catalogues): a new make goes after the current page; a remake replaces the
+     run of pages that came from the same make (same maker, style, size and values) and adds or removes pages to fit. */
+  function makeKey(mk) { return mk ? mk.id + '|' + mk.style + '|' + mk.size + '|' + JSON.stringify(mk.values) : ''; }
+  function placeAll(c, pages, name, edit, m) {
+    var from = 0, to = -1;
+    if (!c.S.project) { c.newDesign(pages[0].width, pages[0].height, name); to = 0; }
+    else {
+      c.syncProject();
+      var P0 = c.S.project, a = P0.activePage, key = makeKey(P0.pages[a].maker);
+      if (edit && key) {
+        var same = function (i) { return makeKey(P0.pages[i] && P0.pages[i].maker) === key; };
+        from = a; to = a;
+        while (from > 0 && same(from - 1)) from--;
+        while (to < P0.pages.length - 1 && same(to + 1)) to++;
+      } else if (!c.scene.layers().length) { from = a; to = a; }
+      else { from = a + 1; to = a; }
+    }
+    if (c.hideStart) c.hideStart();
+    pages.forEach(function (pg, k) {
+      var at = from + k;
+      if (at <= to) c.switchPage(at);
+      else { if (c.S.project.activePage !== at - 1) c.switchPage(at - 1); c.addPage(false); }
+      c.replaceDoc(pg, true);
+      photoIdsOfPage(pg).forEach(function (id) { if (c.mem[id] && c.S.project) c.S.project.assets[id] = c.mem[id].meta; });
+    });
+    for (var extra = to - (from + pages.length - 1); extra > 0; extra--) c.deletePage(from + pages.length);
+    c.syncProject();
+    if (c.S.project.activePage !== from) c.switchPage(from);
+    c.scene.select([]);
+    c.fit();
+    c.markDirty();
+    if (c.renderFoot) c.renderFoot();
+    c.toast((edit ? 'Remade ' : 'Made ') + pages.length + (pages.length === 1 ? ' page' : ' pages') + '. Tap any part to edit it.', { action: { label: 'Edit details', fn: function () { editDetails(c); } } });
   }
   function photoIdsOfPage(d) {
     var out = [];

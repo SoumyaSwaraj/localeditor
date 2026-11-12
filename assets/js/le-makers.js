@@ -6,14 +6,16 @@
   var LE = global.LE = global.LE || {};
 
   /* Maker files under assets/js/makers/, loaded on first use by LE.makers.ready(). Add yours here. */
-  var FILES = ['quote', 'review', 'receipt', 'milestone', 'palette', 'film'];
+  var FILES = ['quote', 'review', 'receipt', 'milestone', 'palette', 'film',
+    /* Print set: calendars, charts, labels, stickers, photo books, zines, catalogues. */
+    ];
 
   var SIZES = {
     square: { id: 'square', name: 'Square', w: 1080, h: 1080 },
     portrait: { id: 'portrait', name: 'Portrait 4:5', w: 1080, h: 1350 },
     story: { id: 'story', name: 'Story 9:16', w: 1080, h: 1920 }
   };
-  var TYPES = ['text', 'longtext', 'photo', 'photos', 'color', 'choice', 'date', 'number', 'list', 'toggle'];
+  var TYPES = ['text', 'longtext', 'photo', 'photos', 'color', 'choice', 'date', 'number', 'list', 'toggle', 'table'];
   var BAD = { __proto__: 1, constructor: 1, prototype: 1 };
   var registry = {};
   var order = [];
@@ -49,9 +51,11 @@
       summary: String(def.summary || '').slice(0, 160),
       keywords: (def.keywords || []).map(String).slice(0, 30),
       sizes: (def.sizes && def.sizes.length ? def.sizes : [SIZES.square, SIZES.portrait, SIZES.story]).map(function (s) {
-        if (typeof s === 'string') s = SIZES[s];
+        if (typeof s === 'string') s = SIZES[s] || paperSize(s);
         if (!s || !/^[\w-]{1,24}$/.test(s.id) || !(s.w > 0) || !(s.h > 0)) throw new Error('Maker ' + def.id + ' has a bad size.');
-        return { id: s.id, name: String(s.name || s.id), w: Math.round(s.w), h: Math.round(s.h) };
+        var out = { id: s.id, name: String(s.name || s.id), w: Math.round(s.w), h: Math.round(s.h) };
+        if (s.print) out.print = printMeta(s.print);
+        return out;
       }),
       inputs: (def.inputs || []).map(function (inp) {
         if (!inp || !/^[a-zA-Z]\w{0,31}$/.test(inp.key || '') || BAD[inp.key]) throw new Error('Maker ' + def.id + ' has a bad input key.');
@@ -60,6 +64,7 @@
       }),
       styles: (def.styles || [{ id: 'default', name: 'Default' }]).map(function (s) { return { id: word(s.id, 40), name: String(s.name || s.id), hint: s.hint || '' }; }),
       sample: def.sample || { values: {} },
+      maxPages: clamp(Math.round(num(def.maxPages, 8)), 1, 50),
       build: def.build
     };
     if (!registry[m.id]) order.push(m.id);
@@ -173,6 +178,25 @@
           }
         }
         return { value: rows.length ? rows : undefined };
+      }
+      case 'table': {
+        /* Rows as arrays of cells, or the packed form stored in doc.maker (strings of tab/newline separated rows). */
+        if (!Array.isArray(v)) return { error: label + ' must be a table.' };
+        var tcols = inp.columns || [];
+        var trows = tableUnpack(v, 0);
+        var tmax = maxOf(inp, 300);
+        if (trows.length > tmax) return { error: label + ' takes at most ' + tmax + ' rows.' };
+        for (var ti = 0; ti < trows.length; ti++) {
+          if (trows[ti].length > tcols.length) return { error: label + ' row ' + (ti + 1) + ' has more than ' + tcols.length + ' columns.' };
+          for (var tc = 0; tc < trows[ti].length; tc++) {
+            var tv = tableCell(trows[ti][tc]);
+            if (tv.length > (tcols[tc].max || 80)) return { error: label + ' row ' + (ti + 1) + ': ' + (tcols[tc].label || tcols[tc].key) + ' is too long.' };
+            trows[ti][tc] = tv;
+          }
+        }
+        var packed = tablePack(trows);
+        if (!packed) return { error: label + ' has more text than one design holds (' + TABLE_CHUNKS * TABLE_CHUNK + ' characters).' };
+        return { value: packed.length ? packed : undefined };
       }
     }
     return { error: label + ' is not supported.' };
@@ -367,7 +391,192 @@
     });
   }
   function todayIso() { var d = new Date(); return iso({ y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate() }); }
-  var DATE = { parse: parseDate, iso: iso, diff: diff, describe: describe, format: formatDate, addMonths: addMonths, daysIn: daysIn, leap: leap, today: todayIso, months: MONTHS.slice() };
+  /* Print calendars. weekdayIndex: 0 = Sunday … 6 = Saturday. */
+  function weekdayIndex(o) { o = typeof o === 'string' ? parseDate(o) : o; return o ? (dayNumber(o) % 7 + 11) % 7 : -1; }
+  function addDays(o, n) {
+    o = typeof o === 'string' ? parseDate(o) : o;
+    var d = new Date(Date.UTC(o.y, o.m - 1, o.d) + n * 86400000);
+    return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate() };
+  }
+  /* The first day of the week holding `o` (weekStart 1 = Monday, 0 = Sunday). */
+  function weekOf(o, weekStart) {
+    o = typeof o === 'string' ? parseDate(o) : o;
+    var back = (weekdayIndex(o) - (weekStart === 0 ? 0 : 1) + 7) % 7;
+    return addDays(o, -back);
+  }
+  /* A month as weeks of 7 days: [[{ y, m, d, inMonth, iso }]] — 4 to 6 rows, padded with the neighbouring months. */
+  function monthGrid(y, m, weekStart) {
+    var first = weekOf({ y: y, m: m, d: 1 }, weekStart);
+    var weeks = [], cur = first;
+    for (var w = 0; w < 6; w++) {
+      var row = [];
+      for (var i = 0; i < 7; i++) {
+        row.push({ y: cur.y, m: cur.m, d: cur.d, inMonth: cur.m === m && cur.y === y, iso: iso(cur) });
+        cur = addDays(cur, 1);
+      }
+      if (w >= 4 && !row[0].inMonth) break;
+      weeks.push(row);
+    }
+    return weeks;
+  }
+  /* Weekday names in column order: 'dddd' full, 'ddd' short, 'd' one letter. */
+  function weekdayNames(weekStart, form) {
+    var out = [];
+    for (var i = 0; i < 7; i++) {
+      var n = DAYS[(i + (weekStart === 0 ? 0 : 1)) % 7];
+      out.push(form === 'ddd' ? n.slice(0, 3) : form === 'd' ? n.charAt(0) : n);
+    }
+    return out;
+  }
+  var DATE = { parse: parseDate, iso: iso, diff: diff, describe: describe, format: formatDate, addMonths: addMonths, daysIn: daysIn, leap: leap, today: todayIso, months: MONTHS.slice(),
+    weekday: weekdayIndex, addDays: addDays, weekOf: weekOf, monthGrid: monthGrid, weekdays: weekdayNames };
+
+  /* ---------- Print foundations (paper sizes, label grids, tables) ---------- */
+  /* Paper sizes at 300 dpi. The largest, A4 landscape at 3508 × 2480 (8.7 MP), stays under the smallest canvas limits
+     the studio plans for (4096 px edge on older phones, 16.7 MP area on iOS), so every paper exports at 1×. A3 would not. */
+  var PRINT_DPI = 300;
+  var PAPER = {
+    a4: { name: 'A4', w: 210, h: 297 },
+    a5: { name: 'A5', w: 148, h: 210 },
+    letter: { name: 'US Letter', w: 215.9, h: 279.4 },
+    'photo-4x6': { name: '4 × 6 in', w: 101.6, h: 152.4 },
+    'square-20': { name: 'Square 20 cm', w: 200, h: 200 },
+    'a4-landscape': { name: 'A4 landscape', w: 297, h: 210 },
+    'letter-landscape': { name: 'Letter landscape', w: 279.4, h: 215.9 },
+    'a5-landscape': { name: 'A5 landscape', w: 210, h: 148 }
+  };
+  function mmPx(mm, dpi) { return Math.round(mm / 25.4 * (dpi || PRINT_DPI)); }
+  function paperSize(id) {
+    var p = own(PAPER, id) ? PAPER[id] : null;
+    if (!p) return null;
+    return { id: id, name: p.name, w: mmPx(p.w), h: mmPx(p.h), print: { v: 1, paper: id, w: p.w, h: p.h, dpi: PRINT_DPI } };
+  }
+  /* doc.print: the physical page a page is meant for ({ v, paper, w, h (mm), dpi }). Mirrors LE.Scene.printOf. */
+  function printMeta(p) {
+    if (LE.Scene && LE.Scene.printOf) return LE.Scene.printOf(p);
+    if (!p || typeof p !== 'object') return null;
+    var w = Number(p.w), h = Number(p.h), dpi = Number(p.dpi) || PRINT_DPI;
+    if (!(w > 0 && h > 0)) return null;
+    return { v: 1, paper: word(p.paper, 24), w: r2(clamp(w, 10, 2000)), h: r2(clamp(h, 10, 2000)), dpi: Math.round(clamp(dpi, 72, 1200)) };
+  }
+  /* Generic label-sheet grids (count per sheet → columns × rows, cell and gutter in mm), centred on the sheet. */
+  var LABEL_GRIDS = {
+    a4: {
+      8: { cols: 2, rows: 4, w: 99.1, h: 67.7, gx: 2.5, gy: 0 },
+      14: { cols: 2, rows: 7, w: 99.1, h: 38.1, gx: 2.5, gy: 0 },
+      21: { cols: 3, rows: 7, w: 63.5, h: 38.1, gx: 2.5, gy: 0 },
+      24: { cols: 3, rows: 8, w: 63.5, h: 33.9, gx: 2.5, gy: 0 },
+      30: { cols: 3, rows: 10, w: 63.5, h: 26.9, gx: 2.5, gy: 0 },
+      65: { cols: 5, rows: 13, w: 38.1, h: 21.2, gx: 2.5, gy: 0 }
+    },
+    letter: {
+      8: { cols: 2, rows: 4, w: 101.6, h: 63.5, gx: 4.8, gy: 0 },
+      14: { cols: 2, rows: 7, w: 101.6, h: 33.9, gx: 4.8, gy: 0 },
+      21: { cols: 3, rows: 7, w: 66.7, h: 35.6, gx: 3.2, gy: 0 },
+      24: { cols: 3, rows: 8, w: 66.7, h: 31.8, gx: 3.2, gy: 0 },
+      30: { cols: 3, rows: 10, w: 66.7, h: 25.4, gx: 3.2, gy: 0 },
+      65: { cols: 5, rows: 13, w: 38.1, h: 19.1, gx: 3.2, gy: 0 }
+    }
+  };
+  function labelGrid(paper, count) {
+    var fam = /^letter/.test(paper || '') ? 'letter' : 'a4';
+    var g = LABEL_GRIDS[fam][count];
+    return g ? Object.assign({ paper: fam, count: Number(count) }, g) : null;
+  }
+
+  /* Table values (input type `table`): rows of fixed columns, stored in doc.maker.values as at most TABLE_CHUNKS
+     strings of at most TABLE_CHUNK characters ("cell\tcell" lines joined by "\n"), so a large sheet fits the doc.maker
+     limits (40 array entries, 2000 characters a string) without widening them. */
+  var TABLE_CHUNK = 2000, TABLE_CHUNKS = 40;
+  function tableCell(s) { return cleanText(s == null ? '' : s, false).replace(/\t/g, ' '); }
+  function tablePack(rows) {
+    var chunks = [], cur = '';
+    for (var i = 0; i < rows.length; i++) {
+      var line = rows[i].map(tableCell).join('\t').replace(/\t+$/, '');
+      if (!line) continue;
+      if (line.length > TABLE_CHUNK) return null;
+      if (cur && cur.length + 1 + line.length > TABLE_CHUNK) { chunks.push(cur); cur = ''; }
+      cur = cur ? cur + '\n' + line : line;
+    }
+    if (cur) chunks.push(cur);
+    return chunks.length > TABLE_CHUNKS ? null : chunks;
+  }
+  function tableUnpack(chunks, ncols) {
+    var out = [];
+    (Array.isArray(chunks) ? chunks : []).forEach(function (c) {
+      if (Array.isArray(c)) { out.push(c.map(function (x) { return x == null ? '' : String(x); })); return; }
+      String(c == null ? '' : c).split('\n').forEach(function (line) {
+        var cells = line.split('\t');
+        if (ncols) { while (cells.length < ncols) cells.push(''); cells = cells.slice(0, ncols); }
+        out.push(cells.map(function (x) { return x.trim(); }));
+      });
+    });
+    return out.filter(function (r) { return r.some(Boolean); });
+  }
+  /* RFC 4180 CSV / TSV (cells pasted from a spreadsheet are tab separated). Returns rows of trimmed strings. */
+  function parseDelimited(text, delim) {
+    text = String(text || '').replace(/^﻿/, '').replace(/\r\n?/g, '\n');
+    if (!delim) {
+      var head = text.split('\n').slice(0, 5).join('\n');
+      var tabs = (head.match(/\t/g) || []).length, semis = (head.match(/;/g) || []).length, commas = (head.match(/,/g) || []).length;
+      delim = tabs ? '\t' : semis > commas ? ';' : ',';
+    }
+    var rows = [], row = [], cell = '', q = false;
+    for (var i = 0; i < text.length && rows.length < 5000; i++) {
+      var ch = text.charAt(i);
+      if (q) {
+        if (ch === '"') { if (text.charAt(i + 1) === '"') { cell += '"'; i++; } else q = false; } else cell += ch;
+        continue;
+      }
+      if (ch === '"' && cell.trim() === '') { q = true; cell = ''; }
+      else if (ch === delim) { row.push(cell); cell = ''; }
+      else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += ch;
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return rows.map(function (r) { return r.map(function (c) { return String(c).trim(); }); }).filter(function (r) { return r.some(Boolean); });
+  }
+  function normHead(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
+  /* Matches a grid's first row to a table input's columns by key, label and aliases.
+     Returns { map: { colKey: sourceIndex or -1 }, header: whether the first row is a header }. */
+  function tableMatch(columns, grid) {
+    var head = (grid[0] || []).map(normHead);
+    var map = {}, used = {}, hits = 0;
+    columns.forEach(function (c) {
+      var names = [c.key, c.label].concat(c.aliases || []).map(normHead).filter(Boolean);
+      var idx = -1;
+      for (var pass = 0; pass < 2 && idx < 0; pass++) {
+        for (var i = 0; i < head.length && idx < 0; i++) {
+          if (used[i] || !head[i]) continue;
+          var hd = head[i];
+          if (names.some(function (n) { return pass ? (n.length > 2 && hd.indexOf(n) >= 0) : hd === n; })) idx = i;
+        }
+      }
+      if (idx >= 0) { used[idx] = 1; hits++; }
+      map[c.key] = idx;
+    });
+    var header = hits > 0;
+    if (!header) columns.forEach(function (c, i) { map[c.key] = i < (grid[0] || []).length ? i : -1; });
+    return { map: map, header: header };
+  }
+  /* Rows in column order from a grid and a mapping. Cells longer than a column's max are shortened (and counted). */
+  function tableRows(columns, grid, match, maxRows) {
+    var body = match.header ? grid.slice(1) : grid.slice();
+    var cut = 0, out = [];
+    body.forEach(function (r) {
+      var row = columns.map(function (c) {
+        var i = match.map[c.key];
+        var s = i >= 0 && i < r.length ? tableCell(r[i]) : '';
+        var mx = c.max || 80;
+        if (s.length > mx) { cut++; s = s.slice(0, mx - 1).replace(/\s+\S*$/, '') + '…'; }
+        return s;
+      });
+      if (row.some(Boolean)) out.push(row);
+    });
+    maxRows = maxRows || 300;
+    return { rows: out.slice(0, maxRows), shortened: cut, dropped: Math.max(0, out.length - maxRows) };
+  }
+  var TABLE = { pack: tablePack, unpack: tableUnpack, parse: parseDelimited, match: tableMatch, rows: tableRows, CHUNK: TABLE_CHUNK, CHUNKS: TABLE_CHUNKS };
 
   /* ---------- Text measuring (mirrors LE.Scene's wrapping exactly) ---------- */
   var mctx = null;
@@ -468,6 +677,81 @@
     return best;
   }
 
+  /* ---------- Print layout (pure geometry; env.print wraps it with layers) ---------- */
+  /* Tiles cols × rows cells into area. With w/h (px) the grid keeps that cell size and is centred; otherwise it fills. */
+  function sheetCells(area, o) {
+    var cols = Math.max(1, o.cols | 0), rows = Math.max(1, o.rows | 0), gx = o.gx || 0, gy = o.gy || 0;
+    var cw = o.w || (area.w - gx * (cols - 1)) / cols, ch = o.h || (area.h - gy * (rows - 1)) / rows;
+    var gw = cw * cols + gx * (cols - 1), gh = ch * rows + gy * (rows - 1);
+    var x0 = area.x + (area.w - gw) / 2, y0 = area.y + (area.h - gh) / 2;
+    var out = [];
+    for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) out.push({ x: r2(x0 + c * (cw + gx)), y: r2(y0 + r * (ch + gy)), w: r2(cw), h: r2(ch), row: r, col: c, i: r * cols + c });
+    return out;
+  }
+  function boundsOf(boxes) {
+    var x = Infinity, y = Infinity, X = -Infinity, Y = -Infinity;
+    boxes.forEach(function (b) { x = Math.min(x, b.x); y = Math.min(y, b.y); X = Math.max(X, b.x + b.w); Y = Math.max(Y, b.y + b.h); });
+    return { x: x, y: y, w: X - x, h: Y - y };
+  }
+  function edgesOf(boxes, axis) {
+    var seen = {}, out = [];
+    boxes.forEach(function (b) {
+      [axis === 'x' ? b.x : b.y, axis === 'x' ? b.x + b.w : b.y + b.h].forEach(function (v) {
+        var k = Math.round(v * 2) / 2;
+        if (!seen[k]) { seen[k] = 1; out.push(k); }
+      });
+    });
+    return out.sort(function (a, b) { return a - b; });
+  }
+  /* Crop-mark ticks in the margin around the cells, one per distinct cell edge, per side. Sides without room are null.
+     Returns { top, bottom, left, right: { segs: [[x1, y1, x2, y2]] }, bounds, xs, ys } in page px. */
+  function cropTicks(cells, page, len, gap, edgeMin) {
+    var B = boundsOf(cells), xs = edgesOf(cells, 'x'), ys = edgesOf(cells, 'y');
+    function side(name) {
+      var room = name === 'top' ? B.y : name === 'bottom' ? page.h - B.y - B.h : name === 'left' ? B.x : page.w - B.x - B.w;
+      var l = Math.min(len, room - gap - edgeMin);
+      if (l < len * 0.3) return null;
+      var segs = [];
+      if (name === 'top' || name === 'bottom') {
+        var y1 = name === 'top' ? B.y - gap : B.y + B.h + gap, y2 = name === 'top' ? y1 - l : y1 + l;
+        xs.forEach(function (x) { segs.push([x, y1, x, y2]); });
+      } else {
+        var x1 = name === 'left' ? B.x - gap : B.x + B.w + gap, x2 = name === 'left' ? x1 - l : x1 + l;
+        ys.forEach(function (y) { segs.push([x1, y, x2, y]); });
+      }
+      return { segs: segs };
+    }
+    return { top: side('top'), bottom: side('bottom'), left: side('left'), right: side('right'), bounds: B, xs: xs, ys: ys };
+  }
+  /* The classic 8-page mini-zine on one landscape sheet: 4 × 2 panels, top row upside down. Reading order runs from the
+     front (bottom right) to page 2 above it, leftwards along the top (2–5), then 6 and 7 along the bottom, then the back. */
+  var ZINE = { 1: [3, 1, 0], 2: [3, 0, 180], 3: [2, 0, 180], 4: [1, 0, 180], 5: [0, 0, 180], 6: [0, 1, 0], 7: [1, 1, 0], 8: [2, 1, 0] };
+  function zinePanels(W, H) {
+    var pw = W / 4, ph = H / 2, out = [];
+    for (var n = 1; n <= 8; n++) out.push({ page: n, x: r2(ZINE[n][0] * pw), y: r2(ZINE[n][1] * ph), w: r2(pw), h: r2(ph), rotation: ZINE[n][2] });
+    return out;
+  }
+  /* Moves layers drawn in a panel's own frame (0,0 at its top-left) onto the sheet, turning them 180° when asked. */
+  function placeIn(layers, panel) {
+    layers.forEach(function (l) {
+      if (panel.rotation === 180) {
+        l.x = r2(panel.x + panel.w - l.x - l.w);
+        l.y = r2(panel.y + panel.h - l.y - l.h);
+        l.rotation = ((l.rotation || 0) + 180) % 360;
+      } else { l.x = r2(l.x + panel.x); l.y = r2(l.y + panel.y); }
+    });
+    return layers;
+  }
+  /* Print themes shared by print makers: one structure in five looks, one of them ink-saving (no filled areas). */
+  var PRINT_THEMES = {
+    clean: { bg: '#FFFFFF', ink: '#1C1B22', muted: '#5E5B68', line: '#CFCBD6', faint: '#F3F1F6', accent: '#2D6CDF', accent2: '#E0574F', accent3: '#3AA17E', head: 'Plus Jakarta Sans', headWeight: 700, body: 'Inter', round: 2 },
+    friendly: { bg: '#FFF9F0', ink: '#2B2340', muted: '#665C7A', line: '#E7D6BF', faint: '#FFEFD9', accent: '#F26B3A', accent2: '#2FA58E', accent3: '#F4B73E', head: 'Nunito', headWeight: 700, body: 'Nunito', round: 5 },
+    pastel: { bg: '#FFFFFF', ink: '#3A3346', muted: '#6F6680', line: '#E3D9EE', faint: '#F8F3FC', accent: '#B79AE0', accent2: '#F2B5C4', accent3: '#9ED3C6', head: 'Fraunces', headWeight: 700, body: 'DM Sans', round: 4 },
+    bold: { bg: '#FFFFFF', ink: '#111111', muted: '#3D3D3D', line: '#111111', faint: '#FFF3C4', accent: '#FFD23F', accent2: '#FF6B6B', accent3: '#4ECDC4', head: 'Archivo Black', headWeight: 400, body: 'Work Sans', round: 1.5, heavy: true },
+    ink: { bg: '#FFFFFF', ink: '#000000', muted: '#3F3F3F', line: '#8C8C8C', faint: null, accent: '#000000', accent2: '#000000', accent3: '#000000', head: 'Lora', headWeight: 700, body: 'Inter', round: 2, inkSaver: true }
+  };
+  var PRINT = { sheet: sheetCells, bounds: boundsOf, cropTicks: cropTicks, zine: zinePanels, placeIn: placeIn, themes: PRINT_THEMES };
+
   /* ---------- Environment for one build pass ---------- */
   function makeEnv(m, values, size, style, opts, needs) {
     var W = size.w, H = size.h;
@@ -508,7 +792,9 @@
       var boxH = spec.h == null ? Infinity : spec.h;
       var maxLines = spec.maxLines || 0;
       function at(s) {
-        return layout({ text: spec.text, font: font, weight: weight, italic: italic, size: s, lineHeight: lh, letterSpacing: tracking * s, uppercase: spec.uppercase, w: spec.w });
+        /* 1.5% slack: canvas text widths shift slightly with the render scale, so a line measured to fit exactly at
+           1× can wrap once more in a small preview or a large export. */
+        return layout({ text: spec.text, font: font, weight: weight, italic: italic, size: s, lineHeight: lh, letterSpacing: tracking * s, uppercase: spec.uppercase, w: spec.w * 0.985 });
       }
       function ok(L, s) { return L.height <= boxH + 0.01 && (!maxLines || L.lines.length <= maxLines) && !L.broke; }
       var size = max, L = at(max);
@@ -689,6 +975,8 @@
       fit: fit, text: text, shape: shape, rect: rect, line: line, ellipse: function (spec) { return shape('ellipse', spec); },
       star: function (spec) { return shape('star', Object.assign({ params: { points: 5, innerRatio: 0.45 } }, spec)); },
       photo: photo, svg: svg, icon: icon, qr: qr, cover: cover, imageSize: imageSize, palette: palette,
+      /* The file name of a photo (from build opts.names: { assetId: name }), to match photos to rows by name. */
+      photoName: function (id) { return opts.names && id && own(opts.names, id) ? String(opts.names[id]).slice(0, 120) : ''; },
       color: COLOR, colorName: colorName, date: DATE, font: fontFor, covered: covered,
       gradient: function (id) {
         var g = (LE.assets && LE.assets.gradients ? LE.assets.gradients() : []).filter(function (x) { return x.id === id; })[0];
@@ -737,7 +1025,83 @@
       warn: function (kind, message, layer) { warnings.push({ layer: layer || '', kind: kind, message: message }); },
       warnings: warnings
     };
+    /* Print helpers: physical units, safe area, sheets of repeated items, cut marks as editable layers. */
+    var pinfo = size.print || null, dpi = pinfo ? pinfo.dpi : PRINT_DPI;
+    function mm(n) { return n / 25.4 * dpi; }
+    function segSvg(segs, ox, oy, w, h, color, width, dash) {
+      var d = segs.map(function (s) { return 'M' + r2(s[0] - ox) + ' ' + r2(s[1] - oy) + 'L' + r2(s[2] - ox) + ' ' + r2(s[3] - oy); }).join('');
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + r2(w) + ' ' + r2(h) + '" preserveAspectRatio="none"><path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + r2(width) + '"' +
+        (dash ? ' stroke-dasharray="' + dash.map(r2).join(' ') + '"' : '') + ' stroke-linecap="butt"/></svg>';
+    }
+    function segLayer(id, name, segs, color, width, dash) {
+      if (!segs.length) return null;
+      var b = boundsOf(segs.map(function (s) { return { x: Math.min(s[0], s[2]), y: Math.min(s[1], s[3]), w: Math.abs(s[2] - s[0]), h: Math.abs(s[3] - s[1]) }; }));
+      b = { x: b.x - width, y: b.y - width, w: b.w + 2 * width, h: b.h + 2 * width };
+      return svg({ id: id, name: name, x: b.x, y: b.y, w: b.w, h: b.h, markup: segSvg(segs, b.x, b.y, b.w, b.h, color, width, dash) });
+    }
+    /* Groups layers under a named group layer (placed after its members, as LE.Scene does). Returns members + group. */
+    function group(name, layers, id) {
+      layers = layers.filter(Boolean);
+      if (!layers.length) return [];
+      var b = boundsOf(layers);
+      var g = base({ id: id || String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-'), name: name, x: b.x, y: b.y, w: b.w, h: b.h }, 'group', name);
+      layers.forEach(function (l) { l.groupId = g.id; });
+      return layers.concat([g]);
+    }
+    env.print = {
+      paper: pinfo ? clone(pinfo) : null, dpi: dpi,
+      mm: mm, inch: function (n) { return n * dpi; }, pt: function (n) { return n / 72 * dpi; },
+      /* The area inside a margin (mm, default 10) that home printers reach. */
+      safe: function (marginMm) { var mg = mm(marginMm == null ? 10 : marginMm); return { x: mg, y: mg, w: W - 2 * mg, h: H - 2 * mg }; },
+      sheet: sheetCells, bounds: boundsOf, zine: zinePanels, placeIn: placeIn, group: group,
+      /* A generic label grid (LE.makers.labelGrid) as cells on this page, in px; null when the paper has none. */
+      labels: function (count) {
+        var g = labelGrid(pinfo ? pinfo.paper : '', count);
+        if (!g) return null;
+        return sheetCells({ x: 0, y: 0, w: W, h: H }, { cols: g.cols, rows: g.rows, w: mm(g.w), h: mm(g.h), gx: mm(g.gx), gy: mm(g.gy) });
+      },
+      theme: function (id, accent) {
+        var t = clone(PRINT_THEMES[id] || PRINT_THEMES.clean);
+        if (accent && !t.inkSaver) t.accent = accent;
+        t.r = mm(t.round);
+        t.hair = Math.max(2, mm(0.25));
+        return t;
+      },
+      /* Cut and fold guides as one group of ordinary layers named "Cut marks" (hide or delete it in Layers).
+         o: { cells (boxes to crop around), marks (default true), lines (dashed lines along every cell edge),
+         outlines ([{ x, y, w, h, shape: rect|ellipse, radius }]), folds, cuts ([[x1, y1, x2, y2]]), holes ([{ x, y, d }]),
+         color, width (px), len and gap (mm), name }. Put the result first in page.layers so it sits under the design. */
+      cutMarks: function (o) {
+        o = o || {};
+        var color = o.color || '#77737F', width = o.width || Math.max(2, mm(0.2)), out = [];
+        var dash = [mm(1.6), mm(1.2)];
+        if (o.cells && o.cells.length) {
+          var t = cropTicks(o.cells, { w: W, h: H }, mm(o.len || 5), mm(o.gap == null ? 1.5 : o.gap), mm(1.5));
+          if (o.marks !== false) ['top', 'bottom', 'left', 'right'].forEach(function (sd) { if (t[sd]) out.push(segLayer('crop-' + sd, 'Crop marks ' + sd, t[sd].segs, color, width)); });
+          if (o.lines) {
+            var B = t.bounds, segs = [];
+            t.xs.forEach(function (x) { segs.push([x, B.y, x, B.y + B.h]); });
+            t.ys.forEach(function (y) { segs.push([B.x, y, B.x + B.w, y]); });
+            out.push(segLayer('cut-lines', 'Cut lines', segs, color, width, dash));
+          }
+        }
+        (o.outlines || []).forEach(function (b, i) {
+          var sw = width, x = b.x - sw / 2, y = b.y - sw / 2, w = b.w + sw, h = b.h + sw, shp;
+          if (b.shape === 'ellipse') shp = '<ellipse cx="' + r2(w / 2) + '" cy="' + r2(h / 2) + '" rx="' + r2(b.w / 2) + '" ry="' + r2(b.h / 2) + '"';
+          else shp = '<rect x="' + r2(sw / 2) + '" y="' + r2(sw / 2) + '" width="' + r2(b.w) + '" height="' + r2(b.h) + '" rx="' + r2(b.radius || 0) + '"';
+          out.push(svg({ id: 'cut-outline-' + (i + 1), name: 'Cut line ' + (i + 1), x: x, y: y, w: w, h: h,
+            markup: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + r2(w) + ' ' + r2(h) + '" preserveAspectRatio="none">' + shp + ' fill="none" stroke="' + color + '" stroke-width="' + r2(sw) + '" stroke-dasharray="' + dash.map(r2).join(' ') + '"/></svg>' }));
+        });
+        if (o.folds && o.folds.length) out.push(segLayer('fold-lines', 'Fold lines', o.folds, color, width, [mm(3), mm(2)]));
+        if (o.cuts && o.cuts.length) out.push(segLayer('cut-here', 'Cut here', o.cuts, color, width * 1.5));
+        (o.holes || []).forEach(function (hl, i) {
+          out.push(shape('ellipse', { id: 'punch-' + (i + 1), name: 'Punch hole ' + (i + 1), x: hl.x - hl.d / 2, y: hl.y - hl.d / 2, w: hl.d, h: hl.d, fill: { type: 'none' }, stroke: { width: width, color: color, dash: dash } }));
+        });
+        return group(o.name || 'Cut marks', out, o.id || 'cut-marks');
+      }
+    };
     return env;
+
   }
 
   /* ---------- Build ---------- */
@@ -791,11 +1155,12 @@
       }
       return run().then(function (out) {
         var res = out.res || {};
-        var pages = (res.pages || (res.page ? [res.page] : [])).slice(0, 8);
+        var pages = (res.pages || (res.page ? [res.page] : [])).slice(0, m.maxPages);
         if (!pages.length) throw new Error('Maker ' + id + ' made no pages.');
         var meta = { v: 1, id: m.id, style: style, size: size.id, values: v.values };
         pages.forEach(function (p) {
           p.width = size.w; p.height = size.h;
+          if (size.print) p.print = clone(size.print); else delete p.print;
           var mm = clone(meta);
           mm.sig = signature(p.layers);
           p.maker = LE.Scene && LE.Scene.makerOf ? LE.Scene.makerOf(mm) : mm;
@@ -923,6 +1288,7 @@
         else if (t === 'date') minimal[inp.key] = '2026-01-31';
         else if (t === 'number') minimal[inp.key] = inp.min != null ? inp.min : 0;
         else if (t === 'list') minimal[inp.key] = inp.columns ? [inp.columns.map(function () { return 'A'; })] : ['A'];
+        else if (t === 'table') minimal[inp.key] = [inp.columns.map(function (c, ci) { return ci === 0 ? 'A' : ''; })];
         else if (t === 'toggle') minimal[inp.key] = false;
         else if (t === 'color') minimal[inp.key] = '#000000';
       }
@@ -942,6 +1308,20 @@
           worst[inp.key].push(inp.columns ? inp.columns.map(function (c, ci) { return ci === inp.columns.length - 1 ? '9,999,999.99'.slice(0, Math.min(12, cm)) : filler(cm, r + ci); }) : filler(cm, r));
         }
       }
+      else if (t === 'table') {
+        /* Every row, every cell as long as the stored-text budget allows. Columns may give a `worst` value. */
+        var nrows = maxOf(inp, 300), tcols = inp.columns;
+        var budget = Math.floor(TABLE_CHUNK * TABLE_CHUNKS * 0.96 / nrows) - tcols.length;
+        var want = tcols.reduce(function (a, c) { return a + (c.worst != null ? String(c.worst).length : (c.max || 80)); }, 0);
+        var k = Math.min(1, budget / want);
+        worst[inp.key] = [];
+        for (var tr = 0; tr < nrows; tr++) {
+          worst[inp.key].push(tcols.map(function (c, ci) {
+            if (c.worst != null) return String(c.worst);
+            return filler(Math.max(4, Math.floor((c.max || 80) * k)), tr + ci * 5);
+          }));
+        }
+      }
     });
     return { sample: clone(m.sample.values || {}), minimal: minimal, worst: worst };
   }
@@ -951,6 +1331,7 @@
     register: register, list: list, get: get, ready: ready,
     validate: validate, build: build, check: check, signature: signature, renderPage: renderPage,
     decodeValues: decodeValues, encodeValues: encodeValues,
-    color: COLOR, date: DATE, colorName: colorName, layout: layout, covered: covered, fontFor: fontFor
+    color: COLOR, date: DATE, colorName: colorName, layout: layout, covered: covered, fontFor: fontFor,
+    PAPER: PAPER, PRINT_DPI: PRINT_DPI, paperSize: paperSize, labelGrid: labelGrid, LABEL_GRIDS: LABEL_GRIDS, table: TABLE, print: PRINT
   };
 })(typeof window !== 'undefined' ? window : this);
