@@ -1,0 +1,66 @@
+/* LocalEditor: "Make searchable" (D9) in the PDF studio: the offer on scanned documents, the Scan panel's reading card, and the
+   hint inside Find sensitive data. Tokens from app.css only (docs/DESIGN.md). Prefix: por-. */
+
+/* ---------- offer bar, shown once when a scanned PDF opens ---------- */
+.por-offer {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 8;
+  width: min(620px, calc(100% - 24px));
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 8px 10px 14px; border-radius: var(--r-lg, 20px);
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); box-shadow: var(--shadow-lg);
+}
+.por-offer[hidden] { display: none; }
+.por-offer-ic { flex: none; width: 36px; height: 36px; border-radius: var(--r-sm, 10px); display: grid; place-items: center; background: var(--surface-2); color: var(--ink); }
+.por-offer-ic svg { width: 19px; height: 19px; }
+.por-offer-t { flex: 1 1 auto; min-width: 0; margin: 0; display: grid; gap: 1px; font-size: 13px; line-height: 1.4; color: var(--muted); }
+.por-offer-t strong { color: var(--ink); font-weight: 700; font-size: 14px; }
+.por-offer-go { flex: none; gap: 6px; min-height: 44px; }
+.por-offer-go svg, .por-pane .btn svg, .por-findhint .btn svg { width: 16px; height: 16px; stroke: currentColor; }
+.por-offer-x { flex: none; width: 44px; height: 44px; }
+.por-offer-x svg { width: 18px; height: 18px; }
+
+/* ---------- Scan panel: reading card ---------- */
+.por-private { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; font-size: 12.5px; color: var(--private); }
+.por-private svg { width: 15px; height: 15px; flex: none; }
+.por-status { display: flex; align-items: flex-start; gap: 8px; margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink); font-weight: 600; }
+.por-status svg { flex: none; width: 18px; height: 18px; margin-top: 1px; color: var(--ok); }
+.por-status.has-scans svg { color: var(--accent); }
+.por-lang { width: 100%; }
+.por-lang-one { color: var(--muted); }
+.por-seg { margin-top: 6px; }
+.por-only { min-height: 44px; }
+.por-go { gap: 8px; min-height: 44px; }
+.por-go svg { width: 17px; height: 17px; }
+.por-first { color: var(--faint); }
+.por-result {
+  display: grid; gap: 4px; padding: 12px 14px; border-radius: var(--r-md, 14px);
+  background: var(--private-soft); border: 1px solid var(--line);
+}
+.por-result p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink); }
+.por-result-head { display: flex; align-items: center; gap: 8px; }
+.por-result-head svg { width: 18px; height: 18px; color: var(--ok); flex: none; }
+.por-result-line { color: var(--muted) !important; }
+.por-error { color: var(--err); }
+.por-textacts { display: flex; flex-wrap: wrap; gap: 8px; }
+.por-textacts .btn { gap: 6px; }
+
+/* ---------- Find sensitive data: scanned pages hint ---------- */
+.por-findhint { display: grid; gap: 8px; padding: 10px 12px; border-radius: var(--r-md, 14px); background: var(--surface-2); border: 1px solid var(--line); }
+.por-findhint p { display: flex; gap: 8px; margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.por-findhint p svg { flex: none; width: 16px; height: 16px; margin-top: 2px; color: var(--ink); }
+.por-findhint-go { justify-self: start; gap: 6px; }
+
+/* ---------- phones: 44 px targets, nothing sideways ---------- */
+@media (max-width: 767px) {
+  .por-offer { bottom: 10px; flex-wrap: wrap; padding: 10px 10px 10px 12px; gap: 8px 10px; }
+  .por-offer-t { flex: 1 1 calc(100% - 100px); }
+  .por-offer-go { order: 3; flex: 1 1 100%; justify-content: center; }
+  .por-offer-x { order: 2; }
+  .por-pane .ps-seg button, .por-pane .btn, .por-findhint .btn { min-height: 44px; }
+  .por-textacts .btn { flex: 1 1 140px; justify-content: center; }
+  .por-lang { font-size: 16px; min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .por-offer { transition: none; }
+}
