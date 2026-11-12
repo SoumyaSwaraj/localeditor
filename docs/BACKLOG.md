@@ -98,3 +98,20 @@ Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen
 
 - Selective colour is two entries until the parameter limit is raised; hue curves show R/G/B tabs; LUT input space has no log encodings; Kelvin is relative to D65 on rendered sRGB (RAW has its own).
 - Never measured on a real GPU or a phone (sandbox has software rendering only): run `node tools/fx-bench/run.js --headed` on hardware.
+
+## Left after the 12 Nov merges
+
+Not started:
+- X7: cross-pack tests, real-hardware timing (`node tools/fx-bench/run.js --headed` on a real GPU and a phone), Expert looks as shareable recipes (recipes v2).
+- On-canvas tools for patch and red-eye; a live freeze overlay for liquify.
+- Design: empty, loading and error states; Expert panel density and number alignment; a visible reset hint; text edit mode stays on when Export opens on phone; project name truncates to "a." at 360 px.
+- Wave 3 remainder: brand file, design-as-code and a GitHub Action, embed viewer, consent handshake between the command-line tool and an open tab.
+- Per-app icon badges for the three installable apps.
+- Eyedroppers in `le-studio-color.js` and `le-pdf-studio-color.js`, replay recording and makers are not behind the device-support gate.
+
+Only checkable on real devices (none available in the build sandbox):
+- Speed and memory of Expert effects on real GPUs and phones; half-float behaviour on mobile GPUs.
+- Camera capture (scan, photobooth), install on iOS, Android and Safari, link capturing between the three apps.
+- Real RAW files beyond two Nikon NEFs (DNG, CR3, ARW, files over 24 MP).
+
+Known quality limits worth an owner look: depth blur edges, noise reduction (guided filter, well below dedicated denoisers), cast shadows on very large exports, relighting from a small depth model (reads as phone-app relighting, not a studio reshoot), highlight reconstruction colour, light-direction estimate on whole scenes.
