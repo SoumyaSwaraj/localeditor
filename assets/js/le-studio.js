@@ -1886,7 +1886,10 @@
   function startProject(p, opts) {
     opts = opts || {};
     cancelPreview();
-    return ensureAssets(LE.project.assetIds(p)).then(function (missing) {
+    /* Modules this document uses (a collage, a cut-out, a maker page…) load before its first render (docs/LOADING.md). */
+    var needs = LE.modules && LE.modules.forDoc ? LE.modules.forDoc(p) : null;
+    return Promise.all([ensureAssets(LE.project.assetIds(p)), needs]).then(function (r) {
+      var missing = r[0];
       Object.keys(p.assets || {}).forEach(function (id) { if (S.mem[id]) p.assets[id] = S.mem[id].meta; });
       setProject(p);
       loadPage(p.activePage || 0);
