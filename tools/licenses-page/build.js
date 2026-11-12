@@ -71,6 +71,7 @@ const page = `<!doctype html>
   .tbl th,.tbl td{border:1px solid var(--line,#ddd);padding:.4em .6em;text-align:left;vertical-align:top}
   .tbl th{background:var(--surface,transparent);font-weight:600}
   .tbl code{word-break:break-all}
+  main p code,main p a,main li code,main li a{overflow-wrap:anywhere}
   .raw-exception{border-left:4px solid var(--gold,#e8b84a)}
   .exception{margin-top:0}
   section.card{margin-bottom:1.2em}
