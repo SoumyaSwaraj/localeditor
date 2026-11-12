@@ -234,7 +234,7 @@
   };
 
   function mark() {
-    return '<span class="le-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><defs><linearGradient id="le-foil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3CC7C"/><stop offset="1" stop-color="#E2B15A"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#le-foil)"/><circle cx="16" cy="16" r="7.5" fill="none" stroke="#2A1F0A" stroke-width="1.9"/><circle cx="16" cy="16" r="2" fill="#2A1F0A"/></svg></span>';
+    return '<span class="le-mark" aria-hidden="true"><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3F67D9"/><path d="M176 140v196a40 40 0 0 0 40 40h156" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/><circle cx="314" cy="236" r="58" fill="#EF8C57"/></svg></span>';
   }
 
   function isCurrent(href) {
@@ -309,7 +309,7 @@
     document.querySelectorAll('[data-theme-label]').forEach(function (s) { s.textContent = dark ? 'Light theme' : 'Dark theme'; });
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta && !document.body.classList.contains('sx-body') && !document.body.classList.contains('ps-body') && !document.body.classList.contains('cv-body')) {
-      meta.setAttribute('content', dark ? '#0F0E13' : '#F7F6F3');
+      meta.setAttribute('content', dark ? '#141414' : '#FAFAFA');
     }
   }
 
@@ -532,7 +532,7 @@
   mountShell();
 
   var meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', '#141318');
+  if (meta) meta.setAttribute('content', '#161616');
 })();
 
 /* Install, updates and storage manager: loads le-pwa.js and le-pwa.css on every page.

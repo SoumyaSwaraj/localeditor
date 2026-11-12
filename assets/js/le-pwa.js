@@ -419,7 +419,7 @@
     var dark = root.getAttribute('data-theme') === 'dark';
     var c = '';
     try { c = getComputedStyle(root).getPropertyValue('--bg').trim(); } catch (e) {}
-    meta.setAttribute('content', c || (dark ? '#0E0D12' : '#E7E5EB'));
+    meta.setAttribute('content', c || (dark ? '#141414' : '#FAFAFA'));
   }
   if (window.MutationObserver) new MutationObserver(syncThemeColor).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
 
