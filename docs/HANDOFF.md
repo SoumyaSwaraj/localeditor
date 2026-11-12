@@ -36,7 +36,7 @@ Browser checks use the Cursor browser tools. An element-picker overlay sometimes
 - SVG sanitizers are DOMParser-based. Do not switch back to regex.
 - Zip, canvas, and page caps stay. Imports reject `__proto__`, `constructor`, and `prototype`.
 - SheetJS comes from `cdn.sheetjs.com` (CE 0.20.3), not npm 0.18.5 (CVE-2023-30533).
-- Licenses: MIT / ISC / BSD / Apache / OFL only. Record new rows in `assets/vendor/LICENSES.md`.
+- Licenses: MIT / ISC / BSD / Apache / OFL only. Record new rows in `assets/vendor/LICENSES.md`. One exception, decided by the owner on 12 November 2026: the optional camera RAW decoder module may be LGPL (or the best-covering decoder's licence), downloaded on demand, replaceable, with its licence shown to the user. See `docs/EXPERT-MODE.md`.
 - API keys live only in `localStorage` key `le-stock-keys`. Never log them. Never commit them.
 - Do not precache `assets/photos/collage/` or `assets/data/collages/` or `assets/data/withicons/` or `assets/fonts/library/`. `scripts/build.js` `ON_DEMAND` already excludes those. Collage and withicons JSON is stale-while-revalidate into `le-assets-v1` via the nested pattern `/\/assets\/data\/[\w\/-]+\.json$/`.
 - Gold buttons use dark ink `#2A1F0A`. A broad `button { color: inherit }` rule has overridden `.btn-gold` before. Check computed color, not just the class.

@@ -291,7 +291,8 @@
       orientation: opts.orientation, margin: opts.margin, marginMm: opts.marginMm,
       scale: opts.scale, fit: opts.fit, header: opts.header, footer: opts.footer,
       headerFooter: opts.headerFooter, pageNumbers: opts.pageNumbers, sheets: opts.sheets,
-      lineNumbers: opts.lineNumbers, pretty: opts.pretty, dpi: opts.dpi, imageQuality: opts.imageQuality
+      lineNumbers: opts.lineNumbers, pretty: opts.pretty, dpi: opts.dpi, imageQuality: opts.imageQuality,
+      output: opts.output || 'text', font: opts.font || 'sans'
     });
   }
 
@@ -522,7 +523,11 @@ function relAttr(el) {
           continue;
         }
         if (nm === 'src' || nm === 'href' || nm === 'poster' || nm === 'action' || nm === 'formaction' || nm.slice(-4) === 'href') {
-          if (val && !isSafeUrl(val)) { el.removeAttribute(attrs[a].name); changed = true; }
+          if (val && !isSafeUrl(val)) {
+            el.removeAttribute(attrs[a].name);
+            if (nm === 'href' && el.tagName === 'A' && /^(https?:\/\/|mailto:|tel:)[^\s<>"]{1,2000}$/i.test(val.trim())) el.setAttribute('data-le-href', val.trim());
+            else changed = true;
+          }
         }
       }
       if ((el.tagName === 'IMG' || el.tagName === 'SOURCE' || el.tagName === 'IMAGE') && !isSafeUrl(el.getAttribute('src') || el.getAttribute('href') || '')) {
@@ -535,7 +540,7 @@ function relAttr(el) {
       var c = cleanCss(styles[s].textContent);
       if (c !== styles[s].textContent) { styles[s].textContent = c; changed = true; }
     }
-    if (changed && warnings) warnings.push('Scripts, forms, and remote links were removed so nothing is fetched or run.');
+    if (changed && warnings) warnings.push('Scripts, forms, and remote content were removed so nothing is fetched or run.');
     return root.innerHTML;
   }
   function sanitize(html, warnings) {
@@ -590,7 +595,10 @@ function relAttr(el) {
           "p[style-name='Heading 3'] => h3:fresh",
           "p[style-name='Heading 4'] => h4:fresh",
           "p[style-name='Heading 5'] => h5:fresh",
-          "p[style-name='Heading 6'] => h6:fresh"
+          "p[style-name='Heading 6'] => h6:fresh",
+          "p[style-name='Quote'] => blockquote > p:fresh",
+          "p[style-name='Intense Quote'] => blockquote > p:fresh",
+          "u => u"
         ]
       };
       if (global.mammoth.images && global.mammoth.images.imgElement) {
@@ -606,7 +614,6 @@ function relAttr(el) {
       (result.messages || []).slice(0, 6).forEach(function (m) {
         if (m && m.message) warnings.push(m.message);
       });
-      warnings.push('This PDF page is a picture of the document. Use the print option when you need selectable text.');
       return sanitize(result.value || '', warnings).then(function (html) {
         return { mode: 'html', html: html, warnings: uniq(warnings) };
       });
@@ -740,7 +747,7 @@ function relAttr(el) {
         }
         var body = firstLocal(doc, 'text');
         var html = body ? odtBlocks(body, styles, parts[2]) : '';
-        var warnings = ['OpenDocument text is approximated: page styles, headers, and precise fonts are simplified.', 'This PDF page is a picture of the document. Use the print option when you need selectable text.'];
+        var warnings = ['OpenDocument text is approximated: page styles, headers, and precise fonts are simplified.'];
         return sanitize(html, warnings).then(function (clean) {
           return { mode: 'html', html: clean, warnings: uniq(warnings) };
         });
@@ -852,7 +859,7 @@ function relAttr(el) {
       if (!fn) throw new Error('Markdown library failed to start');
       var out = fn(String(src || ''), { async: false, gfm: true, breaks: false });
       if (out && typeof out.then === 'function') throw new Error('Markdown parser did not finish synchronously');
-      var warnings = ['Markdown is drawn as page images so headings, lists, and tables keep their shape. Use the print option for selectable text.'];
+      var warnings = [];
       return sanitize(String(out), warnings).then(function (html) {
         return { mode: 'html', html: html, warnings: uniq(warnings) };
       });
@@ -860,7 +867,7 @@ function relAttr(el) {
   }
 
   function htmlMode(raw, warnings) {
-    warnings = warnings || ['HTML is sanitized and paginated approximately. Scripts, forms, and remote images are removed.', 'Pages are pictures. Use the print option for selectable text.'];
+    warnings = warnings || ['HTML is sanitized and paginated approximately. Scripts, forms, and remote images are removed.'];
     return sanitize(raw, warnings).then(function (html) {
       return { mode: 'html', html: html, warnings: uniq(warnings) };
     });
@@ -922,7 +929,7 @@ function relAttr(el) {
               var br = idx ? ' style="break-before:page"' : '';
               return '<section class="le-chapter"' + br + '>' + part + '</section>';
             }).join('');
-            var warnings = ['EPUB is flowed as chapters. Fixed-layout books, embedded fonts, and complex CSS are approximated.', 'Scripts and remote images are removed.', 'Pages are pictures. Use the print option for selectable text.'];
+            var warnings = ['EPUB is flowed as chapters. Fixed-layout books, embedded fonts, and complex CSS are approximated.', 'Scripts and remote images are removed.'];
             return sanitize(html, warnings).then(function (clean) {
               return { mode: 'html', html: clean, warnings: uniq(warnings) };
             });
@@ -1492,14 +1499,16 @@ function relAttr(el) {
         try { families = global.LE.fonts.list() || []; } catch (e) { families = []; }
         var sans = null, mono = null;
         for (var i = 0; i < families.length; i++) {
-          if (!sans && families[i].category === 'sans') sans = families[i];
-          if (!mono && families[i].category === 'mono') mono = families[i];
+          if (families[i].family === 'Plus Jakarta Sans') sans = families[i];
+          if (families[i].family === 'JetBrains Mono') mono = families[i];
         }
         if (!sans) return fonts;
         try { doc.registerFontkit(kit); } catch (e2) { return fonts; }
         function embed(family, weight, italic) {
           return global.LE.fonts.bytes(family, weight, italic).then(function (buf) {
-            return doc.embedFont(buf, { subset: true });
+            /* contextual ligatures in the mono face trip a fontkit bug; code wants plain glyphs anyway */
+            var features = mono && family === mono.family ? { calt: false, liga: false, clig: false, dlig: false } : undefined;
+            return doc.embedFont(buf, { subset: true, features: features });
           });
         }
         var jobs = [embed(sans.family, 400, false)];
@@ -2732,17 +2741,118 @@ function captureHtml(layout, scale) {
     });
   }
 
+
+  /* ---------- text PDF writer (QA-010) ----------
+     Document-like inputs (Word, OpenDocument, Markdown, HTML, EPUB) and spreadsheets are written as real text by
+     LE.pdfFlow (assets/js/le-pdf-flow.js). opts.output === 'picture' keeps the old page-picture path, and documents
+     in scripts the text writer cannot shape (Arabic, Hebrew, Indic, Thai, CJK ...) fall back to it automatically. */
+  function loadFlow() {
+    var root = '';
+    try { root = document.documentElement.getAttribute('data-root') || ''; } catch (e) { root = ''; }
+    if (root && root.charAt(root.length - 1) !== '/') root += '/';
+    return loadPdfLib().then(function () { return loadFontkit(); }).then(function () {
+      return need(root + 'assets/js/le-pdf-flow.js', function () { return global.LE && global.LE.pdfFlow && global.LE.pdfFlow.render; });
+    });
+  }
+  function wantsPicture(opts) { return String((opts && opts.output) || 'text') === 'picture'; }
+  function flowOpts(opts, fileName, extra) {
+    var page = resolvePage(opts);
+    if (page.image) page = { w: PAGE.A4[0], h: PAGE.A4[1] };
+    var margin = resolveMargin(opts);
+    var chrome = chromeOf(opts);
+    var o = {
+      pageSize: [page.w, page.h],
+      orientation: page.w > page.h ? 'landscape' : 'portrait',
+      margin: { top: margin.top, right: margin.right, bottom: margin.bottom, left: margin.left },
+      scale: normScale(opts.scale),
+      header: chrome.header || '',
+      footer: chrome.footer || '',
+      fileName: fileName || '',
+      title: (opts && opts.title) || '',
+      base: opts && opts.font === 'serif' ? 'serif' : 'sans',
+      isCancelled: opts && opts.isCancelled,
+      onProgress: opts && opts.onProgress
+    };
+    if (chrome.header && margin.top < 30) o.margin.top = 30;
+    if (chrome.footer && margin.bottom < 30) o.margin.bottom = 30;
+    return Object.assign(o, extra || {});
+  }
+  function labelText(res, warnings) {
+    res.warnings = uniq(warnings.concat(res.warnings || []));
+    return res;
+  }
+  function flowPdf(parsed, opts) {
+    return loadFlow().then(function () {
+      var check = global.LE.pdfFlow.check(parsed.html || '');
+      if (check.unsupported.length) {
+        var why = 'Saved as pictures: this document uses ' + check.unsupported.join(', ') + ' text, which the searchable-text writer cannot lay out yet.';
+        return htmlPdf(parsed, opts).then(function (res) {
+          res.mode = 'picture'; res.textLayer = false; res.fallback = 'scripts'; res.scripts = check.unsupported;
+          return labelText(res, [why]);
+        });
+      }
+      return global.LE.pdfFlow.render(parsed.html || '', flowOpts(opts, parsed.name)).then(function (res) {
+        var w = (parsed.warnings || []).slice();
+        w.push('Searchable text: a clean reflow of the document, not an exact copy of its page layout.');
+        return labelText({ bytes: res.bytes, pageCount: res.pageCount, mode: 'text', textLayer: true, links: res.links, outline: res.outline, fonts: res.fonts }, w.concat(res.warnings || []));
+      }, function (err) {
+        if (err && err.cancelled) throw err;
+        return htmlPdf(parsed, opts).then(function (res) {
+          res.mode = 'picture'; res.textLayer = false; res.fallback = 'error';
+          return labelText(res, ['Saved as pictures: the searchable-text writer could not read this document (' + ((err && err.message) || 'error') + ').']);
+        });
+      });
+    });
+  }
+  var NUMERIC_CELL = /^\s*[-+(]?\s*[$€£¥₹]?\s*\d[\d,.\s]*%?\)?\s*$/;
+  function sheetsHtml(parsed) {
+    return (parsed.sheets || []).map(function (sheet) {
+      var rows = sheet.rows || [];
+      var n = 0;
+      rows.forEach(function (r) { for (var i = r.length - 1; i >= 0; i--) { if (String(r[i] || '').trim()) { if (i + 1 > n) n = i + 1; break; } } });
+      var body = rows.filter(function (r) { return r.some(function (c) { return String(c || '').trim(); }); });
+      var out = '<h2>' + esc(sheet.name) + '</h2>';
+      if (!body.length || !n) return out + '<p><em>This sheet is empty.</em></p>';
+      out += '<table><thead><tr>' + body[0].slice(0, n).map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>';
+      out += body.slice(1).map(function (r) {
+        var cells = [];
+        for (var i = 0; i < n; i++) {
+          var v = String(r[i] == null ? '' : r[i]);
+          cells.push(NUMERIC_CELL.test(v) && !/^0\d/.test(v.trim()) ? '<td style="text-align:right">' + esc(v) + '</td>' : '<td>' + esc(v) + '</td>');
+        }
+        return '<tr>' + cells.join('') + '</tr>';
+      }).join('');
+      return out + '</tbody></table>';
+    }).join('');
+  }
+  function sheetsFlowPdf(parsed, opts) {
+    return loadFlow().then(function () {
+      var html = sheetsHtml(parsed);
+      var fo = flowOpts(opts, parsed.name, { fontSize: 8.5, outline: true });
+      if (String(opts.orientation || 'auto') === 'auto') fo.orientation = 'auto';
+      return global.LE.pdfFlow.render(html, fo).then(function (res) {
+        return labelText({ bytes: res.bytes, pageCount: res.pageCount, mode: 'text', textLayer: true, outline: res.outline, fonts: res.fonts }, (parsed.warnings || []).concat(res.warnings || []));
+      });
+    }).catch(function (err) {
+      if (err && err.cancelled) throw err;
+      return sheetsPdf(parsed, opts);
+    });
+  }
+
   function renderPdf(parsed, opts) {
     opts = opts || {};
     if (parsed.mode === 'unsupported') return Promise.reject(new Error(parsed.note || 'This file type cannot be converted.'));
     if (parsed.mode === 'plain' || parsed.mode === 'richtext') return vectorPdf(parsed, opts);
     if (parsed.mode === 'sheets') {
       if (opts.sheets) {
-        return sheetModelsFilter(parsed, opts).then(function (next) { return sheetsPdf(next, opts); });
+        return sheetModelsFilter(parsed, opts).then(function (next) { return sheetsFlowPdf(next, opts); });
       }
-      return sheetsPdf(parsed, opts);
+      return sheetsFlowPdf(parsed, opts);
     }
-    if (parsed.mode === 'html') return htmlPdf(parsed, opts);
+    if (parsed.mode === 'html') {
+      if (wantsPicture(opts)) return htmlPdf(parsed, opts).then(function (res) { res.mode = 'picture'; res.textLayer = false; return res; });
+      return flowPdf(parsed, opts);
+    }
     if (parsed.mode === 'slides') return slidesPdf(parsed, opts);
     if (parsed.mode === 'image') return imagePdf(parsed, opts);
     if (parsed.mode === 'pdf') return pdfPass(parsed, opts);
@@ -2880,7 +2990,7 @@ function captureHtml(layout, scale) {
     opts = opts || {};
     return parseFile(file).then(function (parsed) {
       if (parsed.mode === 'unsupported') return Promise.reject(new Error(parsed.note || 'This file type cannot be converted.'));
-      if (parsed.mode === 'html') return htmlPreview(parsed, opts).then(function (r) { return r.canvases; });
+      if (parsed.mode === 'html' && wantsPicture(opts)) return htmlPreview(parsed, opts).then(function (r) { return r.canvases; });
       if (parsed.mode === 'slides') return slidesPreview(parsed, opts).then(function (r) { return r.canvases; });
       var built = parsed.mode === 'sheets' && opts.sheets
         ? sheetModelsFilter(parsed, opts).then(function (next) { return renderPdf(next, Object.assign({}, opts, { sheets: null })); })
@@ -2896,11 +3006,13 @@ function captureHtml(layout, scale) {
       return global.PDFLib.PDFDocument.create().then(function (doc) {
         var warnings = [];
         var count = 0;
+        var parts = [];
         var chain = Promise.resolve();
         files.forEach(function (file, i) {
           chain = chain.then(function () {
             var label = file && file.name ? file.name : ('File ' + (i + 1));
             return toPDF(file, opts).then(function (res) {
+              parts.push({ name: label, mode: res.mode || null });
               (res.warnings || []).forEach(function (w) { warnings.push(label + ': ' + w); });
               return global.PDFLib.PDFDocument.load(res.bytes, { ignoreEncryption: true }).then(function (src) {
                 var idx = src.getPageIndices();
@@ -2918,7 +3030,7 @@ function captureHtml(layout, scale) {
           doc.setCreator('LocalEditor');
           doc.setProducer('LocalEditor');
           return doc.save().then(function (bytes) {
-            return { bytes: bytes, pageCount: count, warnings: uniq(warnings) };
+            return { bytes: bytes, pageCount: count, warnings: uniq(warnings), parts: parts };
           });
         });
       });
@@ -3011,6 +3123,8 @@ function captureHtml(layout, scale) {
       lineNumbers: 'Code files number lines unless this is false.',
       pretty: 'JSON is pretty-printed. Invalid JSON is shown raw with a warning.',
       vector: 'On toPDF, open the browser print dialog (selectable text) instead of returning PDF bytes.',
+      output: 'text (default) | picture. Word, OpenDocument, Markdown, HTML and EPUB become real, searchable text; picture keeps an exact picture of each page. Text in scripts the writer cannot shape falls back to pictures (result.mode says which was used).',
+      font: 'sans (default) | serif. Body face for searchable-text output.',
       previewWidth: 'Pixel width of vector-PDF preview canvases (default 720).',
       dpi: 'Pixels per inch when fit is image (default 96).'
     }
