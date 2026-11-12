@@ -16,6 +16,7 @@ Everything under `assets/vendor/`, `assets/fonts/`, and `assets/data/` is vendor
 | DOMPurify | 3.4.17 | Apache-2.0 OR MPL-2.0 | `assets/vendor/purify.min.js` | https://github.com/cure53/DOMPurify |
 | marked | 18.1.3 | MIT | `assets/vendor/marked.umd.js` | https://github.com/markedjs/marked |
 | html2canvas | 1.4.1 | MIT | `assets/vendor/html2canvas.min.js` | https://github.com/niklasvh/html2canvas |
+| onnxruntime-web | 1.22.0 | MIT | `assets/vendor/ort/ort.wasm.min.js`, `assets/vendor/ort/ort-wasm-simd-threaded.module.js` (renamed from `.mjs` so every static host serves a JavaScript MIME type), `assets/vendor/ort/ort-wasm-simd-threaded.wasm`; licence text `assets/vendor/licenses/onnxruntime-LICENSE.txt` | https://www.npmjs.com/package/onnxruntime-web · https://github.com/microsoft/onnxruntime |
 
 The word “QR Code” is a registered trademark of Denso Wave Incorporated.
 
@@ -92,3 +93,13 @@ Specimen pages: `https://fonts.google.com/specimen/<Family>` (spaces as `+`).
 | withicons | 0.6.0 (`@withicons/core`, `@withicons/core-plus`, `@withicons/soft3d`, `@withicons/holiday`; 1000 icons × 34 styles) | MIT | `assets/data/withicons/*.json`, `assets/vendor/licenses/withicons-LICENSE.txt` | https://withicons.com · https://github.com/withicons |
 
 Icon JSON is the Iconify collection format. Lucide’s license is ISC. Phosphor and Fluent Emoji are MIT. Bodies are sanitized at build time (no script, event handlers, `foreignObject`, or external URLs).
+
+## Models
+
+Downloaded only when the user asks (background remover, labs/bg-remove; see `docs/research/background-remover.md`). Cached in Cache Storage `le-models-v1`.
+
+| Name | License | Files | Source |
+|---|---|---|---|
+| U²-Net `u2netp` (4.7 MB ONNX export) | Apache-2.0 (code and weights, Xuebin Qin) | `assets/models/u2netp.onnx`; licence text `assets/vendor/licenses/u2net-LICENSE.txt` | https://github.com/xuebinqin/U-2-Net · ONNX from https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx (rembg, MIT) |
+
+Training-data note: u2netp is trained on DUTS-TR, a research saliency dataset with no stated licence. The Apache-2.0 grant covers the weights; the dataset provenance is an unresolved residual risk that the owner should accept knowingly.
