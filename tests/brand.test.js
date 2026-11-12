@@ -28,6 +28,7 @@ const chroma = (c) => {
   return Math.hypot(A, B);
 };
 
+const SKINS = ['clear', 'lapis', 'graphite', 'paper', 'contrast'];
 const TEXT = ['--ink', '--muted', '--faint', '--accent', '--ok', '--private', '--warn', '--err', '--warm-ink'];
 const BACK = ['--bg', '--bg-2', '--surface', '--surface-2'];
 const PAIRS = [['--on-primary', '--primary'], ['--on-primary', '--primary-hover'], ['--on-primary', '--primary-active'], ['--accent', '--selected-bg'], ['--ink', '--selected-bg'],
@@ -35,15 +36,21 @@ const PAIRS = [['--on-primary', '--primary'], ['--on-primary', '--primary-hover'
   ['--side-text', '--side'], ['--side-dim', '--side'], ['--side-text', '--side-2'], ['--side-dim', '--side-2'], ['--stage-ink', '--stage']];
 
 ['light', 'dark'].forEach((theme) => {
-  cases[theme + ': every semantic text/background token pair meets AA (4.5:1)'] = async ({ browser, base, h }) => {
+  cases[theme + ': every theme: each semantic text/background token pair meets AA (4.5:1), rings 3:1, targets 44 px'] = async ({ browser, base, h }) => {
     const page = await h.openTheme(browser, base, '/', 'desktop', theme);
-    const names = [...new Set(TEXT.concat(BACK, [].concat(...PAIRS), ['--focus-ring', '--primary-edge']))];
-    const v = await page.evaluate((n) => { const cs = getComputedStyle(document.documentElement); const o = {}; n.forEach((k) => { o[k] = cs.getPropertyValue(k).trim(); }); return o; }, names);
+    const names = [...new Set(TEXT.concat(BACK, [].concat(...PAIRS), ['--focus-ring', '--primary-edge', '--side-accent', '--target']))];
     const bad = [];
-    TEXT.forEach((t) => BACK.forEach((b) => { const r = ratio(v[t], v[b]); if (r < 4.5) bad.push(t + ' on ' + b + ' ' + r.toFixed(2)); }));
-    PAIRS.forEach(([t, b]) => { const r = ratio(v[t], v[b]); if (r < 4.5) bad.push(t + ' on ' + b + ' ' + r.toFixed(2)); });
-    BACK.forEach((b) => { const r = ratio(v['--focus-ring'], v[b]); if (r < 3) bad.push('--focus-ring on ' + b + ' ' + r.toFixed(2)); });
-    BACK.forEach((b) => { const r = ratio(v['--primary-edge'], v[b]); if (r < 3) bad.push('--primary-edge on ' + b + ' ' + r.toFixed(2)); });
+    for (const skin of SKINS) {
+      const v = await page.evaluate(([n, k]) => { const r = document.documentElement; if (k === 'clear') r.removeAttribute('data-skin'); else r.setAttribute('data-skin', k); const cs = getComputedStyle(r); const o = {}; n.forEach((x) => { o[x] = cs.getPropertyValue(x).trim(); }); return o; }, [names, skin]);
+      const p = skin + ' ';
+      TEXT.forEach((t) => BACK.forEach((b) => { const r = ratio(v[t], v[b]); if (r < 4.5) bad.push(p + t + ' on ' + b + ' ' + r.toFixed(2)); }));
+      PAIRS.forEach(([t, b]) => { const r = ratio(v[t], v[b]); if (r < 4.5) bad.push(p + t + ' on ' + b + ' ' + r.toFixed(2)); });
+      BACK.forEach((b) => { const r = ratio(v['--focus-ring'], v[b]); if (r < 3) bad.push(p + '--focus-ring on ' + b + ' ' + r.toFixed(2)); });
+      BACK.forEach((b) => { const r = ratio(v['--primary-edge'], v[b]); if (r < 3) bad.push(p + '--primary-edge on ' + b + ' ' + r.toFixed(2)); });
+      if (ratio(v['--side-accent'], v['--side']) < 3) bad.push(p + '--side-accent on --side ' + ratio(v['--side-accent'], v['--side']).toFixed(2));
+      if (!(parseFloat(v['--target']) >= 44)) bad.push(p + '--target ' + v['--target']);
+    }
+    await page.evaluate(() => document.documentElement.removeAttribute('data-skin'));
     h.assert(bad.length === 0, 'pairs under the minimum: ' + bad.join('; '));
     /* The three canvas surrounds keep their own text readable. */
     for (const s of ['light', 'mid', 'dark']) {

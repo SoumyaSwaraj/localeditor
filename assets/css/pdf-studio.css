@@ -199,7 +199,7 @@ body:not(.ps-has-doc) .ps-only-doc { display: none; }
   border: 0;
   border-radius: 14px;
   background: transparent;
-  color: #A7A7A7;
+  color: var(--side-dim);
   font: 650 11px/1 var(--font);
   letter-spacing: 0.01em;
   cursor: pointer;
@@ -208,9 +208,9 @@ body:not(.ps-has-doc) .ps-only-doc { display: none; }
 .ps-rail button svg { width: 21px; height: 21px; }
 .ps-rail button:hover { color: var(--side-strong); background: color-mix(in srgb, var(--side-strong) 5%, transparent); }
 .ps-rail button[aria-selected="true"] {
-  color: var(--side-strong);
-  background: linear-gradient(180deg, rgba(88, 132, 248, 0.32), rgba(46, 81, 182, 0.22));
-  box-shadow: inset 0 0 0 1px rgba(129, 166, 254, 0.4);
+  color: var(--side-selected-ink);
+  background: var(--side-selected);
+  box-shadow: inset 0 0 0 1px var(--side-selected-edge);
 }
 .ps-rail button[aria-selected="true"] svg { color: var(--side-accent-icon); }
 .ps-rail button.has-dot::after {
