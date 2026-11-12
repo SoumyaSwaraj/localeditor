@@ -70,7 +70,7 @@ body.pd-open { overflow: hidden; }
 }
 .pd-foot-msg { flex: 1 1 200px; margin: 0; font-size: 13px; color: var(--muted); min-width: 0; font-variant-numeric: tabular-nums; }
 .pd-foot-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.pd-work .btn-gold, .pd-work .btn-gold:hover { color: var(--gold-ink, #2A1F0A); }
+.pd-work .btn-gold, .pd-work .btn-gold:hover { color: var(--gold-ink); }
 .pd-work .btn svg { width: 16px; height: 16px; stroke: currentColor; }
 .pd-work .btn-gold:disabled { background: var(--surface-2); color: var(--faint); border-color: var(--border); box-shadow: none; cursor: not-allowed; }
 .pd-go { min-width: 160px; justify-content: center; }
@@ -144,9 +144,9 @@ body.pd-open { overflow: hidden; }
 .pd-pick { padding: 10px; }
 .pd-canvas { position: relative; touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none; }
 .pd-overlay { position: absolute; inset: 0; pointer-events: none; }
-.pd-found { position: absolute; border: 2px solid var(--amethyst); border-radius: 4px; background: rgba(116, 87, 240, 0.06); }
-.pd-found.is-sel { background: rgba(116, 87, 240, 0.14); }
-.pd-drag { position: absolute; border: 2px dashed var(--amethyst); background: rgba(116, 87, 240, 0.1); border-radius: 3px; }
+.pd-found { position: absolute; border: 2px solid var(--amethyst); border-radius: 4px; background: rgba(63, 103, 217, 0.06); }
+.pd-found.is-sel { background: rgba(63, 103, 217, 0.14); }
+.pd-drag { position: absolute; border: 2px dashed var(--amethyst); background: rgba(63, 103, 217, 0.1); border-radius: 3px; }
 .pd-tables { display: grid; gap: 6px; }
 .pd-tbl {
   min-height: 44px; padding: 8px 12px; text-align: left; border: 1px solid var(--border); border-radius: var(--r-sm, 10px);
