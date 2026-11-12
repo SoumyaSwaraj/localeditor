@@ -387,7 +387,11 @@ cases['resize with Cancel leaves the page as it was'] = async ({ browser, base, 
 };
 cases['custom width and height in Resize create that size'] = async ({ browser, base, h }) => {
   const page = await photoPage(browser, base, h);
+  /* Park the cursor: the start-screen click leaves it where a size preset now opens, and hovering a preset
+     previews it (by design), which re-renders this form while it is being filled. */
+  await page.mouse.move(2, 2);
   await h.openPanel(page, 'design', { tab: 'resize' });
+  h.assert(!(await page.evaluate(() => window.LEStudio.S.preview)), 'no hover preview before typing');
   const ins = page.locator('#sx-panel-body input.sx-input[type=number]');
   await page.locator('.sx-ratio-lock').click(); // unlock ratio
   await ins.nth(0).fill('900'); await ins.nth(1).fill('500');
