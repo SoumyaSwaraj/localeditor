@@ -104,7 +104,7 @@
       var out = { fits: true, free: null, overBudget: false };
       if (e && e.quota) {
         out.free = Math.max(0, e.quota - (e.usage || 0));
-        if (bytes * 1.1 + 20 * MB > out.free) out.fits = false;
+        if (bytes * 1.1 + Math.min(20 * MB, e.quota * 0.05) > out.free) out.fits = false;
       }
       var budget = budgetBytes();
       if (!budget || !(item && (item.kind === 'font' || item.budget))) return out;
@@ -629,13 +629,14 @@
     if (id.indexOf('pack:') !== 0) return;
     var pid = id.slice(5);
     var ps = packState[pid] = packState[pid] || {};
-    var t = track(id, { name: (packDef(pid) || {}).name || pid, bytes: d.total, cancel: function () { message({ type: 'le-pack-cancel', id: id }); } });
+    var t = track(id, { name: (packDef(pid) || {}).name || PACK_NAMES[pid] || 'Offline files', bytes: d.total, cancel: function () { message({ type: 'le-pack-cancel', id: id }); } });
     t.progress(d.loaded, d.total);
     if (d.state === 'running') { ps.state = 'downloading'; ps.loaded = d.loaded; ps.total = d.total; emit('packs', packs()); return; }
     if (d.state === 'done') t.done(); else t.fail(new Error(d.state === 'cancelled' ? 'Stopped' : 'Some files did not download'));
     /* A job this page did not start (it was reloaded meanwhile): settle the state from what is stored now. */
     if (!packJobs[pid]) { ps.state = null; ps.total = 0; refreshPacks(); }
   }
+  var PACK_NAMES = { basic: 'Basic editor', 'basic+models': 'Basic editor + models', expert: 'Expert editor', all: 'Everything' };
   function packs() {
     if (!manifest) return [];
     return manifest.packs.filter(function (p) { return !p.hidden; }).map(function (p) {

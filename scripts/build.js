@@ -463,7 +463,8 @@ function saveGzCache() {
 function fileInfo(f) {
   const raw = fs.statSync(path.join(ROOT, f)).size;
   const gzip = gzipSize(f);
-  return { u: asUrl(f), raw, gzip, transfer: TEXT_EXT.test(f) ? gzip : raw };
+  /* CloudFront compresses text between 1,000 bytes and 10 MB; everything else travels as is. */
+  return { u: asUrl(f), raw, gzip, transfer: TEXT_EXT.test(f) && raw >= 1000 && raw <= 10000000 ? Math.min(gzip, raw) : raw };
 }
 function totals(list) {
   return list.reduce((a, x) => ({ count: a.count + 1, raw: a.raw + x.raw, gzip: a.gzip + x.gzip, transfer: a.transfer + x.transfer }), { count: 0, raw: 0, gzip: 0, transfer: 0 });
