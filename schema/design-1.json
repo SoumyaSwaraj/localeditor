@@ -207,7 +207,7 @@
         "flipY": { "type": "boolean", "default": false },
         "groupId": { "$ref": "#/$defs/id" },
         "shadow": { "$ref": "#/$defs/shadow" },
-        "fxMask": { "$ref": "#/$defs/fxMask" },
+        "layerMask": { "$ref": "#/$defs/layerMask" },
         "transform": { "description": "Perspective or distort: where the four corners of the layer go, in page units (top-left, top-right, bottom-right, bottom-left). The layer box is the quad's bounding box. Photo layers only for now.", "type": "object", "properties": { "quad": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "minimum": -100000, "maximum": 100000 } } } }, "required": ["quad"], "additionalProperties": false },
         "retouch": { "description": "An RGBA overlay drawn over the source photo before anything else (healing, cloning, dodge and burn).", "type": "object", "properties": { "asset": { "$ref": "#/$defs/imageSrc" }, "version": { "type": "integer", "minimum": 0 } }, "required": ["asset"], "additionalProperties": false },
         "maps": { "description": "Derived maps that can be regenerated: depth, normals, face. Each records the model and version that made it.", "type": "object", "maxProperties": 24 },
@@ -261,7 +261,7 @@
         "fit": { "description": "Used only when crop is missing: cover (default) crops to fill the frame, contain shrinks the frame to the photo, stretch keeps the whole photo.", "enum": ["cover", "contain", "stretch", "fill"] },
         "radius": { "type": "number", "minimum": 0 },
         "border": { "type": "object", "properties": { "width": { "type": "number", "minimum": 0, "maximum": 2000 }, "color": { "$ref": "#/$defs/color" } }, "additionalProperties": false },
-        "mask": { "description": "A shape id such as ellipse or heart (the frame), or a mask object, which is the same as fxMask.", "oneOf": [{ "type": "string", "pattern": "^[\\w-]{1,40}$" }, { "$ref": "#/$defs/fxMask" }] },
+        "mask": { "description": "A shape id such as ellipse or heart (the frame). A mask object here is read as layerMask.", "oneOf": [{ "type": "string", "pattern": "^[\\w-]{1,40}$" }, { "$ref": "#/$defs/layerMask" }] },
         "maskPath": { "type": "string", "maxLength": 20000, "pattern": "^[MmLlCcQqAaZzHhVv0-9eE+.,\\s-]+$" },
         "slot": {
           "oneOf": [
@@ -350,30 +350,31 @@
       "required": ["type"],
       "properties": {
         "id": { "type": "string", "pattern": "^[\\w.-]{1,40}$" },
-        "type": { "description": "An effect id, e.g. exposure, white-balance, contrast, highlights-shadows, levels, curves, saturation, gaussian-blur, grain, drop-shadow.", "type": "string", "pattern": "^[a-z][a-z0-9-]{1,39}$" },
+        "type": { "description": "An effect id, e.g. exposure, white-balance, contrast, highlights-shadows, levels, curves, saturation, gaussian-blur, grain, drop-shadow.", "type": "string", "pattern": "^[a-z][a-z0-9.-]{1,39}$" },
         "on": { "type": "boolean", "default": true },
         "amount": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 },
         "blend": { "enum": ["normal", "multiply", "screen", "overlay", "soft-light", "hard-light", "darken", "lighten", "difference", "color", "luminosity"], "default": "normal" },
-        "mask": { "oneOf": [{ "$ref": "#/$defs/fxMask" }, { "type": "null" }] },
+        "mask": { "oneOf": [{ "$ref": "#/$defs/layerMask" }, { "type": "null" }] },
         "p": { "description": "The effect's parameters. Unknown keys are dropped and out-of-range values clamped, with a warning.", "type": "object", "maxProperties": 24 }
       },
       "additionalProperties": false
     },
-    "fxMask": {
+    "layerMask": {
       "description": "A mask made of parts combined in order. Coordinates are fractions of the layer box.",
       "type": "object",
       "required": ["parts"],
-      "properties": { "parts": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/fxMaskPart" } } },
+      "properties": { "on": { "type": "boolean", "default": true }, "invert": { "type": "boolean", "default": false }, "parts": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/layerMaskPart" } } },
       "additionalProperties": false
     },
-    "fxMaskPart": {
+    "layerMaskPart": {
       "type": "object",
       "required": ["kind"],
       "properties": {
         "kind": { "enum": ["asset", "linear", "radial", "luma", "color", "subject", "depth", "face"] },
         "mode": { "enum": ["add", "subtract", "intersect"], "default": "add" },
         "invert": { "type": "boolean", "default": false },
-        "feather": { "description": "radial: 0–1, the soft part of the radius. Other kinds: blur in document pixels. Not used by linear.", "type": "number", "minimum": 0, "maximum": 500, "default": 0 },
+        "feather": { "description": "0–1. radial: the soft part of the radius. linear: 0 is a straight ramp, 1 an eased one. Other kinds ignore it.", "type": "number", "minimum": 0, "maximum": 1, "default": 0.25 },
+        "blur": { "description": "Softens the part, in document pixels.", "type": "number", "minimum": 0, "maximum": 500, "default": 0 },
         "density": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 },
         "asset": { "$ref": "#/$defs/imageSrc" },
         "x0": { "type": "number" }, "y0": { "type": "number" }, "x1": { "type": "number" }, "y1": { "type": "number" },

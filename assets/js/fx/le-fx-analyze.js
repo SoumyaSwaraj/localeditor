@@ -103,21 +103,24 @@
     var vAngle = (Math.atan2(cr / c, cb / c) * 180 / Math.PI + 360) % 360, vMag = Math.sqrt(cb * cb + cr * cr) / c / 255;
     var off = ((vAngle - 123 + 540) % 360) - 180;
 
-    /* Sharpness: variance of the Laplacian of luminance, on a copy up to 1024 px so fine detail still counts. */
-    var big = reduce(src, opts.region, 1024), bw = big.canvas.width, bh = big.canvas.height, bd = big.ctx.getImageData(0, 0, bw, bh).data;
-    var lum = new Float32Array(bw * bh), j;
-    for (i = 0, j = 0; i < bd.length; i += 4, j++) lum[j] = 0.2126 * bd[i] + 0.7152 * bd[i + 1] + 0.0722 * bd[i + 2];
-    var s1 = 0, s2 = 0, sn = 0, x, y;
-    for (y = 1; y < bh - 1; y++) for (x = 1; x < bw - 1; x++) {
-      j = y * bw + x;
-      var lap = 4 * lum[j] - lum[j - 1] - lum[j + 1] - lum[j - bw] - lum[j + bw];
-      s1 += lap; s2 += lap * lap; sn++;
+    /* Sharpness: variance of the Laplacian of luminance, on a copy up to 1024 px so fine detail still counts.
+       Skipped when the caller asks for specific kinds that do not include it (the scopes ask for the histogram many times a second). */
+    var lapVar = null, bw = 0, bh = 0;
+    if (!Array.isArray(opts.kinds) || opts.kinds.indexOf('sharpness') >= 0) {
+      var big = reduce(src, opts.region, 1024), bd, lum, j, s1 = 0, s2 = 0, sn = 0, x, y;
+      bw = big.canvas.width; bh = big.canvas.height; bd = big.ctx.getImageData(0, 0, bw, bh).data; lum = new Float32Array(bw * bh);
+      for (i = 0, j = 0; i < bd.length; i += 4, j++) lum[j] = 0.2126 * bd[i] + 0.7152 * bd[i + 1] + 0.0722 * bd[i + 2];
+      for (y = 1; y < bh - 1; y++) for (x = 1; x < bw - 1; x++) {
+        j = y * bw + x;
+        var lap = 4 * lum[j] - lum[j - 1] - lum[j + 1] - lum[j - bw] - lum[j + bw];
+        s1 += lap; s2 += lap * lap; sn++;
+      }
+      lapVar = sn ? s2 / sn - Math.pow(s1 / sn, 2) : 0;
     }
-    var lapVar = sn ? s2 / sn - Math.pow(s1 / sn, 2) : 0;
 
     return {
       width: red.width, height: red.height, sample: { width: w, height: h, pixels: count },
-      histogram: { bins: 256, r: norm(hr), g: norm(hg), b: norm(hb), luma: norm(hl) },
+      histogram: (function (L) { return { bins: 256, r: norm(hr), g: norm(hg), b: norm(hb), luma: L, l: L }; })(norm(hl)),
       percentiles: { r: percentiles(hr, c), g: percentiles(hg, c), b: percentiles(hb, c), luma: percentiles(hl, c) },
       clipping: { shadows: frac(lo), highlights: frac(hi) },
       mean: { r: r4(sr / c / 255), g: r4(sg / c / 255), b: r4(sb / c / 255), luma: r4(sl / c / 255), color: hex(sr / c, sg / c, sb / c) },
@@ -128,7 +131,7 @@
         suggest: suggestWB(base)
       },
       saturation: { mean: r4(ssat / c), p50: percentiles(hs, c).p50, p95: percentiles(hs, c).p95, colorfulness: r4((Math.sqrt(sdRg * sdRg + sdYb * sdYb) + 0.3 * Math.sqrt(Math.pow(rg / c, 2) + Math.pow(yb / c, 2))) / 255) },
-      sharpness: { laplacianVariance: Math.round(lapVar * 100) / 100, sample: { width: bw, height: bh } },
+      sharpness: lapVar == null ? null : { laplacianVariance: Math.round(lapVar * 100) / 100, sample: { width: bw, height: bh } },
       hue: { mean: r4(angle), strength: r4(Math.min(1, strength)), vectorscope: { angle: r4(vAngle), magnitude: r4(vMag), skinLine: 123, offsetFromSkinLine: r4(off) } },
       alpha: { coverage: r4(alpha / 255 / Math.max(1, n)) }
     };

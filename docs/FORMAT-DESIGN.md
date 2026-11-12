@@ -171,36 +171,37 @@ Optional, on any layer. The model is in `docs/EXPERT-MODE.md`; effect ids, param
 | Key | Type | Notes |
 |---|---|---|
 | `fx` | list of entries | The effect stack, first runs first. On image layers an **object** here is the older baked photo effect (see Image); when a layer has both, the baked one is written as `fxBaked`. |
-| `fxMask` | `{ parts: [...] }` | The layer mask. On an image layer, `mask` given as an object means the same (`mask` as a string stays the frame shape). |
+| `layerMask` | `{ on, invert, parts: [...] }` | The layer mask. On an image layer, `mask` given as an object is read as this (`mask` as a string stays the frame shape). |
 | `transform` | `{ quad: [[x,y],[x,y],[x,y],[x,y]] }` | Perspective or distort: the four corners in page units, top-left, top-right, bottom-right, bottom-left. Set `x y w h` to the quad's bounding box. Moving, resizing or rotating the layer afterwards carries the distortion with it. Photo layers only for now. |
 | `retouch` | `{ asset, version }` | An RGBA overlay drawn over the source photo before crop and effects. `asset` is an image source. |
 | `maps` | `{ depth: { asset, model, version }, normals: {…}, face: { landmarks, parts: { asset }, model, version } }` | Derived maps; each `asset` is an image source. Safe to delete: they can be regenerated. |
 | `raw` | `{ profile, wb: { temp, tint }, exposure, … }` | Develop settings for RAW and HDR sources. Kept as data until the RAW step is built. |
 
-**An effect entry:** `{ "id", "type", "on": true, "amount": 1, "blend": "normal", "mask": null, "p": { … } }`. Only `type` is required. `amount` 0–1 mixes the effect with what was there; `blend` is one of `normal multiply screen overlay soft-light hard-light darken lighten difference color luminosity`; `mask` limits the effect to part of the layer. Up to 32 entries. Starter types: `exposure` (`ev`), `white-balance` (`temperature`, `tint`), `contrast` (`amount`, `pivot`), `highlights-shadows` (`highlights`, `shadows`, `whites`, `blacks`), `levels`, `curves` (`master`, `red`, `green`, `blue` as control points), `saturation` (`saturation`, `vibrance`), `gaussian-blur` (`radius`), `grain` (`amount`, `size`, `luminance`, `color`, `seed`), `drop-shadow` (`x`, `y`, `blur`, `spread`, `color`, `opacity`).
+**An effect entry:** `{ "id", "type", "on": true, "amount": 1, "blend": "normal", "mask": null, "p": { … } }`. Only `type` is required. `amount` 0–1 mixes the effect with what was there; `blend` is one of `normal multiply screen overlay soft-light hard-light darken lighten difference color luminosity`; `mask` limits the effect to part of the layer. Up to 32 entries. Starter types: `exposure` (`ev`), `white-balance` (`temperature`, `tint`), `contrast` (`amount`, `pivot`), `highlights-shadows` (`highlights`, `shadows`, `whites`, `blacks`), `levels`, `curves` (`curve`: `{ master, r, g, b }`, each a list of `[x, y]` control points; a bare list means master), `saturation` (`saturation`, `vibrance`), `gaussian-blur` (`radius`), `grain` (`amount`, `size`, `luminance`, `color`, `seed`), `drop-shadow` (`x`, `y`, `blur`, `spread`, `color`, `opacity`).
 
-**A mask:** up to 8 parts combined in order. Every part has `kind`, `mode` (`add`, `subtract`, `intersect`), `invert`, `density` (0–1) and `feather`; coordinates are fractions of the layer box.
+**A mask:** `{ "on": true, "invert": false, "parts": [...] }`, up to 8 parts combined in order, starting from nothing: `add` keeps the larger value, `subtract` removes, `intersect` keeps the overlap. Every part has `kind`, `mode`, `invert`, `density` (0–1), `feather` (0–1) and `blur` (document pixels); coordinates are fractions of the layer box.
 
 | kind | fields |
 |---|---|
-| `linear` | `x0 y0 x1 y1`: 0 at the first point, 1 at the second |
-| `radial` | `cx cy rx ry rotation`; `feather` 0–1 is the soft part of the radius |
+| `linear` | `x0 y0 x1 y1`: full at the first point, none at the second; `feather` 0 is a straight ramp, 1 an eased one |
+| `radial` | `cx cy rx ry rotation`; `feather` is the soft part of the radius |
 | `luma` | `min max soft` (0–1) |
 | `color` | `h` (0–360), `s l range soft` (0–1) |
-| `asset` | `asset`: an image source; its alpha, or its brightness when it has none |
+| `asset` | `asset`: an image source; its alpha times its brightness |
 | `subject` | the layer's cut-out |
-| `depth` | `near far soft`; needs `maps.depth` |
+| `depth` | `near far soft` (0 nearest, 1 farthest); needs `maps.depth` |
 | `face` | `part`: `skin eyes lips teeth brows under-eyes`; needs `maps.face` |
 
-For `asset`, `luma`, `color`, `subject`, `depth` and `face`, `feather` is a blur in document pixels.
+`feather` shapes `linear` and `radial` parts only; `blur` softens any part.
 
-**Adjustment layer:** `{ "type": "adjust", "fx": [...], "fxMask": …, "clip": false }`. Its stack applies to everything beneath it inside its box; without `w` and `h` it covers the page. `clip: true` applies it to the layer directly below only. `opacity` fades it.
+**Adjustment layer:** `{ "type": "adjust", "fx": [...], "layerMask": …, "clip": false }`. Its stack applies to everything beneath it inside its box; without `w` and `h` it covers the page. `clip: true` applies it to the layer directly below only. `opacity` fades it.
 
 ```json
 { "id": "hero", "type": "image", "src": "assets/hero.jpg", "x": 0, "y": 0, "w": 1080, "h": 1080,
   "fx": [
     { "type": "white-balance", "p": { "temperature": 12 } },
     { "type": "highlights-shadows", "p": { "highlights": -40, "shadows": 30 } },
+    { "type": "curves", "p": { "curve": [[0, 0.03], [0.25, 0.22], [0.75, 0.8], [1, 1]] } },
     { "type": "gaussian-blur", "p": { "radius": 14 }, "mask": { "parts": [{ "kind": "radial", "cx": 0.5, "cy": 0.45, "rx": 0.35, "ry": 0.4, "feather": 0.5, "invert": true }] } },
     { "type": "grain", "p": { "amount": 18, "seed": 4 } }
   ] }

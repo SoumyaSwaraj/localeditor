@@ -92,7 +92,7 @@ function inPage() {
     const page = await fx.page(browser, base);
     await page.addScriptTag({ content: '(' + inPage.toString() + ')()' });
     out.status = await page.evaluate(() => { const s = window.LE.fx.status(); return { renderer: s.renderer, float: s.float, maxTexture: s.maxTexture, budgetMB: Math.round(s.memory.budget / 1048576) }; });
-    const list = await page.evaluate(() => window.LE.fx.describe().effects.map((e) => ({ id: e.id, example: e.agent.example, spatial: e.spatial })));
+    const list = await page.evaluate(() => window.LE.fx.describe().map((e) => ({ id: e.id, example: e.agent.example, spatial: e.spatial })));
     for (const e of list) {
       if (ONLY && e.id.indexOf(ONLY) < 0) continue;
       const entry = { type: e.id, p: (e.example && e.example.p) || {} };

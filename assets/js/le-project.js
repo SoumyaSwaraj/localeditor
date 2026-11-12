@@ -609,7 +609,7 @@
       l.color = safeColor(src.color) || '#17131F';
       l.mode = oneOf(src.mode, ['pen', 'marker', 'highlighter'], 'pen');
     } else if (l.type === 'adjust') l.clip = bool(src.clip);
-    /* Expert fields (fx, fxMask, transform, retouch, maps, raw): the same shape check LE.Scene applies; LE.fx validates entries before they run. */
+    /* Expert fields (fx, layerMask, transform, retouch, maps, raw): the same shape check LE.Scene applies; LE.fx validates entries before they run. */
     if (LE.Scene && LE.Scene.expertOf) LE.Scene.expertOf(src, l);
     return l;
   }

@@ -11,9 +11,9 @@ const STARTER = ['exposure', 'contrast', 'highlights-shadows', 'levels', 'curves
 cases['registry: the starter set is registered, described and declared to LE.support'] = async ({ browser, base, h }) => {
   const page = await fx.page(browser, base);
   const r = await page.evaluate(() => {
-    const FX = window.LE.fx, d = FX.describe();
+    const FX = window.LE.fx, d = { effects: FX.describe(), schema: FX.schema() };
     return {
-      list: FX.list(), describe: d, defaults: FX.defaults('levels'), unknown: FX.get('nope'),
+      list: FX.list(), describe: d, isArray: Array.isArray(FX.describe()), defaults: FX.defaults('levels'), unknown: FX.get('nope'),
       support: FX.list().filter((id) => (window.LE.support && window.LE.support.get ? !!window.LE.support.get('fx.' + id) : (window.LE_SUPPORT_DEFS || []).some((x) => x.id === 'fx.' + id))).map((id) => 'fx.' + id),
       json: JSON.stringify(d).length, hasFns: JSON.stringify(d).indexOf('function') >= 0
     };
@@ -24,10 +24,13 @@ cases['registry: the starter set is registered, described and declared to LE.sup
     h.assert(e.name && e.group && e.version >= 1 && (e.space === 'linear' || e.space === 'display'), e.id + ' basics');
     h.assert(e.ui && e.ui.section && e.agent && e.agent.summary && e.agent.example && e.agent.example.type === e.id, e.id + ' needs ui and agent descriptors');
     h.assert(e.support.needs.indexOf('webgl2') >= 0, e.id + ' declares what a device needs');
-    Object.keys(e.params).forEach((k) => h.assert(r.describe.paramTypes.indexOf(e.params[k].type) >= 0 && e.params[k].label, e.id + '.' + k));
+    Object.keys(e.params).forEach((k) => h.assert(r.describe.schema.paramTypes.indexOf(e.params[k].type) >= 0 && e.params[k].label, e.id + '.' + k));
+    h.assert(['Light', 'Colour', 'Curves', 'Optics', 'Effects', 'Shadows & reflections'].indexOf(e.ui.section) >= 0, e.id + ' uses a workspace section name: ' + e.ui.section);
+    (e.ui.controls || []).forEach((c) => h.assert(typeof c === 'string' ? !!e.params[c] : (c.heading || !!e.params[c.param]), e.id + ' ui.controls follows docs/EXPERT-UI.md: ' + JSON.stringify(c)));
   });
   h.assert(r.describe.effects.find((e) => e.id === 'gaussian-blur').spatial === true && r.describe.effects.find((e) => e.id === 'exposure').spatial === false, 'spatial flag');
-  h.assert(r.describe.maskKinds.length === 8 && r.describe.blends.indexOf('soft-light') >= 0, 'mask kinds and blends are described');
+  h.assert(r.isArray, 'describe() is an array of registrations');
+  h.assert(r.describe.schema.maskKinds.length === 8 && r.describe.schema.blends.indexOf('soft-light') >= 0 && r.describe.schema.mask.parts[0].feather === 0.25, 'schema() describes mask kinds and blends');
   h.assert(!r.hasFns && r.json < 60000, 'describe() is plain data');
   STARTER.forEach((id) => h.assert(r.support.indexOf('fx.' + id) >= 0, 'LE.support definition for ' + id));
   h.assert.noErrors(page);
@@ -39,17 +42,28 @@ cases['validate: schema clamps, drops and reports; unknown types never run'] = a
     const FX = window.LE.fx;
     const a = FX.validate({ type: 'exposure', p: { ev: 99, nope: 1, __proto__: { x: 1 } }, amount: 7, blend: 'explode', extra: 1 });
     const b = FX.validate({ type: 'rm-rf', p: {} });
-    const c = FX.validate({ type: 'curves', p: { master: [[2, -1], [0.5, 'x']], red: 'no', green: new Array(500).fill([0.5, 0.5]) } });
-    const d = FX.validate({ type: 'drop-shadow', p: { color: 'javascript:alert(1)', x: Infinity, blur: NaN, opacity: '1' }, mask: { parts: [{ kind: 'radial', rx: -5, feather: 9 }, { kind: 'evil' }, { kind: 'asset', asset: '../../etc' }] } });
+    const c = FX.validate({ type: 'curves', p: { curve: { master: [[2, -1], [0.5, 'x']] } } });
+    const c2 = FX.validate({ type: 'curves', p: { curve: [[0, 0.1], { x: 1, y: 0.9 }] } });
+    const c3 = FX.validate({ type: 'curves', p: { curve: { g: new Array(500).fill([0.5, 0.5]) } } });
+    FX.register({ id: 'test-shapes', version: 1, params: { w: { type: 'wheel' }, b: { type: 'bands' }, pt: { type: 'point' }, n: { type: 'number', min: 0, max: 1, ui: { gradient: 'hue' } } }, passes: function () {} });
+    const sh = FX.validate({ type: 'test-shapes', p: { w: { h: 400, amount: 2, l: -3 }, b: [1, 2, 3, 4, 5, 6, 7, 800], pt: [0.25, 5] } });
+    const sh2 = FX.validate({ type: 'test-shapes', p: { w: { h: 90, a: 0.5, l: 0.25 }, b: new Array(8).fill({ h: -10, s: 20, l: 300 }), pt: { x: 0.1, y: 0.2 } } });
+    const shDef = [FX.defaults('test-shapes'), FX.describe().find((e) => e.id === 'test-shapes').params.n.ui];
+    const d = FX.validate({ type: 'drop-shadow', p: { color: 'javascript:alert(1)', x: Infinity, blur: NaN, opacity: '1' }, mask: { on: 'yes', invert: 1, parts: [{ kind: 'radial', rx: -5, feather: 9 }, { kind: 'evil' }, { kind: 'asset', asset: '../../etc' }] } });
     const res = FX.resolve([{ type: 'exposure', p: { ev: 1 } }, { type: 'not-registered', p: { a: 1 } }, { type: 'contrast', on: false }, { type: 'grain', amount: 0 }]);
-    return { a, b, c, d, resolved: res.entries.map((e) => e.type), skipped: res.skipped };
+    return { a, b, c, c2, c3, sh, sh2, shDef, d, resolved: res.entries.map((e) => e.type), skipped: res.skipped };
   });
   h.assert(r.a.ok && r.a.entry.p.ev === 5 && r.a.entry.amount === 1 && r.a.entry.blend === 'normal' && !('nope' in r.a.entry.p), 'clamped and cleaned');
   h.assert(r.a.warnings.some((w) => w.code === 'clamped') && r.a.warnings.some((w) => w.code === 'unknown-key'), 'warnings say what changed');
   h.assert(!r.b.ok && r.b.errors[0].code === 'unknown-type', 'unknown type is an error');
-  h.assert(r.c.ok && JSON.stringify(r.c.entry.p.master) === '[[0,0],[1,1]]' && JSON.stringify(r.c.entry.p.red) === '[[0,0],[1,1]]' && r.c.entry.p.green.length === 64, 'curves fall back and are capped');
+  h.assert(r.c.ok && JSON.stringify(r.c.entry.p.curve.master) === '[[0,0],[1,1]]' && r.c.warnings.some((w) => w.code === 'bad-value'), 'a broken curve falls back to the default');
+  h.assert.equal(JSON.stringify(r.c2.entry.p.curve), JSON.stringify({ master: [[0, 0.1], [1, 0.9]], r: [[0, 0], [1, 1]], g: [[0, 0], [1, 1]], b: [[0, 0], [1, 1]] }), 'a bare list of points is the master curve');
+  h.assert(r.c3.entry.p.curve.g.length === 64 && r.c3.warnings.some((w) => w.code === 'clamped'), 'curves are capped at 64 points');
+  h.assert.equal(JSON.stringify(r.sh.entry.p), JSON.stringify({ w: { h: 40, a: 1, l: -1 }, b: [1, 2, 3, 4, 5, 6, 7, 100].map((v) => ({ h: 0, s: v, l: 0 })), pt: { x: 0.25, y: 2 }, n: 0 }), 'wheel { h, a, l }, bands of { h, s, l }, point { x, y }: older spellings are converted');
+  h.assert.equal(JSON.stringify(r.sh2.entry.p.w) + JSON.stringify(r.sh2.entry.p.b[7]) + JSON.stringify(r.sh2.entry.p.pt), '{"h":90,"a":0.5,"l":0.25}{"h":-10,"s":20,"l":100}{"x":0.1,"y":0.2}', 'the kit shapes pass through, clamped to the schema range');
+  h.assert(r.shDef[0].w.a === 0 && r.shDef[0].b.length === 8 && r.shDef[0].pt.x === 0.5 && r.shDef[1].gradient === 'hue', 'defaults use the same shapes; param ui hints are passed through');
   h.assert(r.d.ok && r.d.entry.p.color === '#000000' && r.d.entry.p.x === 0 && r.d.entry.p.blur === 16 && r.d.entry.p.opacity === 0.45, 'bad values take defaults');
-  h.assert(r.d.entry.mask.parts.length === 1 && r.d.entry.mask.parts[0].rx === 0.001 && r.d.entry.mask.parts[0].feather === 1, 'mask parts are clamped, unknown kinds and bad assets dropped');
+  h.assert(r.d.entry.mask.parts.length === 1 && r.d.entry.mask.parts[0].rx === 0.0001 && r.d.entry.mask.parts[0].feather === 1 && r.d.entry.mask.on === true && r.d.entry.mask.invert === false, 'mask parts are clamped, unknown kinds and bad assets dropped: ' + JSON.stringify(r.d.entry.mask));
   h.assert.equal(r.resolved.join(), 'exposure', 'only valid, switched-on entries run');
   h.assert(r.skipped.length === 1 && r.skipped[0].type === 'not-registered', 'the unknown entry is reported');
 };
@@ -68,12 +82,12 @@ cases['sanitiser fuzz: hostile fx, masks and absurd parameters never crash, hang
     let maxLen = 0, n = 0;
     for (let i = 0; i < 300; i++) {
       const stack = rnd() < 0.2 ? pick() : new Array(Math.floor(rnd() * 60)).fill(0).map(() => ({ id: pick(), type: types[Math.floor(rnd() * types.length)], on: pick(), amount: pick(), blend: pick(), mask: pick(), p: rnd() < 0.5 ? pick() : { radius: pick(), ev: pick(), master: pick(), color: pick(), seed: pick(), __proto__: pick(), constructor: pick() } }));
-      const src = { fx: stack, fxMask: pick(), mask: pick(), transform: pick(), retouch: pick(), maps: pick(), raw: pick() };
+      const src = { fx: stack, layerMask: pick(), mask: pick(), transform: pick(), retouch: pick(), maps: pick(), raw: pick() };
       const out = S.expertOf(src, {});
       const json = JSON.stringify(out);
       maxLen = Math.max(maxLen, json.length);
       if (out.fx && out.fx.length > 32) throw new Error('stack not capped');
-      if (out.fxMask && out.fxMask.parts.length > 8) throw new Error('mask not capped');
+      if (out.layerMask && out.layerMask.parts.length > 8) throw new Error('mask not capped');
       if (/"(__proto__|constructor|prototype)":/.test(json)) throw new Error('forbidden key survived: ' + json.slice(0, 200));
       (out.fx || []).forEach((e) => { FX.validate(e); n++; });
       FX.resolve(out.fx);
@@ -96,11 +110,11 @@ cases['absurd parameters: every control at its extreme still renders, bounded in
     FX.configure({ workMP: 3 });   /* the safety valve itself is under test: very wide stacks drop resolution instead of taking minutes */
     ['min', 'max'].forEach((end) => {
       const stack = FX.list().map((id) => { const d = FX.get(id), p = {}; Object.keys(d.params).forEach((k) => { const s = d.params[k]; if (s.type === 'number') p[k] = s[end]; if (s.type === 'seed') p[k] = 2147483647; }); return { type: id, p }; });
-      const res = FX.apply(c, { fx: stack, mask: { parts: [{ kind: 'luma', feather: 500 }, { kind: 'radial', rx: 8, ry: 0.001, feather: 1 }, { kind: 'subject' }, { kind: 'depth' }, { kind: 'face', part: 'lips' }] } });
+      const res = FX.apply(c, { fx: stack, mask: { invert: end === 'max', parts: [{ kind: 'luma', blur: 500 }, { kind: 'radial', rx: 8, ry: 0.0001, feather: 1 }, { kind: 'subject' }, { kind: 'depth' }, { kind: 'face', part: 'lips' }] } });
       out.push([res.width, res.height]);
     });
     const s = window.LEStudio.scene, id = s.layers()[0].id;
-    s.update(id, { fx: [{ type: 'gaussian-blur', p: { radius: 1e9 } }, { type: 'no-such-effect', p: { a: [1, 2, 3] } }, { type: 'drop-shadow', p: { x: -1e9, y: 1e9, blur: 1e9 } }], fxMask: { parts: [{ kind: 'asset', asset: 'missing' }] }, transform: { quad: [[0, 0], [0, 0], [0, 0], [0, 0]] } });
+    s.update(id, { fx: [{ type: 'gaussian-blur', p: { radius: 1e9 } }, { type: 'no-such-effect', p: { a: [1, 2, 3] } }, { type: 'drop-shadow', p: { x: -1e9, y: 1e9, blur: 1e9 } }], layerMask: { parts: [{ kind: 'asset', asset: 'missing' }] }, transform: { quad: [[0, 0], [0, 0], [0, 0], [0, 0]] } });
     const png = await s.render(0.25);
     return { out, page: [png.width, png.height], kept: s.layer(id).fx.map((e) => e.type), mem: FX.status().memory, notes: Object.keys(FX.status().warnings) };
   });
@@ -118,7 +132,7 @@ cases['goldens: the colour effects at 256 px'] = async ({ browser, base, h }) =>
     'contrast': [{ type: 'contrast', p: { amount: 45 } }],
     'highlights-shadows': [{ type: 'highlights-shadows', p: { highlights: -70, shadows: 60, whites: 20, blacks: -20 } }],
     'levels': [{ type: 'levels', p: { inBlack: 0.1, inWhite: 0.85, gamma: 1.3 } }],
-    'curves': [{ type: 'curves', p: { master: [[0, 0], [0.25, 0.15], [0.75, 0.85], [1, 1]], blue: [[0, 0.12], [1, 0.88]] } }],
+    'curves': [{ type: 'curves', p: { curve: { master: [[0, 0], [0.25, 0.15], [0.75, 0.85], [1, 1]], b: [[0, 0.12], [1, 0.88]] } } }],
     'white-balance': [{ type: 'white-balance', p: { temperature: 45, tint: -15 } }],
     'saturation': [{ type: 'saturation', p: { saturation: -30, vibrance: 80 } }]
   };
@@ -135,7 +149,7 @@ cases['goldens: blur, grain, a mixed stack, masks, a quad and a drop shadow at 2
   };
   for (const name of Object.keys(shots)) await fx.golden(page, name, await fx.render(page, Object.assign({ fx: shots[name] }, CARD)));
   await fx.golden(page, 'drop-shadow', await fx.render(page, { card: [256, 192], alpha: true, fx: [{ type: 'drop-shadow', p: { x: 8, y: 10, blur: 6, opacity: 0.7, color: '#402060' } }], mask: { parts: [{ kind: 'radial', cx: 0.5, cy: 0.5, rx: 0.48, ry: 0.48, feather: 0.08 }] } }));
-  await fx.golden(page, 'mask-parts', await fx.render(page, Object.assign({ fx: [{ type: 'saturation', p: { saturation: -100 }, mask: { parts: [{ kind: 'color', h: 0, s: 0.75, l: 0.55, range: 0.12, soft: 0.1, invert: true }] } }], mask: { parts: [{ kind: 'radial', cx: 0.5, cy: 0.5, rx: 0.5, ry: 0.5, feather: 0.3 }, { kind: 'luma', min: 0.9, max: 1, soft: 0.05, mode: 'subtract', feather: 2 }] } }, CARD)));
+  await fx.golden(page, 'mask-parts', await fx.render(page, Object.assign({ fx: [{ type: 'saturation', p: { saturation: -100 }, mask: { parts: [{ kind: 'color', h: 0, s: 0.75, l: 0.55, range: 0.12, soft: 0.1, invert: true }] } }], mask: { parts: [{ kind: 'radial', cx: 0.5, cy: 0.5, rx: 0.5, ry: 0.5, feather: 0.3 }, { kind: 'luma', min: 0.9, max: 1, soft: 0.05, mode: 'subtract', blur: 2 }] } }, CARD)));
   await fx.golden(page, 'quad', await fx.render(page, Object.assign({ quad: [[30, 10], [240, 40], [250, 170], [10, 185]], fx: [{ type: 'contrast', p: { amount: 20 } }] }, CARD)));
   h.assert.noErrors(page);
 };
@@ -150,7 +164,7 @@ cases['tiles: a blurred, grained image exports the same as one tile and as many'
   const d = await fx.same(page, one, many, 'blur + grain, one tile against many', { max: 1, over: 0 });
   h.assert(d.mean < 0.2, 'mean difference ' + d.mean);
   /* A wide blur (pyramid levels), a feathered luminance mask and a silhouette effect that draws outside the box. */
-  const wide = [{ type: 'gaussian-blur', p: { radius: 30 }, mask: { parts: [{ kind: 'luma', min: 0.4, max: 1, soft: 0.1, feather: 5 }] } }, { type: 'contrast', p: { amount: 25 } }];
+  const wide = [{ type: 'gaussian-blur', p: { radius: 30 }, mask: { parts: [{ kind: 'luma', min: 0.4, max: 1, soft: 0.1, blur: 5 }] } }, { type: 'contrast', p: { amount: 25 } }];
   await fx.same(page, await fx.render(page, { photo: 'arch-02', size: 420, fx: wide }), await fx.render(page, { photo: 'arch-02', size: 420, fx: wide, tile: 192 }), 'wide masked blur, one tile against many', { max: 2, over: 0.0005 });
   h.assert.noErrors(page);
 };
@@ -235,7 +249,7 @@ cases['8-bit fallback: without float targets the picture matches and gradients a
 
 cases['context loss: a lost context falls back without throwing and the picture returns when it is restored'] = async ({ browser, base, h }) => {
   const page = await fx.page(browser, base);
-  const o = Object.assign({ fx: [{ type: 'exposure', p: { ev: 0.8 } }, { type: 'gaussian-blur', p: { radius: 4 } }, { type: 'curves', p: { master: [[0, 0.1], [1, 0.9]] } }] }, CARD);
+  const o = Object.assign({ fx: [{ type: 'exposure', p: { ev: 0.8 } }, { type: 'gaussian-blur', p: { radius: 4 } }, { type: 'curves', p: { curve: [[0, 0.1], [1, 0.9]] } }] }, CARD);
   const before = await fx.render(page, o);
   const lost = await page.evaluate(async () => {
     const FX = window.LE.fx, seen = [];
@@ -328,11 +342,13 @@ cases['analysis: the numbers an agent grades by are right on known pictures'] = 
     const photo = await window.fxT.load('/assets/photos/collage/arch-01.jpg');
     const sharp = await FX.analyze(photo);
     const soft = await FX.analyze(FX.apply(window.fxT.fit(photo), { fx: [{ type: 'gaussian-blur', p: { radius: 4 } }] }));
-    return { grey, white, cast: cast.whiteBalance, fixed: fixed.whiteBalance, region, whole, sharp: sharp.sharpness.laplacianVariance, soft: soft.sharpness.laplacianVariance, keys: Object.keys(sharp) };
+    const quick = FX.analyze({ source: flat('#808080'), kinds: ['histogram'] });
+    return { quick: { sync: !!quick.histogram, l: quick.histogram && quick.histogram.l[128], sharp: quick.sharpness }, grey, white, cast: cast.whiteBalance, fixed: fixed.whiteBalance, region, whole, sharp: sharp.sharpness.laplacianVariance, soft: soft.sharpness.laplacianVariance, keys: Object.keys(sharp) };
   });
   ['histogram', 'percentiles', 'clipping', 'mean', 'median', 'whiteBalance', 'saturation', 'sharpness', 'hue'].forEach((k) => h.assert(r.keys.indexOf(k) >= 0, 'missing ' + k));
   h.assert(Math.abs(r.grey.mean.luma - 0.502) < 0.01 && r.grey.median.luma === r.grey.percentiles.luma.p50 && r.grey.clipping.highlights.any === 0 && r.grey.saturation.mean === 0, 'mid grey: ' + JSON.stringify(r.grey.mean));
   h.assert(Math.abs(r.grey.histogram.luma[128] - 1) < 1e-3 && r.grey.histogram.r.length === 256, 'histogram is a fraction per bin');
+  h.assert(r.quick.sync && Math.abs(r.quick.l - 1) < 1e-3 && r.quick.sharp === null, 'the scopes form, analyze({ source, kinds }), answers at once with histogram.l: ' + JSON.stringify(r.quick));
   h.assert(r.white.clipping.highlights.all === 1 && r.white.clipping.shadows.any === 0 && r.white.percentiles.luma.p1 === 1, 'white clips');
   h.assert(r.cast.method === 'near-neutral' && r.cast.cast.rg > 1.03 && r.cast.cast.bg < 0.97 && r.cast.suggest.temperature < -3, 'a warm cast is measured and a cooler balance suggested: ' + JSON.stringify(r.cast));
   h.assert(Math.abs(r.fixed.cast.rg - 1) < 0.04 && Math.abs(r.fixed.cast.bg - 1) < 0.04, 'the suggested balance neutralises it: ' + JSON.stringify(r.fixed.cast));
@@ -358,9 +374,9 @@ cases['ops: fx.add, fx.update, fx.remove, fx.reorder, mask.set, adjust.add and t
     log.reorder = s.doc.layers[0].fx.map((e) => e.type);
     s = O.apply(s.doc, { op: 'mask.set', layer: 'a', fx: id1, mask: { parts: [{ kind: 'linear' }] } });
     s = O.apply(s.doc, { op: 'mask.set', layer: 'a', mask: { parts: [{ kind: 'radial', feather: 0.2 }] } });
-    log.mask = { ok: s.ok, entry: s.doc.layers[0].fx[0].mask.parts[0].kind, layer: s.doc.layers[0].fxMask.parts[0] };
+    log.mask = { ok: s.ok, entry: s.doc.layers[0].fx[0].mask.parts[0].kind, layer: s.doc.layers[0].layerMask.parts[0] };
     s = O.apply(s.doc, { op: 'mask.set', layer: 'a', mask: null });
-    log.maskCleared = !('fxMask' in s.doc.layers[0]);
+    log.maskCleared = !('layerMask' in s.doc.layers[0]);
     s = O.apply(s.doc, { op: 'fx.remove', layer: 'a', id: id2 });
     s = O.apply(s.doc, { op: 'adjust.add', fx: [{ type: 'contrast', p: { amount: 10 } }], name: 'Grade', above: 'a', mask: { parts: [{ kind: 'luma', min: 0.5 }] } });
     log.adjust = { ok: s.ok, order: s.doc.layers.map((l) => l.type), layer: s.doc.layers[1] };
@@ -381,8 +397,8 @@ cases['ops: fx.add, fx.update, fx.remove, fx.reorder, mask.set, adjust.add and t
   h.assert(r.add2.ok && r.add2.order.join() === 'grain,exposure' && r.add2.unique, 'index and unique ids');
   h.assert(r.update.ok && r.update.e.p.ev === -1 && r.update.e.amount === 0.5 && r.update.e.blend === 'screen', 'fx.update merges parameters');
   h.assert.equal(r.reorder.join(), 'exposure,grain', 'fx.reorder');
-  h.assert(r.mask.ok && r.mask.entry === 'linear' && r.mask.layer.kind === 'radial' && r.mask.layer.rx === 0.4 && r.maskCleared, 'mask.set fills defaults and clears');
-  h.assert(r.adjust.ok && r.adjust.order.join() === 'image,adjust,text' && r.adjust.layer.w === 800 && r.adjust.layer.fx[0].p.pivot === 0.5 && r.adjust.layer.fxMask.parts[0].max === 1, 'adjust.add: ' + JSON.stringify(r.adjust.layer));
+  h.assert(r.mask.ok && r.mask.entry === 'linear' && r.mask.layer.kind === 'radial' && r.mask.layer.rx === 0.3 && r.mask.layer.feather === 0.2 && r.maskCleared, 'mask.set fills defaults and clears');
+  h.assert(r.adjust.ok && r.adjust.order.join() === 'image,adjust,text' && r.adjust.layer.w === 800 && r.adjust.layer.fx[0].p.pivot === 0.5 && r.adjust.layer.layerMask.parts[0].max === 1, 'adjust.add: ' + JSON.stringify(r.adjust.layer));
   h.assert(r.quad.ok && r.quad.box.join() === '0,10,320,270', 'transform.set moves the box to the quad: ' + r.quad.box);
   h.assert.equal(JSON.stringify(r.bad), JSON.stringify([[false, 'unknown-type', true], [false, 'no-layer', true], [false, 'unknown-op', true], [false, 'no-entry', true], [false, 'bad-quad', true], [false, 'bad-value', true], [false, 'bad-mask', true], [false, 'bad-doc', true], [false, 'forbidden-key', true]]), 'bad operations are refused and leave the document alone');
   h.assert(r.pure, 'the input document is never changed');
@@ -390,7 +406,7 @@ cases['ops: fx.add, fx.update, fx.remove, fx.reorder, mask.set, adjust.add and t
   /* The result of the operations loads into a real scene unchanged. */
   const st = await h.studioWithSample(browser, base, 'desktop');
   const back = await st.evaluate((doc) => { const s = window.LEStudio.scene; s.load(doc); return s.toJSON(); }, r.final);
-  h.assert.equal(JSON.stringify(back.layers.map((l) => [l.type, l.fx || null, l.fxMask || null, l.transform || null])), JSON.stringify(r.final.layers.map((l) => [l.type, l.fx || null, l.fxMask || null, l.transform || null])), 'LE.Scene keeps what the operations wrote');
+  h.assert.equal(JSON.stringify(back.layers.map((l) => [l.type, l.fx || null, l.layerMask || null, l.transform || null])), JSON.stringify(r.final.layers.map((l) => [l.type, l.fx || null, l.layerMask || null, l.transform || null])), 'LE.Scene keeps what the operations wrote');
 };
 
 cases['studio: nothing under assets/js/fx/ loads until a document needs it, and the boot stub stays tiny'] = async ({ browser, base, h }) => {
@@ -505,17 +521,17 @@ cases['studio: undo, redo, project and open-format round trips keep expert data 
     const LE = window.LE, s = window.LEStudio.scene, id = s.layers()[0].id, out = {};
     const fxv = [{ id: 'e1', type: 'exposure', p: { ev: 0.5 } }, { id: 'e2', type: 'future-effect', p: { strength: 3, list: [1, 2, 3] }, amount: 0.5 }];
     const mask = { parts: [{ kind: 'radial', cx: 0.4, cy: 0.5, rx: 0.3, ry: 0.3, feather: 0.2 }] };
-    s.update(id, { fx: fxv, fxMask: mask, transform: { quad: [[100, 50], [1100, 100], [1150, 700], [60, 760]] }, raw: { profile: 'neutral', wb: { temp: 5200, tint: 4 }, exposure: 0.3 }, maps: { depth: { asset: 'd'.repeat(64), model: 'depth-s', version: 2 } } });
+    s.update(id, { fx: fxv, layerMask: mask, transform: { quad: [[100, 50], [1100, 100], [1150, 700], [60, 760]] }, raw: { profile: 'neutral', wb: { temp: 5200, tint: 4 }, exposure: 0.3 }, maps: { depth: { asset: 'd'.repeat(64), model: 'depth-s', version: 2 } } });
     const adj = s.add({ type: 'adjust', fx: [{ id: 'c1', type: 'contrast', p: { amount: 20 } }], clip: true });
     const snap = s.toJSON();
-    out.stored = snap.layers.map((l) => [l.type, (l.fx || []).map((e) => e.type), !!l.fxMask, !!l.transform, !!l.raw, !!l.maps, l.clip]);
+    out.stored = snap.layers.map((l) => [l.type, (l.fx || []).map((e) => e.type), !!l.layerMask, !!l.transform, !!l.raw, !!l.maps, l.clip]);
     s.undo(); out.undo1 = s.toJSON().layers.length;
     s.undo(); out.undo2 = !!s.toJSON().layers[0].fx;
     s.redo(); s.redo(); out.redo = JSON.stringify(s.toJSON()) === JSON.stringify(snap);
     /* A mask given as an object on a photo is the layer mask; the frame shape keeps its string. */
     s.update(id, { mask: 'ellipse' }); s.update(id, { mask: { parts: [{ kind: 'linear', x0: 0, y0: 0, x1: 1, y1: 1 }] } });
-    out.alias = [s.layer(id).mask, s.layer(id).fxMask.parts[0].kind];
-    s.update(id, { mask: 'none', fxMask: mask });
+    out.alias = [s.layer(id).mask, s.layer(id).layerMask.parts[0].kind];
+    s.update(id, { mask: 'none', layerMask: mask });
     /* .leproject sanitiser */
     const project = LE.project.create({ name: 'fx', pages: [s.toJSON()] });
     const hostile = JSON.parse(JSON.stringify(project));
@@ -534,13 +550,13 @@ cases['studio: undo, redo, project and open-format round trips keep expert data 
     out.design = { ok: parsed.ok, errors: (parsed.errors || []).slice(0, 3), warnings: (parsed.warnings || []).map((w) => w.kind) };
     if (parsed.ok) {
       const pl = parsed.project.pages[0].layers;
-      out.design.layers = pl.map((l) => [l.type, (l.fx || []).map((e) => e.type + ':' + e.id), !!l.fxMask, !!l.transform, l.clip]);
+      out.design.layers = pl.map((l) => [l.type, (l.fx || []).map((e) => e.type + ':' + e.id), !!l.layerMask, !!l.transform, l.clip]);
       out.design.p = pl[0].fx[1].p; out.design.quad = pl[0].transform.quad; out.design.raw = pl[0].raw; out.design.maps = pl[0].maps;
       const text2 = LE.design.stringify(parsed.project, { images: 'ids' }).text;
       out.design.stable = text2 === LE.design.stringify((await LE.design.parse(text2)).project, { images: 'ids' }).text;
     }
     const agent = await LE.design.parse(JSON.stringify({ format: 'localeditor-design', version: 1, pages: [{ width: 400, height: 300, layers: [
-      { type: 'shape', shape: 'rectangle', x: 0, y: 0, w: 400, h: 300, fill: '#336699', fx: [{ type: 'exposure', p: { ev: 40, zzz: 1 } }, { type: 'made-up', p: {} }], fxMask: { parts: [{ kind: 'radial', rx: 99 }] } },
+      { type: 'shape', shape: 'rectangle', x: 0, y: 0, w: 400, h: 300, fill: '#336699', fx: [{ type: 'exposure', p: { ev: 40, zzz: 1 } }, { type: 'made-up', p: {} }], layerMask: { parts: [{ kind: 'radial', rx: 99 }] } },
       { type: 'adjust', fx: [{ type: 'grain', p: { amount: 10 } }] }
     ] }] }));
     out.agent = { ok: agent.ok, errors: (agent.errors || []).slice(0, 2), codes: (agent.warnings || []).map((w) => w.kind), ev: agent.ok ? agent.project.pages[0].layers[0].fx[0].p.ev : null, adj: agent.ok ? agent.project.pages[0].layers[1] : null, kept: agent.ok ? agent.project.pages[0].layers[0].fx.map((e) => e.type) : null };
@@ -648,6 +664,127 @@ cases['colour: Display-P3 output keeps colours sRGB would clip, where the browse
     /* Pushed past the sRGB gamut: sRGB clips green to 0, P3 still has room. */
     h.assert(r.a[1] === 0 && r.a[2] === 0 && r.a.join() !== r.b.join() && r.b[0] > 200, 'the P3 canvas holds a colour sRGB clips: sRGB ' + r.a + ', P3 ' + r.b);
   } else h.assert(r.a.join() === r.b.join(), 'without P3 the output is the sRGB one');
+  h.assert.noErrors(page);
+};
+
+cases['masks: the shader agrees with the workspace reference (LE.expert.evalMask), part by part and combined'] = async ({ browser, base, h }) => {
+  const page = await h.studioWithSample(browser, base, 'desktop');
+  await fx.attach(page);
+  const r = await page.evaluate(async () => {
+    const LE = window.LE, T = window.fxT;
+    await LE.fxBoot.load();
+    await LE.lazy(new URL('/assets/js/expert/expert.js', location.href).href);
+    await LE.expert.load();
+    const X = LE.expert, FX = LE.fx, W = 160, H = 120, card = T.card(W, H), px = card.getContext('2d').getImageData(0, 0, W, H).data;
+    const brush = document.createElement('canvas'); brush.width = W; brush.height = H;
+    const bx = brush.getContext('2d'); bx.strokeStyle = '#fff'; bx.lineWidth = 26; bx.lineCap = 'round'; bx.filter = 'blur(3px)'; bx.beginPath(); bx.moveTo(20, 30); bx.lineTo(120, 90); bx.stroke();
+    const masks = {
+      linear: { parts: [{ kind: 'linear', x0: 0.2, y0: 0.1, x1: 0.8, y1: 0.7, feather: 0 }] },
+      'linear eased': { parts: [{ kind: 'linear', x0: 0.5, y0: 0.2, x1: 0.5, y1: 0.9, feather: 1 }] },
+      'linear default feather': { parts: [{ kind: 'linear', x0: 0.9, y0: 0.5, x1: 0.1, y1: 0.5 }] },
+      radial: { parts: [{ kind: 'radial', cx: 0.45, cy: 0.55, rx: 0.35, ry: 0.2, rotation: 30, feather: 0.4 }] },
+      'radial inverted, dense': { parts: [{ kind: 'radial', cx: 0.5, cy: 0.5, rx: 0.3, ry: 0.4, feather: 0.6, invert: true, density: 0.7 }] },
+      luma: { parts: [{ kind: 'luma', min: 0.3, max: 0.7, soft: 0.1 }] },
+      color: { parts: [{ kind: 'color', h: 220, s: 0.7, l: 0.55, range: 0.2, soft: 0.15 }] },
+      asset: { parts: [{ kind: 'asset', asset: 'brush-1' }] },
+      'add, subtract, intersect': { parts: [{ kind: 'radial', cx: 0.3, cy: 0.5, rx: 0.3, ry: 0.4, feather: 0.3 }, { kind: 'linear', x0: 0, y0: 0.5, x1: 1, y1: 0.5, feather: 0.5, mode: 'add' }, { kind: 'luma', min: 0.6, max: 1, soft: 0.1, mode: 'subtract' }, { kind: 'asset', asset: 'brush-1', mode: 'intersect', invert: true }] },
+      'first part intersects': { parts: [{ kind: 'linear', x0: 0, y0: 0, x1: 1, y1: 1, feather: 0.3, mode: 'intersect' }, { kind: 'radial', cx: 0.6, cy: 0.4, rx: 0.5, ry: 0.5, feather: 0.5, mode: 'intersect' }] },
+      'first part subtracts': { parts: [{ kind: 'radial', cx: 0.5, cy: 0.5, rx: 0.3, ry: 0.3, feather: 0.3, mode: 'subtract' }] }
+    };
+    const out = {};
+    Object.keys(masks).forEach((name) => {
+      const ref = X.evalMask(masks[name], { w: W, h: H, pixels: px, assets: { 'brush-1': brush }, cutout: null });
+      const got = FX.apply(card, { fx: [{ type: 'exposure', p: { ev: 0 } }], mask: masks[name], assets: (id) => (id === 'brush-1' ? brush : null) });
+      const a = got.getContext('2d').getImageData(0, 0, W, H).data; let max = 0, sum = 0, over = 0, refSum = 0;
+      for (let i = 0; i < W * H; i++) { const d = Math.abs(a[i * 4 + 3] / 255 - ref[i]); max = Math.max(max, d); sum += d; refSum += ref[i]; if (d > 0.03) over++; }
+      out[name] = { max: Math.round(max * 1000) / 1000, mean: Math.round(sum / (W * H) * 10000) / 10000, over: over / (W * H), cover: Math.round(refSum / (W * H) * 100) / 100 };
+    });
+    /* Mask-level switches (the reference has none): off means no mask, invert flips the result; an empty inverted mask hides everything. */
+    const alphaAt = (m, x, y) => FX.apply(card, { fx: [{ type: 'exposure', p: { ev: 0 } }], mask: m }).getContext('2d').getImageData(x, y, 1, 1).data[3];
+    const lin = { kind: 'linear', x0: 0, y0: 0.5, x1: 1, y1: 0.5, feather: 0 };
+    out.switches = [alphaAt({ parts: [lin] }, 8, 60), alphaAt({ invert: true, parts: [lin] }, 8, 60), alphaAt({ on: false, parts: [lin] }, 150, 60), alphaAt({ invert: true, parts: [] }, 80, 60), alphaAt({ parts: [] }, 80, 60)];
+    out.MASK = X.doc && X.doc.MASK;
+    return out;
+  });
+  const sw = r.switches; delete r.switches; const MASK = r.MASK; delete r.MASK;
+  Object.keys(r).forEach((name) => {
+    h.assert(r[name].mean < 0.006 && r[name].over < 0.01 && r[name].max < 0.2, 'mask "' + name + '" against the reference: ' + JSON.stringify(r[name]));
+  });
+  h.assert(r['first part subtracts'].cover === 0 && r.radial.cover > 0.05 && r.linear.cover > 0.2, 'the reference itself is not trivial: ' + JSON.stringify([r['first part subtracts'].cover, r.radial.cover, r.linear.cover]));
+  h.assert(sw[0] > 240 && sw[1] < 15 && sw[2] === 255 && sw[3] === 0 && sw[4] === 255, 'mask-level on and invert: ' + sw);
+  h.assert(MASK === undefined || MASK === 'layerMask', 'the workspace writes the layer mask where the renderer reads it: ' + MASK);
+  h.assert.noErrors(page);
+};
+
+cases['curves: the lookup table the shader uses is LE.curves, sample for sample, and loads without the workspace'] = async ({ browser, base, h }) => {
+  const page = await fx.page(browser, base);
+  const r = await page.evaluate(() => {
+    const LE = window.LE, FX = LE.fx, C = LE.curves, pts = [[0, 0.05], [0.2, 0.12], [0.5, 0.62], [0.8, 0.9], [1, 0.97]];
+    const table = FX.math.curveTable(FX.validate({ type: 'curves', p: { curve: pts } }).entry.p.curve, 256), ref = C.sample(pts, 256), lut = C.lut(pts, 256);
+    let exact = 0, lutSame = 0;
+    for (let i = 0; i < 256; i++) { if (table[i * 3] === ref[i] && table[i * 3 + 1] === ref[i] && table[i * 3 + 2] === ref[i]) exact++; if (Math.round(table[i * 3] * 255) === lut[i]) lutSame++; }
+    /* Channel curves compose with the master through the same functions. */
+    const two = FX.math.curveTable({ master: pts, r: [[0, 0.1], [1, 0.8]], g: [[0, 0], [1, 1]], b: [[0, 0], [1, 1]] }, 256), fm = C.monotone(pts), fr = C.monotone([[0, 0.1], [1, 0.8]]);
+    let comp = 0; for (let i = 0; i < 256; i++) if (Math.abs(two[i * 3] - fm(fr(i / 255))) < 1e-6) comp++;
+    /* And through the GPU: a grey ramp of every 8-bit level. */
+    const c = document.createElement('canvas'); c.width = 256; c.height = 4; const x = c.getContext('2d'), id = x.createImageData(256, 4);
+    for (let i = 0; i < 256 * 4; i++) { const v = i % 256; id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = v; id.data[i * 4 + 3] = 255; }
+    x.putImageData(id, 0, 0);
+    const d = FX.apply(c, { fx: [{ type: 'curves', p: { curve: { master: pts } } }] }).getContext('2d').getImageData(0, 1, 256, 1).data;
+    let worst = 0; for (let i = 0; i < 256; i++) worst = Math.max(worst, Math.abs(d[i * 4] - lut[i]));
+    return { exact, lutSame, comp, worst, workspace: !!LE.expert, version: C.version };
+  });
+  h.assert(r.workspace === false && r.version >= 1, 'LE.curves is there without the workspace');
+  h.assert.equal(r.exact, 256, 'a master-only table equals LE.curves.sample');
+  h.assert.equal(r.lutSame, 256, 'and LE.curves.lut once rounded to 8 bits');
+  h.assert.equal(r.comp, 256, 'channel then master');
+  h.assert(r.worst <= 1, 'the rendered ramp follows LE.curves.lut within one level (dither): ' + r.worst);
+};
+
+cases['float sources and maps: typed-array pixels render and tile; depth and face masks resolve from the packed maps'] = async ({ browser, base, h }) => {
+  const page = await fx.page(browser, base);
+  const r = await page.evaluate(() => {
+    const LE = window.LE, FX = LE.fx, M = FX.math, W = 160, H = 96, out = {};
+    /* What a RAW decode hands over: linear float RGB, top row first. */
+    const f = new Float32Array(W * H * 3);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = (y * W + x) * 3, v = x / (W - 1); f[i] = v; f[i + 1] = v * 0.5; f[i + 2] = y / (H - 1); }
+    const src = { data: f, width: W, height: H, channels: 3, space: 'linear' };
+    const px = (c, x, y) => Array.from(c.getContext('2d').getImageData(x, y, 1, 1).data);
+    const want = (x, y, k) => [x / (W - 1) * k, x / (W - 1) * 0.5 * k, y / (H - 1) * k].map((v) => Math.round(M.linearToSrgb(Math.min(1, v)) * 255));
+    const plain = FX.apply(src, { fx: [] }), bright = FX.apply(src, { fx: [{ type: 'exposure', p: { ev: 1 } }] });
+    out.plain = [px(plain, 40, 20), want(40, 20, 1), px(plain, 150, 90), want(150, 90, 1)];
+    out.bright = [px(bright, 40, 20), want(40, 20, 2)];
+    const stack = [{ type: 'gaussian-blur', p: { radius: 3 } }, { type: 'contrast', p: { amount: 20 } }];
+    const one = FX.apply(src, { fx: stack }), many = FX.apply(src, { fx: stack, tile: 64 });
+    const a = one.getContext('2d').getImageData(0, 0, W, H).data, b = many.getContext('2d').getImageData(0, 0, W, H).data; let worst = 0;
+    for (let i = 0; i < a.length; i++) worst = Math.max(worst, Math.abs(a[i] - b[i]));
+    out.tiles = worst;
+    const u16 = new Uint16Array(W * H * 4); for (let i = 0; i < W * H; i++) { u16[i * 4] = 65535; u16[i * 4 + 1] = 32768; u16[i * 4 + 2] = 0; u16[i * 4 + 3] = 65535; }
+    out.u16 = px(FX.apply({ data: u16, width: W, height: H, channels: 4, space: 'display' }, { fx: [] }), 10, 10);
+    /* Depth: 16 bits packed as red (high byte) and green (low byte), near = 1. Nearest on the left here. */
+    const dc = document.createElement('canvas'); dc.width = 64; dc.height = 32; const dx = dc.getContext('2d'), did = dx.createImageData(64, 32);
+    for (let y = 0; y < 32; y++) for (let x = 0; x < 64; x++) { const v = Math.round((1 - x / 63) * 65535), i = (y * 64 + x) * 4; did.data[i] = v >> 8; did.data[i + 1] = v & 255; did.data[i + 3] = 255; }
+    dx.putImageData(did, 0, 0);
+    const white = document.createElement('canvas'); white.width = W; white.height = H; white.getContext('2d').fillStyle = '#fff'; white.getContext('2d').fillRect(0, 0, W, H);
+    const assets = (id) => (id === 'depth-1' ? dc : null);
+    const near = FX.apply(white, { fx: [{ type: 'exposure', p: { ev: 0 } }], mask: { parts: [{ kind: 'depth', near: 0, far: 0.4, soft: 0.05 }] }, layer: { maps: { depth: { asset: 'depth-1', model: 'x', version: 1 } } }, assets });
+    out.depth = [px(near, 10, 48)[3], px(near, 60, 48)[3], px(near, 100, 48)[3], px(near, 150, 48)[3]];
+    out.noDepth = px(FX.apply(white, { fx: [{ type: 'exposure', p: { ev: 0 } }], mask: { parts: [{ kind: 'depth', near: 0, far: 0.4 }] }, layer: {} }), 150, 48)[3];
+    /* Face: LE.maps.faceMask(face, part, w, h) draws the part; a stand-in here with the same call shape. */
+    LE.maps = { faceMask: (face, part, w, hh) => { const c = document.createElement('canvas'); c.width = w; c.height = hh; const x = c.getContext('2d'); x.fillStyle = '#fff'; const q = face.parts[part]; if (q) x.fillRect(q[0] * w, q[1] * hh, q[2] * w, q[3] * hh); return c; } };
+    const face = FX.apply(white, { fx: [{ type: 'exposure', p: { ev: 0 } }], mask: { parts: [{ kind: 'face', part: 'lips' }] }, layer: { maps: { face: { parts: { lips: [0.25, 0.5, 0.5, 0.25] } } } } });
+    out.face = [px(face, 80, 60)[3], px(face, 80, 20)[3], px(face, 10, 60)[3]];
+    delete LE.maps;
+    return out;
+  });
+  const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= 1);
+  h.assert(near(r.plain[0].slice(0, 3), r.plain[1]) && near(r.plain[2].slice(0, 3), r.plain[3]), 'linear float pixels come out display-encoded: ' + JSON.stringify(r.plain));
+  h.assert(near(r.bright[0].slice(0, 3), r.bright[1]), 'effects run on them in linear light: ' + JSON.stringify(r.bright));
+  h.assert(r.tiles <= 1, 'a float source tiles without seams (largest difference ' + r.tiles + ')');
+  h.assert(near(r.u16.slice(0, 3), [255, 128, 0]), '16-bit integer data is accepted: ' + r.u16);
+  h.assert(r.depth[0] > 240 && r.depth[1] > 200 && r.depth[2] < 15 && r.depth[3] === 0, 'a depth mask selects the near part of the packed map: ' + r.depth);
+  h.assert(r.noDepth === 255, 'without a map it selects everything, like the reference');
+  h.assert(r.face[0] === 255 && r.face[1] === 0 && r.face[2] === 0, 'a face mask is drawn by LE.maps.faceMask: ' + r.face);
   h.assert.noErrors(page);
 };
 

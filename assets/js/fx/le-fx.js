@@ -18,15 +18,14 @@
   var PARAM_TYPES = ['number', 'bool', 'choice', 'color', 'point', 'angle', 'curve', 'wheel', 'bands', 'lut', 'seed'];
   var MASK_KINDS = {
     asset: {}, subject: {},
-    linear: { x0: [-4, 5, 0.5], y0: [-4, 5, 0], x1: [-4, 5, 0.5], y1: [-4, 5, 1] },
-    radial: { cx: [-4, 5, 0.5], cy: [-4, 5, 0.5], rx: [0.001, 8, 0.4], ry: [0.001, 8, 0.4], rotation: [-360, 360, 0] },
+    linear: { x0: [-4, 5, 0.5], y0: [-4, 5, 0.25], x1: [-4, 5, 0.5], y1: [-4, 5, 0.75] },
+    radial: { cx: [-4, 5, 0.5], cy: [-4, 5, 0.5], rx: [0.0001, 8, 0.3], ry: [0.0001, 8, 0.3], rotation: [-360, 360, 0] },
     luma: { min: [0, 1, 0], max: [0, 1, 1], soft: [0, 1, 0.1] },
     color: { h: [0, 360, 0], s: [0, 1, 0.5], l: [0, 1, 0.5], range: [0, 1, 0.15], soft: [0, 1, 0.1] },
     depth: { near: [0, 1, 0], far: [0, 1, 1], soft: [0, 1, 0.1] },
     face: {}
   };
-  /* layer.maps.face.parts.asset is one image: each face part is a grey level band (value / 255). */
-  var FACE_PARTS = { skin: 40, brows: 80, eyes: 120, 'under-eyes': 160, lips: 200, teeth: 240 };
+  var FACE_PARTS = { skin: 1, eyes: 1, lips: 1, teeth: 1, brows: 1, 'under-eyes': 1 };
   var LIMITS = { stack: 32, parts: 8, params: 24, points: 64 };
 
   function own(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
@@ -52,36 +51,8 @@
     if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
     return [parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4, 6), 16) / 255, h.length === 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1];
   };
-  /* Monotone cubic (Fritsch–Carlson) through control points; never overshoots, so a curve cannot invert tones by accident. */
-  M.curveLUT = function (points, n) {
-    n = n || 1024;
-    var pts = (points || []).filter(function (p) { return p && isNum(p[0]) && isNum(p[1]); }).map(function (p) { return [clamp(p[0], 0, 1), clamp(p[1], 0, 1)]; });
-    pts.sort(function (a, b) { return a[0] - b[0]; });
-    var xs = [], ys = [], i;
-    for (i = 0; i < pts.length; i++) { if (xs.length && pts[i][0] - xs[xs.length - 1] < 1e-5) { ys[ys.length - 1] = pts[i][1]; continue; } xs.push(pts[i][0]); ys.push(pts[i][1]); }
-    var out = new Float32Array(n), k = xs.length;
-    if (k === 0) { for (i = 0; i < n; i++) out[i] = i / (n - 1); return out; }
-    if (k === 1) { for (i = 0; i < n; i++) out[i] = ys[0]; return out; }
-    var d = [], m = [], h = [];
-    for (i = 0; i < k - 1; i++) { h[i] = xs[i + 1] - xs[i]; d[i] = (ys[i + 1] - ys[i]) / h[i]; }
-    m[0] = d[0]; m[k - 1] = d[k - 2];
-    for (i = 1; i < k - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
-    for (i = 0; i < k - 1; i++) {
-      if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
-      var a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
-      if (s > 9) { var t = 3 / Math.sqrt(s); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
-    }
-    var seg = 0;
-    for (i = 0; i < n; i++) {
-      var x = i / (n - 1);
-      if (x <= xs[0]) { out[i] = ys[0]; continue; }
-      if (x >= xs[k - 1]) { out[i] = ys[k - 1]; continue; }
-      while (seg < k - 2 && x > xs[seg + 1]) seg++;
-      var u = (x - xs[seg]) / h[seg], u2 = u * u, u3 = u2 * u;
-      out[i] = clamp((2 * u3 - 3 * u2 + 1) * ys[seg] + (u3 - 2 * u2 + u) * h[seg] * m[seg] + (-2 * u3 + 3 * u2) * ys[seg + 1] + (u3 - u2) * h[seg] * m[seg + 1], 0, 1);
-    }
-    return out;
-  };
+  /* Curves are LE.curves (assets/js/fx/curves.js): the one spline the curve editor draws and the renderer samples. */
+  M.curveLUT = function (points, n) { return LE.curves.sample(points, n || 1024); };
   M.hash = function (s) {
     s = String(s);
     var h = 2166136261;
@@ -108,18 +79,59 @@
       if (!o.options.length) throw new Error('Parameter "' + key + '" needs options.');
       o.default = o.options.some(function (x) { return x.value === d.default; }) ? d.default : o.options[0].value;
     } else if (d.type === 'color') { o.alpha = !!d.alpha; o.default = M.parseColor(d.default) ? d.default : '#000000'; }
-    else if (d.type === 'point') o.default = Array.isArray(d.default) && isNum(d.default[0]) && isNum(d.default[1]) ? [d.default[0], d.default[1]] : [0.5, 0.5];
+    else if (d.type === 'point') { var pd = pointOf(d.default); o.default = pd || { x: 0.5, y: 0.5 }; if (isNum(d.min)) o.min = d.min; if (isNum(d.max)) o.max = d.max; }
     else if (d.type === 'angle') o.default = isNum(d.default) ? clamp(d.default, -360, 360) : 0;
-    else if (d.type === 'curve') o.default = Array.isArray(d.default) ? clone(d.default) : [[0, 0], [1, 1]];
-    else if (d.type === 'wheel') o.default = isObj(d.default) ? { h: d.default.h || 0, amount: d.default.amount || 0, l: d.default.l || 0 } : { h: 0, amount: 0, l: 0 };
-    else if (d.type === 'bands') { o.min = isNum(d.min) ? d.min : -1; o.max = isNum(d.max) ? d.max : 1; o.default = Array.isArray(d.default) && d.default.length === 8 ? d.default.slice() : [0, 0, 0, 0, 0, 0, 0, 0]; }
+    else if (d.type === 'curve') o.default = curveOf(d.default) || curveOf([[0, 0], [1, 1]]);
+    else if (d.type === 'wheel') o.default = wheelOf(d.default) || { h: 0, a: 0, l: 0 };
+    else if (d.type === 'bands') { o.min = isNum(d.min) ? d.min : -100; o.max = isNum(d.max) ? d.max : 100; o.default = bandsOf(d.default, o.min, o.max) || bandsOf([0, 0, 0, 0, 0, 0, 0, 0], o.min, o.max); }
     else if (d.type === 'lut') o.default = null;
     else if (d.type === 'seed') o.default = isNum(d.default) ? Math.round(clamp(d.default, 0, 2147483647)) : 0;
+    if (isObj(d.ui)) o.ui = clone(d.ui);   /* hints for the control kit (gradient, hidden, fine …), passed through */
     return o;
   }
 
+  /* Value shapes shared with the control kit (docs/EXPERT-UI.md). Each returns the canonical form, or null. */
+  function pointOf(v) {
+    if (Array.isArray(v) && v.length === 2 && isNum(v[0]) && isNum(v[1])) return { x: v[0], y: v[1] };
+    return isObj(v) && isNum(v.x) && isNum(v.y) ? { x: v.x, y: v.y } : null;
+  }
+  function pointsOf(v) {
+    if (!Array.isArray(v) || v.length < 2) return null;
+    var pts = [];
+    for (var i = 0; i < Math.min(v.length, LIMITS.points); i++) {
+      var q = pointOf(v[i]);
+      if (!q) return null;
+      pts.push([clamp(q.x, 0, 1), clamp(q.y, 0, 1)]);
+    }
+    return pts.sort(function (a, b) { return a[0] - b[0]; });
+  }
+  /* A curve is { master, r, g, b }, each a list of control points in 0–1; a bare list means master. */
+  function curveOf(v) {
+    if (Array.isArray(v)) v = { master: v };
+    if (!isObj(v)) return null;
+    var out = {}, ok = true;
+    ['master', 'r', 'g', 'b'].forEach(function (k) { if (v[k] == null) { out[k] = [[0, 0], [1, 1]]; return; } var pts = pointsOf(v[k]); if (pts) out[k] = pts; else ok = false; });
+    return ok ? out : null;
+  }
+  function wheelOf(v) {
+    if (!isObj(v)) return null;
+    var a = isNum(v.a) ? v.a : isNum(v.amount) ? v.amount : 0;
+    return { h: (((isNum(v.h) ? v.h : 0) % 360) + 360) % 360, a: clamp(a, 0, 1), l: clamp(isNum(v.l) ? v.l : 0, -1, 1) };
+  }
+  /* Eight bands (red, orange, yellow, green, aqua, blue, purple, magenta) of { h, s, l }; eight plain numbers mean s. */
+  function bandsOf(v, lo, hi) {
+    if (!Array.isArray(v) || v.length !== 8) return null;
+    var out = [];
+    for (var i = 0; i < 8; i++) {
+      var q = isNum(v[i]) ? { h: 0, s: v[i], l: 0 } : v[i];
+      if (!isObj(q)) return null;
+      out.push({ h: clamp(isNum(q.h) ? q.h : 0, lo, hi), s: clamp(isNum(q.s) ? q.s : 0, lo, hi), l: clamp(isNum(q.l) ? q.l : 0, lo, hi) });
+    }
+    return out;
+  }
+
   FX.register = function (def) {
-    if (!isObj(def) || typeof def.id !== 'string' || !/^[a-z][a-z0-9-]{1,39}$/.test(def.id)) throw new Error('An effect needs an id such as "gaussian-blur".');
+    if (!isObj(def) || typeof def.id !== 'string' || !/^[a-z][a-z0-9.-]{1,39}$/.test(def.id)) throw new Error('An effect needs an id such as "gaussian-blur".');
     if (typeof def.passes !== 'function') throw new Error('Effect "' + def.id + '" needs passes(g, p).');
     var v = Math.max(1, Math.round(Number(def.version) || 1));
     if (defs[def.id] && defs[def.id].version > v) return defs[def.id];
@@ -137,7 +149,7 @@
       radius: typeof def.radius === 'function' ? def.radius : function () { return 0; },
       grow: typeof def.grow === 'function' ? def.grow : null,
       draft: typeof def.draft === 'function' ? def.draft : null,
-      passes: def.passes,
+      passes: def.passes, inert: def.inert === true,   /* inert: described and validated, never drawn */
       cpu: typeof def.cpu === 'function' ? def.cpu : null,
       support: { needs: Array.isArray(sup.needs) ? sup.needs.slice() : ['webgl2'], wants: Array.isArray(sup.wants) ? sup.wants.slice() : [], memoryMB: isNum(sup.memoryMB) ? sup.memoryMB : 0 },
       ui: isObj(def.ui) ? clone(def.ui) : { section: 'Effects' },
@@ -161,15 +173,19 @@
     Object.keys(d.params).forEach(function (k) { p[k] = clone(d.params[k].default); });
     return p;
   };
+  /* The registrations as plain data, for the workspace's generated panels and the agent reference. */
   FX.describe = function () {
+    return order.map(function (id) {
+      var d = defs[id];
+      return { id: d.id, name: d.name, group: d.group, version: d.version, space: d.space, needs: d.needs.slice(), spatial: d.silhouette || d.radius(FX.defaults(id), 1) > 0 || !!d._spatial, params: clone(d.params), ui: clone(d.ui), agent: clone(d.agent), support: clone(d.support), cpu: !!d.cpu };
+    });
+  };
+  /* Everything else an agent needs to write expert data: blends, mask kinds and their ranges, limits, the entry shape. */
+  FX.schema = function () {
     return {
-      version: FX.version,
-      effects: order.map(function (id) {
-        var d = defs[id];
-        return { id: d.id, name: d.name, group: d.group, version: d.version, space: d.space, needs: d.needs.slice(), spatial: d.silhouette || d.radius(FX.defaults(id), 1) > 0 || !!d._spatial, params: clone(d.params), ui: clone(d.ui), agent: clone(d.agent), support: clone(d.support), cpu: !!d.cpu };
-      }),
-      blends: BLENDS.slice(), paramTypes: PARAM_TYPES.slice(),
+      version: FX.version, blends: BLENDS.slice(), paramTypes: PARAM_TYPES.slice(),
       maskKinds: Object.keys(MASK_KINDS).map(function (k) { return { kind: k, fields: clone(MASK_KINDS[k]) }; }),
+      mask: { on: true, invert: false, parts: [{ kind: 'radial', mode: 'add', invert: false, feather: 0.25, density: 1, blur: 0 }] },
       faceParts: Object.keys(FACE_PARTS), limits: clone(LIMITS),
       entry: { id: 'string', type: 'effect id', on: true, amount: 1, blend: 'normal', mask: null, p: {} }
     };
@@ -189,47 +205,31 @@
     if (t === 'bool') return typeof v === 'boolean' ? v : bad('This must be true or false.');
     if (t === 'choice') return s.options.some(function (o) { return o.value === v; }) ? v : bad('Not one of the options.');
     if (t === 'color') { var c = M.parseColor(v); if (!c || (!s.alpha && v.length > 7)) return bad('Colours are "#rrggbb"' + (s.alpha ? ' or "#rrggbbaa"' : '') + '.'); return v.toLowerCase(); }
-    if (t === 'point') {
-      if (!Array.isArray(v) || v.length !== 2 || !isNum(v[0]) || !isNum(v[1])) return bad('A point is [x, y].');
-      return [clamp(v[0], -1, 2), clamp(v[1], -1, 2)];
-    }
+    if (t === 'point') { var pt = pointOf(v); return pt ? { x: clamp(pt.x, s.min == null ? -1 : s.min, s.max == null ? 2 : s.max), y: clamp(pt.y, s.min == null ? -1 : s.min, s.max == null ? 2 : s.max) } : bad('A point is { x, y }.'); }
     if (t === 'curve') {
-      if (!Array.isArray(v) || v.length < 2) return bad('A curve is a list of at least two [x, y] points.');
-      if (v.length > LIMITS.points) { warn(w, path, 'clamped', 'A curve can have up to ' + LIMITS.points + ' points; the rest were dropped.'); v = v.slice(0, LIMITS.points); }
-      var pts = [];
-      for (i = 0; i < v.length; i++) {
-        if (!Array.isArray(v[i]) || !isNum(v[i][0]) || !isNum(v[i][1])) return bad('A curve point is [x, y].');
-        pts.push([clamp(v[i][0], 0, 1), clamp(v[i][1], 0, 1)]);
-      }
-      pts.sort(function (a, b) { return a[0] - b[0]; });
-      return pts;
+      var cv = curveOf(v);
+      if (!cv) return bad('A curve is { master, r, g, b }, each a list of at least two [x, y] points (a bare list means master).');
+      if (['master', 'r', 'g', 'b'].some(function (k) { return isObj(v) && Array.isArray(v[k]) && v[k].length > LIMITS.points; }) || (Array.isArray(v) && v.length > LIMITS.points)) warn(w, path, 'clamped', 'A curve can have up to ' + LIMITS.points + ' points; the rest were dropped.');
+      return cv;
     }
-    if (t === 'wheel') {
-      if (!isObj(v)) return bad('A wheel is { h, amount, l }.');
-      return { h: clamp(isNum(v.h) ? v.h : 0, 0, 360), amount: clamp(isNum(v.amount) ? v.amount : 0, 0, 1), l: clamp(isNum(v.l) ? v.l : 0, -1, 1) };
-    }
-    if (t === 'bands') {
-      if (!Array.isArray(v) || v.length !== 8) return bad('Bands are eight numbers.');
-      var out = [];
-      for (i = 0; i < 8; i++) { if (!isNum(v[i])) return bad('Bands are eight numbers.'); out.push(clamp(v[i], s.min, s.max)); }
-      return out;
-    }
+    if (t === 'wheel') return wheelOf(v) || bad('A wheel is { h, a, l }.');
+    if (t === 'bands') return bandsOf(v, s.min, s.max) || bad('Bands are eight { h, s, l } objects.');
     if (t === 'lut') return v === null || idOk(v, 80) ? v : bad('A LUT is an asset id.');
     return clone(s.default);
   }
 
   function cleanMask(mask, path, w) {
     if (mask == null) return null;
-    if (!isObj(mask) || !Array.isArray(mask.parts)) { warn(w, path, 'bad-value', 'A mask is { parts: [...] }.'); return null; }
+    if (!isObj(mask) || !Array.isArray(mask.parts)) { warn(w, path, 'bad-value', 'A mask is { on, invert, parts: [...] }.'); return null; }
     if (mask.parts.length > LIMITS.parts) warn(w, path + '/parts', 'clamped', 'A mask can have up to ' + LIMITS.parts + ' parts.');
     var parts = [];
     mask.parts.slice(0, LIMITS.parts).forEach(function (src, i) {
       var pp = path + '/parts/' + i;
       if (!isObj(src) || !own(MASK_KINDS, src.kind)) { warn(w, pp, 'unknown-kind', 'Unknown mask kind; the part was left out.'); return; }
-      var radial = src.kind === 'radial';
       var o = {
         kind: src.kind, mode: src.mode === 'subtract' || src.mode === 'intersect' ? src.mode : 'add', invert: src.invert === true,
-        feather: clamp(isNum(src.feather) ? src.feather : 0, 0, radial ? 1 : 500), density: clamp(isNum(src.density) ? src.density : 1, 0, 1)
+        feather: clamp(isNum(src.feather) ? src.feather : 0.25, 0, 1), density: clamp(isNum(src.density) ? src.density : 1, 0, 1),
+        blur: clamp(isNum(src.blur) ? src.blur : 0, 0, 500)
       };
       var f = MASK_KINDS[src.kind];
       Object.keys(f).forEach(function (k) {
@@ -242,7 +242,9 @@
       Object.keys(src).forEach(function (k) { if (BAD[k]) warn(w, pp, 'forbidden-key', 'The key "' + k + '" is not allowed.'); else if (!own(o, k)) warn(w, pp + '/' + k, 'unknown-key', 'Unknown mask field; ignored.'); });
       parts.push(o);
     });
-    return parts.length ? { parts: parts } : null;
+    /* A mask with no parts is "everything" (the reference does the same), so it only matters when inverted. */
+    var out = { on: mask.on !== false, invert: mask.invert === true, parts: parts };
+    return parts.length || out.invert ? out : null;
   }
   FX.cleanMask = function (mask) { var w = []; var m = cleanMask(mask, '/mask', w); return { mask: m, warnings: w }; };
 
@@ -284,8 +286,8 @@
     stack.slice(0, LIMITS.stack).forEach(function (src, i) {
       var r = FX.validate(src, '/fx/' + i);
       if (!r.ok) { skipped.push({ index: i, type: src && typeof src.type === 'string' ? src.type.slice(0, 40) : null, reason: r.errors[0] ? r.errors[0].code : 'bad-entry' }); return; }
-      if (!r.entry.on || r.entry.amount <= 0) return;
       var d = FX.get(r.entry.type);
+      if (!r.entry.on || r.entry.amount <= 0 || d.inert) return;
       entries.push({ id: r.entry.id, type: d.id, def: d, p: r.entry.p, amount: r.entry.amount, blend: r.entry.blend, mask: r.entry.mask, sig: d.id + '@' + d.version + JSON.stringify([r.entry.p, r.entry.amount, r.entry.blend, r.entry.mask]) });
     });
     var out = { entries: entries, skipped: skipped, key: M.hash(entries.map(function (x) { return x.sig; }).join('|')) };
@@ -304,12 +306,12 @@
       });
       var parts = [];
       function maskParts(m) { if (m && Array.isArray(m.parts)) parts = parts.concat(m.parts); }
-      maskParts(l.fxMask); (Array.isArray(l.fx) ? l.fx : []).forEach(function (en) { maskParts(en && en.mask); });
+      maskParts(l.layerMask); (Array.isArray(l.fx) ? l.fx : []).forEach(function (en) { maskParts(en && en.mask); });
       parts.forEach(function (p) {
         if (!p) return;
         if (p.kind === 'subject' && !(l.cutout && l.cutout.asset)) out.push({ layer: l.id, path: '/mask', code: 'missing-map', message: 'A subject mask needs a cut-out on this layer.' });
         if (p.kind === 'depth' && !(l.maps && l.maps.depth && l.maps.depth.asset)) out.push({ layer: l.id, path: '/mask', code: 'missing-map', message: 'A depth mask needs layer.maps.depth.' });
-        if (p.kind === 'face' && !(l.maps && l.maps.face && l.maps.face.parts && l.maps.face.parts.asset)) out.push({ layer: l.id, path: '/mask', code: 'missing-map', message: 'A face mask needs layer.maps.face.' });
+        if (p.kind === 'face' && !(l.maps && l.maps.face)) out.push({ layer: l.id, path: '/mask', code: 'missing-map', message: 'A face mask needs layer.maps.face.' });
       });
     });
     return out;
@@ -415,12 +417,12 @@
         if (!stack.length) delete layer.fx;
       } else if (name === 'mask.set') {
         var m = op.mask == null ? null : cleanMask(op.mask, '/mask', warnings);
-        if (op.mask != null && !m) return fail('bad-mask', 'The mask is not valid.');
+        if (op.mask != null && !m && !(isObj(op.mask) && Array.isArray(op.mask.parts) && !op.mask.parts.length)) return fail('bad-mask', 'The mask is not valid.');
         if (op.fx != null) {
           i = indexOf(op.fx);
           if (i < 0) return fail('no-entry', 'No effect with the id "' + String(op.fx).slice(0, 40) + '" on that layer.');
           stack[i].mask = m; id = op.fx;
-        } else if (m) layer.fxMask = m; else delete layer.fxMask;
+        } else if (m) layer.layerMask = m; else delete layer.layerMask;
         if (!stack.length) delete layer.fx;
       } else if (name === 'adjust.add') {
         var list = Array.isArray(op.fx) ? op.fx : [];
@@ -430,7 +432,7 @@
         var al = { id: idOk(op.id, 48) && !findLayer(out, op.id) ? op.id : 'adj-' + uid(), type: 'adjust', name: typeof op.name === 'string' ? op.name.slice(0, 120) : 'Adjustment', x: isNum(op.x) ? op.x : 0, y: isNum(op.y) ? op.y : 0, w: isNum(op.w) && op.w > 0 ? op.w : out.width, h: isNum(op.h) && op.h > 0 ? op.h : out.height, rotation: 0, opacity: clamp(isNum(op.opacity) ? op.opacity : 1, 0, 1), visible: true, locked: false, clip: op.clip === true, fx: clean };
         var am = op.mask == null ? null : cleanMask(op.mask, '/mask', warnings);
         if (op.mask != null && !am) return fail('bad-mask', 'The mask is not valid.');
-        if (am) al.fxMask = am;
+        if (am) al.layerMask = am;
         var at = out.layers.length;
         if (op.above != null) { at = -1; for (i = 0; i < out.layers.length; i++) if (out.layers[i].id === op.above) at = i + 1; if (at < 0) return fail('no-layer', 'No layer with the id "' + String(op.above).slice(0, 48) + '".'); }
         out.layers.splice(at, 0, al); id = al.id;
@@ -467,8 +469,8 @@
           if (d.fxImg && d.fxImg.kind !== 'remote') ctx.imgs.push(d.fxImg);
         }
         if (raw.fx != null && !Array.isArray(raw.fx)) { rep.err(path + '/fx', 'fx is a list of effect entries: [{ "type": "exposure", "p": { "ev": 0.5 } }].'); raw.fx = null; }
-        ['fxMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { if (raw[k] != null && !isObj(raw[k])) { rep.err(path + '/' + k, k + ' must be an object.'); raw[k] = null; } });
-        try { raw = clone({ fx: raw.fx, fxMask: raw.fxMask, transform: raw.transform, retouch: raw.retouch, maps: raw.maps, raw: raw.raw }); } catch (e) { rep.err(path, 'The expert fields of this layer could not be read.'); return; }
+        ['layerMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { if (raw[k] != null && !isObj(raw[k])) { rep.err(path + '/' + k, k + ' must be an object.'); raw[k] = null; } });
+        try { raw = clone({ fx: raw.fx, layerMask: raw.layerMask, transform: raw.transform, retouch: raw.retouch, maps: raw.maps, raw: raw.raw }); } catch (e) { rep.err(path, 'The expert fields of this layer could not be read.'); return; }
         /* Every "asset" is an image source like src. It is swapped for a marker while the shape is checked, and resolved with the other images. */
         (function walk(o, at, depth) {
           if (!o || typeof o !== 'object' || depth > 6) return;
@@ -502,7 +504,6 @@
             });
           })(t.x);
           Object.keys(t.x).forEach(function (k) { l[k] = t.x[k]; });
-          if (l.fxMask && !l.fxMask.parts.length) delete l.fxMask;
           if (l.maps && !Object.keys(l.maps).length) delete l.maps;
           (l.fx || []).forEach(function (e, i) {
             var r = FX.validate(e, d.path + '/fx/' + i);
@@ -510,10 +511,10 @@
             r.warnings.forEach(function (m) { rep.warn(m.path, m.code, m.message, l.id); });
             if (r.ok) l.fx[i] = r.entry;
           });
-          if (l.fxMask) {
-            var w = [], cm = cleanMask(l.fxMask, d.path + '/fxMask', w);
+          if (l.layerMask) {
+            var w = [], cm = cleanMask(l.layerMask, d.path + '/layerMask', w);
             w.forEach(function (m) { rep.warn(m.path, m.code, m.message, l.id); });
-            if (cm) l.fxMask = cm; else delete l.fxMask;
+            if (cm) l.layerMask = cm; else delete l.layerMask;
           }
         });
       };
@@ -526,11 +527,11 @@
     if (!s) { var n = document.querySelector('script[data-le-src*="fx/le-fx.js"],script[src*="fx/le-fx.js"]'); s = n ? (n.src || n.getAttribute('data-le-src')) : ''; }
     return s ? s.replace(/le-fx\.js(?:[?#].*)?$/, '') : 'assets/js/fx/';
   })();
-  function load(name) {
-    var src = base + 'le-fx-' + name + '.js';
+  function script(src) {
     if (LE.lazy) return LE.lazy(src);
-    return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = src; s.onload = function () { res(); }; s.onerror = function () { rej(new Error('Could not load ' + src)); }; document.head.appendChild(s); });
+    return new Promise(function (res, rej) { var n = document.createElement('script'); n.src = src; n.onload = function () { res(); }; n.onerror = function () { rej(new Error('Could not load ' + src)); }; document.head.appendChild(n); });
   }
+  function load(name) { return script(base + 'le-fx-' + name + '.js'); }
   FX._load = load;
   FX._const = { BLENDS: BLENDS, MASK_KINDS: MASK_KINDS, FACE_PARTS: FACE_PARTS, LIMITS: LIMITS };
 
@@ -538,14 +539,30 @@
   var queue = Array.isArray(global.LE_FX_DEFS) ? global.LE_FX_DEFS : [];
   global.LE_FX_DEFS = { push: function (d) { try { FX.register(d); } catch (e) { if (global.console) console.warn('LE.fx: ' + e.message); } return 0; } };
   queue.forEach(function (d) { global.LE_FX_DEFS.push(d); });
+  /* Test pages may have loaded the workspace's mock registry (assets/js/expert/mock-fx.js) before this file. Its effects draw
+     nothing; registering them keeps the panels built from them alive once the real registry takes over. Never present in production. */
+  if (global.LE_FX_MOCK && typeof global.LE_FX_MOCK.describe === 'function') {
+    try { [].concat(global.LE_FX_MOCK.describe()).forEach(function (d) { var c = {}; Object.keys(d || {}).forEach(function (k) { c[k] = d[k]; }); c.passes = function () {}; c.inert = true; global.LE_FX_DEFS.push(c); }); } catch (e) { /* a mock must never break the renderer */ }
+  }
 
-  FX.ready = Promise.all([load('gl')].concat(PACKS.map(load))).then(function () {
+  FX.ready = (LE.curves && LE.curves.sample ? Promise.resolve() : script(base + 'curves.js')).then(function () {
+    return Promise.all([load('gl')].concat(PACKS.map(load)));
+  }).then(function () {
+    var mock = global.LE_FX_MOCK;   /* test pages only: the mock's call log keeps working */
+    if (mock && typeof mock.interactive === 'function') { var real = FX.interactive; FX.interactive = function (on) { if (on !== undefined) { try { mock.interactive(on); } catch (x) { /* test helper */ } } return real(on); }; }
     /* Effects that read whole-image statistics need the analysis code before the first render. */
     return order.some(function (id) { return defs[id].needs.indexOf('stats') >= 0; }) ? load('analyze') : null;
   }).then(function () { return FX; });
 
-  /* Statistics load on first use. */
+  /* Statistics load on first use. analyze(target, { region, kinds }) → a promise of the numbers.
+     The scopes' form, analyze({ source, kinds: ['histogram'] }), answers at once when the code is already in
+     (histogram.l is luminance), and with a promise the first time. */
   FX.analyze = function (target, opts) {
+    if (isObj(target) && target.source && !target.scene && typeof target.render !== 'function') {
+      var o = { region: target.region, kinds: target.kinds, layer: target.layer };
+      if (FX._stats && (target.source.getContext || target.source.naturalWidth)) return FX._stats(target.source, o);
+      return load('analyze').then(function () { return FX._analyze(target.source, o); });
+    }
     return load('analyze').then(function () { return FX._analyze(target, opts || {}); });
   };
 })(window);

@@ -1210,15 +1210,15 @@
   }
 
   /* ---------- Expert fields (docs/FX-AUTHORING.md; "Expert fields" in docs/FORMAT-DESIGN.md) ----------
-     fx as a list, fxMask (a "mask" object means the same), transform, retouch, maps, raw and the adjustment layer type.
+     fx as a list, layerMask (a "mask" object means the same), transform, retouch, maps, raw and the adjustment layer type.
      They are read and checked by LE.fx.design, which loads only when a file carries them. */
   TYPES.push('adjust');
-  COMMON.push('fx', 'fxMask', 'transform', 'retouch', 'maps', 'raw');
+  COMMON.push('fx', 'layerMask', 'transform', 'retouch', 'maps', 'raw');
   BY_TYPE.adjust = ['clip'];
   BY_TYPE.image.push('fxBaked');
   function readExpert(src, l, d, page, type) {
     if (type === 'adjust') { l.clip = src.clip === true; if (d.w == null && d.h == null) { d.w = page.width; d.h = page.height; } }
-    var raw = { fx: type === 'image' && !Array.isArray(src.fx) ? null : src.fx, fxBaked: src.fxBaked, fxMask: src.fxMask != null ? src.fxMask : isObj(src.mask) ? src.mask : null, transform: src.transform, retouch: src.retouch, maps: src.maps, raw: src.raw };
+    var raw = { fx: type === 'image' && !Array.isArray(src.fx) ? null : src.fx, fxBaked: src.fxBaked, layerMask: src.layerMask != null ? src.layerMask : isObj(src.mask) ? src.mask : null, transform: src.transform, retouch: src.retouch, maps: src.maps, raw: src.raw };
     if (Object.keys(raw).some(function (k) { return raw[k] != null; })) d.expert = { raw: raw, type: type, page: page.index };
   }
   /* Before the images resolve: asset references join them. Returns what to run once they have. */
@@ -1250,9 +1250,9 @@
       return gone ? undefined : r;
     }
     if (Array.isArray(l.fx) && l.fx.length) { if (isObj(o.fx)) o.fxBaked = o.fx; o.fx = out(l.fx); }
-    ['fxMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) {
+    ['layerMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) {
       var v = l[k] == null ? undefined : out(l[k]);
-      if (v !== undefined && !(k === 'fxMask' && !v.parts.length)) o[k] = v;
+      if (v !== undefined && !(k === 'layerMask' && !v.parts.length)) o[k] = v;
     });
     if (lost) ctx.dropped.push({ kind: 'effect', layer: l.id, name: l.name });
   }

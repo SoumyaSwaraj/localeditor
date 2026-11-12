@@ -62,14 +62,18 @@
     for (i = 1; i < n; i++) if (out[i] < out[i - 1]) out[i] = out[i - 1];
     return out;
   };
-  function curvesLUT(p) {
-    var n = 1024, m = M.curveLUT(p.master, n), ch = [M.curveLUT(p.red, n), M.curveLUT(p.green, n), M.curveLUT(p.blue, n)], out = new Float32Array(n * 3);
-    for (var i = 0; i < n; i++) for (var c = 0; c < 3; c++) {
-      var v = ch[c][i] * (n - 1), lo = Math.floor(v), f = v - lo, hiI = Math.min(n - 1, lo + 1);
-      out[i * 3 + c] = m[lo] * (1 - f) + m[hiI] * f;
-    }
+  /* A curve parameter ({ master, r, g, b }) as an n × 3 table: each channel's curve, then the master curve. Every value comes from
+     LE.curves (assets/js/fx/curves.js), the spline the curve editor draws; an identity channel is skipped so a master-only
+     curve is LE.curves.sample(master, n) sample for sample. */
+  M.curveTable = function (curve, n) {
+    n = n || 1024;
+    var C = LE.curves, fm = C.monotone(curve.master), out = new Float32Array(n * 3);
+    ['r', 'g', 'b'].forEach(function (k, c) {
+      var fc = C.isIdentity(curve[k]) ? null : C.monotone(curve[k]);
+      for (var i = 0; i < n; i++) { var x = i / (n - 1); out[i * 3 + c] = fm(fc ? fc(x) : x); }
+    });
     return out;
-  }
+  };
   /* The slow path: a 256-entry table per channel on 8-bit pixels. fn maps display 0–1 to display 0–1. */
   function cpuTable(img, fn) {
     var t = [new Uint8ClampedArray(256), new Uint8ClampedArray(256), new Uint8ClampedArray(256)], i, c;
@@ -77,7 +81,6 @@
     var d = img.data;
     for (i = 0; i < d.length; i += 4) { d[i] = t[0][d[i]]; d[i + 1] = t[1][d[i + 1]]; d[i + 2] = t[2][d[i + 2]]; }
   }
-  var IDENT = [[0, 0], [1, 1]];
   var GPU = { needs: ['webgl2'], wants: ['webgl-float'], memoryMB: 60 };
 
   /* ---------- Light ---------- */
@@ -87,7 +90,7 @@
     passes: function (g, p) { g.color('uniform float $k; vec3 $fx(vec3 c){ return c * $k; }', { k: Math.pow(2, p.ev) }); },
     cpu: function (img, p) { var k = Math.pow(2, p.ev); cpuTable(img, function (v) { return M.linearToSrgb(M.srgbToLinear(v) * k); }); },
     support: GPU,
-    ui: { section: 'Light', order: 10, controls: [{ param: 'ev', control: 'slider' }] },
+    ui: { section: 'Light', order: 10, controls: ['ev'] },
     agent: {
       summary: 'Brightens or darkens in linear light, in stops: +1 doubles the light, −1 halves it.',
       tips: ['Use LE.fx.analyze first: aim for a median luminance near 0.45 for a normally lit photo.', 'Prefer exposure for overall brightness and highlights-shadows for the ends of the range.'],
@@ -106,9 +109,9 @@
     },
     cpu: function (img, p) { var k = M.contrastK(p.amount), q = p.pivot; cpuTable(img, function (v) { return v < q ? q * Math.pow(v / q, k) : 1 - (1 - q) * Math.pow((1 - v) / (1 - q), k); }); },
     support: GPU,
-    ui: { section: 'Light', order: 20, controls: [{ param: 'amount', control: 'slider' }, { param: 'pivot', control: 'slider' }] },
+    ui: { section: 'Light', order: 20, controls: ['amount', { param: 'pivot', fine: true }] },
     agent: {
-      summary: 'An S-curve around a pivot tone. Black and white stay where they are; mid-tones spread or flatten.',
+      summary: 'An S-shaped tone change around a pivot. Black and white stay where they are; mid-tones spread or flatten.',
       tips: ['Positive values also raise saturation slightly, as in other editors.', 'Lower the pivot to protect shadows in a dark picture.'],
       example: { type: 'contrast', p: { amount: 18 } }
     }
@@ -126,7 +129,7 @@
       g.color('uniform sampler2D $t; vec3 $fx(vec3 c){ float l = clamp(luma(c), 0.0, 1.0); float t = lut1($t, l); return mix(c + (t - l), c * (t / max(l, 1e-4)), smoothstep(0.02, 0.3, l)); }', { t: g.lut1d(M.toneLUT(p, 256), 1) });
     },
     support: GPU,
-    ui: { section: 'Light', order: 30 },
+    ui: { section: 'Light', order: 30, controls: ['highlights', 'shadows', 'whites', 'blacks'] },
     agent: {
       summary: 'Four tone regions on luminance: highlights and shadows shape the upper and lower mid-tones, whites and blacks move the ends. Hue and saturation are kept.',
       tips: ['To recover a bright sky: highlights −40 to −70.', 'To open a backlit subject: shadows +30 to +60, then blacks −10 so the picture keeps depth.', 'Check clipping with LE.fx.analyze before and after.'],
@@ -148,7 +151,7 @@
     },
     cpu: function (img, p) { cpuTable(img, function (v) { return Math.pow(M.clamp((v - p.inBlack) / Math.max(p.inWhite - p.inBlack, 1e-4), 0, 1), 1 / p.gamma) * (p.outWhite - p.outBlack) + p.outBlack; }); },
     support: GPU,
-    ui: { section: 'Light', order: 40 },
+    ui: { section: 'Light', order: 40, controls: ['inBlack', 'inWhite', 'gamma', { heading: 'Output' }, 'outBlack', 'outWhite'] },
     agent: {
       summary: 'Sets the black point, white point and mid-tone gamma, then the output range.',
       tips: ['Read percentiles from LE.fx.analyze: inBlack = luma p1, inWhite = luma p99 stretches a flat picture to the full range.', 'gamma above 1 brightens mid-tones.'],
@@ -157,21 +160,16 @@
   });
 
   FX.register({
-    id: 'curves', name: 'Curves', group: 'light', version: 1, space: 'display',
-    params: {
-      master: { type: 'curve', default: IDENT, label: 'All channels' },
-      red: { type: 'curve', default: IDENT, label: 'Red' },
-      green: { type: 'curve', default: IDENT, label: 'Green' },
-      blue: { type: 'curve', default: IDENT, label: 'Blue' }
-    },
-    passes: function (g, p) { g.color('uniform sampler2D $t; vec3 $fx(vec3 c){ return lut1rgb($t, c); }', { t: g.lut1d(curvesLUT(p), 3) }); },
-    cpu: function (img, p) { var t = curvesLUT(p); cpuTable(img, function (v, c) { return t[Math.round(v * 1023) * 3 + c]; }); },
+    id: 'curves', name: 'Curves', group: 'curves', version: 1, space: 'display',
+    params: { curve: { type: 'curve', label: 'Tone curve' } },
+    passes: function (g, p) { g.color('uniform sampler2D $t; vec3 $fx(vec3 c){ return lut1rgb($t, c); }', { t: g.lut1d(M.curveTable(p.curve, 1024), 3) }); },
+    cpu: function (img, p) { var t = M.curveTable(p.curve, 256); cpuTable(img, function (v, c) { return t[Math.round(v * 255) * 3 + c]; }); },
     support: GPU,
-    ui: { section: 'Light', order: 50, controls: [{ param: 'master', control: 'curve' }, { param: 'red', control: 'curve' }, { param: 'green', control: 'curve' }, { param: 'blue', control: 'curve' }] },
+    ui: { section: 'Curves', order: 10, controls: ['curve'] },
     agent: {
-      summary: 'Tone curves through control points (0–1, display-referred): each channel first, then the master curve. Monotone interpolation, so points never overshoot.',
-      tips: ['A gentle S: [[0,0],[0.25,0.2],[0.75,0.8],[1,1]].', 'Lift blacks for a matte look: start the master curve at [0, 0.06].', 'Warm the highlights: raise red and lower blue near x = 0.8.'],
-      example: { type: 'curves', p: { master: [[0, 0], [0.25, 0.21], [0.75, 0.8], [1, 1]] } }
+      summary: 'Tone curves through control points (0–1, display-referred): { master, r, g, b }; each channel first, then the master curve. Monotone interpolation, so points never overshoot.',
+      tips: ['A gentle S: { "master": [[0,0],[0.25,0.2],[0.75,0.8],[1,1]] }.', 'Lift blacks for a matte look: start the master curve at [0, 0.06].', 'Warm the highlights: raise r and lower b near x = 0.8.'],
+      example: { type: 'curves', p: { curve: { master: [[0, 0], [0.25, 0.21], [0.75, 0.8], [1, 1]] } } }
     }
   });
 
@@ -184,7 +182,7 @@
     },
     passes: function (g, p) { g.color('uniform mat3 $m; vec3 $fx(vec3 c){ return $m * c; }', { m: M.wbMatrix(p.temperature, p.tint) }); },
     support: GPU,
-    ui: { section: 'Colour', order: 10, controls: [{ param: 'temperature', control: 'slider' }, { param: 'tint', control: 'slider' }] },
+    ui: { section: 'Colour', order: 10, controls: [{ param: 'temperature', gradient: 'temperature' }, { param: 'tint', gradient: 'tint' }] },
     agent: {
       summary: 'A chromatic adaptation in linear light along the black-body line (temperature) and across it (tint). Positive temperature warms, positive tint adds magenta.',
       tips: ['LE.fx.analyze returns whiteBalance.suggest { temperature, tint }: the values that make the near-neutral pixels neutral.', 'Put it first in the stack, before tone controls.'],
@@ -202,7 +200,7 @@
       g.color('uniform vec2 $a; vec3 $fx(vec3 c){ float l = luma(c); float sat = max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b)); float k = max($a.x * (1.0 + $a.y * (1.0 - clamp(sat * 1.5, 0.0, 1.0))), 0.0); return l + (c - l) * k; }', { a: [1 + p.saturation / 100, p.vibrance / 100] });
     },
     support: GPU,
-    ui: { section: 'Colour', order: 20, controls: [{ param: 'vibrance', control: 'slider' }, { param: 'saturation', control: 'slider' }] },
+    ui: { section: 'Colour', order: 20, controls: ['vibrance', { param: 'saturation', gradient: 'saturation' }] },
     agent: {
       summary: 'Saturation scales every colour around its luminance; vibrance does the same but mostly for muted colours, so skin and already vivid areas move less.',
       tips: ['Prefer vibrance for portraits.', 'saturation −100 is a luminance black-and-white.'],
@@ -217,7 +215,7 @@
     radius: function (p, scale) { return M.blurReach(p.radius * scale); },
     passes: function (g, p) { return g.blur(p.radius); },
     support: { needs: ['webgl2'], wants: ['webgl-float'], memoryMB: 120 },
-    ui: { section: 'Blur', order: 10, controls: [{ param: 'radius', control: 'slider' }] },
+    ui: { section: 'Optics', order: 10, controls: ['radius'] },
     agent: {
       summary: 'A true Gaussian blur in linear light; radius is the standard deviation in document pixels, so it looks the same at any export size.',
       tips: ['Edges are extended, so the picture keeps its frame.', 'With a mask it becomes a selective blur: a radial mask inverted gives a soft-focus surround.'],
@@ -246,7 +244,7 @@
       ].join('\n'), { a: [p.amount / 100 * 0.6, p.size, p.luminance, p.color], s: p.seed % 65536 });
     },
     support: GPU,
-    ui: { section: 'Effects', order: 10, controls: [{ param: 'amount', control: 'slider' }, { param: 'size', control: 'slider' }, { param: 'luminance', control: 'slider' }, { param: 'color', control: 'slider' }, { param: 'seed', control: 'seed' }] },
+    ui: { section: 'Effects', order: 10, controls: ['amount', 'size', 'luminance', 'color', 'seed'] },
     agent: {
       summary: 'Film-like grain defined in document space and seeded: the preview, the export and every tile show the same pattern. Strongest in the mid-tones.',
       tips: ['Put grain last, after blur and tone, so it is not smoothed or stretched.', 'size is in document pixels; under 1 it is finer than the page grid and reads as texture only at export size.', 'Change seed for a different pattern with the same character.'],
@@ -272,7 +270,7 @@
         { u_sh: soft, u_off: [p.x, p.y], u_col: [c[0], c[1], c[2], c[3] * p.opacity], u_spread: p.spread });
     },
     support: { needs: ['webgl2'], wants: ['webgl-float'], memoryMB: 120 },
-    ui: { section: 'Shadow', order: 10, controls: [{ param: 'x', control: 'slider', row: 'offset' }, { param: 'y', control: 'slider', row: 'offset' }, { param: 'blur', control: 'slider' }, { param: 'spread', control: 'slider' }, { param: 'color', control: 'color' }, { param: 'opacity', control: 'slider' }] },
+    ui: { section: 'Shadows & reflections', order: 10, controls: ['x', 'y', 'blur', 'spread', 'color', 'opacity'] },
     agent: {
       summary: 'A shadow cast by the layer\'s own silhouette (after cut-out and mask), drawn outside the layer box. Offsets and blur are document pixels.',
       tips: ['It follows the cut-out, unlike the layer\'s plain `shadow` field, which follows the box.', 'A soft studio look: y 24, blur 40, opacity 0.3. A hard sticker look: x 6, y 6, blur 0, opacity 0.9.', 'Match the shadow colour to the darkest tone of the background instead of pure black.'],

@@ -389,35 +389,35 @@
     if (word(m.sig, 16)) out.sig = word(m.sig, 16);
     return out;
   }
-  /* Expert fields (docs/FX-AUTHORING.md): fx, fxMask, transform.quad, retouch, maps, raw. Shape only (types, sizes, forbidden
+  /* Expert fields (docs/FX-AUTHORING.md): fx, layerMask, transform.quad, retouch, maps, raw. Shape only (types, sizes, forbidden
      keys); LE.fx checks every entry against its effect's schema before it runs. */
-  function fxVal(v, d, inList) {
+  function fxVal(v, d, inList, cap) {
     if (typeof v === 'number') return isFinite(v) ? v : null;
     if (typeof v === 'boolean') return v;
-    if (typeof v === 'string') return v.replace(/[^\w #:.,()%\/+-]/g, '').slice(0, 120);
-    if (!v || typeof v !== 'object' || d > 3) return null;
-    if (Array.isArray(v)) return v.slice(0, inList ? 4 : 512).map(function (x) { return fxVal(x, d + 1, true); });
+    if (typeof v === 'string') return v.replace(/[^\w #:.,()%\/+=-]/g, '').slice(0, cap || 120);
+    if (!v || typeof v !== 'object' || d > 4) return null;
+    if (Array.isArray(v)) return v.slice(0, inList && !cap ? 4 : 512).map(function (x) { return fxVal(x, d + 1, true, cap); });
     var o = {};
-    Object.keys(v).slice(0, 24).forEach(function (k) { if (/^[a-zA-Z][\w-]{0,31}$/.test(k) && k !== 'constructor' && k !== 'prototype') o[k] = fxVal(v[k], d + 1, inList); });
+    Object.keys(v).slice(0, 24).forEach(function (k) { if (/^[a-zA-Z][\w-]{0,31}$/.test(k) && k !== 'constructor' && k !== 'prototype') o[k] = fxVal(v[k], d + 1, inList, cap); });
     return o;
   }
-  function fxObj(v, d) { v = fxVal(v, d); return v && !Array.isArray(v) && Object.keys(v).length ? v : null; }
-  function fxMaskOf(m) {
+  function fxObj(v, d, cap) { v = fxVal(v, d, false, cap); return v && !Array.isArray(v) && Object.keys(v).length ? v : null; }
+  function layerMaskOf(m) {
     var parts = m && Array.isArray(m.parts) ? m.parts.slice(0, 8).map(function (q) { q = fxObj(q, 2); return q && typeof q.kind === 'string' ? q : null; }).filter(Boolean) : [];
-    return parts.length ? { parts: parts } : null;
+    return parts.length || (m && m.invert === true && Array.isArray(m.parts)) ? { on: m.on !== false, invert: m.invert === true, parts: parts } : null;
   }
   function expertOf(src, layer) {
     var fx = (Array.isArray(src.fx) ? src.fx : []).slice(0, 32).map(function (e) {
-      return e && typeof e.type === 'string' && /^[a-z][a-z0-9-]{1,39}$/.test(e.type) ? {
+      return e && typeof e.type === 'string' && /^[a-z][a-z0-9.-]{1,39}$/.test(e.type) ? {
         id: typeof e.id === 'string' && /^[\w.-]{1,40}$/.test(e.id) ? e.id : uid(), type: e.type, on: e.on !== false, amount: clamp(num(e.amount, 1), 0, 1),
-        blend: typeof e.blend === 'string' && /^[a-z-]{1,20}$/.test(e.blend) ? e.blend : 'normal', mask: fxMaskOf(e.mask), p: fxObj(e.p, 1) || {}
+        blend: typeof e.blend === 'string' && /^[a-z-]{1,20}$/.test(e.blend) ? e.blend : 'normal', mask: layerMaskOf(e.mask), p: fxObj(e.p, 1) || {}
       } : null;
     }).filter(Boolean);
-    var mask = fxMaskOf(src.fxMask || (typeof src.mask === 'object' ? src.mask : null));
-    var q = src.transform && src.transform.quad, rt = src.retouch, maps = fxObj(src.maps, 0), raw = fxObj(src.raw, 2);
-    ['fx', 'fxMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { delete layer[k]; });
+    var mask = layerMaskOf(src.layerMask || (typeof src.mask === 'object' ? src.mask : null));
+    var q = src.transform && src.transform.quad, rt = src.retouch, maps = fxObj(src.maps, 0, 12000), raw = fxObj(src.raw, 2);   /* maps hold packed face landmarks (about 4 KB of base64 per face) */
+    ['fx', 'layerMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { delete layer[k]; });
     if (fx.length) layer.fx = fx;
-    if (mask) layer.fxMask = mask;
+    if (mask) layer.layerMask = mask;
     if (Array.isArray(q) && q.length === 4 && q.every(function (c) { return Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number' && isFinite(c[0] + c[1]); })) {
       layer.transform = { quad: q.map(function (c) { return [clamp(c[0], -1e5, 1e5), clamp(c[1], -1e5, 1e5)]; }) };
     }
@@ -426,8 +426,8 @@
     if (raw) layer.raw = raw;
     return layer;
   }
-  /* Asset ids the expert fields point at (masks, retouch, maps, LUTs), so projects keep them. */
-  function expertAssets(l) { return JSON.stringify([l.fx, l.fxMask, l.retouch, l.maps]).match(/[a-f0-9]{64}/g) || []; }
+  /* Asset ids a layer's expert data and cut-out point at (masks, LUTs, retouch, maps), so projects keep them. */
+  function expertAssets(l) { return JSON.stringify([l.fx, l.layerMask, l.retouch, l.maps, l.cutout]).match(/[a-f0-9]{64}/g) || []; }
 
   /* Print meta (doc.print): the physical page this page is meant for, in mm, and the pixels per inch it was laid out at.
      PDF export uses it for the page size. */
@@ -1374,9 +1374,9 @@
     if (!layer || !patch) return null;
     var prevX = layer.x, prevY = layer.y, prevMask = layer.mask;
     assignInto(layer, patch);
-    if (patch.fx !== undefined || patch.fxMask !== undefined || patch.transform !== undefined || patch.retouch !== undefined || patch.maps !== undefined || patch.raw !== undefined || (patch.mask && typeof patch.mask === 'object')) {
+    if (patch.fx !== undefined || patch.layerMask !== undefined || patch.transform !== undefined || patch.retouch !== undefined || patch.maps !== undefined || patch.raw !== undefined || (patch.mask && typeof patch.mask === 'object')) {
       var asMask = layer.mask && typeof layer.mask === 'object' ? layer.mask : null;
-      if (asMask) { layer.fxMask = asMask; if (typeof prevMask === 'string') layer.mask = prevMask; else delete layer.mask; }
+      if (asMask) { layer.layerMask = asMask; if (typeof prevMask === 'string') layer.mask = prevMask; else delete layer.mask; }
       expertOf(layer, layer);
       if (layer.type === 'image') this._scheduleImage(layer.id);
     }

@@ -8,6 +8,7 @@ The contract for step X0a of `docs/EXPERT-MODE.md`, as built. Feature teams (X1�
 |---|---|---|
 | `assets/js/le-fx-boot.js` | with the studio (about 2 KB) | `LE.fxBoot`: detects expert data, loads the rest, redraws |
 | `assets/js/fx/le-fx.js` | on demand | registry, validation, `LE.fx.ops`, quad maths, the open-format reader (`LE.fx.design`), the loader |
+| `assets/js/fx/curves.js` | by `le-fx.js`, and by the workspace | `LE.curves`: the one monotone spline (`clean`, `monotone`, `sample`, `lut`, presets). The curve editor draws with it and the renderer samples it |
 | `assets/js/fx/le-fx-gl.js` | by `le-fx.js` | WebGL2 renderer, pass builder, masks, tiling, colour management, the scene hooks |
 | `assets/js/fx/le-fx-basic.js` | by `le-fx.js` | the starter effects |
 | `assets/js/fx/le-fx-analyze.js` | first `LE.fx.analyze` call (or at load when an effect declares `needs: ['stats']`) | image statistics |
@@ -24,8 +25,8 @@ The simple studio never fetches anything under `assets/js/fx/`. The folder is ex
 
 ```
 layer.fx = [ { id, type, on: true, amount: 1, blend: 'normal', mask: <mask|null>, p: { … } } ]   // any layer type, groups, adjustment layers
-{ type: 'adjust', fx: [...], fxMask, clip: false, x, y, w, h, opacity, visible, … }            // adjustment layer; covers the page when no box is given
-layer.fxMask   = { parts: [ { kind, mode, invert, feather, density, …kind fields } ] }           // the layer mask (see "Masks")
+{ type: 'adjust', fx: [...], layerMask, clip: false, x, y, w, h, opacity, visible, … }            // adjustment layer; covers the page when no box is given; scene.add() makes one
+layer.layerMask = { on: true, invert: false, parts: [ { kind, mode, invert, feather, density, blur, …kind fields } ] }   // the layer mask (see "Masks")
 layer.transform = { quad: [[x,y],[x,y],[x,y],[x,y]] }                                           // TL, TR, BR, BL in page units; photo layers
 layer.retouch  = { asset, version }
 layer.maps     = { depth: { asset, model, version }, normals: {…}, face: { landmarks, parts: { asset }, model, version } }
@@ -33,37 +34,40 @@ layer.raw      = { profile, wb: { temp, tint }, exposure, … }                 
 ```
 
 - Entry `blend`: `normal multiply screen overlay soft-light hard-light darken lighten difference color luminosity`.
-- Limits enforced by the sanitisers: 32 entries per stack, 8 mask parts, 24 keys per object, 512 numbers per list (64 points per curve after schema validation), strings 120 characters. Keys `__proto__`, `constructor`, `prototype` are dropped everywhere; a `.leproject` or `.ledesign.json` that contains them is refused as a whole.
+- Limits enforced by the sanitisers: 32 entries per stack, 8 mask parts, 24 keys per object, 512 numbers per list (64 points per curve after schema validation), strings 120 characters (12,000 inside `maps`, for packed face landmarks). Keys `__proto__`, `constructor`, `prototype` are dropped everywhere; a `.leproject` or `.ledesign.json` that contains them is refused as a whole.
 - Coordinates inside masks and parameters of type `point` are fractions of the layer box. Lengths (`unit: 'px'`) are document pixels; multiply by `g.scale` (or call `g.px(v)`) to get target pixels.
 - **Two-level validation.** `LE.Scene` (`normalize`, `update`) and `LE.project` (always loaded) check the *shape* of expert data with `LE.Scene.expertOf`: types, sizes, forbidden keys, finite numbers. The registry (loaded on demand) checks each entry against its effect's schema before anything runs (`LE.fx.resolve`): unknown parameters are dropped, out-of-range values clamped, wrong types replaced by the default, and an entry whose `type` is not registered is **kept in the document and never executed**, so a file made by a newer build survives an older one. `LE.fx.problems(doc)` lists what was skipped or changed. `LE.fx.ops` and the open-format reader apply the schema when they write.
 - **The quad** is stored in page units as it was when it was set, with the layer box (`x y w h`) equal to its bounding box. The renderer uses the quad's *shape* inside the box, so moving, resizing, rotating or flipping the layer with the ordinary handles carries the distortion along. `LE.fx.quad.corners(layer)` gives the corners where they are now. Selection and hit-testing use the bounding box; corner handles are for the workspace or X3 to add.
 
 ### Masks
 
-`mask.parts` are combined in order, starting from empty: `add` → `m + v − m·v`, `subtract` → `m·(1 − v)`, `intersect` → `m·v` (a first part that is `subtract` or `intersect` starts from full). Every part has `invert` (bool), `density` (0–1, multiplies the part) and `feather`.
+The same shape for the layer mask (`layer.layerMask`) and for one effect (`fx[i].mask`): `{ on: true, invert: false, parts: [...] }`. `on: false` switches the mask off without losing it; `invert` flips the combined result. No parts means "everything".
 
-| kind | fields | `feather` means |
+The numbers follow the workspace's CPU reference, `LE.expert.evalMask` (`assets/js/expert/controls/mask.js`); `tests/fx.test.js` compares the shader with it part by part. Parts are combined in order, starting from nothing: `add` → `max(m, v)`, `subtract` → `m·(1 − v)`, `intersect` → `m·v` (a first part that intersects sets the mask). Before combining, a part's value is inverted if `invert` is set and multiplied by `density`. `feather`, `density`, `soft`, `range`, `min`, `max` are 0–1; `h` is degrees.
+
+| kind | fields | value |
 |---|---|---|
-| `asset` | `asset` (image id; its alpha, or its luminance when it is opaque; stretched over the layer box) | blur, document px (0–500) |
-| `linear` | `x0, y0, x1, y1` (0 at the first point, 1 at the second) | not used |
-| `radial` | `cx, cy, rx, ry, rotation` | 0–1, the soft part of the radius |
-| `luma` | `min, max, soft` (0–1, display-referred luminance) | blur, document px |
-| `color` | `h` (0–360), `s`, `l` (0–1), `range` (0–1), `soft` (0–1) | blur, document px |
-| `subject` | none; uses `layer.cutout.asset`, also when the cut-out is switched off | blur, document px |
-| `depth` | `near, far, soft` (0–1); needs `layer.maps.depth.asset` (red channel, 0 near … 1 far is the convention S2 should confirm) | blur, document px |
-| `face` | `part`: `skin eyes lips teeth brows under-eyes`; needs `layer.maps.face.parts.asset`, one image whose grey level names the part (`FACE_PARTS` in `le-fx.js`: skin 40, brows 80, eyes 120, under-eyes 160, lips 200, teeth 240) | blur, document px |
+| `linear` | `x0, y0, x1, y1`, `feather` | 1 at the first point falling to 0 at the second; `feather` 0 is a straight ramp, 1 an eased one |
+| `radial` | `cx, cy, rx, ry, rotation`, `feather` | 1 inside, 0 outside the ellipse (in box fractions); `feather` is the soft part of the radius |
+| `luma` | `min, max, soft` | display-referred Rec. 709 luminance between `min` and `max`, with `soft` shoulders |
+| `color` | `h`, `s`, `l`, `range`, `soft` | distance in hue (weighted by saturation), saturation and lightness within `range` |
+| `asset` | `asset` (image id, stretched over the layer box) | alpha × brightness, so white-on-transparent and white-on-black both work |
+| `subject` | none | the layer's cut-out mask (`layer.cutout.asset`), also when the cut-out is switched off |
+| `depth` | `near, far, soft` (0 = nearest, 1 = farthest) | from `layer.maps.depth.asset`: 16-bit depth packed in an RGBA image, red the high byte and green the low byte, near = 1 (`docs/research/depth-face-maps.md`) |
+| `face` | `part`: `skin eyes lips teeth brows under-eyes` | from `layer.maps.face` (one packed face, a list, or `{ faces }`), drawn by `LE.maps.faceMask(face, part, w, h)` |
 
-`subject`, `depth` and `face` read images that are aligned with the *source photo*; the renderer maps them through the layer's crop and quad. A part whose map or asset is missing contributes nothing and is reported by `LE.fx.problems`. `depth` and `face` are wired end to end but have only been exercised with hand-made maps: no model produces them yet.
-
-After painting into an asset canvas in place (brush engine), call `LE.fx.touch(canvas)` so its texture is uploaded again.
+- `feather` shapes `linear` and `radial` only (default 0.25). Every part also takes **`blur`** (document pixels, 0–500, default 0), which softens it; that field is this renderer's addition and the reference ignores it.
+- `subject`, `depth` and `face` read images aligned with the *source photo*; the renderer maps them through the layer's crop and quad (the reference stretches the cut-out over the box, which is the same when the photo is not cropped).
+- A `subject`, `depth` or `face` part whose map is missing selects everything, as the reference does, and `LE.fx.problems` reports it. An `asset` part whose image is missing is skipped. `face` needs `LE.maps` (`labs/maps/maps.js` until it is promoted); normals are derived, never stored.
+- Brush masks: one asset per mask, painted in place, is the supported form: call `LE.fx.touch(canvas)` after each stroke so the texture and the cached stages follow. One asset per stroke also draws, but a mask holds at most 8 parts.
 
 ## Render order (as built)
 
-**Photo layer** (a cached bitmap, the same cache `LE.Scene` already keeps per layer): source → fit to the preview or export size → retouch overlay → crop, legacy `adjust`/`filter`/`removeBg` (the existing CPU code, unchanged) → *`LE.fx` from here* → perspective quad → `fx` stack (entries without `alpha` or `scene` in `needs`) → cut-out alpha, frame clip (`mask` shape, `maskPath`, `radius`) and `fxMask` → sticker outline → silhouette entries (`needs` has `alpha`) → bitmap, possibly larger than the layer box → drawn with the layer's opacity, blend and plain `shadow`.
+**Photo layer** (a cached bitmap, the same cache `LE.Scene` already keeps per layer): source → fit to the preview or export size → retouch overlay → crop, legacy `adjust`/`filter`/`removeBg` (the existing CPU code, unchanged) → *`LE.fx` from here* → perspective quad → `fx` stack (entries without `alpha` or `scene` in `needs`) → cut-out alpha, frame clip (`mask` shape, `maskPath`, `radius`) and `layerMask` → sticker outline → silhouette entries (`needs` has `alpha`) → bitmap, possibly larger than the layer box → drawn with the layer's opacity, blend and plain `shadow`.
 
 The CPU part is kept per layer while its inputs do not change, so dragging an effect control does not redo crop and filters; spatial stage outputs are kept on the GPU keyed by a hash of their inputs.
 
-**At draw time**, on the pixels the compositor has produced so far and at the resolution being drawn (screen or export): other layer types with `fx` or `fxMask`, groups with `fx` (their members are drawn together where the first member sits), entries that need the `scene`, and adjustment layers (`clip: true` applies to the layer directly below only).
+**At draw time**, on the pixels the compositor has produced so far and at the resolution being drawn (screen or export): other layer types with `fx` or `layerMask`, groups with `fx` (their members are drawn together where the first member sits), entries that need the `scene`, and adjustment layers (`clip: true` applies to the layer directly below only).
 
 Not done at draw time: `transform.quad` on non-photo layers; `LE.Scene.exportLayer` of a non-photo layer ignores its effects.
 
@@ -103,22 +107,24 @@ Rules:
 | `bool` | `true`/`false` | `default` |
 | `choice` | one of `options` | `options: ['a', 'b']` or `[{ value, label }]`, `default` |
 | `color` | `'#rrggbb'` or `'#rrggbbaa'` | `default`, `alpha: true` to allow the 8-digit form |
-| `point` | `[x, y]` fractions of the layer box, −1…2 | `default` |
+| `point` | `{ x, y }` fractions of the layer box (−1…2 unless the schema gives `min`/`max`); `[x, y]` is accepted | `default`, `min`, `max` |
 | `angle` | degrees, −360…360 | `default` |
-| `curve` | 2–64 control points `[[x, y], …]`, 0–1, sorted by `x` | `default` (`[[0,0],[1,1]]`) |
-| `wheel` | `{ h: 0–360, amount: 0–1, l: −1…1 }` | `default` |
-| `bands` | 8 numbers (red, orange, yellow, green, aqua, blue, purple, magenta) | `min, max, default` |
+| `curve` | `{ master, r, g, b }`, each 2–64 control points `[[x, y], …]` in 0–1; a bare list means `master` | `default` |
+| `wheel` | `{ h: 0–360, a: 0–1, l: −1…1 }` (`amount` is accepted for `a`) | `default` |
+| `bands` | 8 × `{ h, s, l }` in the schema range (red, orange, yellow, green, aqua, blue, purple, magenta) | `min, max` (default −100…100), `default` |
 | `lut` | asset id or `null` | — |
 | `seed` | integer 0…2147483647 | `default` |
 
 `LE.fx.validate(entry)` → `{ ok, entry, warnings: [{ path, code, message }], errors: [...] }`; `entry` is a clean copy with every parameter present. Codes: `unknown-type`, `bad-entry`, `clamped`, `bad-value`, `unknown-key`, `forbidden-key`, `unknown-kind`.
-`LE.fx.defaults(id)` → a full `p`. `LE.fx.list()` → ids. `LE.fx.get(id)` → the definition. `LE.fx.describe()` → plain JSON for the agent reference and the workspace: `{ version, effects: [{ id, name, group, version, space, needs, spatial, params, ui, agent, support, cpu }], blends, paramTypes, maskKinds: [{ kind, fields: { name: [min, max, default] } }], faceParts, limits, entry }`.
+`LE.fx.defaults(id)` → a full `p`. `LE.fx.list()` → ids. `LE.fx.get(id)` → the definition. `LE.fx.describe()` → **an array** of registrations as plain data, for the workspace's panels and the agent reference: `[{ id, name, group, version, space, needs, spatial, params, ui, agent, support, cpu }]` (a parameter's own `ui` hints, such as `gradient` or `hidden`, are passed through). `LE.fx.schema()` → everything else an agent needs: `{ version, blends, paramTypes, maskKinds: [{ kind, fields: { name: [min, max, default] } }], mask, faceParts, limits, entry }`.
+
+A channel mixer is nine `number` parameters with a `mixer` ui control; there is no matrix type. Numbers are clamped to the schema; the workspace keeps them to a hundredth of `step`.
 
 ### `ui` descriptor (consumed by `assets/js/expert/`)
 
-`ui.section` is the develop-panel section (`Light`, `Colour`, `Detail`, `Effects`, `Blur`, `Shadow`, or a new one) and `ui.order` sorts effects inside it. `ui.controls` is optional; without it the workspace makes one control per parameter, in declaration order, from the parameter type. Each control: `{ param, control, label?, row?, when? }` with `control` one of `slider toggle select color point angle curve wheel bands lut seed`; `row` groups controls on one line; `when: { param, is }` shows a control only while another parameter has that value. Labels, ranges, steps and units come from `params`.
+The grammar is the workspace's (`docs/EXPERT-UI.md`); the registry passes `ui` through untouched. `ui.section` is one of `Light`, `Colour`, `Curves`, `Colour mixer`, `Colour grading`, `Detail`, `Optics`, `Geometry`, `Effects`, `Shadows & reflections`, `Compositing`, `Retouch` (the layer mask has its own section). `ui.order` sorts effects inside a section. `ui.controls` is optional; without it every parameter gets its default control in declaration order. Items: `'param'`; `{ param, control, label, gradient, fine, when: { otherParam: value } }`; `{ heading: 'Tone' }`; and the composite controls `{ control: 'wheels', params: [...] }`, `{ control: 'mixer', rows: {...} }`, `{ control: 'line', params: [a, b] }`.
 
-While a control is held the workspace calls `LE.fx.interactive(true)` on pointer down and `LE.fx.interactive(false)` on release, and writes with `scene.update(id, { fx: [...] }, { coalesce: 'fx' })` (or through `LE.fx.ops.apply` and `scene.load`). A change of `fx`, `fxMask`, `transform`, `retouch`, `maps` or `raw` re-renders the layer; nothing else needs calling.
+The workspace calls `LE.fx.interactive(true)` at pointer-down of any control gesture and `LE.fx.interactive(false)` at pointer-up, and writes through the normal scene update path (`scene.update(id, { fx: [...] }, { coalesce })`). A change of `fx`, `layerMask`, `transform`, `retouch`, `maps` or `raw` redraws the layer; there is no extra hook to call.
 
 ## The pass builder (`g`)
 
@@ -201,7 +207,7 @@ The compositor (`LE.Scene`) is a 2D canvas on the main thread, and adjustment la
 
 | Call | Use |
 |---|---|
-| `LE.fx.apply(source, { fx, mask, quad, scale, tile, preview, key, colorSpace, pad })` | a canvas or image through a stack; returns a canvas with `._fx = { pad, padPx, … }`. Tests, thumbnails, tools |
+| `LE.fx.apply(source, { fx, mask, quad, scale, tile, preview, key, colorSpace, pad, layer, assets })` | a canvas, an image or float pixels through a stack; returns a canvas with `._fx = { pad, padPx, … }`. Tests, thumbnails, tools |
 | `LE.fx.interactive(bool)`, `LE.fx.on(fn)`, `LE.fx.stamp()` | draft/refine, events, the cache stamp |
 | `LE.fx.status()` | `{ available, lost, float, p3, maxTexture, renderer, memory: { bytes, cacheBytes, budget }, stats, warnings }` |
 | `LE.fx.configure({ tile, budgetMB, workMP, eightBit })`, `LE.fx.trim(all)`, `LE.fx.profile(bool)` | tests and the bench; `trim` frees GPU memory |
@@ -212,11 +218,15 @@ The compositor (`LE.Scene`) is a 2D canvas on the main thread, and adjustment la
 
 The memory budget is 384 MB on a `high` performance level, 192 on `mid`, 96 on `low` (`LE.perf.level()`): pool textures, uploaded sources and cached stages together. Tile size follows from it.
 
+### Float sources (the seam for RAW and HDR)
+
+Wherever a canvas is accepted as the picture, `{ data: Float32Array | Uint16Array, width, height, channels: 3 | 4, space: 'linear' | 'display' }` is too (top row first; alpha, if present, premultiplied). That is the shape `LE.raw.decode` returns, apart from the camera matrix, which X5 applies as a colour operation. The data goes into a half-float texture, tiles take their part with the unpack parameters (no copy), and the stack starts in the source's own space, so linear data is never squeezed through 8 bits. Not available for a float source yet: draft half resolution, the work limit's fallback, `needs: ['stats']`, the CPU path, mip-mapped quads. How a layer points at decoded data inside `LE.Scene` is X5's to add at the seam in `LE.fx.layer`.
+
 ## Agent plumbing
 
 `LE.fx.ops.apply(doc, op)` → `{ ok, doc, errors, warnings, id }`. It never changes `doc`; on failure `doc` is returned as it was. Operations: `fx.add { layer, entry, index? }`, `fx.update { layer, id, p?, on?, amount?, blend?, mask? }` (`p` is merged), `fx.remove { layer, id }`, `fx.reorder { layer, id, index }`, `mask.set { layer, fx?, mask }` (`mask: null` clears), `adjust.add { fx, name?, mask?, clip?, above?, x?, y?, w?, h?, opacity?, id? }`, `transform.set { layer, quad }` (`quad: null` clears). `id` in the result is the entry or layer that was made or touched. Unknown effect types and forbidden keys are refused; out-of-range values are clamped with a warning. `LE.fx.ops.list()` describes the operations. `map.generate` belongs to the model steps (S2).
 
-`LE.fx.analyze(target, { region, layer })` → a promise of
+`LE.fx.analyze(target, { region, layer, kinds })` → a promise of
 
 ```
 { width, height, sample: { width, height, pixels },
@@ -231,7 +241,7 @@ The memory budget is 384 MB on a `high` performance level, 192 on `mid`, 96 on `
   alpha: { coverage } }
 ```
 
-`target` is a canvas, an image, `ImageData`, a `LE.Scene` (the page) or `{ scene, layer }`; `region` is `{ x, y, w, h }` in fractions. `whiteBalance.suggest` is in `white-balance` effect units. For "average skin hue against the skin-tone line", pass a region on skin and read `hue.vectorscope.offsetFromSkinLine`. Light direction and anything that needs a model are not here.
+`target` is a canvas, an image, `ImageData`, a `LE.Scene` (the page) or `{ scene, layer }`; `region` is `{ x, y, w, h }` in fractions. `histogram.l` is the same list as `histogram.luma`. The scopes' form, `LE.fx.analyze({ source: canvas, kinds: ['histogram'] })`, returns the object at once when the statistics code is already loaded (a promise the first time); with `kinds` given and no `'sharpness'` in it, the sharpness pass is skipped (`sharpness: null`). `whiteBalance.suggest` is in `white-balance` effect units. For "average skin hue against the skin-tone line", pass a region on skin and read `hue.vectorscope.offsetFromSkinLine`. Light direction and anything that needs a model are not here.
 
 Wiring in `le-agent.js` (owned by the agent-mode engineer):
 
@@ -241,10 +251,10 @@ LE.fxBoot.load().then(function (fx) { var r = fx.ops.apply(scene.toJSON(), op); 
 // LEAgent.analyze(target, opts):
 LE.fxBoot.load().then(function (fx) { return fx.analyze(target, opts); });
 // LEAgent.catalog('fx'):
-LE.fxBoot.load().then(function (fx) { return fx.describe(); });
+LE.fxBoot.load().then(function (fx) { return { effects: fx.describe(), schema: fx.schema() }; });
 ```
 
-`scene.load` resets the undo history; to keep it, apply the result per layer instead: `scene.update(layerId, { fx: r.doc.layers[i].fx, fxMask: …, transform: … })`, or `scene.add(r.doc.layers[i])` for `adjust.add`.
+`scene.load` resets the undo history; to keep it, apply the result per layer instead: `scene.update(layerId, { fx: r.doc.layers[i].fx, layerMask: …, transform: … })`, or `scene.add(r.doc.layers[i])` for `adjust.add`.
 
 ## Tests and timings
 
@@ -262,11 +272,14 @@ Every effect ships one golden at 256 px on the test card and, when it is spatial
 
 ## Differences from `docs/EXPERT-MODE.md`
 
-- **The layer mask is `layer.fxMask`**, not `layer.mask`: on photo layers `layer.mask` is already the frame-shape id (`'ellipse'`, `'heart'`), read by five existing modules. Entry masks and `mask.set` keep the name `mask`. A photo layer's `mask` given as an object is accepted as an alias on input (scene, project, open format) and stored as `fxMask`.
+- **The layer mask is `layer.layerMask = { on, invert, parts }`** (the architect's ruling): `layer.mask` stays the frame-shape name on photo layers. A `mask` given as an object on a layer is still accepted on input and stored as `layerMask`. The workspace keeps the name in `LE.expert.doc.MASK`.
+- **Masks follow the workspace reference** (`LE.expert.evalMask`): add is `max`, `feather` is 0–1 and shapes linear and radial parts, a linear part is 1 at its first point. `blur` (document pixels) is an addition.
+- **Value shapes are the control kit's**: `point { x, y }`, `curve { master, r, g, b }`, `wheel { h, a, l }`, `bands` 8 × `{ h, s, l }`; `LE.fx.describe()` is an array and `LE.fx.schema()` carries the rest.
 - **In `.ledesign.json` a layer's `fx` is the stack when it is a list**; the older baked-effect object keeps working and is written as `fxBaked` when a layer has both.
 - **Cut-out order.** The cut-out is applied after the effect stack, as the architecture says, so a blur does not soften the subject's edge but does mix removed background into it near the edge. Silhouette effects (`needs: ['alpha']`) always run after cut-out and mask, wherever they are in the list.
-- **Effects may declare** `grow`, `draft` and `needs: ['stats']`.
-- **Unknown effect types are kept as inert data** instead of being dropped at load.
+- **Effects may declare** `grow`, `draft`, `needs: ['stats']` and `inert` (described and validated, never drawn).
+- **Unknown effect types are kept as inert data** instead of being dropped at load. Effect ids may contain dots.
 - **The legacy `adjust`/`filter` fields still run on the CPU** before the stack; they were not moved to the GPU, so documents without expert data draw exactly as before.
 - **Preview** reuses the scene's per-layer bitmap cache at its preview size rather than rendering only the visible region; adjustment layers and other draw-time work do run at screen resolution on the visible canvas.
 - **Capability id `webgl-float`** was added to `LE.support` (a small probe).
+- **Test pages with the workspace's mock registry** (`LE_FX_MOCK`): when the real registry loads it registers the mock's effects as `inert` and forwards `interactive` calls to the mock's log, so `tests/expert-ui.test.js` keeps working until it moves to real effects. Nothing of this runs in production.
