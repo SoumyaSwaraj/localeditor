@@ -86,12 +86,12 @@ const PAIRS = [['--on-primary', '--primary'], ['--on-primary', '--primary-hover'
     await page.waitForFunction(() => window.LEStudio && window.LEStudio.scene);
     await page.evaluate(() => window.LEStudio.useSample());
     await h.openPanel(page, 'adjust');
-    assertNeutral(await chromeOf(page, ['body', '.sx-head', '.sx-rail', '.sx-panel', '.sx-stage', '.sx-tool', '.sx-foot']), 'studio');
+    assertNeutral(await chromeOf(page, ['body', '.sx-head', '.sx-rail', '.sx-panel', '.sx-stage', '.sx-scene', '.sx-tool', '.sx-foot']), 'studio');
     /* Canvas surround setting: one hook, three neutral greys. */
     const greys = [];
     for (const s of ['light', 'mid', 'dark']) {
       await page.evaluate((x) => window.LE.surround.set(x), s);
-      const c = await page.evaluate(() => getComputedStyle(document.querySelector('.sx-stage')).backgroundColor);
+      const c = await page.evaluate(() => getComputedStyle(document.querySelector('.sx-scene')).backgroundColor);
       h.assert(chroma(c) < 0.006, 'surround ' + s + ' is not neutral: ' + c);
       greys.push(lum(c));
     }

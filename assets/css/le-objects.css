@@ -4,7 +4,7 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--bg, #EDEDED);
+  background: var(--stage, var(--bg, #EDEDED));
   color: var(--ink, #151515);
   font-family: var(--font, "Plus Jakarta Sans", sans-serif);
   touch-action: none;
