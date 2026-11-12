@@ -120,3 +120,9 @@ Downloaded only when the user asks (scanned PDF text, labs/pdf-ocr; see `docs/re
 |---|---|---|---|
 | tessdata_fast `eng` (4.1 MB) | Apache-2.0 | `assets/models/ocr/eng.traineddata` (committed) | https://github.com/tesseract-ocr/tessdata_fast |
 | tessdata_fast `spa` `por` `fra` `deu` `hin` `ara` (1.1 to 2.3 MB each) | Apache-2.0 | `assets/models/ocr/more/<id>.traineddata` (not committed; `node scripts/fetch-ocr-data.js`) | https://github.com/tesseract-ocr/tessdata_fast |
+
+### Test-only files (never shipped)
+
+| Name | License | Files | Source |
+|---|---|---|---|
+| jsQR 1.4.0 | Apache-2.0 | `tests/lib/jsQR.js` (reads back maker QR codes in `tests/makers.test.js`) | npm `jsqr` |
