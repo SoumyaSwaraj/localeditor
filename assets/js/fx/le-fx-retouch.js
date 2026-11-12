@@ -141,6 +141,7 @@
     return true;
   };
   R.installFaceAlias();
+  if (FX.declareControl) FX.declareControl('face-rig');   /* this pack's own control (assets/js/expert/tools/liquify.js) */
 
   var AREA_OPTIONS = [{ value: 'all', label: 'Everywhere' }, { value: 'skin', label: 'Skin' }, { value: 'face', label: 'Face skin (map)' }];
 

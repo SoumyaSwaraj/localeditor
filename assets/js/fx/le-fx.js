@@ -19,13 +19,18 @@
     composite: ['wheels', 'mixer', 'line'],
     spaces: ['linear', 'display', 'oklab']
   };
+  /* A pack that brings its own workspace control (registered with LE.expert.controls.register) declares its name here first. */
+  FX.declareControl = function (name) {
+    if (typeof name !== 'string' || !/^[a-z][a-z0-9-]{1,23}$/.test(name)) throw new Error('LE.fx: a control name is lower-case words joined by hyphens.');
+    if (FX.UI.controls.indexOf(name) < 0 && FX.UI.controls.length < 48) { FX.UI.controls.push(name); revision++; }
+  };
   /* Effect packs loaded with the renderer. Feature teams add their pack name here (assets/js/fx/le-fx-<name>.js). */
   var PACKS = ['basic', 'grade', 'retouch'];
 
   var BAD = { __proto__: 1, constructor: 1, prototype: 1 };
   var BLENDS = ['normal', 'multiply', 'screen', 'overlay', 'soft-light', 'hard-light', 'darken', 'lighten', 'difference', 'color', 'luminosity'];
   var NEEDS = ['alpha', 'scene', 'depth', 'normals', 'face', 'stats'];
-  var PARAM_TYPES = ['number', 'bool', 'choice', 'color', 'point', 'angle', 'curve', 'wheel', 'bands', 'lut', 'seed'];
+  var PARAM_TYPES = ['number', 'bool', 'choice', 'color', 'point', 'angle', 'curve', 'wheel', 'bands', 'lut', 'seed', 'data'];
   var MASK_KINDS = {
     asset: {}, subject: {},
     linear: { x0: [-4, 5, 0.5], y0: [-4, 5, 0.25], x1: [-4, 5, 0.5], y1: [-4, 5, 0.75] },
@@ -35,8 +40,10 @@
     depth: { near: [0, 1, 0], far: [0, 1, 1], soft: [0, 1, 0.1] },
     face: {}
   };
-  var FACE_PARTS = { skin: 1, eyes: 1, lips: 1, teeth: 1, brows: 1, 'under-eyes': 1 };
-  var LIMITS = { stack: 32, parts: 8, params: 48, points: 64 };
+  var FACE_PARTS = { skin: 1, eyes: 1, lips: 1, teeth: 1, brows: 1, 'under-eyes': 1, 'inner-mouth': 1 };
+  /* Documents use the hyphenated names; the names LE.maps gives its parts are accepted on input and stored hyphenated. */
+  var FACE_ALIAS = { underEyes: 'under-eyes', innerMouth: 'inner-mouth' };
+  var LIMITS = { stack: 32, parts: 8, params: 48, points: 64, data: 4096, layerData: 16384 };
 
   function own(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
   function isObj(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
@@ -105,6 +112,14 @@
     else if (d.type === 'wheel') o.default = wheelOf(d.default) || { h: 0, a: 0, l: 0 };
     else if (d.type === 'bands') { o.min = isNum(d.min) ? d.min : -100; o.max = isNum(d.max) ? d.max : 100; o.default = bandsOf(d.default, o.min, o.max) || bandsOf([0, 0, 0, 0, 0, 0, 0, 0], o.min, o.max); }
     else if (d.type === 'lut') o.default = null;
+    else if (d.type === 'data') {
+      /* A bounded list of numbers (strokes, spots, mesh points): max values, each inside range and a multiple of step. */
+      o.max = Math.round(clamp(isNum(d.max) ? d.max : 1024, 1, LIMITS.data));
+      o.range = Array.isArray(d.range) && isNum(d.range[0]) && isNum(d.range[1]) && d.range[1] > d.range[0] ? [d.range[0], d.range[1]] : [0, 1];
+      o.step = isNum(d.step) && d.step > 0 ? d.step : 1e-4;
+      o.default = [];
+      if (isObj(d.legacy) && typeof d.legacy.prefix === 'string' && /^[a-zA-Z]\w{0,15}$/.test(d.legacy.prefix)) o.legacy = { prefix: d.legacy.prefix, params: Math.round(clamp(isNum(d.legacy.params) ? d.legacy.params : 1, 1, 16)) };
+    }
     else if (d.type === 'seed') o.default = isNum(d.default) ? Math.round(clamp(d.default, 0, 2147483647)) : 0;
     if (isObj(d.ui)) o.ui = clone(d.ui);   /* hints for the control kit (gradient, hidden, fine …), passed through */
     return o;
@@ -371,8 +386,50 @@
     if (t === 'wheel') return wheelOf(v) || bad('A wheel is { h, a, l }.');
     if (t === 'bands') return bandsOf(v, s.min, s.max) || bad('Bands are eight { h, s, l } objects.');
     if (t === 'lut') return v === null || idOk(v, 80) ? v : bad('A LUT is an asset id.');
+    if (t === 'data') {
+      if (isObj(v) && Array.isArray(v.master)) v = legacyData({ x0: v }, 'x', 1);   /* the packed-curve form of the first retouch pack */
+      return Array.isArray(v) ? dataOf(s, v, path, w) : bad('Data is a flat list of numbers.');
+    }
     return clone(s.default);
   }
+
+  /* data parameters. A clean list is returned as it is (the same object), so its content hash is computed once: lists are
+     replaced, never changed in place. */
+  function dataOf(s, v, path, w) {
+    var lo = s.range[0], hi = s.range[1], st = s.step, n = Math.min(v.length, s.max), i, x, ok = v.length <= s.max;
+    for (i = 0; ok && i < n; i++) { x = v[i]; ok = typeof x === 'number' && x >= lo && x <= hi && Math.abs(x / st - Math.round(x / st)) < 1e-6; }
+    if (ok) return v;
+    if (v.length > s.max) warn(w, path, 'clamped', 'This list can hold ' + s.max + ' numbers; the rest were dropped.');
+    var digits = Math.max(0, Math.min(8, Math.ceil(-Math.log(st) / Math.LN10 - 1e-9))), out = new Array(n);
+    for (i = 0; i < n; i++) { x = isNum(v[i]) ? clamp(v[i], lo, hi) : lo; out[i] = Number((Math.round(x / st) * st).toFixed(digits)); }
+    return out;
+  }
+  /* The first retouch pack kept its records in hidden curve parameters (prefix0, prefix1 …: four channels of 64 points, the y of
+     each point a value, the first value the count / 10000). Read here so that documents made then still open. */
+  function legacyData(p, prefix, params) {
+    var flat = [], k, j;
+    for (k = 0; k < params; k++) {
+      var cv = p[prefix + k];
+      ['master', 'r', 'g', 'b'].forEach(function (ch) {
+        var pts = isObj(cv) && Array.isArray(cv[ch]) ? cv[ch] : [];
+        for (j = 0; j < 64; j++) flat.push(Array.isArray(pts[j]) && isNum(pts[j][1]) ? pts[j][1] : 0);
+      });
+    }
+    var n = Math.round((flat[0] || 0) * 10000);
+    return flat.slice(1, 1 + Math.max(0, Math.min(n, flat.length - 1)));
+  }
+  var dataTags = typeof WeakMap === 'function' ? new WeakMap() : null;
+  function dataTag(a) {
+    var t = dataTags && dataTags.get(a);
+    if (t) return t;
+    var h1 = 2166136261, h2 = 5381, i, x;
+    for (i = 0; i < a.length; i++) { x = Math.round(a[i] * 1e6) | 0; h1 = Math.imul(h1 ^ x, 16777619); h2 = (Math.imul(h2, 33) + x + i) | 0; }
+    t = '#' + a.length + '.' + (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36);
+    if (dataTags) dataTags.set(a, t);
+    return t;
+  }
+  /* JSON for cache keys: long number lists stand in as their content hash, so nothing large is written out per frame. */
+  FX.keyOf = function (v) { return JSON.stringify(v, function (k, x) { return Array.isArray(x) && x.length > 24 && typeof x[0] === 'number' ? dataTag(x) : x; }); };
 
   function cleanMask(mask, path, w) {
     if (mask == null) return null;
@@ -394,7 +451,7 @@
         o[k] = v;
       });
       if (src.kind === 'asset') { if (!idOk(src.asset, 80)) { warn(w, pp + '/asset', 'bad-value', 'An asset mask needs an asset id.'); return; } o.asset = src.asset; }
-      if (src.kind === 'face') { if (!own(FACE_PARTS, src.part)) { warn(w, pp + '/part', 'bad-value', 'part is one of ' + Object.keys(FACE_PARTS).join(', ') + '.'); return; } o.part = src.part; }
+      if (src.kind === 'face') { if (own(FACE_ALIAS, src.part)) src = Object.assign({}, src, { part: FACE_ALIAS[src.part] }); if (!own(FACE_PARTS, src.part)) { warn(w, pp + '/part', 'bad-value', 'part is one of ' + Object.keys(FACE_PARTS).join(', ') + '.'); return; } o.part = src.part; }
       Object.keys(src).forEach(function (k) { if (BAD[k]) warn(w, pp, 'forbidden-key', 'The key "' + k + '" is not allowed.'); else if (!own(o, k)) warn(w, pp + '/' + k, 'unknown-key', 'Unknown mask field; ignored.'); });
       parts.push(o);
     });
@@ -420,9 +477,16 @@
     if (entry.blend != null && BLENDS.indexOf(entry.blend) < 0) warn(w, path + '/blend', 'bad-value', 'Unknown blend; "normal" is used.');
     var p = isObj(entry.p) ? entry.p : {};
     if (entry.p != null && !isObj(entry.p)) warn(w, path + '/p', 'bad-value', 'p must be an object of parameters.');
+    var old = {};
+    Object.keys(d.params).forEach(function (k) {
+      var s = d.params[k], L = s.type === 'data' && s.legacy;
+      if (!L) return;
+      for (var i = 0; i < L.params; i++) old[L.prefix + i] = 1;
+      if (!own(p, k) && isObj(p[L.prefix + '0'])) { var q = {}; Object.keys(p).forEach(function (x) { q[x] = p[x]; }); q[k] = legacyData(p, L.prefix, L.params); p = q; }
+    });
     Object.keys(p).forEach(function (k) {
       if (BAD[k]) warn(w, path + '/p', 'forbidden-key', 'The key "' + k + '" is not allowed.');
-      else if (!own(d.params, k)) warn(w, path + '/p/' + k.slice(0, 40), 'unknown-key', 'Unknown parameter for ' + d.id + '; ignored.');
+      else if (!own(d.params, k) && !own(old, k)) warn(w, path + '/p/' + k.slice(0, 40), 'unknown-key', 'Unknown parameter for ' + d.id + '; ignored.');
     });
     Object.keys(d.params).forEach(function (k) { out.p[k] = cleanParam(d.params[k], own(p, k) ? p[k] : undefined, path + '/p/' + k, w); });
     Object.keys(entry).forEach(function (k) {
@@ -436,7 +500,7 @@
   var resolveMemo = {}, resolveCount = 0;
   FX.resolve = function (stack) {
     if (!Array.isArray(stack) || !stack.length) return { entries: [], skipped: [], key: '' };
-    var key = JSON.stringify(stack);
+    var key = FX.keyOf(stack);
     if (own(resolveMemo, key)) return resolveMemo[key];
     var entries = [], skipped = [];
     stack.slice(0, LIMITS.stack).forEach(function (src, i) {
@@ -444,7 +508,7 @@
       if (!r.ok) { skipped.push({ index: i, type: src && typeof src.type === 'string' ? src.type.slice(0, 40) : null, reason: r.errors[0] ? r.errors[0].code : 'bad-entry' }); return; }
       var d = FX.get(r.entry.type);
       if (!r.entry.on || r.entry.amount <= 0 || d.inert) return;
-      entries.push({ id: r.entry.id, type: d.id, def: d, p: r.entry.p, amount: r.entry.amount, blend: r.entry.blend, mask: r.entry.mask, sig: d.id + '@' + d.version + JSON.stringify([r.entry.p, r.entry.amount, r.entry.blend, r.entry.mask]) });
+      entries.push({ id: r.entry.id, type: d.id, def: d, p: r.entry.p, amount: r.entry.amount, blend: r.entry.blend, mask: r.entry.mask, sig: d.id + '@' + d.version + FX.keyOf([r.entry.p, r.entry.amount, r.entry.blend, r.entry.mask]) });
     });
     var out = { entries: entries, skipped: skipped, key: M.hash(entries.map(function (x) { return x.sig; }).join('|')) };
     if (++resolveCount > 400) { resolveMemo = {}; resolveCount = 0; }
@@ -548,6 +612,15 @@
       if (name !== 'adjust.add' && !layer) return fail('no-layer', 'No layer with the id "' + String(op.layer).slice(0, 48) + '".');
       var stack = layer ? (Array.isArray(layer.fx) ? layer.fx : (layer.fx = [])) : null, i, entry;
       function indexOf(eid) { for (var k = 0; k < stack.length; k++) if (stack[k] && stack[k].id === eid) return k; return -1; }
+      /* An entry is named by its id, or by its type when the layer has exactly one of that kind. */
+      function entryAt(ref) {
+        var k = indexOf(ref), same = [];
+        if (k >= 0 || typeof ref !== 'string') return k;
+        stack.forEach(function (e, j) { if (e && e.type === ref) same.push(j); });
+        if (same.length > 1) { errors.push({ path: '', code: 'ambiguous', message: 'The layer has ' + same.length + ' "' + ref.slice(0, 40) + '" effects. Use an entry id: ' + same.map(function (j) { return stack[j].id; }).join(', ') + '.' }); return -2; }
+        return same.length ? same[0] : -1;
+      }
+      function noEntry(k, ref) { return k === -2 ? { ok: false, doc: doc, errors: errors, warnings: warnings, id: null } : fail('no-entry', 'No effect with the id "' + String(ref).slice(0, 40) + '" on that layer.'); }
       if (name === 'fx.add') {
         if (stack.length >= LIMITS.stack) return fail('too-many', 'A stack can hold ' + LIMITS.stack + ' effects.');
         entry = strict(op.entry, errors, warnings);
@@ -556,9 +629,9 @@
         i = isNum(op.index) ? clamp(Math.round(op.index), 0, stack.length) : stack.length;
         stack.splice(i, 0, entry); id = entry.id;
       } else if (name === 'fx.update' || name === 'fx.remove' || name === 'fx.reorder') {
-        i = indexOf(op.id);
-        if (i < 0) return fail('no-entry', 'No effect with the id "' + String(op.id).slice(0, 40) + '" on that layer.');
-        id = op.id;
+        i = entryAt(op.id);
+        if (i < 0) return noEntry(i, op.id);
+        id = stack[i].id;
         if (name === 'fx.remove') stack.splice(i, 1);
         else if (name === 'fx.reorder') { if (!isNum(op.index)) return fail('bad-value', 'index must be a number.'); entry = stack.splice(i, 1)[0]; stack.splice(clamp(Math.round(op.index), 0, stack.length), 0, entry); }
         else {
@@ -575,9 +648,9 @@
         var m = op.mask == null ? null : cleanMask(op.mask, '/mask', warnings);
         if (op.mask != null && !m && !(isObj(op.mask) && Array.isArray(op.mask.parts) && !op.mask.parts.length)) return fail('bad-mask', 'The mask is not valid.');
         if (op.fx != null) {
-          i = indexOf(op.fx);
-          if (i < 0) return fail('no-entry', 'No effect with the id "' + String(op.fx).slice(0, 40) + '" on that layer.');
-          stack[i].mask = m; id = op.fx;
+          i = entryAt(op.fx);
+          if (i < 0) return noEntry(i, op.fx);
+          stack[i].mask = m; id = stack[i].id;
         } else if (m) layer.layerMask = m; else delete layer.layerMask;
         if (!stack.length) delete layer.fx;
       } else if (name === 'adjust.add') {
