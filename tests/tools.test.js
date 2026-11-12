@@ -291,17 +291,28 @@ cases['noOverflow also flags a layout viewport wider than the device (a 455 px p
   await page.waitForTimeout(200);
   h.assert(!(await h.noOverflow(page)), 'a 455 px element on a 390 px phone is caught');
 };
-cases['every tool page and the home page fit a 390 and a 360 px phone with no sideways scroll'] = async ({ browser, base, h }) => {
+/* Every tool page and the home page at 390 and 360 px, in groups of 8 pages so no one case nears the 90 s limit
+   under parallel load (the single case took about 87 s alone). Pages are listed when this file loads. */
+(function () {
   const fs = require('fs');
-  const dirs = fs.readdirSync(h.ROOT).filter((d) => fs.existsSync(h.ROOT + '/' + d + '/index.html') && !/^(studio|pdf-studio|recipes|labs)$/.test(d));
-  const bad = [];
-  for (const vp of ['phone', 'small']) for (const u of ['/'].concat(dirs.map((d) => '/' + d + '/'))) {
-    const page = await h.open(browser, base, u, vp);
-    if (!(await h.noOverflow(page))) bad.push(vp + ' ' + u);
-    await page.context().close();
+  const path = require('path');
+  const ROOT = path.resolve(__dirname, '..');
+  const dirs = fs.readdirSync(ROOT).filter((d) => fs.existsSync(ROOT + '/' + d + '/index.html') && !/^(studio|pdf-studio|recipes|labs)$/.test(d)).sort();
+  const urls = ['/'].concat(dirs.map((d) => '/' + d + '/'));
+  const SIZE = 8;
+  for (let i = 0; i < urls.length; i += SIZE) {
+    const group = urls.slice(i, i + SIZE);
+    cases['tool pages fit a 390 and a 360 px phone with no sideways scroll (' + (i / SIZE + 1) + ' of ' + Math.ceil(urls.length / SIZE) + ': ' + group[0] + ' … ' + group[group.length - 1] + ')'] = async ({ browser, base, h }) => {
+      const bad = [];
+      for (const vp of ['phone', 'small']) for (const u of group) {
+        const page = await h.open(browser, base, u, vp);
+        if (!(await h.noOverflow(page))) bad.push(vp + ' ' + u);
+        await page.context().close();
+      }
+      h.assert(!bad.length, 'sideways scroll on: ' + bad.join(', '));
+    };
   }
-  h.assert(!bad.length, 'sideways scroll on: ' + bad.join(', '));
-};
+})();
 cases['KNOWN-BUG: converted DOCX / Markdown PDFs keep selectable text, not just page pictures (QA-010)'] = async ({ browser, base, h }) => {
   for (const f of ['sample.md', 'sample.docx']) {
     const page = await tool(browser, base, h, '/convert-to-pdf/');
