@@ -373,6 +373,7 @@
   var FIRST = ['../fx/curves.js', 'controls/base.js'];   /* the spline lives with the renderer (assets/js/fx/curves.js): one definition for both */
   var FILES = ['controls/slider.js', 'controls/curve.js', 'controls/color.js', 'controls/bands.js',
     'controls/pickers.js', 'controls/mask.js', 'brush.js', 'scopes.js', 'panel.js', 'layers.js', 'tools.js', 'workspace.js'];
+  var LATER = ['tools/spot.js', 'tools/dodge-burn.js', 'tools/liquify.js'];   /* retouch tools: replace tools.js placeholders, so after it */
   var loading = null;
   function lazy(src) {
     if (LE.lazy) return LE.lazy(src);
@@ -394,7 +395,7 @@
     if (loading) return loading;
     loading = Promise.all([css(), Promise.all(FIRST.map(function (f) { return lazy(BASE + f); })).then(function () {
       return Promise.all(FILES.map(function (f) { return lazy(BASE + f); }));
-    })]);
+    }).then(function () { return Promise.all(LATER.map(function (f) { return lazy(BASE + f); })); })]);
     loading.catch(function () { loading = null; });
     return loading;
   }
