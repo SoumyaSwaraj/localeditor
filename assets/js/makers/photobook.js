@@ -92,9 +92,11 @@
         var hero = photos[0] || '';
         if (style === 'dark' || style === 'modern') {
           if (style === 'dark') {
-            L.push(photoL('cover-photo', hero, { x: 0, y: 0, w: W, h: H }, 'Add a cover photo'));
-            L.push(env.rect({ id: 'scrim', name: 'Shade', x: 0, y: H * 0.45, w: W, h: H * 0.55, fill: { type: 'linear', angle: 180, colors: ['rgba(18,17,22,0)', 'rgba(18,17,22,.82)'] } }));
-            L.push(env.rect({ id: 'scrim-base', name: 'Shade base', x: 0, y: H * 0.72, w: W, h: H * 0.28, fill: 'rgba(18,17,22,.55)' }));
+            if (hero) {
+              L.push(photoL('cover-photo', hero, { x: 0, y: 0, w: W, h: H }, 'Add a cover photo'));
+              L.push(env.rect({ id: 'scrim', name: 'Shade', x: 0, y: H * 0.45, w: W, h: H * 0.55, fill: { type: 'linear', angle: 180, colors: ['rgba(18,17,22,0)', 'rgba(18,17,22,.82)'] } }));
+              L.push(env.rect({ id: 'scrim-base', name: 'Shade base', x: 0, y: H * 0.72, w: W, h: H * 0.28, fill: 'rgba(18,17,22,.55)' }));
+            } else L.push(photoL('cover-photo', '', { x: 0, y: 0, w: W, h: H * 0.68 }, 'Add a cover photo'));
             var t = env.text({ id: 'title', name: 'Title', text: v.title, x: M, y: 0, w: W - 2 * M, font: look.head, weight: look.headWeight, size: mm(land ? 20 : 17), min: mm(8), maxLines: 2, lineHeight: 1.05, color: '#FFFFFF', balance: true });
             var blk = [t];
             if (v.subtitle) blk.push(env.text({ id: 'subtitle', name: 'Subtitle', text: v.subtitle, x: M, y: t.y + t.h + mm(3), w: W - 2 * M, font: look.body, italic: true, weight: 400, size: mm(5.5), min: mm(3.5), maxLines: 2, color: '#EDE8DF' }));
