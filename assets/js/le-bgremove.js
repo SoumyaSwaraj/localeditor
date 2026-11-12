@@ -153,7 +153,8 @@
     var m = find(id);
     if (!m) return Promise.resolve({ status: 'unknown', reasons: ['Unknown model.'], suggest: [], canForce: false });
     if (LE.support && typeof LE.support.check === 'function') {
-      return Promise.resolve().then(function () { return LE.support.check(m.supportId); }).then(function (r) {
+      /* checkAsync probes first (WebGPU is only known after asking for an adapter); check() is the sync fallback. */
+      return Promise.resolve().then(function () { return typeof LE.support.checkAsync === 'function' ? LE.support.checkAsync(m.supportId) : LE.support.check(m.supportId); }).then(function (r) {
         return r && r.status ? r : localCheck(m);
       }, function () { return localCheck(m); });
     }
@@ -177,6 +178,53 @@
     if (!global.caches) return Promise.resolve(null);
     return caches.open(CACHE).catch(function () { return null; });
   }
+  /* Large models (the "pro" options, 100 MB to 500 MB) stream straight into Cache Storage instead of being held in memory
+     twice. Cache.put() commits only once the whole body has arrived, so a cancelled or broken download leaves nothing
+     behind: the next attempt is a clean restart. Free space is checked first. */
+  var LARGE = 50e6, ENGINE_GPU = 7200000; /* compressed transfer of the WebGPU engine (assets/vendor/ort-webgpu) */
+  async function space(bytes) {
+    var need = Math.round(bytes * 1.1) + 20e6;
+    if (!(global.navigator && navigator.storage && navigator.storage.estimate)) return { ok: true, need: need, free: null };
+    try {
+      var e = await navigator.storage.estimate();
+      var free = e.quota ? e.quota - (e.usage || 0) : null;
+      return { ok: free == null || free >= need, need: need, free: free };
+    } catch (err) { return { ok: true, need: need, free: null }; }
+  }
+  function quotaError(room) {
+    var e = coded('There is not enough free space on this device for this download.', 'quota');
+    e.name = 'QuotaExceededError';
+    e.need = room && room.need; e.free = room && room.free;
+    if (global.LEPwa && typeof global.LEPwa.reportQuotaError === 'function') { try { global.LEPwa.reportQuotaError(e); } catch (x) { /* ignore */ } }
+    return e;
+  }
+  async function streamToCache(m, req, res, cache, onProgress, signal) {
+    var total = +res.headers.get('content-length') || m.bytes, loaded = 0;
+    var counter = new TransformStream({
+      transform: function (chunk, ctl) {
+        loaded += chunk.length;
+        if (onProgress) onProgress({ loaded: loaded, total: total, fraction: Math.min(1, loaded / total), cached: false });
+        ctl.enqueue(chunk);
+      }
+    });
+    var headers = { 'content-type': 'application/octet-stream', 'content-length': String(m.bytes), 'x-le-model': m.id };
+    try {
+      await cache.put(req, new Response(res.body.pipeThrough(counter), { headers: headers }));
+    } catch (e) {
+      try { await cache.delete(req); } catch (x) { /* nothing stored */ }
+      if (isAbort(e) || (signal && signal.aborted)) throw aborted();
+      if (global.LEPwa && global.LEPwa.isQuotaError && global.LEPwa.isQuotaError(e)) throw quotaError(null);
+      if (e && e.name === 'QuotaExceededError') throw quotaError(null);
+      throw coded('The download stopped part-way. Check your connection and try again.', 'download', e);
+    }
+    if (m.bytes && Math.abs(loaded - m.bytes) > 16) {
+      try { await cache.delete(req); } catch (x) { /* ignore */ }
+      throw coded('The model download was incomplete. Try again.', 'download');
+    }
+    var hit = await cache.match(req);
+    if (!hit) throw coded('The model could not be stored on this device.', 'download');
+    return { buf: await hit.arrayBuffer(), cached: false };
+  }
   async function modelBytes(m, onProgress, useCache, signal) {
     var url = abs(m.path), cache = null, req = new Request(url);
     if (useCache) cache = await openCache();
@@ -189,10 +237,15 @@
       }
     }
     if (global.navigator && navigator.onLine === false) throw coded('You are offline, and this model has not been downloaded yet.', 'offline');
+    if (cache && m.bytes >= LARGE) {
+      var room = await space(m.bytes);
+      if (!room.ok) throw quotaError(room);
+    }
     var res;
     try { res = await fetch(url, signal ? { signal: signal } : undefined); }
     catch (e) { if (isAbort(e)) throw aborted(); throw coded('The model could not be downloaded. Check your connection and try again.', navigator.onLine === false ? 'offline' : 'download', e); }
     if (!res.ok) throw coded('The model could not be downloaded (' + res.status + ').', 'download');
+    if (cache && m.bytes >= LARGE && res.body && typeof TransformStream === 'function') return streamToCache(m, req, res, cache, onProgress, signal);
     var total = +res.headers.get('content-length') || m.bytes, loaded = 0, chunks = [];
     try {
       if (res.body && res.body.getReader) {
@@ -291,6 +344,8 @@
     },
     budget: budget,
     support: support,
+    space: function (id) { var m = find(id); return space(m ? m.bytes : 0); },
+    LARGE: LARGE,
     gate: gate,
 
     isAvailable: async function (id) {
@@ -306,8 +361,9 @@
     downloadSize: async function (id) {
       var m = find(id), c = await openCache();
       var model = !!(m && c && await c.match(abs(m.path)));
-      var engine = !!(c && await c.match(abs('assets/vendor/ort/ort-wasm-simd-threaded.wasm')));
-      var bytes = (model ? 0 : (m ? m.bytes : 0)) + (engine ? 0 : 2900000);
+      var gpu = !!(m && m.runtime === 'webgpu');
+      var engine = !!(c && await c.match(abs(gpu ? 'assets/vendor/ort-webgpu/ort-wasm-simd-threaded.asyncify.wasm' : 'assets/vendor/ort/ort-wasm-simd-threaded.wasm')));
+      var bytes = (model ? 0 : (m ? m.bytes : 0)) + (engine ? 0 : gpu ? ENGINE_GPU : 2900000);
       return { bytes: bytes, model: !model, engine: !engine, cached: model };
     },
 
@@ -328,8 +384,8 @@
         if (o.signal) o.signal.addEventListener('abort', onAbort, { once: true });
         try {
           var info = await call('init', {
-            model: { id: m.id, size: m.size, mean: m.norm.mean, std: m.norm.std, sigmoid: m.sigmoid },
-            bytes: got.buf, ep: o.ep || 'wasm', threads: o.threads || 1, graphOpt: o.graphOpt,
+            model: { id: m.id, size: m.size, mean: m.norm.mean, std: m.norm.std, sigmoid: m.sigmoid, minmax: m.minmax !== false },
+            bytes: got.buf, ep: o.ep || 'wasm', threads: o.threads || 1, graphOpt: o.graphOpt, needF16: !!m.fp16, warmup: m.warmup !== false,
             ortBase: abs('assets/vendor/ort/'), webgpuBase: o.ep === 'webgpu' || o.ep === 'auto' ? abs('assets/vendor/ort-webgpu/') : null
           }, [got.buf]);
           info.model = id; info.fromCache = got.cached;
@@ -389,7 +445,7 @@
           break;
         } catch (e) {
           if (isAbort(e) || (opts.signal && opts.signal.aborted)) throw aborted();
-          if (e.code === 'offline' || e.code === 'download' || e.code === 'unsupported') throw e;
+          if (e.code === 'offline' || e.code === 'download' || e.code === 'unsupported' || e.code === 'quota') throw e;
           var mem = e.code === 'memory' || isMemory(e) || !worker;
           if (tries === 0 && mem && maxSide > 512) { tries++; maxSide = Math.round(maxSide / 2); API.unload(); continue; }
           throw coded(mem ? 'This device ran out of memory for this photo.' : (e.message || 'The cut-out failed.'), mem ? 'memory' : (e.code || 'engine'), e);

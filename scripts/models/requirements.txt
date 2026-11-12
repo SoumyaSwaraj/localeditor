@@ -1,0 +1,14 @@
+# Build-time tools for the large background-remover models (scripts/models/build_pro.py). Never used at runtime.
+# Install into a virtual environment outside the repository:
+#   python3 -m venv ~/le-models-venv && ~/le-models-venv/bin/pip install -r scripts/models/requirements.txt
+# The PyPI torch wheel for Linux pulls the CUDA libraries (several GB); the export itself runs on the CPU.
+torch==2.15.0
+torchvision==0.29.2
+timm==1.0.31
+einops==0.8.2
+numpy==2.5.4
+onnx==1.23.2
+onnxruntime==1.31.1
+onnxslim==0.1.99
+onnxconverter-common==1.16.0
+pillow==13.0.0

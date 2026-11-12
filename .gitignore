@@ -4,4 +4,6 @@ node_modules/
 
 # local model evaluation downloads (scripts/fetch-models.js)
 /assets/models/local/
-/assets/vendor/ort-webgpu/
+# large background-remover models built by `node scripts/fetch-models.js pro` (over 100 MB each; uploaded to S3 by scripts/deploy.sh)
+/assets/models/pro/
+__pycache__/

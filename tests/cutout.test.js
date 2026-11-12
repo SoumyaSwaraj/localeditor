@@ -37,19 +37,22 @@ cases['the model is not fetched until asked, then cached in le-models-v1'] = asy
   h.assert.equal(await page.evaluate(() => caches.has('le-models-v1')), false, 'Model cache exists before asked');
   await page.click('.sxc-tb');
   await page.waitForSelector('.sxc-go');
-  const note = await page.waitForFunction(() => { const n = document.querySelector('.sxc-first'); return n && /once \(\d+ MB\)/.test(n.textContent) && n.textContent; });
+  const note = await page.waitForFunction(() => { const n = document.querySelector('.sxc-first'); return n && /once \(about \d+ MB\)/.test(n.textContent) && n.textContent; });
   h.assert(/works offline/.test(await note.jsonValue()) && /stays on this device/.test(await note.jsonValue()), 'First-use sentence missing');
   h.assert.equal(await page.textContent('.sxc-go'), 'Download and remove');
   /* The chooser is data-driven, plain-worded and pre-selects one recommended option. */
   await page.click('.sxc-other > summary');
-  const cards = await page.evaluate(() => [...document.querySelectorAll('.sxc-opt')].map((o) => ({ id: o.dataset.model, text: o.querySelector('.sxc-pick').textContent, on: o.querySelector('.sxc-pick').getAttribute('aria-checked') })));
+  await page.waitForSelector('.sxc-ladder .sxc-opt');
+  await page.waitForFunction(() => LE.bgRemove.models().filter((m) => m.listed).length === document.querySelectorAll('.sxc-opt').length);
+  const cards = await page.evaluate(() => [...document.querySelectorAll('.sxc-opt')].map((o) => ({ id: o.dataset.model, text: o.querySelector('.sxc-otext').textContent, on: o.querySelector('.sxc-pick').getAttribute('aria-checked') })));
   h.assert.equal(cards.length, await page.evaluate(() => LE.bgRemove.models().filter((m) => m.listed).length));
   h.assert(cards.every((c) => !/int8|u2net|onnx|RAM/i.test(c.text)), 'Jargon on a card: ' + cards.map((c) => c.text).join(' | '));
-  h.assert(cards.every((c) => /\d+ MB, one time/.test(c.text) && /(Good|Better|Best)/.test(c.text)), 'Download line or quality missing');
-  h.assert.equal(cards.filter((c) => /Recommended for you/.test(c.text)).length, 1);
+  h.assert(cards.every((c) => /download \(about \d+ MB\)|Not available on this copy|graphics card/.test(c.text)), 'Download line missing: ' + cards.map((c) => c.text).join(' | '));
+  h.assert(cards.filter((c) => /Quick|Better|Best/.test(c.text)).length >= 3, 'Quality ladder missing');
+  h.assert.equal(cards.filter((c) => /Recommended for this device/.test(c.text)).length, 1);
   h.assert.equal(cards.filter((c) => c.on === 'true')[0].id, 'u2netp');
   const urls = await page.evaluate(() => performance.getEntriesByType('resource').map((r) => r.name));
-  h.assert(!urls.some((u) => /\.onnx|\.wasm/.test(u)), 'Model fetched before the button was pressed');
+  h.assert(!urls.some((u) => /\.onnx|\.wasm/.test(u) && !/\/models\/pro\//.test(u)), 'Model fetched before the button was pressed');
   await page.click('.sxc-go');
   await page.waitForFunction(() => LEStudio.scene.layers().some((x) => x.cutout), null, { timeout: 60000 });
   const cached = await page.evaluate(async () => (await LE.bgRemove.cachedModels()).map((m) => m.id));
@@ -289,16 +292,17 @@ cases['a second file can add options to the chooser through the registry'] = asy
     LEStudio.openPanel('cutout');
   });
   await page.click('.sxc-other > summary');
-  await page.waitForSelector('.sxc-opt[data-model="test-pro"]');
+  await page.waitForSelector('.sxc-opt[data-model="test-pro"]', { state: 'attached' });   /* folded under "Not available on this copy" */
   const r = await page.evaluate(() => ({
     text: document.querySelector('.sxc-opt[data-model="test-pro"]').textContent,
     rec: LEStudioCutout.state().recommended,
     defs: (window.LE_SUPPORT_DEFS || []).filter((d) => /^cutout\./.test(d.id)).map((d) => d.id)
   }));
-  h.assert(/Finest edges/.test(r.text) && /Best for hair and fur/.test(r.text) && /Takes a while/.test(r.text) && /123 MB, one time|120 MB, one time/.test(r.text), 'Card text: ' + r.text);
+  /* Its file is not on this server: shown as such (same-origin HEAD probe), not as a failure. */
+  h.assert(/Finest edges/.test(r.text) && /Best for hair and fur/.test(r.text) && /Not available on this copy of the app/.test(r.text), 'Card text: ' + r.text);
   h.assert.equal(r.rec, 'u2netp');
   h.assert(['cutout.fast', 'cutout.detailed', 'cutout.people', 'cutout.test-pro'].every((id) => r.defs.indexOf(id) >= 0), 'Support defs: ' + r.defs.join(','));
-  h.assert.noErrors(page);
+  h.assert.noErrors(page, [/404/]);   /* the same-origin HEAD probe for the missing file */
 };
 
 module.exports = cases;
