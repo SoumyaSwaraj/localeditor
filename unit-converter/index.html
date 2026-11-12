@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Unit Converter — Free, Private, Works Offline | Instant Tools</title>
+<meta name="description" content="Free unit converter for length, weight, temperature, area, volume, speed, time, data, energy and pressure. Instant two-way results, offline in your browser.">
+<meta name="keywords" content="unit converter, convert units, metric to imperial, cm to inches, kg to lbs, celsius to fahrenheit, mb to gb, psi to bar, kwh to joules, offline unit converter">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/unit-converter/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Unit Converter — Free & Private">
+<meta property="og:description" content="Convert length, weight, temperature, area, volume, speed, time, data, energy and pressure instantly — offline and free.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/unit-converter/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "Unit Converter", "url": "https://soumyaswaraj.github.io/instant-tools/unit-converter/", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Free unit converter for length, weight, temperature, area, volume, speed, time, data, energy and pressure. Instant two-way results, offline in your browser.", "featureList": ["10 unit categories and over 100 units", "Live two-way conversion", "All-units comparison table", "Exact SI and imperial definitions", "Works offline", "No upload — data stays on your device"]}, {"@type": "HowTo", "name": "How to convert units", "step": [{"@type": "HowToStep", "text": "Choose a category such as Length, Weight or Temperature."}, {"@type": "HowToStep", "text": "Pick the From and To units and type a value in either box."}, {"@type": "HowToStep", "text": "Read the instant result, or scan the table showing the value in every unit, and copy what you need."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How accurate is this unit converter?", "acceptedAnswer": {"@type": "Answer", "text": "Conversions use exact definitions where they exist, such as 1 inch = 2.54 cm and 1 pound = 0.45359237 kg, and results are shown to 12 significant digits."}}, {"@type": "Question", "name": "What is the difference between MB and MiB?", "acceptedAnswer": {"@type": "Answer", "text": "A megabyte (MB) is 1,000,000 bytes in the decimal SI system, while a mebibyte (MiB) is 1,048,576 bytes (2^20). Storage makers use MB and GB; many operating systems report MiB and GiB."}}, {"@type": "Question", "name": "How do I convert Celsius to Fahrenheit?", "acceptedAnswer": {"@type": "Answer", "text": "Multiply the Celsius value by 9/5 and add 32. For example, 100 °C × 9/5 + 32 = 212 °F. The converter applies this formula and its inverse automatically."}}, {"@type": "Question", "name": "Can I convert in both directions?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Type in either the From or the To box and the other box updates instantly. The swap button reverses the two units."}}, {"@type": "Question", "name": "Does the unit converter work offline?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. All conversion factors are built into the page, so once it has loaded it works with no internet connection and sends nothing to a server."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "Unit Converter", "item": "https://soumyaswaraj.github.io/instant-tools/unit-converter/"}]}]}
+</script>
+<style>
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#cats{margin-bottom:18px}
+.uc-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}
+.uc-val{font-size:1.4rem;font-weight:700;margin-bottom:8px;font-family:var(--mono)}
+.uc-swap{width:44px;height:44px;padding:0;border-radius:50%;display:grid;place-items:center}
+.uc-formula{color:var(--muted);margin:4px 0 0;font-size:.9rem;word-break:break-word}
+.uc-h{font-size:1.05rem;margin:24px 0 10px}
+.uc-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-sm)}
+.uc-table{width:100%;border-collapse:collapse;font-size:.92rem}
+.uc-table th,.uc-table td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.uc-table th{background:var(--surface-2);color:var(--muted);font-weight:600}
+.uc-table td:nth-child(2){font-family:var(--mono);word-break:break-all}
+.uc-table tr.cur td{background:var(--brand-soft)}
+.uc-table tr:last-child td{border-bottom:0}
+.uc-table button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;cursor:pointer;font:inherit;font-size:.8rem}
+@media (max-width:560px){.uc-grid{grid-template-columns:1fr}.uc-swap{justify-self:center;transform:rotate(0)}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#dev">Developer tools</a> › Unit Converter</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Developer tool</span>
+    <h1>Unit <span class="gradient-text">Converter</span></h1>
+    <p class="lead">This unit converter instantly converts between more than 100 units across 10 categories — length, weight, temperature, area, volume, speed, time, data storage, energy and pressure — for free, privately and offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Unit Converter">
+
+    <div class="seg" id="cats" role="group" aria-label="Unit category"></div>
+    <div class="uc-grid">
+      <div class="field"><label for="v1">From</label>
+        <input class="input uc-val" id="v1" type="text" inputmode="decimal" autocomplete="off" value="1">
+        <label class="sr" for="u1">From unit</label><select class="select" id="u1"></select></div>
+      <button class="btn uc-swap" id="swap" type="button" aria-label="Swap units" title="Swap units"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg></button>
+      <div class="field"><label for="v2">To</label>
+        <input class="input uc-val" id="v2" type="text" inputmode="decimal" autocomplete="off">
+        <label class="sr" for="u2">To unit</label><select class="select" id="u2"></select></div>
+    </div>
+    <p class="uc-formula mono" id="formula" aria-live="polite"></p>
+    <div class="actions"><button class="btn btn-primary btn-sm" id="copy" type="button">Copy result</button></div>
+    <h2 class="uc-h">All <span id="catname">length</span> units for <span id="allval" class="mono"></span></h2>
+    <div class="uc-table-wrap"><table class="uc-table"><thead><tr><th scope="col">Unit</th><th scope="col">Value</th><th scope="col"><span class="sr">Copy</span></th></tr></thead><tbody id="all"></tbody></table></div>
+
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to convert units</h2>
+      <ol><li>Choose a category such as Length, Weight or Temperature.</li><li>Pick the From and To units and type a value in either box.</li><li>Read the instant result, or scan the table showing the value in every unit, and copy what you need.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is Unit Converter?</h2>
+      <p>A unit converter translates a quantity from one unit of measurement to another, such as meters to feet or kilograms to pounds. This tool covers 10 categories: length, weight/mass, temperature, area, volume, speed, time, data storage, energy and pressure.</p>
+      <p>Each unit is stored as an exact factor relative to an SI base unit (meter, kilogram, square meter, liter, meter per second, second, byte, joule and pascal). A value is multiplied into the base unit and divided out into the target unit. Temperature uses offset formulas instead of factors, because 0 °C is not 0 °F. US customary volumes (cup, pint, gallon) differ from UK imperial gallons, and both are listed separately.</p>
+      <p>Everything runs in JavaScript in your browser. Nothing is uploaded, there are no ads in the converter, and the page works offline once loaded or installed as an app.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>How accurate is this unit converter?</summary><p>Conversions use exact definitions where they exist, such as 1 inch = 2.54 cm and 1 pound = 0.45359237 kg, and results are shown to 12 significant digits.</p></details>
+      <details><summary>What is the difference between MB and MiB?</summary><p>A megabyte (MB) is 1,000,000 bytes in the decimal SI system, while a mebibyte (MiB) is 1,048,576 bytes (2^20). Storage makers use MB and GB; many operating systems report MiB and GiB.</p></details>
+      <details><summary>How do I convert Celsius to Fahrenheit?</summary><p>Multiply the Celsius value by 9/5 and add 32. For example, 100 °C × 9/5 + 32 = 212 °F. The converter applies this formula and its inverse automatically.</p></details>
+      <details><summary>Can I convert in both directions?</summary><p>Yes. Type in either the From or the To box and the other box updates instantly. The swap button reverses the two units.</p></details>
+      <details><summary>Does the unit converter work offline?</summary><p>Yes. All conversion factors are built into the page, so once it has loaded it works with no internet connection and sends nothing to a server.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-dev" href="../color-converter/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="16" cy="10" r="1"/><path d="M12 21a3 3 0 0 1 0-6h3"/></svg></span><span><h3>Color Converter</h3><p>Convert HEX, RGB, HSL and CMYK.</p></span></a>
+        <a class="tool-card cat-dev" href="../json-formatter/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/></svg></span><span><h3>JSON Formatter</h3><p>Format and validate JSON.</p></span></a>
+        <a class="tool-card cat-text" href="../word-counter/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span><span><h3>Word &amp; Character Counter</h3><p>Count words, characters and lines.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+(function(){
+  var C = {
+    length:{name:'Length',base:'m',u:[['mm','Millimeter',1e-3],['cm','Centimeter',1e-2],['m','Meter',1],['km','Kilometer',1e3],['in','Inch',0.0254],['ft','Foot',0.3048],['yd','Yard',0.9144],['mi','Mile',1609.344],['nmi','Nautical mile',1852],['µm','Micrometer',1e-6],['nm','Nanometer',1e-9]],d:['m','ft']},
+    weight:{name:'Weight',base:'kg',u:[['mg','Milligram',1e-6],['g','Gram',1e-3],['kg','Kilogram',1],['t','Metric ton',1000],['oz','Ounce',0.028349523125],['lb','Pound',0.45359237],['st','Stone',6.35029318],['US ton','Short ton (US)',907.18474],['UK ton','Long ton (UK)',1016.0469088],['ct','Carat',0.0002]],d:['kg','lb']},
+    temperature:{name:'Temperature',u:[['°C','Celsius'],['°F','Fahrenheit'],['K','Kelvin'],['°R','Rankine']],d:['°C','°F']},
+    area:{name:'Area',u:[['mm²','Square millimeter',1e-6],['cm²','Square centimeter',1e-4],['m²','Square meter',1],['ha','Hectare',1e4],['km²','Square kilometer',1e6],['in²','Square inch',0.00064516],['ft²','Square foot',0.09290304],['yd²','Square yard',0.83612736],['ac','Acre',4046.8564224],['mi²','Square mile',2589988.110336]],d:['m²','ft²']},
+    volume:{name:'Volume',u:[['mL','Milliliter',1e-3],['L','Liter',1],['m³','Cubic meter',1000],['tsp','Teaspoon (US)',0.00492892159375],['tbsp','Tablespoon (US)',0.01478676478125],['fl oz','Fluid ounce (US)',0.0295735295625],['cup','Cup (US)',0.2365882365],['pt','Pint (US)',0.473176473],['qt','Quart (US)',0.946352946],['gal','Gallon (US)',3.785411784],['UK gal','Gallon (UK)',4.54609],['in³','Cubic inch',0.016387064],['ft³','Cubic foot',28.316846592]],d:['L','gal']},
+    speed:{name:'Speed',u:[['m/s','Meter per second',1],['km/h','Kilometer per hour',1/3.6],['mph','Mile per hour',0.44704],['kn','Knot',1852/3600],['ft/s','Foot per second',0.3048],['Mach','Mach (343 m/s)',343],['c','Speed of light',299792458]],d:['km/h','mph']},
+    time:{name:'Time',u:[['ns','Nanosecond',1e-9],['µs','Microsecond',1e-6],['ms','Millisecond',1e-3],['s','Second',1],['min','Minute',60],['h','Hour',3600],['d','Day',86400],['wk','Week',604800],['mo','Month (avg)',2629746],['yr','Year (365.2425 d)',31556952],['decade','Decade',315569520],['century','Century',3155695200]],d:['h','min']},
+    data:{name:'Data storage',u:[['bit','Bit',0.125],['B','Byte',1],['KB','Kilobyte',1e3],['MB','Megabyte',1e6],['GB','Gigabyte',1e9],['TB','Terabyte',1e12],['PB','Petabyte',1e15],['KiB','Kibibyte',1024],['MiB','Mebibyte',1048576],['GiB','Gibibyte',1073741824],['TiB','Tebibyte',1099511627776],['Kb','Kilobit',125],['Mb','Megabit',125000],['Gb','Gigabit',1.25e8]],d:['GB','MB']},
+    energy:{name:'Energy',u:[['J','Joule',1],['kJ','Kilojoule',1e3],['MJ','Megajoule',1e6],['cal','Calorie',4.184],['kcal','Kilocalorie',4184],['Wh','Watt-hour',3600],['kWh','Kilowatt-hour',3.6e6],['eV','Electronvolt',1.602176634e-19],['BTU','British thermal unit',1055.05585262],['ft·lbf','Foot-pound',1.3558179483314004],['thm','Therm (US)',105480400]],d:['kcal','kJ']},
+    pressure:{name:'Pressure',u:[['Pa','Pascal',1],['hPa','Hectopascal',100],['kPa','Kilopascal',1e3],['MPa','Megapascal',1e6],['bar','Bar',1e5],['mbar','Millibar',100],['atm','Atmosphere',101325],['psi','Pound per sq inch',6894.757293168],['mmHg','Millimeter of mercury',133.322387415],['inHg','Inch of mercury',3386.389],['Torr','Torr',101325/760]],d:['bar','psi']}
+  };
+  var T = { // temperature to/from Celsius
+    '°C':[function(v){return v},function(v){return v}],
+    '°F':[function(v){return (v-32)*5/9},function(c){return c*9/5+32}],
+    'K':[function(v){return v-273.15},function(c){return c+273.15}],
+    '°R':[function(v){return (v-491.67)*5/9},function(c){return (c+273.15)*9/5}]
+  };
+  var $=function(id){return document.getElementById(id)};
+  var cats=$('cats'),v1=$('v1'),v2=$('v2'),u1=$('u1'),u2=$('u2'),cat='length',last='v1';
+  function conv(v,from,to){
+    if(cat==='temperature') return T[to][1](T[from][0](v));
+    var f=find(from)[2],t=find(to)[2];return v*f/t;
+  }
+  function find(sym){return C[cat].u.filter(function(x){return x[0]===sym})[0]}
+  function fmt(n){
+    if(!isFinite(n)) return '';
+    if(n===0) return '0';
+    var a=Math.abs(n);
+    if(a>=1e15||a<1e-7) return n.toExponential(6).replace(/\.?0+e/,'e');
+    return String(Number(n.toPrecision(12)));
+  }
+  function parse(s){s=String(s).replace(/[,\s_]/g,'');if(s===''||s==='-'||s==='.')return NaN;return Number(s)}
+  function nice(n){var s=fmt(n);if(!s)return s;if(/e/.test(s))return s;var p=s.split('.');p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');return p.join('.')}
+  function fill(sel,val){sel.innerHTML=C[cat].u.map(function(x){return '<option value="'+x[0]+'">'+x[1]+' ('+x[0]+')</option>'}).join('');sel.value=val}
+  function setCat(c,keep){
+    cat=c;[].forEach.call(cats.children,function(b){b.setAttribute('aria-pressed',b.dataset.c===c?'true':'false')});
+    fill(u1,C[c].d[0]);fill(u2,C[c].d[1]);
+    $('catname').textContent=C[c].name.toLowerCase();
+    if(!keep) v1.value=c==='temperature'?'100':'1';
+    last='v1';update();
+    try{localStorage.setItem('uc-cat',c)}catch(e){}
+  }
+  function update(){
+    var src=last==='v1'?v1:v2,dst=last==='v1'?v2:v1,fu=last==='v1'?u1.value:u2.value,tu=last==='v1'?u2.value:u1.value;
+    var n=parse(src.value);
+    src.classList.toggle('bad',src.value.trim()!==''&&isNaN(n));
+    if(isNaN(n)){dst.value='';$('formula').textContent='';$('all').innerHTML='';$('allval').textContent='';return}
+    dst.value=fmt(conv(n,fu,tu));
+    var a=parse(v1.value);
+    $('formula').textContent=nice(a)+' '+u1.value+' = '+nice(conv(a,u1.value,u2.value))+' '+u2.value+(cat==='temperature'||a===1?'':'  ·  1 '+u1.value+' = '+nice(conv(1,u1.value,u2.value))+' '+u2.value);
+    $('allval').textContent=nice(a)+' '+u1.value;
+    $('all').innerHTML=C[cat].u.map(function(x){var r=fmt(conv(a,u1.value,x[0]));return '<tr'+(x[0]===u2.value?' class="cur"':'')+'><td>'+x[1]+' <span class="muted">('+x[0]+')</span></td><td>'+nice(conv(a,u1.value,x[0]))+'</td><td><button type="button" data-v="'+r+'" aria-label="Copy '+x[1]+' value">Copy</button></td></tr>'}).join('');
+  }
+  cats.innerHTML=Object.keys(C).map(function(k){return '<button type="button" data-c="'+k+'" aria-pressed="false">'+C[k].name+'</button>'}).join('');
+  cats.addEventListener('click',function(e){var b=e.target.closest('button');if(b)setCat(b.dataset.c)});
+  v1.addEventListener('input',function(){last='v1';update()});
+  v2.addEventListener('input',function(){last='v2';update()});
+  u1.addEventListener('change',function(){last='v1';update()});
+  u2.addEventListener('change',function(){last='v1';update()});
+  $('swap').addEventListener('click',function(){var a=u1.value;u1.value=u2.value;u2.value=a;var b=v2.value;v1.value=b||v1.value;last='v1';update()});
+  $('copy').addEventListener('click',function(){if(v2.value)IT.copy(v2.value+' '+u2.value)});
+  $('all').addEventListener('click',function(e){var b=e.target.closest('button');if(b)IT.copy(b.dataset.v)});
+  var saved='length';try{saved=localStorage.getItem('uc-cat')||'length'}catch(e){}
+  setCat(C[saved]?saved:'length');
+})();
+</script>
+</body>
+</html>

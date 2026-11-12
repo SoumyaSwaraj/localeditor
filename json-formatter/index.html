@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSON Formatter &amp; Validator — Beautify, Minify | Free</title>
+<meta name="description" content="Free JSON formatter and validator: beautify with 2/4-space or tab indent, minify, sort keys, see errors by line and column, and browse a JSON tree. Offline.">
+<meta name="keywords" content="json formatter, json validator, json beautifier, pretty print json, minify json, json viewer, json tree viewer, sort json keys, json lint">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/json-formatter/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="JSON Formatter &amp; Validator — Free &amp; Private">
+<meta property="og:description" content="Beautify, minify, validate and explore JSON in a collapsible tree — private and offline in your browser.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/json-formatter/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "JSON Formatter & Validator", "url": "https://soumyaswaraj.github.io/instant-tools/json-formatter/", "applicationCategory": "DeveloperApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Free JSON formatter and validator: beautify with 2/4-space or tab indent, minify, sort keys, see errors by line and column, and browse a JSON tree. Offline.", "featureList": ["Beautify with 2 spaces, 4 spaces or tabs", "Minify JSON", "Validate with error line and column", "Sort keys alphabetically", "Collapsible tree view", "Copy and download .json", "Handles large files", "Works offline", "No upload — data stays on your device"]}, {"@type": "HowTo", "name": "How to format and validate JSON", "step": [{"@type": "HowToStep", "text": "Paste JSON into the input box, or open a .json file."}, {"@type": "HowToStep", "text": "Choose an indent and click Format, or click Minify. Errors are shown with the exact line and column."}, {"@type": "HowToStep", "text": "Explore the result in the tree view, then copy it or download it as a .json file."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How do I find the error in invalid JSON?", "acceptedAnswer": {"@type": "Answer", "text": "Click Validate or Format. If the JSON is invalid, the tool shows the parser message with the line and column number and selects the error position in the input box."}}, {"@type": "Question", "name": "What is the difference between format and minify?", "acceptedAnswer": {"@type": "Answer", "text": "Format (beautify) adds line breaks and indentation for readability. Minify removes all unnecessary whitespace to make the JSON as small as possible for transfer or storage."}}, {"@type": "Question", "name": "Why is my JSON invalid?", "acceptedAnswer": {"@type": "Answer", "text": "The most common causes are trailing commas, single-quoted strings, unquoted property names, comments and special values like NaN or undefined. Standard JSON allows none of these."}}, {"@type": "Question", "name": "Can it sort JSON keys?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Turn on Sort keys and the formatter orders object keys alphabetically at every level. Array order is never changed."}}, {"@type": "Question", "name": "Is my JSON sent to a server?", "acceptedAnswer": {"@type": "Answer", "text": "No. Parsing and formatting run entirely in your browser with JavaScript, so your data never leaves your device and the tool works offline."}}, {"@type": "Question", "name": "How large a JSON file can it handle?", "acceptedAnswer": {"@type": "Answer", "text": "Files of tens of megabytes work on most devices. The limit is your device's memory; the tree view stays fast because it only renders the nodes you expand."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "JSON Formatter & Validator", "item": "https://soumyaswaraj.github.io/instant-tools/json-formatter/"}]}]}
+</script>
+<style>.jf-out{min-height:260px;white-space:pre;overflow:auto}
+.jf-err{border:1px solid color-mix(in srgb,var(--err) 40%,var(--border));background:color-mix(in srgb,var(--err) 8%,var(--surface));color:var(--text);border-radius:var(--radius-sm);padding:12px 14px;margin-top:12px}
+.jf-err b{color:var(--err)}
+.jf-err pre{margin:8px 0 0;font:.85rem/1.5 var(--mono);overflow-x:auto;white-space:pre}
+.jf-err .caret{color:var(--err);font-weight:700}
+.jf-ok{margin-top:12px}
+.jf-tree{font:.88rem/1.6 var(--mono);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;max-height:60vh;overflow:auto;min-height:260px}
+.jf-tree details{padding-left:16px}
+.jf-tree>details{padding-left:0}
+.jf-tree summary{cursor:pointer;list-style:none;margin-left:-14px;padding-left:14px;position:relative}
+.jf-tree summary::-webkit-details-marker{display:none}
+.jf-tree summary::before{content:'\25B8';position:absolute;left:0;color:var(--muted)}
+.jf-tree details[open]>summary::before{content:'\25BE'}
+.jf-tree .ln{padding-left:16px;white-space:nowrap}
+.jf-k{color:var(--brand)} .jf-s{color:var(--ok)} .jf-n{color:var(--warn)} .jf-b{color:var(--brand-2)} .jf-z{color:var(--muted)}
+.jf-c{color:var(--faint);font-size:.8rem}
+.jf-tb{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#dev">Developer tools</a> › JSON Formatter &amp; Validator</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Developer tool</span>
+    <h1><span class="gradient-text">JSON Formatter</span> &amp; Validator</h1>
+    <p class="lead">Paste JSON to beautify, minify, validate and explore it in a collapsible tree — with exact error line and column — free, private and offline in your browser.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="JSON Formatter &amp; Validator">
+    <div class="field">
+      <div class="jf-tb"><label for="inp" style="margin:0">JSON input</label>
+        <span class="row" style="gap:8px"><button class="btn btn-sm" type="button" id="open">Open file</button><button class="btn btn-sm" type="button" id="sample">Sample</button><button class="btn btn-sm" type="button" id="clear">Clear</button><input type="file" id="file" accept=".json,application/json,text/plain" class="hidden"></span></div>
+      <textarea id="inp" class="textarea" spellcheck="false" placeholder='Paste JSON here, e.g. {"name":"Instant Tools","free":true}' style="min-height:220px"></textarea>
+    </div>
+    <div class="panel">
+      <div class="row" style="gap:16px">
+        <div><span class="label" id="indLbl">Indent</span><div class="seg" role="group" aria-labelledby="indLbl" id="ind"><button type="button" data-v="2" aria-pressed="true">2 spaces</button><button type="button" data-v="4" aria-pressed="false">4 spaces</button><button type="button" data-v="tab" aria-pressed="false">Tab</button></div></div>
+        <label class="check" style="margin:0;align-self:flex-end;min-height:44px"><input type="checkbox" id="sort"> Sort keys A–Z</label>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" type="button" id="fmt">Format / Beautify</button>
+        <button class="btn" type="button" id="min">Minify</button>
+        <button class="btn" type="button" id="val">Validate</button>
+      </div>
+    </div>
+    <div id="msg" aria-live="polite"></div>
+    <div id="result" class="hidden" style="margin-top:16px">
+      <div class="jf-tb"><div class="seg" role="group" aria-label="View" id="view"><button type="button" data-v="text" aria-pressed="true">Text</button><button type="button" data-v="tree" aria-pressed="false">Tree</button></div>
+        <span class="row" style="gap:8px"><span class="muted" id="sizes" style="font-size:.85rem"></span><button class="btn btn-sm hidden" type="button" id="expand">Expand all</button><button class="btn btn-sm hidden" type="button" id="collapse">Collapse all</button></span></div>
+      <label for="out" class="hidden">Formatted JSON</label>
+      <textarea id="out" class="textarea jf-out" readonly spellcheck="false"></textarea>
+      <div id="tree" class="jf-tree hidden" role="tree" aria-label="JSON tree"></div>
+      <div class="actions">
+        <button class="btn btn-primary" type="button" id="copy">Copy</button>
+        <button class="btn" type="button" id="dl">Download .json</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to format and validate JSON</h2>
+      <ol><li>Paste JSON into the input box, or open a .json file.</li><li>Choose an indent and click Format, or click Minify. Errors are shown with the exact line and column.</li><li>Explore the result in the tree view, then copy it or download it as a .json file.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is JSON Formatter &amp; Validator?</h2>
+      <p>A JSON formatter (also called a beautifier or pretty-printer) re-indents JSON so it is easy to read, and a validator checks that it follows the JSON standard (RFC 8259). This tool does both, plus minifying, alphabetical key sorting and a collapsible tree viewer.</p><p>Validation uses your browser's native JSON.parse, the same strict parser web apps use. When JSON is invalid the tool reports the line and column of the error and highlights it in the input. Common causes are trailing commas, single quotes, unquoted keys and comments, none of which are allowed in standard JSON.</p><p>All processing happens locally; your JSON is never uploaded, which makes it safe for API keys and private data. Multi-megabyte files work because the tree view renders nodes only when you expand them.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>How do I find the error in invalid JSON?</summary><p>Click Validate or Format. If the JSON is invalid, the tool shows the parser message with the line and column number and selects the error position in the input box.</p></details>
+      <details><summary>What is the difference between format and minify?</summary><p>Format (beautify) adds line breaks and indentation for readability. Minify removes all unnecessary whitespace to make the JSON as small as possible for transfer or storage.</p></details>
+      <details><summary>Why is my JSON invalid?</summary><p>The most common causes are trailing commas, single-quoted strings, unquoted property names, comments and special values like NaN or undefined. Standard JSON allows none of these.</p></details>
+      <details><summary>Can it sort JSON keys?</summary><p>Yes. Turn on Sort keys and the formatter orders object keys alphabetically at every level. Array order is never changed.</p></details>
+      <details><summary>Is my JSON sent to a server?</summary><p>No. Parsing and formatting run entirely in your browser with JavaScript, so your data never leaves your device and the tool works offline.</p></details>
+      <details><summary>How large a JSON file can it handle?</summary><p>Files of tens of megabytes work on most devices. The limit is your device&#x27;s memory; the tree view stays fast because it only renders the nodes you expand.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-dev" href="../base64-encoder/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 9-4 3 4 3M16 9l4 3-4 3M14 5l-4 14"/></svg></span><span><h3>Base64 Encode/Decode</h3><p>Encode or decode text and files.</p></span></a>
+        <a class="tool-card cat-dev" href="../hash-generator/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg></span><span><h3>Hash Generator (MD5/SHA)</h3><p>MD5, SHA-1, SHA-256, SHA-512 hashes.</p></span></a>
+        <a class="tool-card cat-dev" href="../uuid-generator/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M11 10v4M15 10v4"/></svg></span><span><h3>UUID Generator</h3><p>Random v4 UUIDs in bulk.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+(function(){
+function $(id){return document.getElementById(id)}
+var inp=$('inp'),out=$('out'),msg=$('msg'),tree=$('tree'),indent='2',view='text',data,hasData=false,lastName='formatted';
+function seg(el,cb){el.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;el.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});cb(b.dataset.v)})}
+seg($('ind'),function(v){indent=v;if(hasData)format()});
+seg($('view'),function(v){view=v;showView()});
+$('sort').addEventListener('change',function(){if(hasData)format()});
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function bytes(s){return new Blob([s]).size}
+function sortKeys(v){if(Array.isArray(v))return v.map(sortKeys);if(v&&typeof v==='object'){var o={};Object.keys(v).sort(function(a,b){return a<b?-1:a>b?1:0}).forEach(function(k){o[k]=sortKeys(v[k])});return o}return v}
+function scan(t){ /* minimal strict JSON scanner: returns index of first error */
+  var i=0,n=t.length;function ws(){while(i<n&&/[ \t\n\r]/.test(t[i]))i++}
+  function fail(){throw i}
+  function val(){ws();var c=t[i];
+    if(c==='{'){i++;ws();if(t[i]==='}'){i++;return}for(;;){ws();if(t[i]!=='"')fail();str();ws();if(t[i]!==':')fail();i++;val();ws();if(t[i]===','){i++;continue}if(t[i]==='}'){i++;return}fail()}}
+    if(c==='['){i++;ws();if(t[i]===']'){i++;return}for(;;){val();ws();if(t[i]===','){i++;continue}if(t[i]===']'){i++;return}fail()}}
+    if(c==='"')return str();
+    var m=/^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/.exec(t.slice(i,i+400));if(m&&m[0]){i+=m[0].length;return}
+    if(t.startsWith('true',i)){i+=4;return}if(t.startsWith('false',i)){i+=5;return}if(t.startsWith('null',i)){i+=4;return}fail()}
+  function str(){i++;while(i<n){var c=t.charCodeAt(i);if(c===34){i++;return}if(c<32)fail();if(c===92){i++;if(t[i]==='u'){if(!/^[0-9a-fA-F]{4}$/.test(t.substr(i+1,4)))fail();i+=5;continue}if('"\\/bfnrt'.indexOf(t[i])<0)fail()}i++}fail()}
+  try{val();ws();if(i<n)return i;return null}catch(e){return typeof e==='number'?Math.min(e,n):null}
+}
+function locate(text,err){
+  var m=String(err.message),line,col,pos;
+  var lc=m.match(/line (\d+) column (\d+)/i);
+  if(lc){line=+lc[1];col=+lc[2]}
+  else{var p=m.match(/position (\d+)/i);if(p)pos=+p[1];else if(/end of (JSON )?(data|input)/i.test(m))pos=text.length}
+  if(pos==null&&!line)pos=scan(text);
+  if(pos==null&&line){var ls=text.split('\n'),q=0;for(var i=0;i<line-1&&i<ls.length;i++)q+=ls[i].length+1;pos=q+col-1}
+  if(pos!=null&&!line){var before=text.slice(0,pos).split('\n');line=before.length;col=before[before.length-1].length+1}
+  return {pos:pos,line:line,col:col,msg:m.replace(/^JSON\.parse: /,'')};
+}
+function parse(){
+  var t=inp.value;
+  if(!t.trim()){msg.innerHTML='<p class="muted" style="margin-top:12px">Paste some JSON first.</p>';return false}
+  try{data=JSON.parse(t);hasData=true;return true}
+  catch(err){
+    hasData=false;$('result').classList.add('hidden');
+    var L=locate(t,err),html='<div class="jf-err" role="alert"><b>Invalid JSON</b> — '+esc(L.msg);
+    if(L.line){html+=' <span class="badge" style="background:color-mix(in srgb,var(--err) 14%,transparent);color:var(--err)">Line '+L.line+', column '+L.col+'</span>';
+      var ls=t.split('\n'),s=Math.max(0,L.line-3),ex='';
+      for(var i=s;i<Math.min(ls.length,L.line);i++){var raw=ls[i];if(raw.length>160){var st=Math.max(0,(i===L.line-1?L.col:0)-80);raw=(st?'…':'')+raw.slice(st,st+160)}else st=0;ex+=String(i+1).padStart(5)+' | '+esc(raw)+'\n'}
+      var cc=L.col-1;if(ls[L.line-1]&&ls[L.line-1].length>160){var st2=Math.max(0,L.col-80);cc=L.col-1-st2+(st2?1:0)}
+      ex+='      | '+' '.repeat(Math.max(0,cc))+'<span class="caret">^</span>';
+      html+='<pre>'+ex+'</pre>';
+      try{inp.focus();inp.setSelectionRange(L.pos,Math.min(t.length,L.pos+1));
+        var lh=parseFloat(getComputedStyle(inp).lineHeight)||20;inp.scrollTop=Math.max(0,(L.line-4)*lh)}catch(e){}
+    }
+    msg.innerHTML=html+'</div>';return false;
+  }
+}
+function okMsg(extra){msg.innerHTML='<div class="jf-ok"><span class="badge ok">✓ Valid JSON</span> <span class="muted" style="font-size:.88rem">'+extra+'</span></div>'}
+function describe(v){return Array.isArray(v)?'array with '+v.length.toLocaleString()+' items':v&&typeof v==='object'?'object with '+Object.keys(v).length.toLocaleString()+' keys':typeof v}
+function render(str){out.value=str;$('result').classList.remove('hidden');$('sizes').textContent=IT.formatBytes(bytes(inp.value))+' → '+IT.formatBytes(bytes(str));tree.innerHTML='';treeBuilt=false;showView()}
+function format(){if(!parse())return;var v=$('sort').checked?sortKeys(data):data;render(JSON.stringify(v,null,indent==='tab'?'\t':+indent));lastName='formatted';okMsg('Top level: '+describe(data))}
+function minify(){if(!parse())return;var v=$('sort').checked?sortKeys(data):data;render(JSON.stringify(v));lastName='minified';okMsg('Minified')}
+$('fmt').addEventListener('click',format);$('min').addEventListener('click',minify);
+$('val').addEventListener('click',function(){if(parse())okMsg('Top level: '+describe(data))});
+inp.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();format()}});
+inp.addEventListener('paste',function(){setTimeout(function(){if(inp.value.length<2e6)format()},0)});
+/* tree */
+var treeBuilt=false;
+function prim(v){if(v===null)return '<span class="jf-z">null</span>';switch(typeof v){case 'string':return '<span class="jf-s">"'+esc(v.length>500?v.slice(0,500)+'…':v)+'"</span>';case 'number':return '<span class="jf-n">'+v+'</span>';case 'boolean':return '<span class="jf-b">'+v+'</span>'}return esc(String(v))}
+function keyHtml(k,isArr){return k===undefined?'':(isArr?'<span class="jf-c">'+k+'</span>: ':'<span class="jf-k">"'+esc(k)+'"</span>: ')}
+function node(k,v,isArr,depth){
+  if(v&&typeof v==='object'){
+    var arr=Array.isArray(v),n=arr?v.length:Object.keys(v).length;
+    var d=document.createElement('details');d.setAttribute('role','treeitem');
+    d.innerHTML='<summary>'+keyHtml(k,isArr)+(arr?'[':'{')+' <span class="jf-c">'+n+(arr?(n===1?' item':' items'):(n===1?' key':' keys'))+'</span>'+'</summary>';
+    d._v=v;d._filled=false;
+    d.addEventListener('toggle',function(){if(d.open)fill(d,depth)});
+    if(depth<2&&n<=200){d.open=true}
+    return d;
+  }
+  var l=document.createElement('div');l.className='ln';l.setAttribute('role','treeitem');l.innerHTML=keyHtml(k,isArr)+prim(v);return l;
+}
+function fill(d,depth){
+  if(d._filled)return;d._filled=true;var v=d._v,arr=Array.isArray(v),keys=arr?null:Object.keys(v),n=arr?v.length:keys.length,frag=document.createDocumentFragment(),LIM=1000;
+  for(var i=0;i<Math.min(n,LIM);i++){frag.appendChild(arr?node(i,v[i],true,depth+1):node(keys[i],v[keys[i]],false,depth+1))}
+  if(n>LIM){var more=document.createElement('div');more.className='ln jf-c';more.textContent='… '+(n-LIM).toLocaleString()+' more (see Text view)';frag.appendChild(more)}
+  var close=document.createElement('div');close.className='jf-c';close.style.marginLeft='-16px';close.style.paddingLeft='0';close.textContent=arr?']':'}';
+  d.appendChild(frag);d.appendChild(close);
+  d.querySelectorAll(':scope>details[open]').forEach(function(c){fill(c,depth+1)});
+}
+function buildTree(){if(treeBuilt||!hasData)return;treeBuilt=true;tree.innerHTML='';var v=$('sort').checked?sortKeys(data):data;var r=node(undefined,v,false,0);tree.appendChild(r);if(r.tagName==='DETAILS'&&r.open)fill(r,0)}
+function showView(){var t=view==='tree';out.classList.toggle('hidden',t);tree.classList.toggle('hidden',!t);$('expand').classList.toggle('hidden',!t);$('collapse').classList.toggle('hidden',!t);if(t)buildTree()}
+$('expand').addEventListener('click',function(){var c=0;(function go(){var ds=tree.querySelectorAll('details:not([open])');for(var i=0;i<ds.length&&c<3000;i++,c++){ds[i].open=true;fill(ds[i],9)}if(ds.length&&c<3000)go();else if(c>=3000)IT.toast('Expanded first 3,000 nodes')})()});
+$('collapse').addEventListener('click',function(){tree.querySelectorAll('details[open]').forEach(function(d,i){if(i>0||true)d.open=false});var r=tree.querySelector('details');if(r)r.open=true});
+/* io */
+$('copy').addEventListener('click',function(){IT.copy(out.value)});
+$('dl').addEventListener('click',function(){IT.download(new Blob([out.value],{type:'application/json'}),lastName+'.json')});
+$('clear').addEventListener('click',function(){inp.value='';msg.innerHTML='';$('result').classList.add('hidden');hasData=false;inp.focus()});
+$('sample').addEventListener('click',function(){inp.value='{"name":"Instant Tools","version":2,"free":true,"offline":true,"price":0,"tags":["json","formatter","validator"],"author":{"name":"Instant Tools","url":"https://soumyaswaraj.github.io/instant-tools/"},"tools":[{"slug":"json-formatter","category":"dev"},{"slug":"base64-encoder","category":"dev"}],"deprecated":null}';format()});
+$('open').addEventListener('click',function(){$('file').click()});
+$('file').addEventListener('change',function(){var f=this.files[0];if(!f)return;lastName=IT.baseName(f.name)+'-formatted';f.text().then(function(t){inp.value=t;format()});this.value=''});
+inp.addEventListener('dragover',function(e){e.preventDefault()});
+inp.addEventListener('drop',function(e){var f=e.dataTransfer&&e.dataTransfer.files[0];if(f){e.preventDefault();f.text().then(function(t){inp.value=t;format()})}});
+})();
+</script>
+</body>
+</html>

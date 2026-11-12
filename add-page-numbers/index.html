@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Add Page Numbers to PDF — Free &amp; Offline | Instant Tools</title>
+<meta name="description" content="Add page numbers to a PDF for free. Choose position, format like Page 1 of N, start number, font size and margin. Skip the cover page. No upload, works offline.">
+<meta name="keywords" content="add page numbers to pdf, number pdf pages, pdf page numbering, page x of y pdf, insert page numbers pdf, bates numbering, free pdf tool offline">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/add-page-numbers/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Add Page Numbers to PDF — Free &amp; Private">
+<meta property="og:description" content="Number PDF pages in any corner with formats like 1, Page 1 or Page 1 of N. Private, in-browser, offline.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/add-page-numbers/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "Add Page Numbers to PDF", "url": "https://soumyaswaraj.github.io/instant-tools/add-page-numbers/", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Add page numbers to a PDF for free. Choose position, format like Page 1 of N, start number, font size and margin. Skip the cover page. No upload, works offline.", "featureList": ["6 positions: top or bottom, left, center or right", "Formats 1, Page 1, Page 1 of N, 1/N", "Custom start number", "Skip first (cover) page", "Font size, color and margin", "Live first-page preview", "Works offline", "No upload — files stay on your device"]}, {"@type": "HowTo", "name": "How to add page numbers to a PDF", "step": [{"@type": "HowToStep", "text": "Drop your PDF into the box or tap to choose it."}, {"@type": "HowToStep", "text": "Pick the position, number format, start number, font size and margin, and check the live preview."}, {"@type": "HowToStep", "text": "Click Add page numbers and download the numbered PDF."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How do I add page numbers to a PDF for free?", "acceptedAnswer": {"@type": "Answer", "text": "Open this tool, drop your PDF, choose a position and format, then click Add page numbers. The numbered PDF downloads instantly with no signup, watermark or upload."}}, {"@type": "Question", "name": "Can I skip the first page or cover?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Turn on Skip first page and numbering starts on page two. The start number you set is used for the first numbered page."}}, {"@type": "Question", "name": "Can I use the format Page 1 of N?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Choose Page 1 of N or 1/N. N is calculated automatically from the number of numbered pages and your start number."}}, {"@type": "Question", "name": "Are my files uploaded?", "acceptedAnswer": {"@type": "Answer", "text": "No. The PDF is read and edited locally with JavaScript, so your document never leaves your device. The tool also works offline."}}, {"@type": "Question", "name": "Will adding page numbers reduce quality?", "acceptedAnswer": {"@type": "Answer", "text": "No. The original page content is kept as-is. Numbers are added as vector text on top of each page, so nothing is re-compressed or rasterized."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "Add Page Numbers to PDF", "item": "https://soumyaswaraj.github.io/instant-tools/add-page-numbers/"}]}]}
+</script>
+<style>.pdf-wrap{display:grid;gap:20px;grid-template-columns:1fr}
+@media (min-width:820px){.pdf-wrap{grid-template-columns:1fr 1fr}}
+.pdf-wrap .field{display:block}
+.pdf-wrap .field>span{display:block;font-weight:600;margin-bottom:6px;font-size:.9rem}
+.pdf-wrap .input,.pdf-wrap .select{width:100%}
+.pdf-prev{padding:12px;min-height:260px;position:relative}
+.pdf-prev canvas{max-width:100%;height:auto;box-shadow:var(--shadow);background:#fff}
+.pdf-prev .spinner{position:absolute}
+input[type=range]{width:100%;accent-color:var(--brand)}
+input[type=color]{width:44px;height:36px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:2px}.posgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:260px}
+.posgrid button{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:8px;padding:8px 4px;font:600 .8rem var(--font);cursor:pointer}
+.posgrid button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.posgrid .gap{grid-column:1/-1;height:18px;border:1px dashed var(--border);border-radius:6px}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#pdf">PDF tools</a> › Add Page Numbers to PDF</nav>
+
+  <section class="hero">
+    <span class="eyebrow">PDF tool</span>
+    <h1>Add <span class="gradient-text">Page Numbers</span> to PDF</h1>
+    <p class="lead">Add page numbers to any PDF in seconds: pick one of six positions, a format such as “Page 1 of N”, a start number and font size, then download — free, private and offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Add Page Numbers to PDF">
+    <div class="dropzone" id="drop" tabindex="0" role="button" aria-label="Choose a PDF file">
+      <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg></div>
+      <strong>Drop a PDF here or tap to choose</strong>
+      <small>PDF files · processed locally, never uploaded</small>
+      <input type="file" accept="application/pdf,.pdf">
+    </div>
+    <div id="work" class="hidden">
+      <ul class="file-list"><li class="file-item"><span class="thumb" style="display:grid;place-items:center;color:var(--pdf)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span class="meta"><span class="name" id="fname"></span><span class="sub" id="fmeta"></span></span><button type="button" class="btn btn-sm" id="change">Change file</button></li></ul>
+      <div class="pdf-wrap">
+        <div class="panel">
+          <div class="field"><span id="posL">Position</span>
+            <div class="posgrid" role="group" aria-labelledby="posL" id="pos">
+              <button type="button" data-p="tl" aria-pressed="false">Top left</button><button type="button" data-p="tc" aria-pressed="false">Top center</button><button type="button" data-p="tr" aria-pressed="false">Top right</button>
+              <span class="gap" aria-hidden="true"></span>
+              <button type="button" data-p="bl" aria-pressed="false">Bottom left</button><button type="button" data-p="bc" aria-pressed="true">Bottom center</button><button type="button" data-p="br" aria-pressed="false">Bottom right</button>
+            </div></div>
+          <div class="grid-2">
+            <label class="field"><span>Format</span><select class="select" id="fmt"><option value="n">1</option><option value="page">Page 1</option><option value="pageof" selected>Page 1 of N</option><option value="slash">1/N</option></select></label>
+            <label class="field"><span>Start number</span><input class="input" id="start" type="number" min="0" value="1" inputmode="numeric"></label>
+            <label class="field"><span>Font size: <b id="fsV">11</b> pt</span><input type="range" id="fs" min="6" max="36" value="11"></label>
+            <label class="field"><span>Margin: <b id="mgV">28</b> pt</span><input type="range" id="mg" min="6" max="100" value="28"></label>
+            <label class="field"><span>Color</span><input type="color" id="col" value="#333333"></label>
+            <label class="check" style="margin-top:26px"><input type="checkbox" id="skip"> Skip first page</label>
+          </div>
+        </div>
+        <div>
+          <div class="preview pdf-prev"><canvas id="cv" aria-label="Preview of the first numbered page" role="img"></canvas></div>
+          <p class="muted" id="pinfo" style="font-size:.85rem;margin:8px 0 0">Preview of the first numbered page.</p>
+        </div>
+      </div>
+      <div class="actions"><button type="button" class="btn btn-primary" id="go">Add page numbers &amp; download</button></div>
+      <div class="stats hidden" id="stats" style="margin-top:16px"></div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to add page numbers to a PDF</h2>
+      <ol><li>Drop your PDF into the box or tap to choose it.</li><li>Pick the position, number format, start number, font size and margin, and check the live preview.</li><li>Click Add page numbers and download the numbered PDF.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is adding page numbers to a PDF?</h2>
+      <p>Adding page numbers to a PDF means drawing a number on every page so printed and shared documents are easy to navigate and reference. This tool writes real vector text (Helvetica) into each page with the open-source pdf-lib library, so numbers stay crisp at any zoom and print size.</p>
+      <p>You can place numbers in six positions (top or bottom × left, center or right), use the formats “1”, “Page 1”, “Page 1 of N” or “1/N”, start from any number and skip a cover page. Margins are measured in PDF points (72 pt = 1 inch).</p>
+      <p>Your PDF is processed entirely in your browser and is never uploaded. Original text, images, links and page sizes are preserved; only the numbers are added. Password-protected PDFs must be unlocked first.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>How do I add page numbers to a PDF for free?</summary><p>Open this tool, drop your PDF, choose a position and format, then click Add page numbers. The numbered PDF downloads instantly with no signup, watermark or upload.</p></details>
+      <details><summary>Can I skip the first page or cover?</summary><p>Yes. Turn on Skip first page and numbering starts on page two. The start number you set is used for the first numbered page.</p></details>
+      <details><summary>Can I use the format Page 1 of N?</summary><p>Yes. Choose Page 1 of N or 1/N. N is calculated automatically from the number of numbered pages and your start number.</p></details>
+      <details><summary>Are my files uploaded?</summary><p>No. The PDF is read and edited locally with JavaScript, so your document never leaves your device. The tool also works offline.</p></details>
+      <details><summary>Will adding page numbers reduce quality?</summary><p>No. The original page content is kept as-is. Numbers are added as vector text on top of each page, so nothing is re-compressed or rasterized.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-pdf" href="../watermark-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7 6.3 8.4a8 8 0 1 0 11.4 0z"/></svg></span><span><h3>Watermark PDF</h3><p>Stamp text on every page.</p></span></a><a class="tool-card cat-pdf" href="../organize-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span><span><h3>Organize PDF</h3><p>Reorder and delete pages.</p></span></a><a class="tool-card cat-pdf" href="../merge-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span><h3>Merge PDF</h3><p>Combine PDFs into one.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/vendor/pdf-lib.min.js"></script>
+<script src="../assets/vendor/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = '../assets/vendor/pdf.worker.min.js';
+const $ = id => document.getElementById(id);
+const { PDFDocument, StandardFonts, rgb, degrees } = PDFLib;
+let file = null, bytes = null, srcDoc = null;
+function hexRgb(h){ const n = parseInt(h.slice(1), 16); return rgb((n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255); }
+async function loadPdf(f){
+  if (!/pdf$/i.test(f.type) && !/\.pdf$/i.test(f.name)) { IT.toast('Please choose a PDF file'); return false; }
+  try {
+    const b = new Uint8Array(await f.arrayBuffer());
+    srcDoc = await PDFDocument.load(b, { updateMetadata: false });
+    bytes = b; file = f;
+  } catch (e) {
+    IT.toast(/encrypt/i.test(e.message) ? 'This PDF is password-protected. Unlock it first.' : 'Could not read this PDF'); return false;
+  }
+  $('fname').textContent = f.name;
+  $('fmeta').textContent = srcDoc.getPageCount() + ' page' + (srcDoc.getPageCount() > 1 ? 's' : '') + ' · ' + IT.formatBytes(f.size);
+  $('drop').classList.add('hidden'); $('work').classList.remove('hidden');
+  return true;
+}
+let renderTok = 0;
+async function renderPreview(pdfBytes, canvas){
+  const tok = ++renderTok;
+  const doc = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+  try {
+    const page = await doc.getPage(1); if (tok !== renderTok) return;
+    const base = page.getViewport({ scale: 1 }), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const scale = Math.min(560 / base.width, 700 / base.height) * dpr;
+    const vp = page.getViewport({ scale });
+    const off = document.createElement('canvas'); off.width = vp.width; off.height = vp.height;
+    await page.render({ canvasContext: off.getContext('2d'), viewport: vp }).promise;
+    if (tok !== renderTok) return;
+    canvas.width = off.width; canvas.height = off.height; canvas.style.width = (off.width / dpr) + 'px';
+    canvas.getContext('2d').drawImage(off, 0, 0);
+  } finally { doc.destroy(); }
+}
+function debounce(fn, ms){ let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+IT.dropzone($('drop'), { accept: 'application/pdf', onFiles: fs => onFile(fs[0]) });
+$('change').onclick = () => { $('work').classList.add('hidden'); $('drop').classList.remove('hidden'); $('drop').focus(); };
+let pos = 'bc';
+function opts(){ return { pos, fmt: $('fmt').value, start: parseInt($('start').value, 10) || 0, fs: +$('fs').value, mg: +$('mg').value, color: hexRgb($('col').value), skip: $('skip').checked }; }
+function label(o, n, total){
+  const N = o.start + total - 1;
+  return o.fmt === 'n' ? String(n) : o.fmt === 'page' ? 'Page ' + n : o.fmt === 'pageof' ? 'Page ' + n + ' of ' + N : n + '/' + N;
+}
+// stamp pages [{page, n}] of doc
+async function stamp(doc, list, o, total){
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  for (const { page, n } of list) {
+    const box = page.getCropBox(), txt = label(o, n, total), w = font.widthOfTextAtSize(txt, o.fs);
+    const x = o.pos[1] === 'l' ? box.x + o.mg : o.pos[1] === 'c' ? box.x + (box.width - w) / 2 : box.x + box.width - o.mg - w;
+    const y = o.pos[0] === 't' ? box.y + box.height - o.mg - o.fs * 0.72 : box.y + o.mg;
+    page.drawText(txt, { x, y, size: o.fs, font, color: o.color });
+  }
+}
+const preview = debounce(async () => {
+  if (!srcDoc) return;
+  const o = opts(), cnt = srcDoc.getPageCount(), total = o.skip ? cnt - 1 : cnt;
+  const idx = o.skip && cnt > 1 ? 1 : 0;
+  const d = await PDFDocument.create(); const [p] = await d.copyPages(srcDoc, [idx]); d.addPage(p);
+  if (!(o.skip && cnt === 1)) await stamp(d, [{ page: p, n: o.start }], o, Math.max(total, 1));
+  $('pinfo').textContent = 'Preview of page ' + (idx + 1) + ' of ' + cnt + (o.skip ? ' (cover page skipped)' : '') + '.';
+  try { await renderPreview(await d.save(), $('cv')); } catch (e) { console.warn(e); }
+}, 150);
+async function onFile(f){ if (await loadPdf(f)) { $('stats').classList.add('hidden'); preview(); } }
+$('pos').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; pos = b.dataset.p;
+  $('pos').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); preview(); });
+document.querySelector('.pdf-wrap').addEventListener('input', () => { $('fsV').textContent = $('fs').value; $('mgV').textContent = $('mg').value; preview(); });
+document.querySelector('.pdf-wrap').addEventListener('change', preview);
+$('go').onclick = async () => {
+  if (!bytes) return; const btn = $('go'); btn.disabled = true; const t = btn.textContent; btn.textContent = 'Numbering…';
+  try {
+    const o = opts(), doc = await PDFDocument.load(bytes, { updateMetadata: false }), pages = doc.getPages();
+    const list = []; pages.forEach((page, i) => { if (o.skip && i === 0) return; list.push({ page, n: o.start + list.length }); });
+    await stamp(doc, list, o, list.length);
+    const out = await doc.save(); const blob = new Blob([out], { type: 'application/pdf' });
+    IT.download(blob, IT.baseName(file.name) + '-numbered.pdf');
+    $('stats').innerHTML = '<div class="stat"><b>' + list.length + '</b><span>Pages numbered</span></div><div class="stat"><b>' + IT.formatBytes(file.size) + '</b><span>Original size</span></div><div class="stat"><b>' + IT.formatBytes(blob.size) + '</b><span>New size</span></div>';
+    $('stats').classList.remove('hidden'); IT.toast('Done — numbered PDF downloaded');
+  } catch (e) { console.error(e); IT.toast('Something went wrong: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = t; }
+};
+</script>
+</body>
+</html>

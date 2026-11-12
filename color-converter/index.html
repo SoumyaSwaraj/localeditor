@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Color Converter HEX RGB HSL CMYK — Free | Instant Tools</title>
+<meta name="description" content="Convert colors between HEX, RGB, HSL, HSV, CMYK and CSS names instantly. Check WCAG contrast, get tints and shades. Free, private and works offline.">
+<meta name="keywords" content="color converter, hex to rgb, rgb to hex, hex to hsl, rgb to cmyk, hsl to hex, css color names, contrast checker, wcag contrast ratio, tints and shades">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/color-converter/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Color Converter — Free & Private">
+<meta property="og:description" content="Convert HEX, RGB, HSL, HSV, CMYK and CSS color names, check WCAG contrast and get tints and shades — offline and free.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/color-converter/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "Color Converter", "url": "https://soumyaswaraj.github.io/instant-tools/color-converter/", "applicationCategory": "DesignApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Convert colors between HEX, RGB, HSL, HSV, CMYK and CSS names instantly. Check WCAG contrast, get tints and shades. Free, private and works offline.", "featureList": ["HEX, RGB, HSL, HSV, CMYK and CSS named colors", "Live color swatch and color picker", "WCAG contrast ratio with AA/AAA badges", "Tints and shades palette", "Nearest CSS color name", "Works offline", "No upload — data stays on your device"]}, {"@type": "HowTo", "name": "How to convert a color code", "step": [{"@type": "HowToStep", "text": "Type or paste a color in any format, or use the color picker."}, {"@type": "HowToStep", "text": "See the swatch update and read the HEX, RGB, HSL, HSV and CMYK values."}, {"@type": "HowToStep", "text": "Copy the format you need and check the contrast badges or pick a tint or shade."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Which color formats can I enter?", "acceptedAnswer": {"@type": "Answer", "text": "You can type HEX (#rgb, #rrggbb or #rrggbbaa), rgb() or rgba(), hsl() or hsla(), hsv(), cmyk(), plain r, g, b numbers, or any of the 148 CSS named colors such as tomato or rebeccapurple."}}, {"@type": "Question", "name": "How do I convert HEX to RGB?", "acceptedAnswer": {"@type": "Answer", "text": "Split the six-digit HEX code into three pairs and convert each pair from base 16 to base 10. For example, #ff6600 becomes rgb(255, 102, 0). The converter does this instantly as you type."}}, {"@type": "Question", "name": "What contrast ratio do I need for accessible text?", "acceptedAnswer": {"@type": "Answer", "text": "WCAG 2.x requires at least 4.5:1 for normal text and 3:1 for large text to pass AA, and 7:1 for normal text and 4.5:1 for large text to pass AAA."}}, {"@type": "Question", "name": "Why is the CMYK value only approximate?", "acceptedAnswer": {"@type": "Answer", "text": "Screen colors are RGB, and the tool uses the standard device-independent RGB to CMYK formula. Real print output depends on the printer's ICC color profile, so check proofs for critical print work."}}, {"@type": "Question", "name": "What are tints and shades?", "acceptedAnswer": {"@type": "Answer", "text": "A tint is a color mixed with white and a shade is a color mixed with black. The strip shows five shades and five tints of your color; click any of them to convert it."}}, {"@type": "Question", "name": "Is my data sent anywhere?", "acceptedAnswer": {"@type": "Answer", "text": "No. All color parsing and conversion happens in JavaScript in your browser, and the tool keeps working offline."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "Color Converter", "item": "https://soumyaswaraj.github.io/instant-tools/color-converter/"}]}]}
+</script>
+<style>
+.cc-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:18px;align-items:stretch}
+.cc-swatch{min-height:190px;border-radius:var(--radius);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:24px;font-size:2.4rem;font-weight:800;background:#5b5bf7}
+#swW{color:#fff}#swB{color:#000}
+.cc-out{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:18px}
+.cc-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);min-width:0}
+.cc-row b{font-size:.75rem;color:var(--muted);width:46px;flex:none;text-transform:uppercase;letter-spacing:.04em}
+.cc-row code{flex:1;min-width:0;font-family:var(--mono);font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-h{font-size:1.05rem;margin:24px 0 10px}
+.cc-ct{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)}
+.cc-ct .smp{width:64px;height:48px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:1.2rem;flex:none;border:1px solid var(--border)}
+.cc-ct .r{font-size:1.3rem;font-weight:800}
+.cc-ct .bd{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.badge.bad{background:color-mix(in srgb,var(--err) 14%,transparent);color:var(--err)}
+.cc-strip{display:grid;grid-template-columns:repeat(11,1fr);border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border)}
+.cc-strip button{height:56px;border:0;cursor:pointer;font:600 .62rem var(--mono);padding:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}
+.cc-strip button.base{outline:3px solid var(--text);outline-offset:-3px}
+.cc-strip button:focus-visible{outline:3px solid var(--brand);outline-offset:-3px}
+#pick{width:44px;height:36px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:2px}
+.input.bad{border-color:var(--err)}
+@media (max-width:640px){.cc-top{grid-template-columns:1fr}.cc-swatch{min-height:130px}.cc-strip button span{display:none}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#dev">Developer tools</a> › Color Converter</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Developer tool</span>
+    <h1>Color Converter: <span class="gradient-text">HEX, RGB, HSL &amp; CMYK</span></h1>
+    <p class="lead">This color converter turns any HEX, RGB, HSL, HSV, CMYK or CSS color name into every other format instantly, with WCAG contrast checks and tints and shades — free, private and offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Color Converter">
+
+    <div class="cc-top">
+      <div class="cc-swatch" id="sw" role="img" aria-label="Color preview"><span class="cc-aa" id="swW">Aa</span><span class="cc-aa" id="swB">Aa</span></div>
+      <div class="cc-in">
+        <div class="field"><label for="inp">Enter any color</label>
+          <input class="input mono" id="inp" type="text" value="#5b5bf7" autocomplete="off" spellcheck="false" placeholder="#ff6600, rgb(255 102 0), hsl(24 100% 50%), tomato">
+          <small class="muted" id="msg" aria-live="polite">HEX, RGB, HSL, HSV, CMYK or a CSS color name</small></div>
+        <div class="row"><label class="check" for="pick"><input id="pick" type="color" value="#5b5bf7"> Pick a color</label>
+          <button class="btn btn-sm" id="rand" type="button">Random</button></div>
+      </div>
+    </div>
+    <div class="cc-out" id="out"></div>
+    <h2 class="cc-h">Contrast ratio (WCAG 2.x)</h2>
+    <div class="grid-2" id="contrast"></div>
+    <h2 class="cc-h">Shades &amp; tints</h2>
+    <div class="cc-strip" id="strip" role="group" aria-label="Shades and tints, click to select"></div>
+
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to convert a color code</h2>
+      <ol><li>Type or paste a color in any format, or use the color picker.</li><li>See the swatch update and read the HEX, RGB, HSL, HSV and CMYK values.</li><li>Copy the format you need and check the contrast badges or pick a tint or shade.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is a color converter?</h2>
+      <p>A color converter translates one color notation into others. HEX and RGB describe the red, green and blue channels (0–255 each, 16.7 million combinations). HSL and HSV describe hue (0–360°), saturation and lightness or value, which are easier to adjust by hand. CMYK describes cyan, magenta, yellow and black ink percentages for print.</p>
+      <p>This tool also calculates the WCAG 2.x contrast ratio of your color against white and black using relative luminance, from 1:1 to 21:1, and marks AA and AAA passes. It finds the nearest of the 148 CSS named colors and builds a strip of five shades and five tints.</p>
+      <p>Everything is computed locally in your browser. Nothing is uploaded and the converter works offline once loaded.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>Which color formats can I enter?</summary><p>You can type HEX (#rgb, #rrggbb or #rrggbbaa), rgb() or rgba(), hsl() or hsla(), hsv(), cmyk(), plain r, g, b numbers, or any of the 148 CSS named colors such as tomato or rebeccapurple.</p></details>
+      <details><summary>How do I convert HEX to RGB?</summary><p>Split the six-digit HEX code into three pairs and convert each pair from base 16 to base 10. For example, #ff6600 becomes rgb(255, 102, 0). The converter does this instantly as you type.</p></details>
+      <details><summary>What contrast ratio do I need for accessible text?</summary><p>WCAG 2.x requires at least 4.5:1 for normal text and 3:1 for large text to pass AA, and 7:1 for normal text and 4.5:1 for large text to pass AAA.</p></details>
+      <details><summary>Why is the CMYK value only approximate?</summary><p>Screen colors are RGB, and the tool uses the standard device-independent RGB to CMYK formula. Real print output depends on the printer&#x27;s ICC color profile, so check proofs for critical print work.</p></details>
+      <details><summary>What are tints and shades?</summary><p>A tint is a color mixed with white and a shade is a color mixed with black. The strip shows five shades and five tints of your color; click any of them to convert it.</p></details>
+      <details><summary>Is my data sent anywhere?</summary><p>No. All color parsing and conversion happens in JavaScript in your browser, and the tool keeps working offline.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-image" href="../color-picker/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 1-1h3l9-9M3 21v-3l9-9M15 6l3-3 3 3-3 3M12 9l3 3"/></svg></span><span><h3>Image Color Picker &amp; Palette</h3><p>Pick colors from any image.</p></span></a>
+        <a class="tool-card cat-dev" href="../unit-converter/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13l-3-3M17 17H4l3 3"/></svg></span><span><h3>Unit Converter</h3><p>Convert length, weight and more.</p></span></a>
+        <a class="tool-card cat-image" href="../favicon-generator/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg></span><span><h3>Favicon Generator</h3><p>Make favicons in every size.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+(function(){
+  var NAMES='aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan darkgoldenrod darkgray darkgreen darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen darkslateblue darkslategray darkturquoise darkviolet deeppink deepskyblue dimgray dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray green greenyellow honeydew hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightpink lightsalmon lightseagreen lightskyblue lightslategray lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray snow springgreen steelblue tan teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen'.split(' ');
+  var $=function(id){return document.getElementById(id)};
+  var ctx=document.createElement('canvas').getContext('2d');
+  var named=null;
+  function canvasParse(s){
+    if(window.CSS&&CSS.supports&&!CSS.supports('color',s))return null;
+    ctx.fillStyle='#000';ctx.fillStyle=s;var a=ctx.fillStyle;
+    ctx.fillStyle='#fff';ctx.fillStyle=s;if(ctx.fillStyle!==a)return null;
+    return parseRgbStr(a);
+  }
+  function parseRgbStr(a){
+    if(a[0]==='#')return hexTo(a.slice(1));
+    var m=a.match(/[\d.]+/g);return m?{r:+m[0],g:+m[1],b:+m[2],a:m[3]!=null?+m[3]:1}:null;
+  }
+  function getNamed(){if(!named){named=NAMES.map(function(n){ctx.fillStyle=n;return [n,hexTo(ctx.fillStyle.slice(1))]})}return named}
+  function hexTo(h){
+    if(h.length<6)h=h.split('').map(function(c){return c+c}).join('');
+    return {r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16),a:h.length>=8?Math.round(parseInt(h.slice(6,8),16)/255*1000)/1000:1};
+  }
+  function clamp(v,a,b){return Math.min(b,Math.max(a,v))}
+  function nums(s){return (s.match(/-?[\d.]+%?/g)||[]).map(function(x){return {v:parseFloat(x),p:/%$/.test(x)}})}
+  function hslToRgb(h,s,l){h=((h%360)+360)%360;s/=100;l/=100;var c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2,r,g,b;
+    if(h<60){r=c;g=x;b=0}else if(h<120){r=x;g=c;b=0}else if(h<180){r=0;g=c;b=x}else if(h<240){r=0;g=x;b=c}else if(h<300){r=x;g=0;b=c}else{r=c;g=0;b=x}
+    return {r:(r+m)*255,g:(g+m)*255,b:(b+m)*255}}
+  function hsvToRgb(h,s,v){s/=100;v/=100;var l=v*(1-s/2),sl=(l===0||l===1)?0:(v-l)/Math.min(l,1-l);return hslToRgb(h,sl*100,l*100)}
+  function rgbToHsl(r,g,b){r/=255;g/=255;b/=255;var mx=Math.max(r,g,b),mn=Math.min(r,g,b),h=0,s=0,l=(mx+mn)/2,d=mx-mn;
+    if(d){s=d/(1-Math.abs(2*l-1));if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360}
+    return [h,s*100,l*100]}
+  function rgbToHsv(r,g,b){r/=255;g/=255;b/=255;var mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,h=rgbToHsl(r*255,g*255,b*255)[0];return [h,mx?d/mx*100:0,mx*100]}
+  function rgbToCmyk(r,g,b){r/=255;g/=255;b/=255;var k=1-Math.max(r,g,b);if(k>=1)return [0,0,0,100];return [(1-r-k)/(1-k)*100,(1-g-k)/(1-k)*100,(1-b-k)/(1-k)*100,k*100]}
+  function parse(s){
+    s=s.trim().toLowerCase();if(!s)return null;
+    var m=s.match(/^#?([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/);if(m)return hexTo(m[1]);
+    var n=nums(s),alpha=function(i){return n[i]?(n[i].p?n[i].v/100:n[i].v):1};
+    if(/^hs[vb]a?\(/.test(s)&&n.length>=3){var c=hsvToRgb(n[0].v,n[1].v,n[2].v);c.a=alpha(3);return c}
+    if(/^cmyk\(/.test(s)&&n.length>=4){var f=function(o){return o.p||o.v>1?o.v/100:o.v};var k=f(n[3]);return {r:255*(1-f(n[0]))*(1-k),g:255*(1-f(n[1]))*(1-k),b:255*(1-f(n[2]))*(1-k),a:1}}
+    if(/^hsla?\(/.test(s)&&n.length>=3){var h=hslToRgb(n[0].v,n[1].v,n[2].v);h.a=alpha(3);return h}
+    if(/^rgba?\(/.test(s)&&n.length>=3){var g=function(o){return o.p?o.v*2.55:o.v};return {r:g(n[0]),g:g(n[1]),b:g(n[2]),a:alpha(3)}}
+    if(/^\d+(\.\d+)?\s*[, ]\s*\d+(\.\d+)?\s*[, ]\s*\d+(\.\d+)?$/.test(s)){return {r:n[0].v,g:n[1].v,b:n[2].v,a:1}}
+    return canvasParse(s);
+  }
+  function hex2(v){return ('0'+Math.round(clamp(v,0,255)).toString(16)).slice(-2)}
+  function toHex(c){return '#'+hex2(c.r)+hex2(c.g)+hex2(c.b)}
+  function lum(c){var f=function(v){v/=255;return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4)};return 0.2126*f(c.r)+0.7152*f(c.g)+0.0722*f(c.b)}
+  function ratio(a,b){var x=lum(a),y=lum(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05)}
+  function r1(v){return Math.round(v*10)/10}
+  function mix(c,t,p){return {r:c.r+(t.r-c.r)*p,g:c.g+(t.g-c.g)*p,b:c.b+(t.b-c.b)*p,a:1}}
+  function nearest(c){var best=null,bd=1e9;getNamed().forEach(function(x){var d=Math.pow(x[1].r-c.r,2)+Math.pow(x[1].g-c.g,2)+Math.pow(x[1].b-c.b,2);if(d<bd){bd=d;best=x[0]}});return {n:best,exact:bd<1}}
+  var cur=null;
+  function render(c){
+    c={r:clamp(Math.round(c.r),0,255),g:clamp(Math.round(c.g),0,255),b:clamp(Math.round(c.b),0,255),a:clamp(c.a==null?1:c.a,0,1)};cur=c;
+    var hex=toHex(c),hsl=rgbToHsl(c.r,c.g,c.b),hsv=rgbToHsv(c.r,c.g,c.b),cm=rgbToCmyk(c.r,c.g,c.b),A=c.a<1,nm=nearest(c);
+    var rows=[
+      ['HEX',hex+(A?hex2(c.a*255):'')],
+      ['RGB',A?'rgba('+c.r+', '+c.g+', '+c.b+', '+c.a+')':'rgb('+c.r+', '+c.g+', '+c.b+')'],
+      ['HSL',(A?'hsla(':'hsl(')+Math.round(hsl[0])+', '+Math.round(hsl[1])+'%, '+Math.round(hsl[2])+'%'+(A?', '+c.a:'')+')'],
+      ['HSV','hsv('+Math.round(hsv[0])+', '+Math.round(hsv[1])+'%, '+Math.round(hsv[2])+'%)'],
+      ['CMYK','cmyk('+cm.map(function(v){return Math.round(v)+'%'}).join(', ')+')'],
+      ['Name',nm.exact?nm.n:'≈ '+nm.n],
+      ['Decimal',String((c.r<<16)+(c.g<<8)+c.b)],
+      ['CSS var','--color: '+hex+';']
+    ];
+    $('out').innerHTML=rows.map(function(r){var v=r[1].replace(/^≈ /,'');return '<div class="cc-row"><b>'+r[0]+'</b><code title="'+r[1]+'">'+r[1]+'</code><button class="btn btn-sm" type="button" data-copy="'+v+'" aria-label="Copy '+r[0]+' value">Copy</button></div>'}).join('');
+    var sw=$('sw'),rgba='rgba('+c.r+','+c.g+','+c.b+','+c.a+')';
+    sw.style.background=A?'linear-gradient('+rgba+','+rgba+'),repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/20px 20px':hex;
+    sw.setAttribute('aria-label','Color preview: '+hex);
+    $('pick').value=hex;
+    var W={r:255,g:255,b:255},K={r:0,g:0,b:0};
+    $('contrast').innerHTML=[['White text',W,'#fff'],['Black text',K,'#000']].map(function(t){var cr=ratio(c,t[1]);
+      var bd=[['AA',4.5],['AA Large',3],['AAA',7],['AAA Large',4.5]].map(function(x){var ok=cr>=x[1];return '<span class="badge '+(ok?'ok':'bad')+'">'+(ok?'✓ ':'✗ ')+x[0]+'</span>'}).join('');
+      return '<div class="cc-ct"><div class="smp" style="background:'+hex+';color:'+t[2]+'">Aa</div><div><div><span class="r">'+cr.toFixed(2)+':1</span> <span class="muted">'+t[0]+' on this color</span></div><div class="bd">'+bd+'</div></div></div>'}).join('');
+    var strip='';for(var i=-5;i<=5;i++){var m=i<0?mix(c,K,-i/6):i>0?mix(c,W,i/6):c,mh=toHex(m),tc=lum(m)>0.18?'#000':'#fff';
+      strip+='<button type="button" class="'+(i===0?'base':'')+'" style="background:'+mh+';color:'+tc+'" data-hex="'+mh+'" title="'+mh+'" aria-label="'+(i<0?'Shade ':i>0?'Tint ':'Base ')+mh+'"><span>'+mh.slice(1)+'</span></button>'}
+    $('strip').innerHTML=strip;
+    try{localStorage.setItem('cc-last',$('inp').value)}catch(e){}
+  }
+  function fromInput(){var v=$('inp').value,c=parse(v);$('inp').classList.toggle('bad',!c&&v.trim()!=='');
+    $('msg').textContent=c?'Detected and converted. Edit to update live.':(v.trim()?'Not a recognised color. Try #ff6600, rgb(255,102,0), hsl(24,100%,50%) or tomato.':'HEX, RGB, HSL, HSV, CMYK or a CSS color name');if(c)render(c)}
+  $('inp').addEventListener('input',fromInput);
+  $('pick').addEventListener('input',function(){$('inp').value=this.value;fromInput()});
+  $('rand').addEventListener('click',function(){var a=new Uint8Array(3);crypto.getRandomValues(a);$('inp').value=toHex({r:a[0],g:a[1],b:a[2]});fromInput()});
+  $('out').addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(b)IT.copy(b.dataset.copy)});
+  $('strip').addEventListener('click',function(e){var b=e.target.closest('[data-hex]');if(b){$('inp').value=b.dataset.hex;fromInput()}});
+  try{var l=localStorage.getItem('cc-last');if(l&&parse(l))$('inp').value=l}catch(e){}
+  fromInput();
+})();
+</script>
+</body>
+</html>

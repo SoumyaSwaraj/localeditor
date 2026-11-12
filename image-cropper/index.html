@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Image Cropper — Crop to 1:1, 4:3 or 16:9 | Instant Tools</title>
+<meta name="description" content="Crop images with a draggable crop box, aspect ratio presets (1:1, 4:3, 16:9, 9:16) and exact pixel inputs. Free, private, no upload and works offline.">
+<meta name="keywords" content="image cropper, crop image, crop photo, crop image online, crop to square, crop 16:9, crop 9:16, crop picture, aspect ratio crop, crop jpg png">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/image-cropper/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Image Cropper — Free &amp; Private">
+<meta property="og:description" content="Crop JPG, PNG and WebP images with a draggable box, ratio presets and pixel inputs. No upload.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/image-cropper/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Image Cropper","url":"https://soumyaswaraj.github.io/instant-tools/image-cropper/","applicationCategory":"MultimediaApplication","operatingSystem":"Any (browser-based)","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Crop images with a draggable crop box, aspect ratio presets (1:1, 4:3, 16:9, 9:16) and exact pixel inputs. Free, private, no upload and works offline.","featureList":["Draggable, resizable crop box","Aspect ratio presets: free, 1:1, 4:3, 16:9, 9:16","Exact X, Y, width and height in pixels","Touch, mouse and keyboard support","PNG, JPG or WebP output","Works offline","No upload — files stay on your device"]},{"@type":"HowTo","name":"How to crop an image","step":[{"@type":"HowToStep","text":"Drop an image onto the box or tap to choose one."},{"@type":"HowToStep","text":"Drag the crop box or its handles, pick an aspect ratio like 1:1 or 16:9, or type exact X, Y, width and height in pixels."},{"@type":"HowToStep","text":"Choose the output format and click Crop & download."}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do I crop an image to a square?","acceptedAnswer":{"@type":"Answer","text":"Select the 1:1 preset. The crop box becomes the largest centered square; drag it to frame your subject and click Crop & download."}},{"@type":"Question","name":"Can I enter exact crop dimensions?","acceptedAnswer":{"@type":"Answer","text":"Yes. Type X, Y, width and height in pixels in the number fields. Values are measured on the original image, so a 1080 × 1080 crop produces exactly a 1080 × 1080 file."}},{"@type":"Question","name":"Does cropping reduce image quality?","acceptedAnswer":{"@type":"Answer","text":"No. Cropping copies the original pixels without resizing. PNG output is lossless; JPG and WebP apply compression at the quality you choose."}},{"@type":"Question","name":"Does it work on phones and tablets?","acceptedAnswer":{"@type":"Answer","text":"Yes. The crop box uses pointer events, so you can drag it and its handles with a finger, a mouse or a stylus. It also works offline once the page has loaded."}},{"@type":"Question","name":"Are my photos uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. The image is loaded and cropped inside your browser using the canvas API, and it never leaves your device."}}]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Instant Tools","item":"https://soumyaswaraj.github.io/instant-tools/"},{"@type":"ListItem","position":2,"name":"Image Cropper","item":"https://soumyaswaraj.github.io/instant-tools/image-cropper/"}]}]}
+</script>
+<style>
+.ws{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
+@media (max-width:860px){.ws{grid-template-columns:minmax(0,1fr)}}
+.ws .preview{padding:12px}
+.ws .preview canvas,.ws .preview img{max-width:100%;height:auto}
+.side .field:last-child{margin-bottom:0}
+.side h3{font-size:.95rem;margin:0 0 10px}
+.range-row{display:flex;align-items:center;gap:10px}
+.range-row output{min-width:3.2em;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.pair{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end}
+.pair .x{padding-bottom:12px;color:var(--muted)}
+.quad{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quad .field{margin:0}
+.color-row{display:flex;gap:8px;align-items:center}
+.color-row input[type=color]{width:44px;height:44px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);padding:3px;cursor:pointer}
+.file-line{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.file-line .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.stats{margin-top:14px}
+.stat b{font-size:1.05rem}
+
+.crop-wrap{display:grid;place-items:center;padding:12px;background:repeating-conic-gradient(var(--surface-2) 0 25%,var(--surface) 0 50%) 0 0/20px 20px;border:1px solid var(--border);border-radius:var(--radius-sm);user-select:none;-webkit-user-select:none}
+.crop-stage{position:relative;line-height:0;max-width:100%;overflow:hidden;touch-action:none}
+.crop-stage img{display:block;max-width:100%;max-height:62vh;width:auto;height:auto;pointer-events:none;-webkit-user-drag:none}
+.crop-box{position:absolute;cursor:move;box-shadow:0 0 0 9999px rgba(0,0,0,.55);outline:2px solid var(--brand);touch-action:none}
+.crop-box:focus-visible{outline:3px solid var(--brand-2);outline-offset:0}
+.crop-box::before,.crop-box::after{content:"";position:absolute;inset:0;pointer-events:none;border:1px solid rgba(255,255,255,.45)}
+.crop-box::before{left:33.33%;right:33.33%;border-top:0;border-bottom:0}
+.crop-box::after{top:33.33%;bottom:33.33%;border-left:0;border-right:0}
+.crop-box .hd{position:absolute;width:16px;height:16px;background:var(--surface);border:2px solid var(--brand);border-radius:4px;transform:translate(-50%,-50%);z-index:1;touch-action:none}
+.crop-box .hd::after{content:"";position:absolute;inset:-10px}
+.hd[data-h=nw]{left:0;top:0;cursor:nwse-resize}.hd[data-h=n]{left:50%;top:0;cursor:ns-resize}.hd[data-h=ne]{left:100%;top:0;cursor:nesw-resize}
+.hd[data-h=e]{left:100%;top:50%;cursor:ew-resize}.hd[data-h=se]{left:100%;top:100%;cursor:nwse-resize}.hd[data-h=s]{left:50%;top:100%;cursor:ns-resize}
+.hd[data-h=sw]{left:0;top:100%;cursor:nesw-resize}.hd[data-h=w]{left:0;top:50%;cursor:ew-resize}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#image">Image tools</a> › Image Cropper</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Image tool</span>
+    <h1><span class="gradient-text">Crop images</span> precisely in your browser</h1>
+    <p class="lead">Image Cropper cuts a JPG, PNG or WebP image to any area using a draggable crop box, aspect-ratio presets and exact pixel values — free, private and offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Image Cropper">
+    <div class="dropzone" id="drop" aria-label="Drop an image here or tap to choose">
+      <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></div>
+      <strong>Drop an image here or tap to choose</strong>
+      <small>JPG, PNG, WebP, GIF, BMP · processed locally, never uploaded</small>
+      <input type="file" aria-label="Choose image files">
+    </div>
+    <div id="app" class="hidden">
+      <div class="file-line"><span class="name" id="fname"></span><button type="button" class="btn btn-sm" id="change">Choose another image</button></div>
+      <div class="ws">
+        <div>
+          <div class="crop-wrap"><div class="crop-stage" id="stage"><img id="pic" alt="Image to crop">
+            <div class="crop-box" id="box" tabindex="0" role="group" aria-label="Crop area. Drag to move, use arrow keys to nudge, Shift for 10 pixels.">
+              <span class="hd" data-h="nw"></span><span class="hd" data-h="n"></span><span class="hd" data-h="ne"></span><span class="hd" data-h="e"></span><span class="hd" data-h="se"></span><span class="hd" data-h="s"></span><span class="hd" data-h="sw"></span><span class="hd" data-h="w"></span>
+            </div></div></div>
+          <div class="stats" aria-live="polite" id="stats"></div>
+        </div>
+        <div class="panel side">
+          <div class="field"><span class="label" id="ar-l">Aspect ratio</span><div class="seg" id="ar" role="group" aria-labelledby="ar-l"><button type="button" data-v="0" aria-pressed="true">Free</button><button type="button" data-v="1" aria-pressed="false">1:1</button><button type="button" data-v="1.3333333" aria-pressed="false">4:3</button><button type="button" data-v="1.7777778" aria-pressed="false">16:9</button><button type="button" data-v="0.5625" aria-pressed="false">9:16</button></div></div>
+          <div class="field quad">
+            <div class="field"><label for="cx">X (px)</label><input class="input" id="cx" type="number" min="0" inputmode="numeric"></div>
+            <div class="field"><label for="cy">Y (px)</label><input class="input" id="cy" type="number" min="0" inputmode="numeric"></div>
+            <div class="field"><label for="cw">Width (px)</label><input class="input" id="cw" type="number" min="1" inputmode="numeric"></div>
+            <div class="field"><label for="ch">Height (px)</label><input class="input" id="ch" type="number" min="1" inputmode="numeric"></div>
+          </div>
+          <div class="field"><label for="fmt">Output format</label><select class="select" id="fmt"><option value="same">Same as original</option><option value="image/jpeg">JPG</option><option value="image/png">PNG</option><option value="image/webp">WebP</option></select></div>
+          <div class="field" id="q-f"><label for="q">Quality</label><div class="range-row"><input type="range" id="q" min="10" max="100" value="92"><output id="qv" for="q">92%</output></div></div>
+          <div class="field row"><button type="button" class="btn btn-primary" id="dl" style="flex:1">Crop &amp; download</button><button type="button" class="btn" id="reset">Reset</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to crop an image</h2>
+      <ol><li>Drop an image onto the box or tap to choose one.</li><li>Drag the crop box or its handles, pick an aspect ratio like 1:1 or 16:9, or type exact X, Y, width and height in pixels.</li><li>Choose the output format and click Crop &amp; download.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is an Image Cropper?</h2>
+      <p>An image cropper removes the outer parts of a picture to improve framing or to match a required shape. This tool shows your image with a movable, resizable crop box: drag inside it to move, drag any of the eight handles to resize, or focus the box and use the arrow keys for pixel-precise nudges (Shift moves 10 px).</p>
+      <p>Aspect presets lock the box to Free, 1:1 (square, profile pictures), 4:3, 16:9 (YouTube, widescreen) or 9:16 (Stories, Reels, TikTok). Crop coordinates are measured in real image pixels, so the output is exactly the size shown. Cropping copies the original pixels without resampling.</p>
+      <p>Save the result as PNG, JPG or WebP. Nothing is uploaded — the image is cropped locally on your device, and the tool works offline.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>How do I crop an image to a square?</summary><p>Select the 1:1 preset. The crop box becomes the largest centered square; drag it to frame your subject and click Crop &amp; download.</p></details>
+      <details><summary>Can I enter exact crop dimensions?</summary><p>Yes. Type X, Y, width and height in pixels in the number fields. Values are measured on the original image, so a 1080 × 1080 crop produces exactly a 1080 × 1080 file.</p></details>
+      <details><summary>Does cropping reduce image quality?</summary><p>No. Cropping copies the original pixels without resizing. PNG output is lossless; JPG and WebP apply compression at the quality you choose.</p></details>
+      <details><summary>Does it work on phones and tablets?</summary><p>Yes. The crop box uses pointer events, so you can drag it and its handles with a finger, a mouse or a stylus. It also works offline once the page has loaded.</p></details>
+      <details><summary>Are my photos uploaded anywhere?</summary><p>No. The image is loaded and cropped inside your browser using the canvas API, and it never leaves your device.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-image" href="../image-resizer/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></span><span><h3>Image Resizer</h3><p>Resize to exact pixels or %.</p></span></a>
+        <a class="tool-card cat-image" href="../rotate-flip-image/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></span><span><h3>Rotate &amp; Flip Image</h3><p>Rotate any angle, mirror photos.</p></span></a>
+        <a class="tool-card cat-image" href="../image-filters/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h9"/></svg></span><span><h3>Photo Filters &amp; Editor</h3><p>Brightness, contrast and filters.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/bmp': 'bmp' };
+var WEBP_OK = (function () { try { var c = document.createElement('canvas'); c.width = c.height = 1; return c.toDataURL('image/webp').indexOf('data:image/webp') === 0; } catch (e) { return false; } })();
+function natural(img) { return { w: img.naturalWidth || img.width || 1024, h: img.naturalHeight || img.height || 1024 }; }
+function seg(el, onChange) {
+  el.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b || b.disabled) return;
+    el.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    onChange(b.dataset.v);
+  });
+}
+function debounce(fn, ms) { var t; return function () { clearTimeout(t); t = setTimeout(fn, ms); }; }
+
+function outType(file, sel) {
+  var t = sel === 'same' ? file.type : sel;
+  if (!/^image\/(jpeg|png|webp)$/.test(t)) t = 'image/png';
+  if (t === 'image/webp' && !WEBP_OK) t = 'image/png';
+  return t;
+}
+
+function statsHtml(rows) { return rows.map(function (r) { return '<div class="stat"><b>' + r[1] + '</b><span>' + r[0] + '</span></div>'; }).join(''); }
+function setupSingle(onImage) {
+  var drop = $('#drop'), app = $('#app');
+  var input = IT.dropzone(drop, { accept: 'image/*', paste: true, onFiles: function (files) {
+    var f = files.filter(function (x) { return /^image\//.test(x.type); })[0];
+    if (!f) { IT.toast('Please choose an image file'); return; }
+    IT.loadImage(f).then(function (img) {
+      $('#fname').textContent = f.name + ' · ' + IT.formatBytes(f.size);
+      drop.classList.add('hidden'); app.classList.remove('hidden');
+      onImage(f, img);
+    }, function () { IT.toast('Could not open this image in your browser'); });
+  } });
+  $('#change').addEventListener('click', function () { input.click(); });
+}
+
+(function () {
+  var file, img, IW, IH, ratio = 0, crop = { x: 0, y: 0, w: 0, h: 0 }, MIN = 8;
+  var stage = $('#stage'), pic = $('#pic'), box = $('#box'), fmt = $('#fmt'), q = $('#q');
+  var inputs = { x: $('#cx'), y: $('#cy'), w: $('#cw'), h: $('#ch') };
+  setupSingle(function (f, im) {
+    file = f; img = im; var d = natural(im); IW = d.w; IH = d.h;
+    if (pic.src && pic.src.indexOf('blob:') === 0) URL.revokeObjectURL(pic.src);
+    pic.onload = function () { fullCrop(); }; pic.src = im.src;
+    syncQ();
+  });
+  function scale() { return pic.clientWidth / IW || 1; }
+  function fullCrop() {
+    if (ratio) {
+      var w = IW, h = w / ratio; if (h > IH) { h = IH; w = h * ratio; }
+      w *= 0.9; h *= 0.9; crop = { x: (IW - w) / 2, y: (IH - h) / 2, w: w, h: h };
+    } else crop = { x: IW * 0.05, y: IH * 0.05, w: IW * 0.9, h: IH * 0.9 };
+    if (crop.w < 1 || crop.h < 1) crop = { x: 0, y: 0, w: IW, h: IH };
+    draw();
+  }
+  function draw() {
+    var s = scale();
+    box.style.left = crop.x * s + 'px'; box.style.top = crop.y * s + 'px';
+    box.style.width = crop.w * s + 'px'; box.style.height = crop.h * s + 'px';
+    var r = rounded();
+    ['x', 'y', 'w', 'h'].forEach(function (k) { if (document.activeElement !== inputs[k]) inputs[k].value = r[k]; });
+    $('#stats').innerHTML = statsHtml([['Original', IW + '×' + IH], ['Crop size', r.w + '×' + r.h], ['Position', r.x + ', ' + r.y]]);
+  }
+  function rounded() {
+    var x = Math.round(crop.x), y = Math.round(crop.y);
+    var w = Math.max(1, Math.min(IW - x, Math.round(crop.w))), h = Math.max(1, Math.min(IH - y, Math.round(crop.h)));
+    return { x: x, y: y, w: w, h: h };
+  }
+  if (window.ResizeObserver) new ResizeObserver(function () { if (img) draw(); }).observe(pic);
+  else window.addEventListener('resize', function () { if (img) draw(); });
+
+  var drag = null;
+  box.addEventListener('pointerdown', function (e) {
+    if (e.button && e.button !== 0) return;
+    e.preventDefault();
+    var hd = e.target.closest('.hd');
+    drag = { h: hd ? hd.dataset.h : 'move', sx: e.clientX, sy: e.clientY, c: Object.assign({}, crop), id: e.pointerId };
+    box.setPointerCapture(e.pointerId); box.focus({ preventScroll: true });
+  });
+  box.addEventListener('pointermove', function (e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    var s = scale(), dx = (e.clientX - drag.sx) / s, dy = (e.clientY - drag.sy) / s, c = drag.c;
+    if (drag.h === 'move') {
+      crop.x = Math.min(IW - c.w, Math.max(0, c.x + dx)); crop.y = Math.min(IH - c.h, Math.max(0, c.y + dy));
+    } else resize(drag.h, dx, dy, c);
+    draw();
+  });
+  function end(e) { if (drag && e.pointerId === drag.id) drag = null; }
+  box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
+
+  function resize(hd, dx, dy, c) {
+    var E = hd.indexOf('e') >= 0, Wd = hd.indexOf('w') >= 0, N = hd.indexOf('n') >= 0, S = hd.indexOf('s') >= 0;
+    if (!ratio) {
+      var x1 = c.x, y1 = c.y, x2 = c.x + c.w, y2 = c.y + c.h;
+      if (Wd) x1 = Math.min(x2 - MIN, Math.max(0, x1 + dx));
+      if (E) x2 = Math.max(x1 + MIN, Math.min(IW, x2 + dx));
+      if (N) y1 = Math.min(y2 - MIN, Math.max(0, y1 + dy));
+      if (S) y2 = Math.max(y1 + MIN, Math.min(IH, y2 + dy));
+      crop = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 }; return;
+    }
+    var w, h, availW, availH, ax, ay;
+    if ((E || Wd) && (N || S)) {
+      ax = E ? c.x : c.x + c.w; ay = S ? c.y : c.y + c.h;
+      w = E ? c.w + dx : c.w - dx; h = S ? c.h + dy : c.h - dy;
+      w = Math.max(w, h * ratio);
+      availW = E ? IW - ax : ax; availH = S ? IH - ay : ay;
+      w = Math.max(MIN, Math.min(w, availW, availH * ratio)); h = w / ratio;
+      crop = { x: E ? ax : ax - w, y: S ? ay : ay - h, w: w, h: h };
+    } else if (E || Wd) {
+      ax = E ? c.x : c.x + c.w; var cy = c.y + c.h / 2;
+      w = E ? c.w + dx : c.w - dx;
+      availW = E ? IW - ax : ax; availH = 2 * Math.min(cy, IH - cy);
+      w = Math.max(MIN, Math.min(w, availW, availH * ratio)); h = w / ratio;
+      crop = { x: E ? ax : ax - w, y: cy - h / 2, w: w, h: h };
+    } else {
+      ay = S ? c.y : c.y + c.h; var cx = c.x + c.w / 2;
+      h = S ? c.h + dy : c.h - dy;
+      availH = S ? IH - ay : ay; availW = 2 * Math.min(cx, IW - cx);
+      h = Math.max(MIN, Math.min(h, availH, availW / ratio)); w = h * ratio;
+      crop = { x: cx - w / 2, y: S ? ay : ay - h, w: w, h: h };
+    }
+  }
+  box.addEventListener('keydown', function (e) {
+    var step = e.shiftKey ? 10 : 1, dx = 0, dy = 0;
+    if (e.key === 'ArrowLeft') dx = -step; else if (e.key === 'ArrowRight') dx = step;
+    else if (e.key === 'ArrowUp') dy = -step; else if (e.key === 'ArrowDown') dy = step; else return;
+    e.preventDefault();
+    crop.x = Math.min(IW - crop.w, Math.max(0, crop.x + dx)); crop.y = Math.min(IH - crop.h, Math.max(0, crop.y + dy)); draw();
+  });
+  seg($('#ar'), function (v) { ratio = +v; if (img) fullCrop(); });
+  function fromInputs(changed) {
+    var x = Math.max(0, Math.min(IW - 1, +inputs.x.value || 0)), y = Math.max(0, Math.min(IH - 1, +inputs.y.value || 0));
+    var w = Math.max(1, +inputs.w.value || 1), h = Math.max(1, +inputs.h.value || 1);
+    if (ratio) { if (changed === 'h') w = h * ratio; else h = w / ratio; }
+    if (x + w > IW) { w = IW - x; if (ratio) h = w / ratio; }
+    if (y + h > IH) { h = IH - y; if (ratio) w = h * ratio; }
+    crop = { x: x, y: y, w: w, h: h }; draw();
+  }
+  Object.keys(inputs).forEach(function (k) {
+    inputs[k].addEventListener('change', function () { if (img) { fromInputs(k); var r = rounded(); inputs[k].value = r[k]; } });
+  });
+  function syncQ() { $('#q-f').classList.toggle('hidden', outType(file || { type: '' }, fmt.value) === 'image/png'); }
+  fmt.addEventListener('change', syncQ);
+  q.addEventListener('input', function () { $('#qv').textContent = q.value + '%'; });
+  $('#reset').addEventListener('click', function () { if (img) fullCrop(); });
+  $('#dl').addEventListener('click', async function () {
+    if (!img) return;
+    var r = rounded(), c = document.createElement('canvas'); c.width = r.w; c.height = r.h;
+    var ctx = c.getContext('2d'), ty = outType(file, fmt.value);
+    if (ty === 'image/jpeg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, r.w, r.h); }
+    ctx.drawImage(img, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+    var b = await IT.canvasToBlob(c, ty, q.value / 100);
+    if (!b) { IT.toast('Could not export this image'); return; }
+    IT.download(b, IT.baseName(file.name) + '-cropped-' + r.w + 'x' + r.h + '.' + EXT[ty]);
+    IT.toast('Cropped image saved · ' + IT.formatBytes(b.size));
+  });
+})();
+</script>
+</body>
+</html>

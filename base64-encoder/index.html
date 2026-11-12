@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Base64 Encode &amp; Decode — Text and Files | Free, Offline</title>
+<meta name="description" content="Free Base64 encoder and decoder with full UTF-8 support, URL-safe mode and live conversion. Convert files to Base64 and Base64 back to files. Private, offline.">
+<meta name="keywords" content="base64 encode, base64 decode, base64 encoder, base64 decoder, base64 to file, file to base64, url safe base64, base64 utf-8, base64 converter">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/base64-encoder/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Base64 Encode/Decode — Free &amp; Private">
+<meta property="og:description" content="Encode and decode Base64 text and files with UTF-8 and URL-safe support — private and offline.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/base64-encoder/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "Base64 Encode/Decode", "url": "https://soumyaswaraj.github.io/instant-tools/base64-encoder/", "applicationCategory": "DeveloperApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Free Base64 encoder and decoder with full UTF-8 support, URL-safe mode and live conversion. Convert files to Base64 and Base64 back to files. Private, offline.", "featureList": ["Encode and decode text with full UTF-8 support", "URL-safe Base64 (RFC 4648 §5)", "Live mode", "File to Base64 and data URI", "Base64 to file download", "Works offline", "No upload — data stays on your device"]}, {"@type": "HowTo", "name": "How to encode or decode Base64", "step": [{"@type": "HowToStep", "text": "Choose Encode or Decode and type or paste your text — with Live mode on, the result updates as you type."}, {"@type": "HowToStep", "text": "Turn on URL-safe to use - and _ instead of + and / and drop padding."}, {"@type": "HowToStep", "text": "For files, drop a file to get its Base64, or paste Base64 and click Download file to rebuild the original."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is Base64 encryption?", "acceptedAnswer": {"@type": "Answer", "text": "No. Base64 is a reversible encoding, not encryption. Anyone can decode Base64 text, so never use it to protect passwords or secrets."}}, {"@type": "Question", "name": "Why does Base64 make data bigger?", "acceptedAnswer": {"@type": "Answer", "text": "Base64 turns every 3 bytes into 4 ASCII characters, so encoded output is about 33% larger than the original, plus up to two = padding characters."}}, {"@type": "Question", "name": "What is URL-safe Base64?", "acceptedAnswer": {"@type": "Answer", "text": "URL-safe Base64 (RFC 4648 section 5) replaces + with - and / with _ and usually drops = padding, so the result can be used in URLs and filenames without escaping."}}, {"@type": "Question", "name": "Does it support emoji and non-English text?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Text is converted to UTF-8 bytes with TextEncoder before encoding and decoded with TextDecoder, so emoji, accents and all scripts round-trip correctly."}}, {"@type": "Question", "name": "How do I convert Base64 back to a file?", "acceptedAnswer": {"@type": "Answer", "text": "Paste the Base64 string or data URI into the Base64 to file box and click Download file. The file type is detected from the data URI or the file's signature bytes."}}, {"@type": "Question", "name": "Are my files uploaded?", "acceptedAnswer": {"@type": "Answer", "text": "No. Encoding and decoding run entirely in your browser, so your text and files never leave your device and the tool works offline."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "Base64 Encode/Decode", "item": "https://soumyaswaraj.github.io/instant-tools/base64-encoder/"}]}]}
+</script>
+<style>.b64-grid{display:grid;gap:14px}
+@media(min-width:860px){.b64-grid{grid-template-columns:1fr 1fr}}
+.b64-out{min-height:180px;word-break:break-all;white-space:pre-wrap}
+.b64-err{color:var(--err);font-size:.88rem;margin-top:6px;min-height:1.2em}
+.b64-sec{margin-top:28px;padding-top:20px;border-top:1px solid var(--border)}
+.b64-sec h2{font-size:1.15rem;margin:0 0 12px}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#dev">Developer tools</a> › Base64 Encode/Decode</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Developer tool</span>
+    <h1><span class="gradient-text">Base64</span> Encode &amp; Decode</h1>
+    <p class="lead">Encode text or files to Base64 and decode Base64 back to text or files, with full UTF-8 and URL-safe support — free, private and offline in your browser.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Base64 Encode/Decode">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <div class="seg" role="group" aria-label="Mode" id="mode"><button type="button" data-v="enc" aria-pressed="true">Encode</button><button type="button" data-v="dec" aria-pressed="false">Decode</button></div>
+      <div class="row" style="gap:16px">
+        <label class="check" style="margin:0"><input type="checkbox" id="urlsafe"> URL-safe</label>
+        <label class="check" style="margin:0"><input type="checkbox" id="live" checked> Live</label>
+      </div>
+    </div>
+    <div class="b64-grid">
+      <div class="field" style="margin:0"><label for="inp" id="inLbl">Text to encode</label><textarea id="inp" class="textarea" spellcheck="false" placeholder="Type or paste text…"></textarea></div>
+      <div class="field" style="margin:0"><label for="out" id="outLbl">Base64 output</label><textarea id="out" class="textarea b64-out" readonly spellcheck="false"></textarea><div class="b64-err" id="err" role="status" aria-live="polite"></div></div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" type="button" id="go">Encode</button>
+      <button class="btn" type="button" id="copy">Copy result</button>
+      <button class="btn" type="button" id="swap">Swap ⇄</button>
+      <button class="btn" type="button" id="clear">Clear</button>
+      <span class="muted" id="sizes" style="align-self:center;font-size:.85rem"></span>
+    </div>
+
+    <div class="b64-sec">
+      <h2>File to Base64</h2>
+      <div class="dropzone" id="drop" tabindex="0" role="button" aria-label="Choose a file to encode to Base64">
+        <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
+        <strong>Drop any file here or tap to choose</strong>
+        <small>Any file type · read locally, never uploaded</small>
+        <input type="file">
+      </div>
+      <div id="fileRes" class="hidden" style="margin-top:14px">
+        <div class="file-item"><div class="meta"><div class="name" id="fName"></div><div class="sub" id="fSub"></div></div></div>
+        <div class="row" style="margin-top:10px"><label class="check" style="margin:0"><input type="checkbox" id="asUri"> Include data URI prefix (data:…;base64,)</label></div>
+        <label for="fOut" style="margin-top:10px">Base64 of file</label>
+        <textarea id="fOut" class="textarea b64-out" readonly spellcheck="false"></textarea>
+        <div class="actions"><button class="btn btn-primary" type="button" id="fCopy">Copy Base64</button><button class="btn" type="button" id="fDl">Download .txt</button></div>
+      </div>
+    </div>
+
+    <div class="b64-sec">
+      <h2>Base64 to file</h2>
+      <div class="field"><label for="bIn">Base64 string or data URI</label><textarea id="bIn" class="textarea" spellcheck="false" style="min-height:120px" placeholder="data:image/png;base64,iVBORw0KGgo… or raw Base64"></textarea></div>
+      <div class="grid-2">
+        <div class="field" style="margin:0"><label for="bName">File name</label><input id="bName" class="input" value="decoded"></div>
+        <div class="field" style="margin:0"><label for="bType">Detected type</label><input id="bType" class="input" readonly value="—"></div>
+      </div>
+      <div class="b64-err" id="bErr" role="status" aria-live="polite"></div>
+      <div class="actions"><button class="btn btn-primary" type="button" id="bDl">Download file</button></div>
+      <div id="bPrev" class="preview hidden" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to encode or decode Base64</h2>
+      <ol><li>Choose Encode or Decode and type or paste your text — with Live mode on, the result updates as you type.</li><li>Turn on URL-safe to use - and _ instead of + and / and drop padding.</li><li>For files, drop a file to get its Base64, or paste Base64 and click Download file to rebuild the original.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is Base64 Encode/Decode?</h2>
+      <p>Base64 is an encoding that represents binary data using 64 printable ASCII characters (A–Z, a–z, 0–9, + and /), with = as padding. Every 3 bytes become 4 characters, so Base64 output is about 33% larger than the input. It is used in data URIs, email attachments (MIME), JSON payloads, JWTs and HTTP Basic auth.</p><p>This tool encodes text as UTF-8 bytes with TextEncoder before converting, so emoji and non-Latin characters round-trip correctly, unlike the browser's raw btoa(). URL-safe mode follows RFC 4648 section 5: + becomes -, / becomes _ and padding is removed. The decoder accepts both alphabets, ignores whitespace and fixes missing padding.</p><p>Files are read locally with the FileReader API and are never uploaded. Base64 is an encoding, not encryption — anyone can decode it.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>Is Base64 encryption?</summary><p>No. Base64 is a reversible encoding, not encryption. Anyone can decode Base64 text, so never use it to protect passwords or secrets.</p></details>
+      <details><summary>Why does Base64 make data bigger?</summary><p>Base64 turns every 3 bytes into 4 ASCII characters, so encoded output is about 33% larger than the original, plus up to two = padding characters.</p></details>
+      <details><summary>What is URL-safe Base64?</summary><p>URL-safe Base64 (RFC 4648 section 5) replaces + with - and / with _ and usually drops = padding, so the result can be used in URLs and filenames without escaping.</p></details>
+      <details><summary>Does it support emoji and non-English text?</summary><p>Yes. Text is converted to UTF-8 bytes with TextEncoder before encoding and decoded with TextDecoder, so emoji, accents and all scripts round-trip correctly.</p></details>
+      <details><summary>How do I convert Base64 back to a file?</summary><p>Paste the Base64 string or data URI into the Base64 to file box and click Download file. The file type is detected from the data URI or the file&#x27;s signature bytes.</p></details>
+      <details><summary>Are my files uploaded?</summary><p>No. Encoding and decoding run entirely in your browser, so your text and files never leave your device and the tool works offline.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-image" href="../image-to-base64/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></span><span><h3>Image to Base64</h3><p>Turn images into data URIs.</p></span></a>
+        <a class="tool-card cat-dev" href="../hash-generator/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg></span><span><h3>Hash Generator (MD5/SHA)</h3><p>MD5, SHA-1, SHA-256, SHA-512 hashes.</p></span></a>
+        <a class="tool-card cat-dev" href="../json-formatter/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H7a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2 2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1M16 3h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2 2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-1"/></svg></span><span><h3>JSON Formatter &amp; Validator</h3><p>Beautify, minify and validate JSON.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+(function(){
+function $(id){return document.getElementById(id)}
+var mode='enc',inp=$('inp'),out=$('out'),err=$('err');
+function bytesToB64(bytes){var s='',CH=0x8000;for(var i=0;i<bytes.length;i+=CH)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+CH));return btoa(s)}
+function norm(b){b=b.replace(/^data:[^,]*,/,'').replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');if(/[^A-Za-z0-9+/=]/.test(b))throw new Error('Invalid Base64: contains characters outside the Base64 alphabet');b=b.replace(/=+$/,'');if(b.length%4===1)throw new Error('Invalid Base64: length is not valid');while(b.length%4)b+='=';return b}
+function b64ToBytes(b){var bin=atob(norm(b)),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u}
+function safe(s){return $('urlsafe').checked?s.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''):s}
+function enc(t){return safe(bytesToB64(new TextEncoder().encode(t)))}
+function dec(t){return new TextDecoder('utf-8',{fatal:true}).decode(b64ToBytes(t))}
+function size(s){return new Blob([s]).size}
+function run(){
+  err.textContent='';var t=inp.value;
+  if(!t){out.value='';$('sizes').textContent='';return}
+  try{out.value=mode==='enc'?enc(t):dec(t);$('sizes').textContent=IT.formatBytes(size(t))+' → '+IT.formatBytes(size(out.value))}
+  catch(e){out.value='';$('sizes').textContent='';err.textContent=e.name==='TypeError'?'Decoded bytes are not valid UTF-8 text — this may be a binary file. Use “Base64 to file” below.':(e.message||'Invalid Base64 input')}
+}
+function setMode(m){mode=m;$('mode').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===m))});
+  $('inLbl').textContent=m==='enc'?'Text to encode':'Base64 to decode';$('outLbl').textContent=m==='enc'?'Base64 output':'Decoded text';$('go').textContent=m==='enc'?'Encode':'Decode';
+  inp.placeholder=m==='enc'?'Type or paste text…':'Paste Base64 (standard or URL-safe)…';run()}
+$('mode').addEventListener('click',function(e){var b=e.target.closest('button');if(b)setMode(b.dataset.v)});
+inp.addEventListener('input',function(){if($('live').checked)run()});
+$('urlsafe').addEventListener('change',function(){run();if(lastFile)showFile()});
+$('go').addEventListener('click',run);
+$('copy').addEventListener('click',function(){if(!out.value)return IT.toast('Nothing to copy');IT.copy(out.value)});
+$('swap').addEventListener('click',function(){var o=out.value;setMode(mode==='enc'?'dec':'enc');inp.value=o;run()});
+$('clear').addEventListener('click',function(){inp.value='';run();inp.focus()});
+/* file -> base64 */
+var lastFile=null,lastB64='';
+IT.dropzone($('drop'),{multiple:false,onFiles:function(fs){var f=fs[0];if(f.size>100*1024*1024&&!confirm('This file is '+IT.formatBytes(f.size)+'. Encoding may be slow. Continue?'))return;
+  f.arrayBuffer().then(function(buf){lastFile=f;lastB64=bytesToB64(new Uint8Array(buf));showFile()})}});
+function showFile(){var b=safe(lastB64),v=$('asUri').checked?'data:'+(lastFile.type||'application/octet-stream')+';base64,'+lastB64:b;
+  $('fileRes').classList.remove('hidden');$('fName').textContent=lastFile.name;$('fSub').textContent=(lastFile.type||'unknown type')+' · '+IT.formatBytes(lastFile.size)+' → '+IT.formatBytes(v.length)+' Base64';
+  $('fOut').value=v.length>5e6?v.slice(0,5e6)+'\n… (truncated in preview — use Copy or Download for the full string)':v;$('fOut')._full=v}
+$('asUri').addEventListener('change',function(){if(lastFile)showFile()});
+$('fCopy').addEventListener('click',function(){IT.copy($('fOut')._full||'')});
+$('fDl').addEventListener('click',function(){if(lastFile)IT.download(new Blob([$('fOut')._full],{type:'text/plain'}),lastFile.name+'.base64.txt')});
+/* base64 -> file */
+var SIG=[[[0x89,0x50,0x4E,0x47],'image/png','png'],[[0xFF,0xD8,0xFF],'image/jpeg','jpg'],[[0x47,0x49,0x46,0x38],'image/gif','gif'],[[0x25,0x50,0x44,0x46],'application/pdf','pdf'],[[0x50,0x4B,0x03,0x04],'application/zip','zip'],[[0x52,0x49,0x46,0x46],'image/webp','webp'],[[0x49,0x44,0x33],'audio/mpeg','mp3'],[[0x1F,0x8B],'application/gzip','gz'],[[0x42,0x4D],'image/bmp','bmp'],[[0x3C,0x73,0x76,0x67],'image/svg+xml','svg']];
+var EXT={'image/png':'png','image/jpeg':'jpg','image/gif':'gif','image/webp':'webp','image/svg+xml':'svg','application/pdf':'pdf','application/json':'json','text/plain':'txt','text/html':'html','text/css':'css','application/zip':'zip','audio/mpeg':'mp3','video/mp4':'mp4','image/x-icon':'ico','image/bmp':'bmp'};
+function detect(){var s=$('bIn').value.trim(),m=s.match(/^data:([^;,]+)/),bytes;$('bErr').textContent='';
+  if(!s){$('bType').value='—';return null}
+  try{bytes=b64ToBytes(s)}catch(e){$('bErr').textContent=e.message;$('bType').value='—';return null}
+  var type=m?m[1]:'',ext=EXT[type]||'';
+  if(!type){for(var i=0;i<SIG.length;i++){var sg=SIG[i][0];if(sg.every(function(x,j){return bytes[j]===x})){type=SIG[i][1];ext=SIG[i][2];break}}}
+  if(type==='image/webp'&&!(bytes[8]===0x57&&bytes[9]===0x45)){type='audio/wav';ext='wav'}
+  if(!type){try{new TextDecoder('utf-8',{fatal:true}).decode(bytes.subarray(0,4096));type='text/plain';ext='txt'}catch(e){type='application/octet-stream';ext='bin'}}
+  $('bType').value=type+' · '+IT.formatBytes(bytes.length);
+  var pv=$('bPrev');if(/^image\//.test(type)&&bytes.length<20*1024*1024){var u=URL.createObjectURL(new Blob([bytes],{type:type}));pv.innerHTML='<img alt="Decoded image preview">';pv.firstChild.src=u;pv.classList.remove('hidden')}else{pv.classList.add('hidden');pv.innerHTML=''}
+  return {bytes:bytes,type:type,ext:ext};
+}
+var dt;$('bIn').addEventListener('input',function(){clearTimeout(dt);dt=setTimeout(detect,250)});
+$('bDl').addEventListener('click',function(){var r=detect();if(!r){if(!$('bIn').value.trim())IT.toast('Paste Base64 first');return}
+  var name=($('bName').value.trim()||'decoded');if(!/\.[a-z0-9]{1,5}$/i.test(name))name+='.'+r.ext;IT.download(new Blob([r.bytes],{type:r.type}),name)});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Image Compressor — Free &amp; Offline, No Upload | Instant Tools</title>
+<meta name="description" content="Compress JPG, PNG and WebP images for free. Set quality and max width, batch compress and see the % saved. Runs in your browser — no upload, works offline.">
+<meta name="keywords" content="image compressor, compress image, compress jpg, compress png, reduce image size, webp compressor, compress photo online, image size reducer, bulk image compression, compress image offline">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/image-compressor/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Image Compressor — Free &amp; Private">
+<meta property="og:description" content="Shrink JPG, PNG and WebP images in your browser. Batch, quality slider, max width, no upload.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/image-compressor/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Image Compressor","url":"https://soumyaswaraj.github.io/instant-tools/image-compressor/","applicationCategory":"MultimediaApplication","operatingSystem":"Any (browser-based)","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Compress JPG, PNG and WebP images for free. Set quality and max width, batch compress and see the % saved. Runs in your browser — no upload, works offline.","featureList":["Quality slider from 10 to 100","Maximum width downscaling","JPEG or WebP output","Batch compression","Before/after size and % saved","Works offline","No upload — files stay on your device"]},{"@type":"HowTo","name":"How to compress images","step":[{"@type":"HowToStep","text":"Drop one or more images (JPG, PNG, WebP, GIF or BMP) onto the box, or tap to choose them."},{"@type":"HowToStep","text":"Pick JPEG or WebP output, adjust the quality slider and optionally set a maximum width."},{"@type":"HowToStep","text":"Compare before and after sizes, then download each image or all of them at once."}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is this image compressor free and private?","acceptedAnswer":{"@type":"Answer","text":"Yes. It is 100% free with no sign-up or watermark. Compression runs locally in your browser using the canvas API, so your images are never uploaded to a server."}},{"@type":"Question","name":"What quality setting should I use?","acceptedAnswer":{"@type":"Answer","text":"For photos, 70–80% is a good balance: files are usually 50–80% smaller and the difference is hard to see. Use 85–95% for images with fine detail or text, and 50–65% when the smallest size matters most."}},{"@type":"Question","name":"Should I choose JPEG or WebP?","acceptedAnswer":{"@type":"Answer","text":"WebP produces files roughly 25–35% smaller than JPEG at similar quality, supports transparency and is displayed by all modern browsers. Choose JPEG when you need maximum compatibility with older software, email clients or print services."}},{"@type":"Question","name":"Why did my PNG lose transparency or get bigger?","acceptedAnswer":{"@type":"Answer","text":"JPEG has no alpha channel, so transparent areas are filled with white; choose WebP to keep transparency. Images that are already heavily compressed may not shrink further, and the tool flags these so you can lower the quality or the maximum width."}},{"@type":"Question","name":"Can I compress many images at once?","acceptedAnswer":{"@type":"Answer","text":"Yes. Add as many images as you like; they are processed one after another on your device. Change any setting and every image is recompressed automatically, then use Download all to save them."}},{"@type":"Question","name":"Does it remove EXIF metadata?","acceptedAnswer":{"@type":"Answer","text":"Yes. Re-encoding through the canvas strips EXIF data such as camera model and GPS location, which makes files smaller and safer to share."}}]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Instant Tools","item":"https://soumyaswaraj.github.io/instant-tools/"},{"@type":"ListItem","position":2,"name":"Image Compressor","item":"https://soumyaswaraj.github.io/instant-tools/image-compressor/"}]}]}
+</script>
+<style>
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;align-items:end}
+.opts .field{margin:0}
+.range-row{display:flex;align-items:center;gap:10px}
+.range-row output{min-width:3.2em;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.file-item .btns{display:flex;gap:6px;flex:none}
+.file-item .sub .badge{margin-left:6px}
+.badge.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.icon-x{width:36px;min-height:36px;padding:0}
+.color-row{display:flex;gap:8px;align-items:center}
+.color-row input[type=color]{width:44px;height:44px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);padding:3px;cursor:pointer}
+@media (max-width:480px){.file-item{flex-wrap:wrap}.file-item .btns{width:100%;justify-content:flex-end}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#image">Image tools</a> › Image Compressor</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Image tool</span>
+    <h1><span class="gradient-text">Compress images</span> to JPEG or WebP</h1>
+    <p class="lead">Image Compressor reduces the file size of JPG, PNG and WebP photos by re-encoding them at the quality you choose — free, private, and it works offline because nothing leaves your device.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Image Compressor">
+    <div class="dropzone" id="drop" aria-label="Drop images here or tap to choose">
+      <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></div>
+      <strong>Drop images here or tap to choose</strong>
+      <small>JPG, PNG, WebP, GIF, BMP · multiple files · paste works too</small>
+      <input type="file" aria-label="Choose image files">
+    </div>
+    <div id="app" class="hidden">
+      <div class="panel opts" role="group" aria-label="Compression options">
+        <div class="field"><label for="q">Quality</label><div class="range-row"><input type="range" id="q" min="10" max="100" step="1" value="75"><output id="qv" for="q">75%</output></div></div>
+        <div class="field"><label for="mw">Max width (px)</label><input class="input" id="mw" type="number" min="16" max="16384" step="1" placeholder="Original" inputmode="numeric"></div>
+        <div class="field"><span class="label" id="fmt-l">Output format</span><div class="seg" id="fmt" role="group" aria-labelledby="fmt-l"><button type="button" data-v="image/webp" aria-pressed="true">WebP</button><button type="button" data-v="image/jpeg" aria-pressed="false">JPEG</button></div></div>
+      </div>
+      <div class="stats" style="margin-top:16px" aria-live="polite">
+        <div class="stat"><b id="s-n">0</b><span>Images</span></div>
+        <div class="stat"><b id="s-before">0 B</b><span>Original size</span></div>
+        <div class="stat"><b id="s-after">–</b><span>Compressed size</span></div>
+        <div class="stat"><b id="s-saved">–</b><span>Saved</span></div>
+      </div>
+      <ul class="file-list" id="list" aria-label="Images"></ul>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="dl-all" disabled>Download all</button>
+        <button type="button" class="btn" id="more">Add more images</button>
+        <button type="button" class="btn" id="clear">Clear</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to compress images</h2>
+      <ol><li>Drop one or more images (JPG, PNG, WebP, GIF or BMP) onto the box, or tap to choose them.</li><li>Pick JPEG or WebP output, adjust the quality slider and optionally set a maximum width.</li><li>Compare before and after sizes, then download each image or all of them at once.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is an Image Compressor?</h2>
+      <p>An image compressor makes picture files smaller so they load faster on websites, fit email attachment limits and use less storage. This tool decodes each image in your browser, draws it onto an HTML canvas, optionally scales it down to a maximum width, and re-encodes it as JPEG or WebP at the quality you set (10–100).</p>
+      <p>Lossy compression at 70–80% quality usually cuts photo size by 50–80% with no visible difference. WebP files are typically 25–35% smaller than JPEG at similar quality. Re-encoding also strips EXIF metadata such as GPS location.</p>
+      <p>Your images never leave your device: there is no upload, no account and no file limit beyond your device’s memory, and the page keeps working offline once it has loaded.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>Is this image compressor free and private?</summary><p>Yes. It is 100% free with no sign-up or watermark. Compression runs locally in your browser using the canvas API, so your images are never uploaded to a server.</p></details>
+      <details><summary>What quality setting should I use?</summary><p>For photos, 70–80% is a good balance: files are usually 50–80% smaller and the difference is hard to see. Use 85–95% for images with fine detail or text, and 50–65% when the smallest size matters most.</p></details>
+      <details><summary>Should I choose JPEG or WebP?</summary><p>WebP produces files roughly 25–35% smaller than JPEG at similar quality, supports transparency and is displayed by all modern browsers. Choose JPEG when you need maximum compatibility with older software, email clients or print services.</p></details>
+      <details><summary>Why did my PNG lose transparency or get bigger?</summary><p>JPEG has no alpha channel, so transparent areas are filled with white; choose WebP to keep transparency. Images that are already heavily compressed may not shrink further, and the tool flags these so you can lower the quality or the maximum width.</p></details>
+      <details><summary>Can I compress many images at once?</summary><p>Yes. Add as many images as you like; they are processed one after another on your device. Change any setting and every image is recompressed automatically, then use Download all to save them.</p></details>
+      <details><summary>Does it remove EXIF metadata?</summary><p>Yes. Re-encoding through the canvas strips EXIF data such as camera model and GPS location, which makes files smaller and safer to share.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-image" href="../image-resizer/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></span><span><h3>Image Resizer</h3><p>Resize to exact pixels or %.</p></span></a>
+        <a class="tool-card cat-image" href="../image-converter/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg></span><span><h3>Image Converter</h3><p>Convert JPG, PNG, WebP and BMP.</p></span></a>
+        <a class="tool-card cat-pdf" href="../jpg-to-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 18h4"/></svg></span><span><h3>JPG to PDF</h3><p>Combine images into one PDF.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/bmp': 'bmp' };
+var WEBP_OK = (function () { try { var c = document.createElement('canvas'); c.width = c.height = 1; return c.toDataURL('image/webp').indexOf('data:image/webp') === 0; } catch (e) { return false; } })();
+function natural(img) { return { w: img.naturalWidth || img.width || 1024, h: img.naturalHeight || img.height || 1024 }; }
+function seg(el, onChange) {
+  el.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b || b.disabled) return;
+    el.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    onChange(b.dataset.v);
+  });
+}
+function debounce(fn, ms) { var t; return function () { clearTimeout(t); t = setTimeout(fn, ms); }; }
+
+function makeItem(file) {
+  var li = document.createElement('li'); li.className = 'file-item';
+  var thumb = document.createElement('img'); thumb.className = 'thumb'; thumb.alt = ''; thumb.src = URL.createObjectURL(file);
+  var meta = document.createElement('div'); meta.className = 'meta';
+  var nm = document.createElement('div'); nm.className = 'name'; nm.textContent = file.name; nm.title = file.name;
+  var sub = document.createElement('div'); sub.className = 'sub'; sub.textContent = IT.formatBytes(file.size) + ' · waiting…';
+  meta.appendChild(nm); meta.appendChild(sub);
+  var btns = document.createElement('div'); btns.className = 'btns';
+  var dl = document.createElement('button'); dl.type = 'button'; dl.className = 'btn btn-sm'; dl.textContent = 'Download'; dl.disabled = true;
+  var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'btn btn-sm icon-x'; rm.setAttribute('aria-label', 'Remove ' + file.name); rm.textContent = '×';
+  btns.appendChild(dl); btns.appendChild(rm);
+  li.appendChild(thumb); li.appendChild(meta); li.appendChild(btns);
+  return { file: file, li: li, sub: sub, dl: dl, rm: rm, thumbUrl: thumb.src, blob: null, img: null };
+}
+
+(function () {
+  var drop = $('#drop'), app = $('#app'), list = $('#list'), q = $('#q'), qv = $('#qv'), mw = $('#mw');
+  var items = [], fmt = WEBP_OK ? 'image/webp' : 'image/jpeg', ver = 0, running = false;
+  if (!WEBP_OK) { var wb = $('#fmt [data-v="image/webp"]'); wb.disabled = true; wb.title = 'WebP encoding is not supported in this browser'; wb.setAttribute('aria-pressed', 'false'); $('#fmt [data-v="image/jpeg"]').setAttribute('aria-pressed', 'true'); }
+  var input = IT.dropzone(drop, { accept: 'image/*', multiple: true, paste: true, onFiles: add });
+  var schedule = debounce(function () { runAll(true); }, 250);
+  seg($('#fmt'), function (v) { fmt = v; schedule(); });
+  q.addEventListener('input', function () { qv.textContent = q.value + '%'; schedule(); });
+  mw.addEventListener('input', schedule);
+  function add(files) {
+    files = files.filter(function (f) { return /^image\//.test(f.type); });
+    if (!files.length) { IT.toast('Please choose image files'); return; }
+    files.forEach(function (f) {
+      var it = makeItem(f); items.push(it); list.appendChild(it.li);
+      it.dl.addEventListener('click', function () { if (it.blob) IT.download(it.blob, outName(it)); });
+      it.rm.addEventListener('click', function () { remove(it); });
+    });
+    drop.classList.add('hidden'); app.classList.remove('hidden');
+    runAll();
+  }
+  function outName(it) { return IT.baseName(it.file.name) + '-compressed.' + EXT[it.type]; }
+  function remove(it) {
+    URL.revokeObjectURL(it.thumbUrl); if (it.img) URL.revokeObjectURL(it.img.src);
+    it.li.remove(); items = items.filter(function (x) { return x !== it; });
+    if (!items.length) reset(); else stats();
+  }
+  function reset() {
+    items.forEach(function (it) { URL.revokeObjectURL(it.thumbUrl); if (it.img) URL.revokeObjectURL(it.img.src); });
+    items = []; list.innerHTML = ''; app.classList.add('hidden'); drop.classList.remove('hidden'); stats();
+  }
+  async function runAll(bump) {
+    if (bump) ver++;
+    var my; if (running) return; running = true;
+    try {
+      for (;;) {
+        my = ver;
+        var todo = items.filter(function (it) { return it.ver !== my; });
+        for (var i = 0; i < todo.length; i++) { if (ver !== my) break; await compress(todo[i], my); }
+        if (ver === my) break;
+      }
+    } finally { running = false; }
+  }
+  async function compress(it, my) {
+    it.sub.textContent = IT.formatBytes(it.file.size) + ' · compressing…';
+    try {
+      if (!it.img) it.img = await IT.loadImage(it.file);
+      var d = natural(it.img), w = d.w, h = d.h, max = parseInt(mw.value, 10);
+      if (max > 0 && w > max) { h = Math.max(1, Math.round(h * max / w)); w = max; }
+      var c = document.createElement('canvas'); c.width = w; c.height = h;
+      var ctx = c.getContext('2d'); ctx.imageSmoothingQuality = 'high';
+      if (fmt === 'image/jpeg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
+      ctx.drawImage(it.img, 0, 0, w, h);
+      var blob = await IT.canvasToBlob(c, fmt, q.value / 100);
+      if (!blob) throw new Error('encode');
+      if (!items.includes(it)) return;
+      it.blob = blob; it.type = blob.type || fmt; it.ver = my; it.w = w; it.h = h;
+      var pct = Math.round((1 - blob.size / it.file.size) * 100);
+      it.sub.innerHTML = '';
+      it.sub.appendChild(document.createTextNode(IT.formatBytes(it.file.size) + ' → ' + IT.formatBytes(blob.size) + ' · ' + w + '×' + h));
+      var b = document.createElement('span'); b.className = 'badge ' + (pct > 0 ? 'ok' : 'warn');
+      b.textContent = pct > 0 ? '−' + pct + '%' : 'No saving — lower quality';
+      it.sub.appendChild(b);
+      it.dl.disabled = false;
+    } catch (e) {
+      it.ver = my; it.blob = null; it.dl.disabled = true;
+      it.sub.textContent = 'Could not read this image in your browser';
+    }
+    stats();
+  }
+  function stats() {
+    var before = 0, after = 0, done = 0;
+    items.forEach(function (it) { before += it.file.size; if (it.blob) { after += it.blob.size; done++; } });
+    $('#s-n').textContent = items.length;
+    $('#s-before').textContent = IT.formatBytes(before);
+    $('#s-after').textContent = done ? IT.formatBytes(after) : '–';
+    var doneBefore = items.reduce(function (s, it) { return s + (it.blob ? it.file.size : 0); }, 0);
+    $('#s-saved').textContent = done && doneBefore ? Math.round((1 - after / doneBefore) * 100) + '%' : '–';
+    $('#dl-all').disabled = !done;
+  }
+  $('#dl-all').addEventListener('click', function () {
+    var ready = items.filter(function (it) { return it.blob; });
+    ready.forEach(function (it, i) { setTimeout(function () { IT.download(it.blob, outName(it)); }, i * 350); });
+    IT.toast('Downloading ' + ready.length + ' image' + (ready.length > 1 ? 's' : ''));
+  });
+  $('#more').addEventListener('click', function () { input.click(); });
+  $('#clear').addEventListener('click', reset);
+})();
+</script>
+</body>
+</html>

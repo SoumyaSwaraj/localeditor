@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Image to Base64 Converter — Free &amp; Offline | Instant Tools</title>
+<meta name="description" content="Convert images to Base64 data URLs with ready CSS and HTML snippets, or decode Base64 back to an image. Free, private, no upload, works offline in your browser.">
+<meta name="keywords" content="image to base64, base64 image encoder, png to base64, jpg to base64, data uri generator, base64 to image, css background base64, svg to base64">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/image-to-base64/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Image to Base64 Converter — Free &amp; Private">
+<meta property="og:description" content="Turn any image into a Base64 data URI, CSS or HTML snippet — or decode Base64 back to an image.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/image-to-base64/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "Image to Base64 Converter", "url": "https://soumyaswaraj.github.io/instant-tools/image-to-base64/", "applicationCategory": "DeveloperApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Convert images to Base64 data URLs with ready CSS and HTML snippets, or decode Base64 back to an image. Free, private, no upload, works offline in your browser.", "featureList": ["Data URL, raw Base64, CSS and HTML outputs", "One-click copy", "Original vs encoded size", "Decode Base64 back to an image", "Works offline", "No upload — files stay on your device"]}, {"@type": "HowTo", "name": "How to convert an image to Base64", "step": [{"@type": "HowToStep", "text": "Drop a PNG, JPG, WebP, GIF or SVG image into the box."}, {"@type": "HowToStep", "text": "Pick the output you need: data URL, raw Base64, CSS background or HTML img tag."}, {"@type": "HowToStep", "text": "Click Copy and paste the snippet into your code. To reverse, switch to Base64 to Image and paste a string."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How do I convert an image to Base64?", "acceptedAnswer": {"@type": "Answer", "text": "Drop the image into the tool. It instantly produces a data URL, raw Base64 string, CSS background rule and HTML img tag, each with a Copy button."}}, {"@type": "Question", "name": "Why is the Base64 string bigger than my image?", "acceptedAnswer": {"@type": "Answer", "text": "Base64 encodes every 3 bytes as 4 characters, so the result is roughly 33% larger than the original file, plus a short data URL prefix."}}, {"@type": "Question", "name": "Can I convert Base64 back to an image?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Switch to Base64 to Image, paste a data URL or raw Base64 string, and the tool shows a preview and lets you download the decoded file."}}, {"@type": "Question", "name": "Which image formats are supported?", "acceptedAnswer": {"@type": "Answer", "text": "Any format your browser can read, including PNG, JPG, WebP, GIF, SVG, AVIF, BMP and ICO. The original MIME type is kept in the data URL."}}, {"@type": "Question", "name": "Is my image uploaded to a server?", "acceptedAnswer": {"@type": "Answer", "text": "No. Encoding and decoding happen locally with JavaScript. Nothing is sent over the network, and it works offline."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "Image to Base64 Converter", "item": "https://soumyaswaraj.github.io/instant-tools/image-to-base64/"}]}]}
+</script>
+<style>.b64-out{display:grid;gap:14px;margin-top:16px}
+.b64-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.b64-head label{font-weight:600;font-size:.9rem}
+.b64-out .textarea,#decIn{font-family:var(--mono);font-size:.8rem;min-height:84px;word-break:break-all}
+.b64-top{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:640px){.b64-top{grid-template-columns:1fr}}
+.b64-top .preview{min-height:160px}
+.b64-top .preview img{max-width:100%;max-height:200px}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#image">Image tools</a> › Image to Base64 Converter</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Image tool</span>
+    <h1><span class="gradient-text">Image to Base64</span> Converter</h1>
+    <p class="lead">Convert any image to a Base64 data URL, raw Base64 string, CSS background or HTML img tag in one click — or paste Base64 to preview and download the image — free, private and offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Image to Base64 Converter">
+    <div class="seg" role="group" aria-label="Direction" style="margin-bottom:16px"><button type="button" data-tab="enc" aria-pressed="true">Image → Base64</button><button type="button" data-tab="dec" aria-pressed="false">Base64 → Image</button></div>
+    <div id="enc">
+      <div class="dropzone" id="drop">
+        <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
+        <strong>Drop an image here or tap to choose</strong>
+        <small>PNG, JPG, WebP, GIF, SVG · or paste with Ctrl+V · never uploaded</small>
+        <input type="file" aria-label="Choose image">
+      </div>
+      <div id="encOut" class="hidden" style="margin-top:16px">
+        <div class="b64-top">
+          <div class="preview"><img id="encImg" alt="Selected image preview"></div>
+          <div class="stats" id="encStats"></div>
+        </div>
+        <div class="b64-out">
+          <div><div class="b64-head"><label for="o1">Data URL</label><button class="btn btn-sm btn-primary" data-copy="o1" type="button">Copy</button></div><textarea class="textarea" id="o1" readonly></textarea></div>
+          <div><div class="b64-head"><label for="o2">Raw Base64</label><button class="btn btn-sm" data-copy="o2" type="button">Copy</button></div><textarea class="textarea" id="o2" readonly></textarea></div>
+          <div><div class="b64-head"><label for="o3">CSS background</label><button class="btn btn-sm" data-copy="o3" type="button">Copy</button></div><textarea class="textarea" id="o3" readonly></textarea></div>
+          <div><div class="b64-head"><label for="o4">HTML &lt;img&gt; tag</label><button class="btn btn-sm" data-copy="o4" type="button">Copy</button></div><textarea class="textarea" id="o4" readonly></textarea></div>
+        </div>
+        <div class="actions"><button class="btn" id="encClear" type="button">Convert another image</button></div>
+      </div>
+    </div>
+    <div id="dec" class="hidden">
+      <div class="field"><label for="decIn" style="font-weight:600;display:block;margin-bottom:6px">Paste a data URL or raw Base64 string</label>
+      <textarea class="textarea" id="decIn" placeholder="data:image/png;base64,iVBORw0KGgo… or iVBORw0KGgo…" spellcheck="false"></textarea></div>
+      <p class="muted" id="decMsg" role="status" style="font-size:.88rem"></p>
+      <div id="decOut" class="hidden">
+        <div class="preview"><img id="decImg" alt="Decoded image preview" style="max-width:100%"></div>
+        <div class="actions"><button class="btn btn-primary" id="decDl" type="button">Download image</button></div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to convert an image to Base64</h2>
+      <ol><li>Drop a PNG, JPG, WebP, GIF or SVG image into the box.</li><li>Pick the output you need: data URL, raw Base64, CSS background or HTML img tag.</li><li>Click Copy and paste the snippet into your code. To reverse, switch to Base64 to Image and paste a string.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is Image to Base64?</h2>
+      <p>Base64 is an encoding that represents binary data, such as an image file, using 64 printable ASCII characters. A data URL wraps that string as <code>data:image/png;base64,…</code> so the image can be embedded directly in HTML, CSS, JSON or email without a separate file request.</p><p>Base64 output is about 33% larger than the original file, because every 3 bytes become 4 characters. Embedding is best for small icons and logos (under roughly 10 KB); larger images are usually better served as normal files. This tool reads the file with the FileReader API and shows both sizes so you can decide.</p><p>The conversion runs entirely in your browser. Files are never uploaded, and the tool works offline once loaded.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>How do I convert an image to Base64?</summary><p>Drop the image into the tool. It instantly produces a data URL, raw Base64 string, CSS background rule and HTML img tag, each with a Copy button.</p></details>
+      <details><summary>Why is the Base64 string bigger than my image?</summary><p>Base64 encodes every 3 bytes as 4 characters, so the result is roughly 33% larger than the original file, plus a short data URL prefix.</p></details>
+      <details><summary>Can I convert Base64 back to an image?</summary><p>Yes. Switch to Base64 to Image, paste a data URL or raw Base64 string, and the tool shows a preview and lets you download the decoded file.</p></details>
+      <details><summary>Which image formats are supported?</summary><p>Any format your browser can read, including PNG, JPG, WebP, GIF, SVG, AVIF, BMP and ICO. The original MIME type is kept in the data URL.</p></details>
+      <details><summary>Is my image uploaded to a server?</summary><p>No. Encoding and decoding happen locally with JavaScript. Nothing is sent over the network, and it works offline.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-dev" href="../base64-encoder/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></span><span><h3>Base64 Encode/Decode</h3><p>Encode or decode Base64 text.</p></span></a>
+        <a class="tool-card cat-image" href="../image-compressor/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></span><span><h3>Image Compressor</h3><p>Shrink images before embedding.</p></span></a>
+        <a class="tool-card cat-image" href="../favicon-generator/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg></span><span><h3>Favicon Generator</h3><p>Make favicon.ico and app icons.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  [].forEach.call(document.querySelectorAll('[data-tab]'),function(b){b.onclick=function(){
+    [].forEach.call(document.querySelectorAll('[data-tab]'),function(x){x.setAttribute('aria-pressed',x===b);$(x.dataset.tab).classList.toggle('hidden',x!==b)})}});
+  var fname='image';
+  IT.dropzone($('drop'),{accept:'image/*',paste:true,onFiles:function(files){
+    var f=files[0]; if(!f)return; if(!/^image\//.test(f.type)&&!/\.(svg|ico|avif)$/i.test(f.name))return IT.toast('Please choose an image file');
+    fname=IT.baseName(f.name);
+    var r=new FileReader(); r.onload=function(){
+      var url=r.result, raw=url.slice(url.indexOf(',')+1);
+      $('encImg').src=url; $('o1').value=url; $('o2').value=raw;
+      $('o3').value="background-image: url(\""+url+"\");";
+      $('encImg').onload=function(){
+        var w=$('encImg').naturalWidth,h=$('encImg').naturalHeight;
+        $('o4').value='<img src="'+url+'" width="'+w+'" height="'+h+'" alt="'+fname.replace(/"/g,'')+'">';
+        $('encStats').innerHTML='<div class="stat"><b>'+IT.formatBytes(f.size)+'</b><span>Original file</span></div><div class="stat"><b>'+IT.formatBytes(url.length)+'</b><span>Data URL (+'+Math.round((url.length/f.size-1)*100)+'%)</span></div><div class="stat"><b>'+(w?w+'×'+h:'—')+'</b><span>'+(f.type||'image')+'</span></div><div class="stat"><b>'+url.length.toLocaleString()+'</b><span>Characters</span></div>';
+      };
+      $('drop').classList.add('hidden'); $('encOut').classList.remove('hidden');
+      if(f.size>100*1024)IT.toast('Tip: Base64 is best for small images (<10 KB)',3500);
+    }; r.readAsDataURL(f);
+  }});
+  [].forEach.call(document.querySelectorAll('[data-copy]'),function(b){b.onclick=function(){IT.copy($(b.dataset.copy).value)}});
+  $('encClear').onclick=function(){$('encOut').classList.add('hidden');$('drop').classList.remove('hidden')};
+  var decBlob=null, decExt='png';
+  function sniff(bytes){
+    var h=Array.prototype.map.call(bytes.slice(0,12),function(x){return ('0'+x.toString(16)).slice(-2)}).join('');
+    if(h.indexOf('89504e47')===0)return['image/png','png']; if(h.indexOf('ffd8ff')===0)return['image/jpeg','jpg'];
+    if(h.indexOf('47494638')===0)return['image/gif','gif']; if(h.indexOf('52494646')===0&&h.slice(16,24)==='57454250')return['image/webp','webp'];
+    if(h.indexOf('424d')===0)return['image/bmp','bmp']; if(h.indexOf('00000100')===0)return['image/x-icon','ico'];
+    var s=String.fromCharCode.apply(null,bytes.slice(0,200)); if(/<svg|<\?xml/i.test(s))return['image/svg+xml','svg'];
+    return['image/png','png'];
+  }
+  $('decIn').addEventListener('input',function(){
+    var v=this.value.trim(); $('decOut').classList.add('hidden'); decBlob=null;
+    if(!v){$('decMsg').textContent='';return}
+    var mime=null,m=v.match(/^data:([^;,]+)?(;base64)?,/i); if(m){mime=m[1];v=v.slice(m[0].length)}
+    v=v.replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/'); while(v.length%4)v+='=';
+    try{var bin=atob(v),bytes=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i)}catch(e){$('decMsg').textContent='That is not valid Base64.';return}
+    var s=sniff(bytes); mime=mime||s[0]; decExt=s[1];
+    decBlob=new Blob([bytes],{type:mime}); var url=URL.createObjectURL(decBlob);
+    $('decImg').onload=function(){$('decMsg').textContent='Decoded '+mime+' · '+$('decImg').naturalWidth+'×'+$('decImg').naturalHeight+' · '+IT.formatBytes(bytes.length);$('decOut').classList.remove('hidden')};
+    $('decImg').onerror=function(){$('decMsg').textContent='Decoded '+IT.formatBytes(bytes.length)+', but it is not a displayable image.'};
+    $('decImg').src=url;
+  });
+  $('decDl').onclick=function(){if(decBlob)IT.download(decBlob,'decoded-image.'+decExt)};
+})();
+
+</script>
+</body>
+</html>

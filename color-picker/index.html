@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Image Color Picker &amp; Palette Extractor | Instant Tools</title>
+<meta name="description" content="Pick any pixel color from an image with a zoom loupe and get HEX, RGB and HSL codes, plus an 8-color dominant palette. Free, private, no upload, works offline.">
+<meta name="keywords" content="image color picker, color picker from image, get color from image, hex color from image, eyedropper online, color palette extractor, dominant colors, rgb hsl">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/color-picker/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Image Color Picker &amp; Palette — Free &amp; Private">
+<meta property="og:description" content="Pick exact HEX, RGB and HSL colors from any image and extract its dominant palette.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/color-picker/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "Image Color Picker & Palette", "url": "https://soumyaswaraj.github.io/instant-tools/color-picker/", "applicationCategory": "DesignApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Pick any pixel color from an image with a zoom loupe and get HEX, RGB and HSL codes, plus an 8-color dominant palette. Free, private, no upload, works offline.", "featureList": ["Pixel-precise picking with magnifier loupe", "HEX, RGB and HSL output with copy", "8-color dominant palette (k-means)", "Native screen EyeDropper where supported", "Works offline", "No upload — files stay on your device"]}, {"@type": "HowTo", "name": "How to pick a color from an image", "step": [{"@type": "HowToStep", "text": "Drop or paste an image (PNG, JPG, WebP, GIF or SVG)."}, {"@type": "HowToStep", "text": "Hover to preview colors in the loupe, then click a pixel to lock it."}, {"@type": "HowToStep", "text": "Copy the HEX, RGB or HSL value, or click any swatch in the extracted palette."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How do I get the HEX code of a color in an image?", "acceptedAnswer": {"@type": "Answer", "text": "Upload the image, then click the pixel you want. The HEX, RGB and HSL values appear instantly with Copy buttons. Use the zoom loupe to land on the exact pixel."}}, {"@type": "Question", "name": "How is the color palette generated?", "acceptedAnswer": {"@type": "Answer", "text": "The image is sampled down to about 10,000 pixels and grouped into 8 clusters with k-means. Each swatch is the average color of a cluster, sorted by coverage."}}, {"@type": "Question", "name": "Can I pick a color from outside the image?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, in Chrome, Edge and Opera. Click Pick from screen to use the browser's native EyeDropper and sample any pixel on your display."}}, {"@type": "Question", "name": "Does the tool upload my image?", "acceptedAnswer": {"@type": "Answer", "text": "No. The image is drawn to a canvas in your browser and never leaves your device. The tool also works offline."}}, {"@type": "Question", "name": "Why does the color differ slightly from my design app?", "acceptedAnswer": {"@type": "Answer", "text": "Browsers may convert images with embedded color profiles to sRGB. The picker reports the sRGB value your browser displays, which is what matters for web use."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "Image Color Picker & Palette", "item": "https://soumyaswaraj.github.io/instant-tools/color-picker/"}]}]}
+</script>
+<style>.cp-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px;margin-top:16px}
+@media(max-width:820px){.cp-layout{grid-template-columns:1fr}}
+.cp-stage{position:relative}
+.cp-stage canvas#cv{max-width:100%;height:auto;cursor:crosshair;touch-action:none}
+#loupe{position:absolute;width:132px;height:132px;border-radius:50%;border:3px solid var(--surface);box-shadow:var(--shadow-lg);pointer-events:none;image-rendering:pixelated;display:none}
+.cp-swatch{height:72px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:12px}
+.cp-val{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.cp-val span{width:38px;font-size:.8rem;font-weight:700;color:var(--muted)}
+.cp-val .input{font-family:var(--mono);font-size:.88rem}
+.palette{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.palette button{border:1px solid var(--border);border-radius:10px;height:56px;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding:4px;font:600 .7rem var(--mono)}
+.palette button span{background:var(--surface);color:var(--text);border-radius:4px;padding:1px 4px}
+.cp-hist{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.cp-hist button{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);cursor:pointer}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#image">Image tools</a> › Image Color Picker &amp; Palette</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Image tool</span>
+    <h1><span class="gradient-text">Image Color Picker</span> &amp; Palette Extractor</h1>
+    <p class="lead">Upload an image and click any pixel to get its exact HEX, RGB and HSL color codes, with a magnifier loupe for precision and an automatic 8-color palette — free, private and offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Image Color Picker &amp; Palette">
+    <div class="dropzone" id="drop">
+      <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
+      <strong>Drop an image here or tap to choose</strong>
+      <small>PNG, JPG, WebP, GIF, SVG · or paste with Ctrl+V · never uploaded</small>
+      <input type="file" aria-label="Choose image">
+    </div>
+    <div class="actions" style="justify-content:center"><button class="btn hidden" id="eye" type="button">Pick from screen (EyeDropper)</button><button class="btn hidden" id="another" type="button">Use another image</button></div>
+    <div id="work" class="cp-layout hidden">
+      <div>
+        <div class="preview cp-stage" id="stage"><canvas id="cv" tabindex="0" aria-label="Image — click to pick a color, arrow keys move the picker"></canvas><canvas id="loupe" width="132" height="132" aria-hidden="true"></canvas></div>
+        <p class="muted" style="font-size:.85rem;margin:8px 0 0">Hover to preview · click to lock a color · arrow keys nudge one pixel</p>
+      </div>
+      <div class="panel">
+        <div class="cp-swatch" id="sw" aria-hidden="true"></div>
+        <div class="cp-val"><span>HEX</span><input class="input" id="hex" readonly aria-label="HEX value"><button class="btn btn-sm" data-copy="hex" type="button">Copy</button></div>
+        <div class="cp-val"><span>RGB</span><input class="input" id="rgb" readonly aria-label="RGB value"><button class="btn btn-sm" data-copy="rgb" type="button">Copy</button></div>
+        <div class="cp-val"><span>HSL</span><input class="input" id="hsl" readonly aria-label="HSL value"><button class="btn btn-sm" data-copy="hsl" type="button">Copy</button></div>
+        <p class="muted mono" id="coord" style="font-size:.8rem;margin:4px 0 12px"></p>
+        <strong style="font-size:.9rem">Dominant palette</strong>
+        <div class="palette" id="pal"></div>
+        <div class="actions" style="margin-top:10px"><button class="btn btn-sm" id="copyPal" type="button">Copy palette HEX</button><button class="btn btn-sm" id="copyCss" type="button">Copy as CSS vars</button></div>
+        <div id="histWrap" class="hidden" style="margin-top:12px"><strong style="font-size:.9rem">Picked colors</strong><div class="cp-hist" id="hist"></div></div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to pick a color from an image</h2>
+      <ol><li>Drop or paste an image (PNG, JPG, WebP, GIF or SVG).</li><li>Hover to preview colors in the loupe, then click a pixel to lock it.</li><li>Copy the HEX, RGB or HSL value, or click any swatch in the extracted palette.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is an image color picker?</h2>
+      <p>An image color picker reads the exact red, green and blue values of a single pixel and converts them to color codes such as HEX (#1e90ff), RGB (rgb(30, 144, 255)) and HSL (hsl(210, 100%, 56%)). This tool draws your image to an HTML5 canvas and reads pixel data with getImageData, so the value is exact, not estimated.</p><p>The palette is built with k-means clustering: the image is downsampled to about 10,000 pixels, grouped into 8 clusters, and sorted by how much of the image each color covers. In Chrome and Edge, the Pick from screen button uses the native EyeDropper API to sample any color on your display.</p><p>Everything runs locally. Your image is never uploaded, and the tool works offline once loaded.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>How do I get the HEX code of a color in an image?</summary><p>Upload the image, then click the pixel you want. The HEX, RGB and HSL values appear instantly with Copy buttons. Use the zoom loupe to land on the exact pixel.</p></details>
+      <details><summary>How is the color palette generated?</summary><p>The image is sampled down to about 10,000 pixels and grouped into 8 clusters with k-means. Each swatch is the average color of a cluster, sorted by coverage.</p></details>
+      <details><summary>Can I pick a color from outside the image?</summary><p>Yes, in Chrome, Edge and Opera. Click Pick from screen to use the browser&#x27;s native EyeDropper and sample any pixel on your display.</p></details>
+      <details><summary>Does the tool upload my image?</summary><p>No. The image is drawn to a canvas in your browser and never leaves your device. The tool also works offline.</p></details>
+      <details><summary>Why does the color differ slightly from my design app?</summary><p>Browsers may convert images with embedded color profiles to sRGB. The picker reports the sRGB value your browser displays, which is what matters for web use.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-dev" href="../color-converter/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 0 0 0 20c1 0 2-.8 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A5.7 5.7 0 0 0 22 9.8C22 5.5 17.5 2 12 2z"/></svg></span><span><h3>Color Converter</h3><p>Convert HEX, RGB and HSL.</p></span></a>
+        <a class="tool-card cat-image" href="../image-filters/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></span><span><h3>Photo Filters & Editor</h3><p>Adjust brightness, contrast and more.</p></span></a>
+        <a class="tool-card cat-image" href="../image-cropper/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2"/></svg></span><span><h3>Image Cropper</h3><p>Crop to any size or ratio.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var cv=$('cv'),ctx=cv.getContext('2d',{willReadFrequently:true}),lp=$('loupe'),lx=lp.getContext('2d');
+  var data=null,px=0,py=0,palette=[],hist=[];
+  function hex2(n){return ('0'+n.toString(16)).slice(-2)}
+  function toHex(r,g,b){return '#'+hex2(r)+hex2(g)+hex2(b)}
+  function toHsl(r,g,b){r/=255;g/=255;b/=255;var mx=Math.max(r,g,b),mn=Math.min(r,g,b),h=0,s=0,l=(mx+mn)/2,d=mx-mn;
+    if(d){s=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;h*=60}
+    return 'hsl('+Math.round(h)+', '+Math.round(s*100)+'%, '+Math.round(l*100)+'%)'}
+  function show(r,g,b,label){$('sw').style.background=toHex(r,g,b);$('hex').value=toHex(r,g,b).toUpperCase();$('rgb').value='rgb('+r+', '+g+', '+b+')';$('hsl').value=toHsl(r,g,b);$('coord').textContent=label||''}
+  function at(x,y){var i=(y*cv.width+x)*4,d=data.data;return[d[i],d[i+1],d[i+2],d[i+3]]}
+  if(window.EyeDropper)$('eye').classList.remove('hidden');
+  $('eye').onclick=function(){new EyeDropper().open().then(function(r){var h=r.sRGBHex;if(h[0]!=='#'){var m=h.match(/\d+/g);h=toHex(+m[0],+m[1],+m[2])}
+    var n=parseInt(h.slice(1),16);$('work').classList.remove('hidden');show(n>>16,n>>8&255,n&255,'Picked from screen');addHist(h)}).catch(function(){})};
+  IT.dropzone($('drop'),{accept:'image/*',paste:true,onFiles:function(files){var f=files[0];if(!f)return;
+    IT.loadImage(f).then(function(img){
+      var W=img.naturalWidth||800,H=img.naturalHeight||600,max=4096,s=Math.min(1,max/Math.max(W,H));
+      cv.width=Math.round(W*s);cv.height=Math.round(H*s);ctx.drawImage(img,0,0,cv.width,cv.height);
+      data=ctx.getImageData(0,0,cv.width,cv.height);
+      $('drop').classList.add('hidden');$('another').classList.remove('hidden');$('work').classList.remove('hidden');
+      buildPalette(); px=cv.width>>1;py=cv.height>>1; var c=at(px,py); show(c[0],c[1],c[2],'x '+px+', y '+py);
+    }).catch(function(){IT.toast('Could not read that image')})}});
+  $('another').onclick=function(){$('drop').classList.remove('hidden');$('drop').click()};
+  function pos(e){var r=cv.getBoundingClientRect();return[Math.min(cv.width-1,Math.max(0,Math.floor((e.clientX-r.left)*cv.width/r.width))),Math.min(cv.height-1,Math.max(0,Math.floor((e.clientY-r.top)*cv.height/r.height))),e.clientX-r.left,e.clientY-r.top,r]}
+  function loupe(x,y,sx,sy){var n=11,z=12;lx.imageSmoothingEnabled=false;lx.fillStyle='#808080';lx.fillRect(0,0,132,132);
+    lx.drawImage(cv,x-5,y-5,n,n,0,0,n*z,n*z);lx.strokeStyle='#fff';lx.lineWidth=2;lx.strokeRect(5*z,5*z,z,z);lx.strokeStyle='#000';lx.lineWidth=1;lx.strokeRect(5*z-1.5,5*z-1.5,z+3,z+3);
+    var st=$('stage').getBoundingClientRect(),cr=cv.getBoundingClientRect(),L=cr.left-st.left+sx+18,T=cr.top-st.top+sy-150;
+    if(T<0)T=cr.top-st.top+sy+18; if(L+132>st.width)L=cr.left-st.left+sx-150;
+    lp.style.left=L+'px';lp.style.top=T+'px';lp.style.display='block'}
+  var locked=false;
+  cv.addEventListener('pointermove',function(e){if(!data)return;var p=pos(e),c=at(p[0],p[1]);loupe(p[0],p[1],p[2],p[3]);if(!locked||e.pointerType!=='mouse'){show(c[0],c[1],c[2],'x '+p[0]+', y '+p[1])}else{$('coord').textContent='Locked · click again to pick'}});
+  cv.addEventListener('pointerleave',function(){lp.style.display='none';if(locked){var c=at(px,py);show(c[0],c[1],c[2],'x '+px+', y '+py)}});
+  cv.addEventListener('pointerdown',function(e){if(!data)return;var p=pos(e);px=p[0];py=p[1];var c=at(px,py);show(c[0],c[1],c[2],'x '+px+', y '+py);locked=true;addHist(toHex(c[0],c[1],c[2]))});
+  cv.addEventListener('pointerup',function(e){if(e.pointerType!=='mouse')lp.style.display='none'});
+  cv.addEventListener('keydown',function(e){if(!data)return;var k={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
+    if(k){e.preventDefault();px=Math.min(cv.width-1,Math.max(0,px+k[0]*(e.shiftKey?10:1)));py=Math.min(cv.height-1,Math.max(0,py+k[1]*(e.shiftKey?10:1)));var c=at(px,py);show(c[0],c[1],c[2],'x '+px+', y '+py);
+      var r=cv.getBoundingClientRect();loupe(px,py,px*r.width/cv.width,py*r.height/cv.height)}
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();var c2=at(px,py);addHist(toHex(c2[0],c2[1],c2[2]));IT.copy($('hex').value)}});
+  cv.addEventListener('blur',function(){lp.style.display='none'});
+  function addHist(h){h=h.toUpperCase();hist=hist.filter(function(x){return x!==h});hist.unshift(h);hist=hist.slice(0,16);$('histWrap').classList.remove('hidden');
+    $('hist').innerHTML='';hist.forEach(function(c){var b=document.createElement('button');b.type='button';b.style.background=c;b.title=c;b.setAttribute('aria-label','Copy '+c);b.onclick=function(){IT.copy(c)};$('hist').appendChild(b)})}
+  function buildPalette(){
+    var d=data.data,total=cv.width*cv.height,step=Math.max(1,Math.floor(total/10000)),pts=[];
+    for(var i=0;i<total;i+=step){var o=i*4;if(d[o+3]<128)continue;pts.push([d[o],d[o+1],d[o+2]])}
+    if(!pts.length)return; var K=Math.min(8,pts.length),cents=[];
+    // k-means++ style init: farthest point seeding
+    cents.push(pts[Math.floor(pts.length/2)].slice());
+    while(cents.length<K){var best=-1,bi=0;for(var j=0;j<pts.length;j+=3){var md=1e9;for(var c=0;c<cents.length;c++){var dd=dist(pts[j],cents[c]);if(dd<md)md=dd}if(md>best){best=md;bi=j}}cents.push(pts[bi].slice())}
+    var asg=new Array(pts.length),counts;
+    for(var it=0;it<12;it++){var sums=cents.map(function(){return[0,0,0]});counts=cents.map(function(){return 0});
+      for(var p=0;p<pts.length;p++){var m=1e9,mi=0;for(var c2=0;c2<K;c2++){var dd2=dist(pts[p],cents[c2]);if(dd2<m){m=dd2;mi=c2}}asg[p]=mi;counts[mi]++;sums[mi][0]+=pts[p][0];sums[mi][1]+=pts[p][1];sums[mi][2]+=pts[p][2]}
+      for(var c3=0;c3<K;c3++)if(counts[c3])cents[c3]=[sums[c3][0]/counts[c3],sums[c3][1]/counts[c3],sums[c3][2]/counts[c3]]}
+    palette=cents.map(function(c,i){return{hex:toHex(Math.round(c[0]),Math.round(c[1]),Math.round(c[2])).toUpperCase(),rgb:c.map(Math.round),n:counts[i]}}).filter(function(x){return x.n}).sort(function(a,b){return b.n-a.n});
+    var tot=pts.length;$('pal').innerHTML='';
+    palette.forEach(function(c){var b=document.createElement('button');b.type='button';b.style.background=c.hex;b.title=c.hex+' · '+Math.round(c.n/tot*100)+'% of image';b.setAttribute('aria-label','Select '+c.hex+', '+Math.round(c.n/tot*100)+' percent');
+      b.innerHTML='<span>'+c.hex+'</span>';b.onclick=function(){show(c.rgb[0],c.rgb[1],c.rgb[2],'Palette · '+Math.round(c.n/tot*100)+'% of image');IT.copy(c.hex)};$('pal').appendChild(b)});
+  }
+  function dist(a,b){var r=a[0]-b[0],g=a[1]-b[1],bl=a[2]-b[2];return r*r*2+g*g*4+bl*bl*3}
+  [].forEach.call(document.querySelectorAll('[data-copy]'),function(b){b.onclick=function(){if($(b.dataset.copy).value)IT.copy($(b.dataset.copy).value)}});
+  $('copyPal').onclick=function(){IT.copy(palette.map(function(c){return c.hex}).join(', '))};
+  $('copyCss').onclick=function(){IT.copy(':root{\n'+palette.map(function(c,i){return '  --color-'+(i+1)+': '+c.hex+';'}).join('\n')+'\n}')};
+})();
+
+</script>
+</body>
+</html>

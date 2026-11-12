@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rotate PDF Pages Online — Free, Private, Offline</title>
+<meta name="description" content="Rotate PDF pages for free: turn single pages or the whole document by 90, 180 or 270 degrees with live previews, then save. No upload, works offline.">
+<meta name="keywords" content="rotate pdf, rotate pdf pages, turn pdf page, rotate pdf 90 degrees, rotate pdf offline, fix upside down pdf, rotate single pdf page">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/rotate-pdf/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Rotate PDF — Free &amp; Private">
+<meta property="og:description" content="Rotate one page or all pages of a PDF in your browser and save. No upload, works offline.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/rotate-pdf/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Rotate PDF","url":"https://soumyaswaraj.github.io/instant-tools/rotate-pdf/","applicationCategory":"UtilitiesApplication","operatingSystem":"Any (browser-based)","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Rotate PDF pages for free: turn single pages or the whole document by 90, 180 or 270 degrees with live previews, then save. No upload, works offline.","featureList":["Rotate single pages or all pages","90, 180 and 270 degree rotation","Live rotated thumbnails","Lossless — no re-rendering","Works offline","No upload — files stay on your device"]},{"@type":"HowTo","name":"How to rotate PDF pages","step":[{"@type":"HowToStep","text":"Drop a PDF into the box, or tap to choose one."},{"@type":"HowToStep","text":"Rotate single pages with their arrow buttons, or use Rotate all for every page."},{"@type":"HowToStep","text":"Press Save rotated PDF to download the result."}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do I rotate just one page of a PDF?","acceptedAnswer":{"@type":"Answer","text":"Open your PDF, then use the rotate left or rotate right buttons under that page. Other pages stay unchanged. Press Save rotated PDF when you are done."}},{"@type":"Question","name":"Can I rotate all pages at once?","acceptedAnswer":{"@type":"Answer","text":"Yes. Use Rotate all left, Rotate all right or Rotate all 180° to turn every page in one click, then save."}},{"@type":"Question","name":"Is the rotation permanent?","acceptedAnswer":{"@type":"Answer","text":"Yes. The saved PDF stores the new orientation, so it opens rotated in every PDF reader, browser and printer."}},{"@type":"Question","name":"Does rotating a PDF reduce quality?","acceptedAnswer":{"@type":"Answer","text":"No. Only the page rotation setting changes. Text, fonts and images are kept exactly as they were."}},{"@type":"Question","name":"Is my file uploaded?","acceptedAnswer":{"@type":"Answer","text":"No. The PDF is processed entirely in your browser and never leaves your device. The tool also works offline."}}]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Instant Tools","item":"https://soumyaswaraj.github.io/instant-tools/"},{"@type":"ListItem","position":2,"name":"Rotate PDF","item":"https://soumyaswaraj.github.io/instant-tools/rotate-pdf/"}]}]}
+</script>
+<style>
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-top:16px}
+.pg{position:relative;background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.pg .pv{width:100%;aspect-ratio:3/4;display:grid;place-items:center;background:var(--surface-2);border-radius:8px;overflow:hidden}
+.pg .pv canvas,.pg .pv img{max-width:100%;max-height:100%;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:transform .25s;background:#fff}
+.pg .cap{font-size:.8rem;color:var(--muted);font-weight:600;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pg .pgbtns{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.pg .pgbtns .btn{padding:4px 8px;min-height:0;font-size:.78rem}
+.pg.sel{border-color:var(--brand);background:var(--brand-soft)}
+.pg button.pick{all:unset;cursor:pointer;width:100%;display:flex;flex-direction:column;align-items:center;gap:6px}
+.pg button.pick:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:16px}
+.opts label.lbl,.lbl{display:block;font-weight:600;font-size:.88rem;margin-bottom:6px}
+.outlist{display:grid;gap:8px;margin-top:14px}
+.dragging{opacity:.4}
+.drop-target{border-color:var(--brand)!important}
+.progress{font-size:.88rem;color:var(--muted);margin-top:10px;min-height:1.2em}
+.tool-app .file-list{display:grid;gap:8px;margin-top:16px}
+.pg .deg{position:absolute;top:12px;right:12px;font-size:.72rem;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--brand);color:#fff}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#pdf">PDF tools</a> › Rotate PDF</nav>
+
+  <section class="hero">
+    <span class="eyebrow">PDF tool</span>
+    <h1><span class="gradient-text">Rotate PDF</span> pages</h1>
+    <p class="lead">Rotate individual PDF pages or the entire document by 90, 180 or 270 degrees and save it — free, private and fully offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Rotate PDF">
+    <div class="dropzone" id="drop"><div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></svg></div><strong>Drop a PDF here or tap to choose</strong><small>One PDF file · No upload — processed in your browser</small><input type="file"></div>
+    <div id="work" class="hidden">
+      <div class="file-item"><span class="badge">PDF</span><div class="meta"><div class="name" id="fname"></div><div class="sub" id="finfo"></div></div><button class="btn btn-sm" id="change" type="button">Change file</button></div>
+      <div class="panel" style="margin-top:16px"><span class="lbl">Rotate all pages</span><div class="row"><button class="btn btn-sm" type="button" data-all="270">↺ Left 90°</button><button class="btn btn-sm" type="button" data-all="90">↻ Right 90°</button><button class="btn btn-sm" type="button" data-all="180">180°</button><button class="btn btn-sm" type="button" id="reset">Reset</button></div></div>
+      <div class="actions"><button class="btn btn-primary" id="saveBtn" type="button">Save rotated PDF</button></div>
+      <p class="progress" id="prog" aria-live="polite"></p>
+      <div class="pgrid" id="grid" aria-label="Pages"></div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to rotate PDF pages</h2>
+      <ol><li>Drop a PDF into the box, or tap to choose one.</li><li>Rotate single pages with their arrow buttons, or use Rotate all for every page.</li><li>Press Save rotated PDF to download the result.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is a PDF rotator?</h2>
+      <p>A PDF rotator changes the orientation of pages in a PDF. This tool sets each page’s /Rotate value in 90-degree steps and adds it to any rotation the page already has, so sideways scans and upside-down pages are fixed permanently.</p>
+      <p>Rotation is lossless: page content is not re-rendered, so text stays selectable and images keep full quality. Thumbnails are drawn locally with pdf.js and the file is saved with pdf-lib. Your PDF never leaves your device and the tool works offline.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>How do I rotate just one page of a PDF?</summary><p>Open your PDF, then use the rotate left or rotate right buttons under that page. Other pages stay unchanged. Press Save rotated PDF when you are done.</p></details>
+      <details><summary>Can I rotate all pages at once?</summary><p>Yes. Use Rotate all left, Rotate all right or Rotate all 180° to turn every page in one click, then save.</p></details>
+      <details><summary>Is the rotation permanent?</summary><p>Yes. The saved PDF stores the new orientation, so it opens rotated in every PDF reader, browser and printer.</p></details>
+      <details><summary>Does rotating a PDF reduce quality?</summary><p>No. Only the page rotation setting changes. Text, fonts and images are kept exactly as they were.</p></details>
+      <details><summary>Is my file uploaded?</summary><p>No. The PDF is processed entirely in your browser and never leaves your device. The tool also works offline.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-pdf" href="../organize-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span><span><h3>Organize PDF</h3><p>Reorder or delete pages.</p></span></a>
+        <a class="tool-card cat-pdf" href="../merge-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v6a4 4 0 0 0 4 4h0a4 4 0 0 1 4 4v4"/><path d="M16 3v6a4 4 0 0 1-4 4"/><path d="m5 18 3 3 3-3"/></svg></span><span><h3>Merge PDF</h3><p>Combine many PDFs into one.</p></span></a>
+        <a class="tool-card cat-pdf" href="../add-page-numbers/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg></span><span><h3>Add Page Numbers</h3><p>Number every PDF page.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/vendor/pdf-lib.min.js"></script>
+<script src="../assets/vendor/pdf.min.js"></script>
+<script>
+(function () {
+'use strict';
+
+var $ = function (s) { return document.querySelector(s); };
+function el(tag, attrs, html) { var e = document.createElement(tag); if (attrs) for (var k in attrs) e.setAttribute(k, attrs[k]); if (html != null) e.innerHTML = html; return e; }
+function escH(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function segInit(seg, cb) { seg.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; seg.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); cb && cb(b.dataset.v); }); }
+function segVal(seg) { var b = seg.querySelector('[aria-pressed=true]'); return b && b.dataset.v; }
+function readBuf(file) { return file.arrayBuffer ? file.arrayBuffer() : new Promise(function (r) { var fr = new FileReader(); fr.onload = function () { r(fr.result); }; fr.readAsArrayBuffer(file); }); }
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = '../assets/vendor/pdf.worker.min.js';
+function openPdfJs(buf) { return pdfjsLib.getDocument({ data: new Uint8Array(buf.slice(0)) }).promise; }
+function renderThumb(pdf, n, maxW) {
+  return pdf.getPage(n).then(function (page) {
+    var v = page.getViewport({ scale: 1 }); var s = (maxW || 180) / v.width; var vp = page.getViewport({ scale: s });
+    var c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+    return page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise.then(function () { return c; });
+  });
+}
+function pdfBlob(bytes) { return new Blob([bytes], { type: 'application/pdf' }); }
+function busy(btn, on, label) { if (on) { btn._l = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + (label || 'Working…'); } else { btn.disabled = false; if (btn._l) btn.innerHTML = btn._l; } }
+
+
+var buf = null, rot = [], base = 'document', fname = '';
+var input = IT.dropzone($('#drop'), { accept: 'application/pdf,.pdf', onFiles: function (f) { load(f[0]); } });
+$('#change').onclick = function () { input.click(); };
+function load(file) {
+  if (!file || !(/pdf$/i.test(file.type) || /\.pdf$/i.test(file.name))) { IT.toast('Please choose a PDF file'); return; }
+  base = IT.baseName(file.name);
+  readBuf(file).then(function (b) { buf = b; return openPdfJs(b); }).then(function (pdf) {
+    rot = []; for (var i = 0; i < pdf.numPages; i++) rot.push(0);
+    $('#drop').classList.add('hidden'); $('#work').classList.remove('hidden'); $('#prog').textContent = '';
+    $('#fname').textContent = file.name; $('#finfo').textContent = pdf.numPages + ' page' + (pdf.numPages > 1 ? 's' : '') + ' · ' + IT.formatBytes(file.size);
+    var G = $('#grid'); G.innerHTML = '';
+    for (var n = 1; n <= pdf.numPages; n++) { var p = el('div', { class: 'pg', 'data-n': n }); p.innerHTML = '<div class="pv"></div><span class="cap">Page ' + n + '</span><span class="deg hidden"></span><div class="pgbtns"><button class="btn btn-sm" type="button" data-r="270" aria-label="Rotate page ' + n + ' left">↺</button><button class="btn btn-sm" type="button" data-r="90" aria-label="Rotate page ' + n + ' right">↻</button></div>'; G.appendChild(p); }
+    var chain = Promise.resolve();
+    for (var k = 1; k <= pdf.numPages; k++) (function (k) { chain = chain.then(function () { return renderThumb(pdf, k, 160).then(function (c) { var pv = G.querySelector('.pg[data-n="' + k + '"] .pv'); if (pv) { pv.appendChild(c); apply(k - 1); } }); }); })(k);
+  }).catch(function (e) { IT.toast(/password/i.test(e && e.name + e.message) ? 'This PDF is password protected' : 'Could not open this PDF'); });
+}
+function apply(i) {
+  var p = $('#grid').querySelector('.pg[data-n="' + (i + 1) + '"]'); if (!p) return;
+  var c = p.querySelector('canvas'), r = rot[i], d = p.querySelector('.deg');
+  d.classList.toggle('hidden', !r); d.textContent = r + '°';
+  p.classList.toggle('sel', !!r);
+  if (!c) return;
+  var pv = p.querySelector('.pv'), bw = pv.clientWidth, bh = pv.clientHeight, w = c.offsetWidth, h = c.offsetHeight, s = 1;
+  if (r % 180 && w && h) s = Math.min(1, bw / h, bh / w);
+  c.style.transform = 'rotate(' + r + 'deg) scale(' + s + ')';
+}
+function applyAll() { rot.forEach(function (_, i) { apply(i); }); }
+window.addEventListener('resize', applyAll);
+$('#grid').addEventListener('click', function (e) { var b = e.target.closest('button[data-r]'); if (!b) return; var i = +b.closest('.pg').dataset.n - 1; rot[i] = (rot[i] + +b.dataset.r) % 360; apply(i); });
+$('#work').addEventListener('click', function (e) { var b = e.target.closest('button[data-all]'); if (!b) return; rot = rot.map(function (r) { return (r + +b.dataset.all) % 360; }); applyAll(); });
+$('#reset').onclick = function () { rot = rot.map(function () { return 0; }); applyAll(); };
+$('#saveBtn').onclick = function () {
+  var btn = this; if (!buf) return;
+  if (!rot.some(Boolean)) { IT.toast('Rotate at least one page first'); return; }
+  busy(btn, true, 'Saving…');
+  PDFLib.PDFDocument.load(buf, { ignoreEncryption: true }).then(function (doc) {
+    doc.getPages().forEach(function (p, i) { if (rot[i]) p.setRotation(PDFLib.degrees(((((p.getRotation().angle || 0) + rot[i]) % 360) + 360) % 360)); });
+    return doc.save();
+  }).then(function (bytes) {
+    IT.download(pdfBlob(bytes), base + '-rotated.pdf');
+    var cnt = rot.filter(Boolean).length;
+    $('#prog').textContent = 'Done — ' + cnt + ' page' + (cnt > 1 ? 's' : '') + ' rotated, ' + IT.formatBytes(bytes.length) + '. Your download has started.';
+    IT.toast('Rotated PDF saved');
+  }).catch(function (e) { $('#prog').textContent = 'Error: ' + (e.message || e); }).finally(function () { busy(btn, false); });
+};
+
+})();
+</script>
+</body>
+</html>

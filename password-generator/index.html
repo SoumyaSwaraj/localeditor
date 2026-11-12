@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Password Generator — Strong, Random &amp; Secure | Instant Tools</title>
+<meta name="description" content="Free strong password generator. Create random passwords or passphrases with crypto-secure randomness, entropy meter and bulk mode. Runs offline in your browser.">
+<meta name="keywords" content="password generator, strong password generator, random password, secure password, passphrase generator, diceware, password strength checker, entropy">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/password-generator/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Password Generator — Free &amp; Private">
+<meta property="og:description" content="Create strong random passwords and passphrases with crypto-grade randomness. Nothing leaves your device.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/password-generator/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "Password Generator", "url": "https://soumyaswaraj.github.io/instant-tools/password-generator/", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Free strong password generator. Create random passwords or passphrases with crypto-secure randomness, entropy meter and bulk mode. Runs offline in your browser.", "featureList": ["Length 4–128 characters", "Uppercase, lowercase, digits and symbols", "Exclude ambiguous characters", "Passphrase mode", "Entropy-based strength meter", "Bulk generate 5 or 10", "Works offline", "No upload — files stay on your device"]}, {"@type": "HowTo", "name": "How to generate a strong password", "step": [{"@type": "HowToStep", "text": "Choose Password or Passphrase mode and set the length or number of words."}, {"@type": "HowToStep", "text": "Toggle the character sets you need and optionally exclude ambiguous characters like 0/O and l/1."}, {"@type": "HowToStep", "text": "Click Generate, check the strength meter, then copy the password or generate a bulk list."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is this password generator secure?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. It uses crypto.getRandomValues, the browser's cryptographically secure random generator, with rejection sampling to avoid modulo bias. Passwords are created on your device and never transmitted or stored."}}, {"@type": "Question", "name": "How long should my password be?", "acceptedAnswer": {"@type": "Answer", "text": "Use at least 14–16 characters with mixed character sets for important accounts. That gives roughly 90 or more bits of entropy, which is far beyond practical brute-force attacks."}}, {"@type": "Question", "name": "What is password entropy?", "acceptedAnswer": {"@type": "Answer", "text": "Entropy measures unpredictability in bits. It equals length multiplied by log2 of the pool size. Each extra bit doubles the number of guesses an attacker needs."}}, {"@type": "Question", "name": "What is passphrase mode?", "acceptedAnswer": {"@type": "Answer", "text": "Passphrase mode joins several random words, such as river-maple-orbit-quill. Five or six words are easy to type and remember while still giving strong entropy."}}, {"@type": "Question", "name": "What does exclude ambiguous characters do?", "acceptedAnswer": {"@type": "Answer", "text": "It removes look-alike characters such as 0, O, o, 1, l, I and | so passwords are easier to read and type by hand without mistakes."}}, {"@type": "Question", "name": "Does it work offline?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. After the first visit the page is cached by the app, so you can generate passwords with no internet connection."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "Password Generator", "item": "https://soumyaswaraj.github.io/instant-tools/password-generator/"}]}]}
+</script>
+<style>.pw-out{display:flex;gap:8px;align-items:stretch}
+.pw-out .input{flex:1;font-family:var(--mono);font-size:1.15rem;min-width:0}
+.meter{height:10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);overflow:hidden;margin:12px 0 6px}
+.meter i{display:block;height:100%;width:0;background:var(--err);transition:width .2s,background .2s}
+.bulk{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:6px}
+.bulk li{display:flex;gap:8px;align-items:center;padding:8px 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px}
+.bulk code{flex:1;font-family:var(--mono);word-break:break-all;min-width:0}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:12px}
+input[type=range]{width:100%;accent-color:var(--brand)}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#dev">Developer tools</a> › Password Generator</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Developer tool</span>
+    <h1>Strong <span class="gradient-text">Password Generator</span></h1>
+    <p class="lead">This password generator creates strong random passwords and passphrases using your browser's cryptographically secure random number generator — free, private and fully offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Password Generator">
+    <div class="field"><div class="seg" role="group" aria-label="Mode"><button type="button" data-mode="pw" aria-pressed="true">Password</button><button type="button" data-mode="pp" aria-pressed="false">Passphrase</button></div></div>
+    <div class="pw-out"><label for="out" class="hidden">Generated password</label><input id="out" class="input" readonly aria-label="Generated password" spellcheck="false"><button type="button" class="btn btn-primary" id="copy">Copy</button><button type="button" class="btn" id="regen" aria-label="Generate new password">↻</button></div>
+    <div class="meter" aria-hidden="true"><i id="bar"></i></div>
+    <p class="muted" id="strength" aria-live="polite" style="margin:0"></p>
+    <div class="panel" style="margin-top:16px">
+      <div id="pwOpts">
+        <label class="field" for="len" style="display:block"><strong>Length: <span id="lenV">20</span></strong><input type="range" id="len" min="4" max="128" value="20"></label>
+        <div class="opts">
+          <label class="check"><input type="checkbox" id="up" checked> Uppercase (A–Z)</label>
+          <label class="check"><input type="checkbox" id="lo" checked> Lowercase (a–z)</label>
+          <label class="check"><input type="checkbox" id="di" checked> Digits (0–9)</label>
+          <label class="check"><input type="checkbox" id="sy" checked> Symbols (!@#$…)</label>
+          <label class="check"><input type="checkbox" id="amb"> Exclude ambiguous (0 O l 1 I |)</label>
+        </div>
+      </div>
+      <div id="ppOpts" class="hidden">
+        <label class="field" for="words" style="display:block"><strong>Words: <span id="wordsV">5</span></strong><input type="range" id="words" min="3" max="12" value="5"></label>
+        <div class="opts">
+          <label class="field" for="sep">Separator <select id="sep" class="select"><option value="-">Hyphen (-)</option><option value=" ">Space</option><option value=".">Dot (.)</option><option value="_">Underscore (_)</option><option value="">None</option></select></label>
+          <label class="check"><input type="checkbox" id="cap" checked> Capitalize words</label>
+          <label class="check"><input type="checkbox" id="num"> Add a number</label>
+        </div>
+      </div>
+    </div>
+    <div class="actions"><button type="button" class="btn btn-primary" id="gen">Generate</button><button type="button" class="btn" data-bulk="5">Generate 5</button><button type="button" class="btn" data-bulk="10">Generate 10</button><button type="button" class="btn hidden" id="copyAll">Copy all</button></div>
+    <ul class="bulk" id="bulk" aria-label="Bulk passwords"></ul>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to generate a strong password</h2>
+      <ol><li>Choose Password or Passphrase mode and set the length or number of words.</li><li>Toggle the character sets you need and optionally exclude ambiguous characters like 0/O and l/1.</li><li>Click Generate, check the strength meter, then copy the password or generate a bulk list.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is Password Generator?</h2>
+      <p>A password generator is a tool that builds unpredictable passwords from random choices. This one uses <code>crypto.getRandomValues</code>, the Web Crypto CSPRNG built into every modern browser, never <code>Math.random</code>.</p>
+      <p>Each character is chosen with unbiased rejection sampling, so every symbol in the pool is equally likely. Strength is measured as entropy: length × log2(pool size) bits. 60+ bits is strong for most accounts; 80+ bits is very strong.</p>
+      <p>Passwords are generated locally and are never sent, logged or stored. The page works offline once loaded, and the passphrase mode uses a built-in list of 416 words.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>Is this password generator secure?</summary><p>Yes. It uses crypto.getRandomValues, the browser&#x27;s cryptographically secure random generator, with rejection sampling to avoid modulo bias. Passwords are created on your device and never transmitted or stored.</p></details>
+      <details><summary>How long should my password be?</summary><p>Use at least 14–16 characters with mixed character sets for important accounts. That gives roughly 90 or more bits of entropy, which is far beyond practical brute-force attacks.</p></details>
+      <details><summary>What is password entropy?</summary><p>Entropy measures unpredictability in bits. It equals length multiplied by log2 of the pool size. Each extra bit doubles the number of guesses an attacker needs.</p></details>
+      <details><summary>What is passphrase mode?</summary><p>Passphrase mode joins several random words, such as river-maple-orbit-quill. Five or six words are easy to type and remember while still giving strong entropy.</p></details>
+      <details><summary>What does exclude ambiguous characters do?</summary><p>It removes look-alike characters such as 0, O, o, 1, l, I and | so passwords are easier to read and type by hand without mistakes.</p></details>
+      <details><summary>Does it work offline?</summary><p>Yes. After the first visit the page is cached by the app, so you can generate passwords with no internet connection.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-dev" href="../hash-generator/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg></span><span><h3>Hash Generator</h3><p>MD5, SHA-1, SHA-256 hashes.</p></span></a><a class="tool-card cat-dev" href="../uuid-generator/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg></span><span><h3>UUID Generator</h3><p>Random v4 UUIDs in bulk.</p></span></a><a class="tool-card cat-dev" href="../qr-code-generator/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></span><span><h3>QR Code Generator</h3><p>QR codes for URLs and Wi-Fi.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+const WORDS = ["able", "acid", "aged", "also", "area", "army", "away", "baby", "back", "ball", "band", "bank", "base", "bath", "bear", "beat", "bell", "belt", "best", "bike", "bird", "blue", "boat", "body", "bold", "bone", "book", "boot", "born", "boss", "bowl", "bread", "brick", "bride", "brush", "cake", "calm", "camp", "card", "care", "cart", "case", "cash", "cast", "cave", "chef", "chip", "city", "clay", "clip", "club", "coal", "coat", "code", "coin", "cold", "cook", "cool", "copy", "corn", "cost", "crab", "crew", "crop", "crow", "cube", "cups", "dark", "dawn", "deer", "desk", "dial", "dice", "dish", "dock", "doll", "door", "dove", "draw", "dream", "drum", "duck", "dust", "eagle", "earth", "east", "echo", "edge", "elbow", "ember", "empty", "fact", "fair", "farm", "fast", "fern", "field", "film", "fire", "fish", "flag", "flat", "fleet", "float", "flute", "foam", "fold", "folk", "food", "foot", "fork", "fort", "frog", "fruit", "fuel", "game", "gate", "gear", "gift", "glad", "glass", "globe", "glow", "goat", "gold", "golf", "good", "grape", "grass", "green", "grid", "gulf", "hair", "half", "hall", "hand", "harp", "hawk", "heat", "herb", "hero", "hill", "hive", "home", "honey", "hook", "horn", "horse", "hotel", "house", "iris", "iron", "island", "ivory", "jade", "jazz", "jelly", "jewel", "juice", "jump", "jungle", "kayak", "kept", "kettle", "king", "kite", "knee", "knot", "lake", "lamp", "land", "lane", "leaf", "lemon", "lens", "light", "lily", "lime", "lion", "list", "lobby", "lodge", "loft", "lotus", "lunar", "magic", "mango", "maple", "marble", "mask", "meadow", "melon", "metal", "milk", "mint", "mirror", "moon", "moss", "motor", "mouse", "music", "nest", "night", "noble", "north", "novel", "oasis", "ocean", "olive", "onion", "opera", "orbit", "otter", "oven", "owl", "paint", "palm", "panda", "paper", "park", "pearl", "pepper", "piano", "pilot", "pine", "pixel", "planet", "plum", "polar", "pond", "pony", "pool", "poppy", "prism", "pulse", "puzzle", "quartz", "quest", "quiet", "rabbit", "radar", "rain", "ranch", "raven", "reef", "ridge", "river", "road", "robin", "rocket", "roof", "rose", "ruby", "sail", "salt", "sand", "scarf", "seal", "seed", "shell", "ship", "shore", "silk", "silver", "sky", "slate", "snow", "sofa", "solar", "spark", "spice", "spoon", "spring", "star", "steam", "stone", "storm", "sugar", "summit", "sun", "swan", "table", "tiger", "timber", "toast", "tomato", "torch", "tower", "trail", "train", "tree", "tulip", "tundra", "turtle", "umbrella", "unit", "urban", "valley", "vapor", "velvet", "violet", "violin", "wagon", "walnut", "water", "wave", "whale", "wheat", "wind", "window", "winter", "wolf", "wood", "yacht", "yard", "yarn", "zebra", "zero", "zinc", "acorn", "amber", "anchor", "apple", "arrow", "atlas", "autumn", "badge", "bamboo", "banjo", "barn", "basil", "beach", "berry", "blaze", "bloom", "breeze", "bronze", "cabin", "cactus", "candle", "canyon", "cedar", "cherry", "cliff", "clover", "cobalt", "comet", "coral", "cotton", "crane", "crystal", "daisy", "delta", "denim", "desert", "dolphin", "dragon", "falcon", "feather", "fiddle", "flame", "forest", "fossil", "galaxy", "garden", "garlic", "ginger", "glacier", "granite", "harbor", "hazel", "helmet", "indigo", "jasmine", "koala", "ladder", "lagoon", "lantern", "laser", "legend", "lizard", "magnet", "mammoth", "meteor", "mocha", "nectar", "nickel", "nutmeg", "oyster", "paddle", "parrot", "peach", "pebble", "pickle", "pillow", "plaza", "pocket", "quill", "radish", "raft", "ribbon", "saddle", "saffron", "shadow", "sierra", "spruce", "squid", "tango", "thistle", "thunder", "topaz", "tunnel", "velcro", "vortex", "walrus", "willow"];
+const $ = id => document.getElementById(id);
+let mode = 'pw';
+function randInt(n){ // unbiased integer in [0,n) via rejection sampling
+  const max = 0x100000000, lim = max - (max % n), buf = new Uint32Array(1);
+  let x; do { crypto.getRandomValues(buf); x = buf[0]; } while (x >= lim);
+  return x % n;
+}
+const SETS = {up:'ABCDEFGHIJKLMNOPQRSTUVWXYZ', lo:'abcdefghijklmnopqrstuvwxyz', di:'0123456789', sy:'!@#$%^&*()-_=+[]{};:,.<>/?~|'};
+const AMB = /[0Oo1lI|]/g;
+function sets(){ return Object.keys(SETS).filter(k => $(k).checked).map(k => $('amb').checked ? SETS[k].replace(AMB,'') : SETS[k]); }
+function makePw(){
+  const s = sets(); if (!s.length) return {v:'', bits:0};
+  const len = +$('len').value, pool = s.join('');
+  const chars = s.map(set => set[randInt(set.length)]); // guarantee each chosen set appears
+  while (chars.length < len) chars.push(pool[randInt(pool.length)]);
+  chars.length = len;
+  for (let i = chars.length - 1; i > 0; i--) { const j = randInt(i + 1); [chars[i], chars[j]] = [chars[j], chars[i]]; }
+  return {v: chars.join(''), bits: len * Math.log2(pool.length)};
+}
+function makePp(){
+  const n = +$('words').value, cap = $('cap').checked; let bits = n * Math.log2(WORDS.length);
+  const w = []; for (let i = 0; i < n; i++) { let x = WORDS[randInt(WORDS.length)]; if (cap) x = x[0].toUpperCase() + x.slice(1); w.push(x); }
+  if ($('num').checked) { w.push(String(randInt(100))); bits += Math.log2(100); }
+  return {v: w.join($('sep').value), bits};
+}
+const make = () => mode === 'pw' ? makePw() : makePp();
+function rate(b){
+  if (b < 36) return ['Very weak', 15, 'var(--err)'];
+  if (b < 60) return ['Weak', 35, 'var(--warn)'];
+  if (b < 80) return ['Strong', 65, 'var(--brand)'];
+  if (b < 128) return ['Very strong', 85, 'var(--ok)'];
+  return ['Excellent', 100, 'var(--ok)'];
+}
+function crackTime(b){
+  const s = Math.pow(2, b - 1) / 1e10; // 10 billion guesses/sec, average case
+  const u = [['years',31557600],['days',86400],['hours',3600],['minutes',60],['seconds',1]];
+  for (const [n, d] of u) if (s >= d) { const v = s / d; return v > 1e12 ? 'longer than the age of the universe' : '~' + (v >= 1e6 ? v.toExponential(1) : Math.round(v).toLocaleString()) + ' ' + n; }
+  return 'instantly';
+}
+function gen(){
+  const r = make(); $('out').value = r.v;
+  if (!r.v) { $('strength').textContent = 'Select at least one character set.'; $('bar').style.width = '0'; return; }
+  const [label, w, c] = rate(r.bits);
+  $('bar').style.width = w + '%'; $('bar').style.background = c;
+  $('strength').innerHTML = '<b>' + label + '</b> · ' + Math.round(r.bits) + ' bits of entropy · offline crack time at 10B guesses/s: ' + crackTime(r.bits);
+}
+function bulk(n){
+  const ul = $('bulk'); ul.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const v = make().v, li = document.createElement('li'), c = document.createElement('code'), b = document.createElement('button');
+    c.textContent = v; b.type = 'button'; b.className = 'btn btn-sm'; b.textContent = 'Copy'; b.setAttribute('aria-label', 'Copy password ' + (i + 1));
+    b.onclick = () => IT.copy(v); li.append(c, b); ul.append(li);
+  }
+  $('copyAll').classList.remove('hidden');
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+  mode = b.dataset.mode; document.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  $('pwOpts').classList.toggle('hidden', mode !== 'pw'); $('ppOpts').classList.toggle('hidden', mode !== 'pp');
+  $('bulk').innerHTML = ''; $('copyAll').classList.add('hidden'); gen();
+}));
+$('len').addEventListener('input', () => { $('lenV').textContent = $('len').value; gen(); });
+$('words').addEventListener('input', () => { $('wordsV').textContent = $('words').value; gen(); });
+['up','lo','di','sy','amb','cap','num','sep'].forEach(id => $(id).addEventListener('change', gen));
+$('gen').onclick = gen; $('regen').onclick = gen;
+$('copy').onclick = () => $('out').value && IT.copy($('out').value);
+document.querySelectorAll('[data-bulk]').forEach(b => b.onclick = () => bulk(+b.dataset.bulk));
+$('copyAll').onclick = () => IT.copy([...$('bulk').querySelectorAll('code')].map(c => c.textContent).join('\n'));
+gen();
+</script>
+</body>
+</html>

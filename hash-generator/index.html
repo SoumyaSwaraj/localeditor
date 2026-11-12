@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hash Generator — MD5, SHA-1, SHA-256, SHA-512 | Free</title>
+<meta name="description" content="Free hash generator: create MD5, SHA-1, SHA-256, SHA-384 and SHA-512 hashes of text or files, and verify a checksum with a match indicator. Private and offline.">
+<meta name="keywords" content="hash generator, md5 generator, sha256 generator, sha1 hash, sha512 hash, file checksum, md5 checksum, verify hash, sha-384, online hash calculator">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/hash-generator/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Hash Generator (MD5/SHA) — Free &amp; Private">
+<meta property="og:description" content="Generate MD5, SHA-1, SHA-256, SHA-384 and SHA-512 hashes for text or files and verify checksums — offline.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/hash-generator/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "Hash Generator (MD5/SHA)", "url": "https://soumyaswaraj.github.io/instant-tools/hash-generator/", "applicationCategory": "DeveloperApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Free hash generator: create MD5, SHA-1, SHA-256, SHA-384 and SHA-512 hashes of text or files, and verify a checksum with a match indicator. Private and offline.", "featureList": ["MD5, SHA-1, SHA-256, SHA-384 and SHA-512", "Live hashing of text", "Hash files of any type", "Uppercase or lowercase hex", "Verify a pasted hash with match indicator", "Works offline", "No upload — data stays on your device"]}, {"@type": "HowTo", "name": "How to generate a hash or checksum", "step": [{"@type": "HowToStep", "text": "Type text in the Text tab (hashes update live), or switch to File and drop a file."}, {"@type": "HowToStep", "text": "Read the MD5, SHA-1, SHA-256, SHA-384 and SHA-512 hashes and copy any of them; toggle Uppercase if needed."}, {"@type": "HowToStep", "text": "To verify a download, paste the expected hash in the Verify box — a green Match shows which algorithm agrees."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Which hash algorithm should I use?", "acceptedAnswer": {"@type": "Answer", "text": "Use SHA-256 or SHA-512 for security and integrity checks. MD5 and SHA-1 are fast but have known collision attacks, so use them only to match legacy checksums."}}, {"@type": "Question", "name": "How do I verify a file checksum?", "acceptedAnswer": {"@type": "Answer", "text": "Switch to the File tab, drop the downloaded file, then paste the checksum published by the provider into the Verify box. A green Match badge shows the hashes are identical."}}, {"@type": "Question", "name": "Can I reverse or decrypt a hash?", "acceptedAnswer": {"@type": "Answer", "text": "No. Cryptographic hashes are one-way functions. You cannot recover the original text from a hash, only compare it with the hash of a known input."}}, {"@type": "Question", "name": "Why do I get a different hash than another tool?", "acceptedAnswer": {"@type": "Answer", "text": "Hashes depend on exact bytes. Trailing spaces, line endings (CRLF vs LF) and text encoding change the result. This tool hashes text exactly as typed, encoded as UTF-8."}}, {"@type": "Question", "name": "Are my files uploaded to compute the hash?", "acceptedAnswer": {"@type": "Answer", "text": "No. Hashing runs entirely in your browser with the Web Crypto API and a local MD5 implementation, so files never leave your device and the tool works offline."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "Hash Generator (MD5/SHA)", "item": "https://soumyaswaraj.github.io/instant-tools/hash-generator/"}]}]}
+</script>
+<style>.hg-row{display:grid;grid-template-columns:90px 1fr auto;gap:8px;align-items:center;margin-bottom:8px}
+.hg-row label{margin:0;font-family:var(--mono);font-size:.85rem}
+.hg-row .input{font-family:var(--mono);font-size:.85rem;min-width:0}
+.hg-row.match .input{border-color:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 18%,transparent)}
+@media(max-width:520px){.hg-row{grid-template-columns:1fr auto}.hg-row label{grid-column:1/-1;margin-bottom:-4px}}
+.hg-v{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;min-height:28px}
+.badge.no{background:color-mix(in srgb,var(--err) 14%,transparent);color:var(--err)}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#dev">Developer tools</a> › Hash Generator (MD5/SHA)</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Developer tool</span>
+    <h1><span class="gradient-text">Hash Generator</span> — MD5, SHA-1, SHA-256, SHA-512</h1>
+    <p class="lead">Generate MD5, SHA-1, SHA-256, SHA-384 and SHA-512 hashes of any text or file and verify checksums instantly — free, private and offline in your browser.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Hash Generator (MD5/SHA)">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <div class="seg" role="group" aria-label="Input type" id="src"><button type="button" data-v="text" aria-pressed="true">Text</button><button type="button" data-v="file" aria-pressed="false">File</button></div>
+      <label class="check" style="margin:0"><input type="checkbox" id="upper"> Uppercase</label>
+    </div>
+    <div id="textPane" class="field">
+      <label for="inp">Text to hash</label>
+      <textarea id="inp" class="textarea" spellcheck="false" style="min-height:140px" placeholder="Type or paste text — hashes update as you type"></textarea>
+    </div>
+    <div id="filePane" class="hidden" style="margin-bottom:14px">
+      <div class="dropzone" id="drop" tabindex="0" role="button" aria-label="Choose a file to hash">
+        <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
+        <strong>Drop a file here or tap to choose</strong>
+        <small>Any file type · hashed locally, never uploaded</small>
+        <input type="file">
+      </div>
+      <div class="file-item hidden" id="fItem" style="margin-top:12px"><div class="meta"><div class="name" id="fName"></div><div class="sub" id="fSub"></div></div><span class="spinner hidden" id="spin" aria-hidden="true"></span></div>
+    </div>
+    <div class="panel" id="out" aria-live="polite"></div>
+    <div class="field" style="margin-top:16px">
+      <label for="ver">Verify / compare a hash</label>
+      <input id="ver" class="input mono" spellcheck="false" autocomplete="off" placeholder="Paste an expected hash (MD5, SHA-1, SHA-256, SHA-384 or SHA-512)">
+      <div class="hg-v" id="verRes" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to generate a hash or checksum</h2>
+      <ol><li>Type text in the Text tab (hashes update live), or switch to File and drop a file.</li><li>Read the MD5, SHA-1, SHA-256, SHA-384 and SHA-512 hashes and copy any of them; toggle Uppercase if needed.</li><li>To verify a download, paste the expected hash in the Verify box — a green Match shows which algorithm agrees.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is Hash Generator (MD5/SHA)?</h2>
+      <p>A hash generator computes a fixed-length fingerprint (digest) of data with a cryptographic hash function. The same input always gives the same hash, and changing a single byte changes it completely, which is why hashes are used to verify downloads and detect tampering.</p><p>This tool computes five algorithms at once: MD5 (128-bit, 32 hex characters), SHA-1 (160-bit, 40 hex), SHA-256 (256-bit, 64 hex), SHA-384 (384-bit, 96 hex) and SHA-512 (512-bit, 128 hex). The SHA family uses the browser's built-in Web Crypto API (crypto.subtle.digest); MD5 is implemented in plain JavaScript because Web Crypto does not include it. Text is hashed as UTF-8 bytes.</p><p>Files are read locally and never uploaded, so you can safely check large ISOs or private documents. MD5 and SHA-1 are broken for security purposes; use SHA-256 or stronger for anything security-sensitive.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>Which hash algorithm should I use?</summary><p>Use SHA-256 or SHA-512 for security and integrity checks. MD5 and SHA-1 are fast but have known collision attacks, so use them only to match legacy checksums.</p></details>
+      <details><summary>How do I verify a file checksum?</summary><p>Switch to the File tab, drop the downloaded file, then paste the checksum published by the provider into the Verify box. A green Match badge shows the hashes are identical.</p></details>
+      <details><summary>Can I reverse or decrypt a hash?</summary><p>No. Cryptographic hashes are one-way functions. You cannot recover the original text from a hash, only compare it with the hash of a known input.</p></details>
+      <details><summary>Why do I get a different hash than another tool?</summary><p>Hashes depend on exact bytes. Trailing spaces, line endings (CRLF vs LF) and text encoding change the result. This tool hashes text exactly as typed, encoded as UTF-8.</p></details>
+      <details><summary>Are my files uploaded to compute the hash?</summary><p>No. Hashing runs entirely in your browser with the Web Crypto API and a local MD5 implementation, so files never leave your device and the tool works offline.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-dev" href="../base64-encoder/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 9-4 3 4 3M16 9l4 3-4 3M14 5l-4 14"/></svg></span><span><h3>Base64 Encode/Decode</h3><p>Encode or decode text and files.</p></span></a>
+        <a class="tool-card cat-dev" href="../password-generator/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M15 8l2 2"/></svg></span><span><h3>Password Generator</h3><p>Strong random passwords, offline.</p></span></a>
+        <a class="tool-card cat-dev" href="../uuid-generator/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M11 10v4M15 10v4"/></svg></span><span><h3>UUID Generator</h3><p>Random v4 UUIDs in bulk.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+(function(){
+function $(id){return document.getElementById(id)}
+/* MD5 — RFC 1321, pure JS */
+var K=new Int32Array(64),S=[7,12,17,22,5,9,14,20,4,11,16,23,6,10,15,21];
+for(var i=0;i<64;i++)K[i]=Math.floor(Math.abs(Math.sin(i+1))*4294967296)|0;
+function md5(bytes){
+  var len=bytes.length,total=(((len+8)>>6)+1)*64,buf=new Uint8Array(total);buf.set(bytes);buf[len]=0x80;
+  var dv=new DataView(buf.buffer);dv.setUint32(total-8,(len*8)>>>0,true);dv.setUint32(total-4,Math.floor(len/0x20000000),true);
+  var a0=0x67452301,b0=0xefcdab89|0,c0=0x98badcfe|0,d0=0x10325476,M=new Int32Array(16);
+  for(var off=0;off<total;off+=64){
+    for(var j=0;j<16;j++)M[j]=dv.getInt32(off+j*4,true);
+    var A=a0,B=b0,C=c0,D=d0,F,g,s;
+    for(var r=0;r<64;r++){
+      if(r<16){F=(B&C)|(~B&D);g=r}else if(r<32){F=(D&B)|(~D&C);g=(5*r+1)&15}else if(r<48){F=B^C^D;g=(3*r+5)&15}else{F=C^(B|~D);g=(7*r)&15}
+      s=S[(r>>4)*4+(r&3)];F=(F+A+K[r]+M[g])|0;A=D;D=C;C=B;B=(B+((F<<s)|(F>>>(32-s))))|0;
+    }
+    a0=(a0+A)|0;b0=(b0+B)|0;c0=(c0+C)|0;d0=(d0+D)|0;
+  }
+  var o=new Uint8Array(16),ov=new DataView(o.buffer);ov.setInt32(0,a0,true);ov.setInt32(4,b0,true);ov.setInt32(8,c0,true);ov.setInt32(12,d0,true);return o.buffer;
+}
+var ALGOS=['MD5','SHA-1','SHA-256','SHA-384','SHA-512'];
+function hex(buf){var b=new Uint8Array(buf),s='';for(var i=0;i<b.length;i++)s+=(b[i]<16?'0':'')+b[i].toString(16);return s}
+var hasSubtle=!!(window.crypto&&crypto.subtle);
+function hashAll(bytes){return Promise.all(ALGOS.map(function(a){if(a==='MD5')return Promise.resolve(hex(md5(bytes)));if(!hasSubtle)return Promise.resolve('');return crypto.subtle.digest(a,bytes).then(hex)}))}
+var results=null,src='text',seq=0;
+var out=$('out');
+out.innerHTML=ALGOS.map(function(a,i){return '<div class="hg-row" id="r'+i+'"><label for="h'+i+'">'+a+'</label><input id="h'+i+'" class="input" readonly spellcheck="false" placeholder="—"><button class="btn btn-sm" type="button" data-i="'+i+'" aria-label="Copy '+a+' hash">Copy</button></div>'}).join('')+(hasSubtle?'':'<p class="muted" style="font-size:.85rem;margin:6px 0 0">SHA hashes need a secure context (HTTPS or localhost). MD5 still works.</p>');
+out.addEventListener('click',function(e){var b=e.target.closest('button[data-i]');if(!b)return;var v=$('h'+b.dataset.i).value;if(v)IT.copy(v);else IT.toast('Nothing to copy yet')});
+function show(){var up=$('upper').checked;ALGOS.forEach(function(a,i){$('h'+i).value=results&&results[i]?(up?results[i].toUpperCase():results[i]):''});verify()}
+function verify(){
+  var v=$('ver').value.trim().replace(/^[a-z0-9-]+[:=]\s*/i,'').replace(/\s+.*$/,'').toLowerCase(),box=$('verRes');
+  ALGOS.forEach(function(a,i){$('r'+i).classList.remove('match')});
+  if(!v){box.innerHTML='';return}
+  if(!/^[0-9a-f]+$/.test(v)){box.innerHTML='<span class="badge no">Not a hex hash</span>';return}
+  if(!results){box.innerHTML='<span class="muted" style="font-size:.88rem">Add text or a file to compare.</span>';return}
+  var idx=results.indexOf(v);
+  if(idx>=0){$('r'+idx).classList.add('match');box.innerHTML='<span class="badge ok">✓ Match</span><span class="muted" style="font-size:.88rem">Identical to the '+ALGOS[idx]+' hash.</span>'}
+  else{var L={32:'MD5',40:'SHA-1',64:'SHA-256',96:'SHA-384',128:'SHA-512'}[v.length];box.innerHTML='<span class="badge no">✗ No match</span><span class="muted" style="font-size:.88rem">'+(L?'Does not equal the '+L+' hash.':'Length '+v.length+' does not fit any supported algorithm.')+'</span>'}
+}
+$('upper').addEventListener('change',show);$('ver').addEventListener('input',verify);
+var tt;
+function hashText(){var my=++seq,t=$('inp').value;if(!t){results=null;show();return}hashAll(new TextEncoder().encode(t)).then(function(r){if(my===seq){results=r;show()}})}
+$('inp').addEventListener('input',function(){clearTimeout(tt);tt=setTimeout(hashText,$('inp').value.length>1e6?200:30)});
+var lastFileRes=null,textRes=null;
+$('src').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+  if(src==='text')textRes=results;else lastFileRes=results;
+  src=b.dataset.v;$('src').querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});
+  $('textPane').classList.toggle('hidden',src!=='text');$('filePane').classList.toggle('hidden',src!=='file');
+  seq++;results=src==='text'?textRes:lastFileRes;show()});
+IT.dropzone($('drop'),{multiple:false,onFiles:function(fs){var f=fs[0],my=++seq;
+  $('fItem').classList.remove('hidden');$('fName').textContent=f.name;$('fSub').textContent=IT.formatBytes(f.size)+' · hashing…';$('spin').classList.remove('hidden');results=null;show();
+  var t0=performance.now();
+  f.arrayBuffer().then(function(buf){return hashAll(new Uint8Array(buf))}).then(function(r){if(my!==seq)return;results=r;lastFileRes=r;show();$('spin').classList.add('hidden');$('fSub').textContent=IT.formatBytes(f.size)+' · hashed in '+Math.round(performance.now()-t0)+' ms'})
+  .catch(function(e){$('spin').classList.add('hidden');$('fSub').textContent='Could not read file: '+(e.message||e)})}});
+show();
+})();
+</script>
+</body>
+</html>

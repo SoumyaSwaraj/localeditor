@@ -1,0 +1,56 @@
+# Instant Tools
+
+> Instant Tools is a free collection of 30 browser-based tools for images, PDFs, text and developers. Every tool runs 100% client-side (JavaScript, Canvas, Web Crypto, pdf-lib, pdf.js): files are never uploaded, no account is needed, and the site is an installable Progressive Web App that works offline on phones and desktops.
+
+Key facts:
+- Price: free, unlimited, no watermarks, no sign-up.
+- Privacy: all processing happens on the user's device; no server receives files.
+- Offline: a service worker caches every tool after the first visit.
+- Install: Android/desktop via "Install app"; iOS via Safari Share → Add to Home Screen.
+
+## Image tools
+
+- [Image Compressor](https://soumyaswaraj.github.io/instant-tools/image-compressor/): Shrink JPG, PNG & WebP file size without visible quality loss.
+- [Image Resizer](https://soumyaswaraj.github.io/instant-tools/image-resizer/): Resize photos to exact pixels, percent or social presets.
+- [Image Converter](https://soumyaswaraj.github.io/instant-tools/image-converter/): Convert between JPG, PNG and WebP in bulk.
+- [Image Cropper](https://soumyaswaraj.github.io/instant-tools/image-cropper/): Crop to any size or aspect ratio like 1:1 or 16:9.
+- [Rotate & Flip Image](https://soumyaswaraj.github.io/instant-tools/rotate-flip-image/): Rotate by any angle and mirror horizontally or vertically.
+- [Watermark Image](https://soumyaswaraj.github.io/instant-tools/watermark-image/): Stamp text or a logo on photos — single or tiled.
+- [Image to Base64](https://soumyaswaraj.github.io/instant-tools/image-to-base64/): Turn images into data URLs and back again.
+- [Image Color Picker](https://soumyaswaraj.github.io/instant-tools/color-picker/): Pick exact colors and extract palettes from any image.
+- [Favicon Generator](https://soumyaswaraj.github.io/instant-tools/favicon-generator/): Create favicon.ico and app icons from an image or emoji.
+- [Photo Filters & Editor](https://soumyaswaraj.github.io/instant-tools/image-filters/): Adjust brightness, contrast, saturation and apply filters.
+
+## PDF tools
+
+- [Merge PDF](https://soumyaswaraj.github.io/instant-tools/merge-pdf/): Combine multiple PDFs into one in the order you choose.
+- [Split PDF](https://soumyaswaraj.github.io/instant-tools/split-pdf/): Extract page ranges or split every page into its own file.
+- [JPG to PDF](https://soumyaswaraj.github.io/instant-tools/jpg-to-pdf/): Convert JPG, PNG and WebP images into a single PDF.
+- [PDF to JPG](https://soumyaswaraj.github.io/instant-tools/pdf-to-jpg/): Turn every PDF page into a high-quality JPG or PNG.
+- [Rotate PDF](https://soumyaswaraj.github.io/instant-tools/rotate-pdf/): Rotate one page or all pages and save permanently.
+- [Organize PDF](https://soumyaswaraj.github.io/instant-tools/organize-pdf/): Reorder, delete, duplicate and insert PDF pages.
+- [Add Page Numbers](https://soumyaswaraj.github.io/instant-tools/add-page-numbers/): Number PDF pages with custom position and format.
+- [Watermark PDF](https://soumyaswaraj.github.io/instant-tools/watermark-pdf/): Add a text watermark such as CONFIDENTIAL to every page.
+
+## Text tools
+
+- [Word Counter](https://soumyaswaraj.github.io/instant-tools/word-counter/): Count words, characters, sentences and reading time.
+- [Case Converter](https://soumyaswaraj.github.io/instant-tools/case-converter/): UPPER, lower, Title, camelCase, snake_case and more.
+- [Text Compare (Diff)](https://soumyaswaraj.github.io/instant-tools/text-diff/): Highlight differences between two texts line by line.
+- [Lorem Ipsum Generator](https://soumyaswaraj.github.io/instant-tools/lorem-ipsum-generator/): Generate placeholder paragraphs, sentences or words.
+
+## Developer & everyday utilities
+
+- [QR Code Generator](https://soumyaswaraj.github.io/instant-tools/qr-code-generator/): Make QR codes for URLs, Wi-Fi, contacts — PNG & SVG.
+- [Password Generator](https://soumyaswaraj.github.io/instant-tools/password-generator/): Create strong random passwords and passphrases.
+- [JSON Formatter](https://soumyaswaraj.github.io/instant-tools/json-formatter/): Beautify, minify and validate JSON with error hints.
+- [Base64 Encode / Decode](https://soumyaswaraj.github.io/instant-tools/base64-encoder/): Encode and decode Base64 text and files with UTF-8.
+- [Hash Generator](https://soumyaswaraj.github.io/instant-tools/hash-generator/): MD5, SHA-1, SHA-256 and SHA-512 for text and files.
+- [Unit Converter](https://soumyaswaraj.github.io/instant-tools/unit-converter/): Length, weight, temperature, data and 6 more categories.
+- [Color Converter](https://soumyaswaraj.github.io/instant-tools/color-converter/): HEX, RGB, HSL, CMYK conversion with contrast checker.
+- [UUID Generator](https://soumyaswaraj.github.io/instant-tools/uuid-generator/): Bulk-generate UUID v4 and v7 and validate UUIDs.
+
+## Optional
+
+- [About & privacy](https://soumyaswaraj.github.io/instant-tools/about/): how the tools work and how to install them.
+- [Sitemap](https://soumyaswaraj.github.io/instant-tools/sitemap.xml)

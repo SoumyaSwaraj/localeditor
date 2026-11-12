@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JPG to PDF Converter — Free, Private, Offline</title>
+<meta name="description" content="Convert JPG, PNG and WebP images to PDF for free. Choose A4, Letter or fit-to-image, orientation and margins, and reorder pages. No upload, works offline.">
+<meta name="keywords" content="jpg to pdf, image to pdf, png to pdf, webp to pdf, convert photos to pdf, jpg to pdf offline, combine images into pdf">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/jpg-to-pdf/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="JPG to PDF — Free &amp; Private">
+<meta property="og:description" content="Turn JPG, PNG and WebP images into one PDF in your browser. No upload, works offline.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/jpg-to-pdf/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"JPG to PDF","url":"https://soumyaswaraj.github.io/instant-tools/jpg-to-pdf/","applicationCategory":"UtilitiesApplication","operatingSystem":"Any (browser-based)","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Convert JPG, PNG and WebP images to PDF for free. Choose A4, Letter or fit-to-image, orientation and margins, and reorder pages. No upload, works offline.","featureList":["JPG, PNG and WebP to PDF","A4, Letter or fit-to-image pages","Portrait, landscape or automatic orientation","Adjustable margins and page order","Works offline","No upload — files stay on your device"]},{"@type":"HowTo","name":"How to convert JPG to PDF","step":[{"@type":"HowToStep","text":"Drop your JPG, PNG or WebP images into the box, or tap to choose them."},{"@type":"HowToStep","text":"Reorder the pages and choose page size, orientation and margin."},{"@type":"HowToStep","text":"Press Convert to PDF and download your document."}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do I convert JPG to PDF?","acceptedAnswer":{"@type":"Answer","text":"Add your images, arrange them in order, choose page size, orientation and margin, then press Convert to PDF. The PDF downloads straight to your device."}},{"@type":"Question","name":"Can I combine several images into one PDF?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every image becomes one page of the same PDF, in the order shown. Drag thumbnails or use the arrow buttons to reorder them."}},{"@type":"Question","name":"Does converting reduce image quality?","acceptedAnswer":{"@type":"Answer","text":"No. JPG images are embedded with their original data, and PNG images are stored losslessly. Only WebP is re-encoded, losslessly, as PNG."}},{"@type":"Question","name":"Are my photos uploaded?","acceptedAnswer":{"@type":"Answer","text":"No. Conversion happens entirely in your browser. Your images never leave your device, and the tool works offline after it has loaded once."}},{"@type":"Question","name":"What page sizes are supported?","acceptedAnswer":{"@type":"Answer","text":"A4, US Letter and Fit to image, where each page matches the image dimensions. Orientation can be automatic, portrait or landscape."}}]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Instant Tools","item":"https://soumyaswaraj.github.io/instant-tools/"},{"@type":"ListItem","position":2,"name":"JPG to PDF","item":"https://soumyaswaraj.github.io/instant-tools/jpg-to-pdf/"}]}]}
+</script>
+<style>
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-top:16px}
+.pg{position:relative;background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.pg .pv{width:100%;aspect-ratio:3/4;display:grid;place-items:center;background:var(--surface-2);border-radius:8px;overflow:hidden}
+.pg .pv canvas,.pg .pv img{max-width:100%;max-height:100%;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:transform .25s;background:#fff}
+.pg .cap{font-size:.8rem;color:var(--muted);font-weight:600;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pg .pgbtns{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.pg .pgbtns .btn{padding:4px 8px;min-height:0;font-size:.78rem}
+.pg.sel{border-color:var(--brand);background:var(--brand-soft)}
+.pg button.pick{all:unset;cursor:pointer;width:100%;display:flex;flex-direction:column;align-items:center;gap:6px}
+.pg button.pick:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:16px}
+.opts label.lbl,.lbl{display:block;font-weight:600;font-size:.88rem;margin-bottom:6px}
+.outlist{display:grid;gap:8px;margin-top:14px}
+.dragging{opacity:.4}
+.drop-target{border-color:var(--brand)!important}
+.progress{font-size:.88rem;color:var(--muted);margin-top:10px;min-height:1.2em}
+.tool-app .file-list{display:grid;gap:8px;margin-top:16px}
+.pg[draggable=true]{cursor:grab}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#pdf">PDF tools</a> › JPG to PDF</nav>
+
+  <section class="hero">
+    <span class="eyebrow">PDF tool</span>
+    <h1>Convert <span class="gradient-text">JPG to PDF</span></h1>
+    <p class="lead">Convert JPG, PNG and WebP images into a single PDF in seconds — free, private, with no upload and full offline support.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="JPG to PDF">
+    <div class="dropzone" id="drop"><div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></svg></div><strong>Drop images here or tap to choose</strong><small>JPG, PNG, WebP · No upload — processed in your browser</small><input type="file"></div>
+    <div id="work" class="hidden">
+      <div class="panel" style="margin-top:16px">
+        <div class="opts" style="margin-top:0">
+          <div><span class="lbl" id="szL">Page size</span><div class="seg" id="size" role="group" aria-labelledby="szL"><button type="button" data-v="a4" aria-pressed="true">A4</button><button type="button" data-v="letter" aria-pressed="false">Letter</button><button type="button" data-v="fit" aria-pressed="false">Fit to image</button></div></div>
+          <div><span class="lbl" id="orL">Orientation</span><div class="seg" id="orient" role="group" aria-labelledby="orL"><button type="button" data-v="auto" aria-pressed="true">Auto</button><button type="button" data-v="portrait" aria-pressed="false">Portrait</button><button type="button" data-v="landscape" aria-pressed="false">Landscape</button></div></div>
+          <div><span class="lbl" id="mgL">Margin</span><div class="seg" id="margin" role="group" aria-labelledby="mgL"><button type="button" data-v="0" aria-pressed="true">None</button><button type="button" data-v="20" aria-pressed="false">Small</button><button type="button" data-v="48" aria-pressed="false">Big</button></div></div>
+        </div>
+      </div>
+      <div class="pgrid" id="grid" aria-label="Pages in order"></div>
+      <div class="field" style="margin-top:16px"><label class="lbl" for="outName">Output file name</label><input class="input" id="outName" value="images.pdf"></div>
+      <div class="actions"><button class="btn btn-primary" id="goBtn" type="button">Convert to PDF</button><button class="btn" id="addMore" type="button">Add more images</button><button class="btn" id="clearBtn" type="button">Clear all</button></div>
+      <p class="progress" id="prog" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to convert JPG to PDF</h2>
+      <ol><li>Drop your JPG, PNG or WebP images into the box, or tap to choose them.</li><li>Reorder the pages and choose page size, orientation and margin.</li><li>Press Convert to PDF and download your document.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is a JPG to PDF converter?</h2>
+      <p>A JPG to PDF converter places each image on its own PDF page. This tool accepts JPG, PNG and WebP files, lets you pick A4 (210 × 297 mm), US Letter (8.5 × 11 in) or a page sized exactly to each image, and scales images to fit without cropping or stretching.</p>
+      <p>JPG photos are embedded in their original compression, so there is no quality loss. PNG keeps transparency, and WebP is converted to PNG in the browser because the PDF format does not support WebP. Everything runs locally with pdf-lib — no upload, and it works offline.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>How do I convert JPG to PDF?</summary><p>Add your images, arrange them in order, choose page size, orientation and margin, then press Convert to PDF. The PDF downloads straight to your device.</p></details>
+      <details><summary>Can I combine several images into one PDF?</summary><p>Yes. Every image becomes one page of the same PDF, in the order shown. Drag thumbnails or use the arrow buttons to reorder them.</p></details>
+      <details><summary>Does converting reduce image quality?</summary><p>No. JPG images are embedded with their original data, and PNG images are stored losslessly. Only WebP is re-encoded, losslessly, as PNG.</p></details>
+      <details><summary>Are my photos uploaded?</summary><p>No. Conversion happens entirely in your browser. Your images never leave your device, and the tool works offline after it has loaded once.</p></details>
+      <details><summary>What page sizes are supported?</summary><p>A4, US Letter and Fit to image, where each page matches the image dimensions. Orientation can be automatic, portrait or landscape.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-pdf" href="../pdf-to-jpg/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></span><span><h3>PDF to JPG</h3><p>Convert PDF pages to images.</p></span></a>
+        <a class="tool-card cat-pdf" href="../merge-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v6a4 4 0 0 0 4 4h0a4 4 0 0 1 4 4v4"/><path d="M16 3v6a4 4 0 0 1-4 4"/><path d="m5 18 3 3 3-3"/></svg></span><span><h3>Merge PDF</h3><p>Combine many PDFs into one.</p></span></a>
+        <a class="tool-card cat-image" href="../image-compressor/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg></span><span><h3>Image Compressor</h3><p>Shrink JPG, PNG, WebP files.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/vendor/pdf-lib.min.js"></script>
+<script>
+(function () {
+'use strict';
+
+var $ = function (s) { return document.querySelector(s); };
+function el(tag, attrs, html) { var e = document.createElement(tag); if (attrs) for (var k in attrs) e.setAttribute(k, attrs[k]); if (html != null) e.innerHTML = html; return e; }
+function escH(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function segInit(seg, cb) { seg.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; seg.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); cb && cb(b.dataset.v); }); }
+function segVal(seg) { var b = seg.querySelector('[aria-pressed=true]'); return b && b.dataset.v; }
+function readBuf(file) { return file.arrayBuffer ? file.arrayBuffer() : new Promise(function (r) { var fr = new FileReader(); fr.onload = function () { r(fr.result); }; fr.readAsArrayBuffer(file); }); }
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = '../assets/vendor/pdf.worker.min.js';
+function openPdfJs(buf) { return pdfjsLib.getDocument({ data: new Uint8Array(buf.slice(0)) }).promise; }
+function renderThumb(pdf, n, maxW) {
+  return pdf.getPage(n).then(function (page) {
+    var v = page.getViewport({ scale: 1 }); var s = (maxW || 180) / v.width; var vp = page.getViewport({ scale: s });
+    var c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+    return page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise.then(function () { return c; });
+  });
+}
+function pdfBlob(bytes) { return new Blob([bytes], { type: 'application/pdf' }); }
+function busy(btn, on, label) { if (on) { btn._l = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + (label || 'Working…'); } else { btn.disabled = false; if (btn._l) btn.innerHTML = btn._l; } }
+
+
+function makeSortable(container, arr, rerender) {
+  var src = null;
+  container.addEventListener('dragstart', function (e) { var it = e.target.closest('[data-i]'); if (!it) return; src = +it.dataset.i; it.classList.add('dragging'); try { e.dataTransfer.setData('text/plain', String(src)); e.dataTransfer.effectAllowed = 'move'; } catch (x) {} });
+  container.addEventListener('dragend', function (e) { var it = e.target.closest('[data-i]'); if (it) it.classList.remove('dragging'); container.querySelectorAll('.drop-target').forEach(function (x) { x.classList.remove('drop-target'); }); });
+  container.addEventListener('dragover', function (e) { if (src === null) return; var it = e.target.closest('[data-i]'); if (!it) return; e.preventDefault(); container.querySelectorAll('.drop-target').forEach(function (x) { if (x !== it) x.classList.remove('drop-target'); }); it.classList.add('drop-target'); });
+  container.addEventListener('drop', function (e) { var it = e.target.closest('[data-i]'); if (!it || src === null) return; e.preventDefault(); e.stopPropagation(); var to = +it.dataset.i; if (to !== src) { var m = arr.splice(src, 1)[0]; arr.splice(to, 0, m); rerender(); } src = null; });
+}
+function move(arr, i, d) { var j = i + d; if (j < 0 || j >= arr.length) return false; var t = arr[i]; arr[i] = arr[j]; arr[j] = t; return true; }
+
+var imgs = [], first = true;
+var input = IT.dropzone($('#drop'), { accept: 'image/jpeg,image/png,image/webp,image/gif,image/bmp', multiple: true, paste: true, onFiles: add });
+$('#addMore').onclick = function () { input.click(); };
+$('#clearBtn').onclick = function () { imgs.forEach(function (x) { URL.revokeObjectURL(x.img.src); }); imgs = []; render(); };
+['#size', '#orient', '#margin'].forEach(function (s) { segInit($(s), render); });
+function add(list) {
+  list = list.filter(function (f) { return /^image\//.test(f.type); });
+  if (!list.length) { IT.toast('Please choose image files'); return; }
+  if (first && list[0]) { $('#outName').value = IT.baseName(list[0].name) + '.pdf'; first = false; }
+  Promise.all(list.map(function (f) { return IT.loadImage(f).then(function (img) { return { file: f, img: img }; }, function () { IT.toast('Could not read ' + f.name); return null; }); }))
+    .then(function (r) { r.forEach(function (x) { if (x) imgs.push(x); }); render(); });
+}
+var SIZES = { a4: [595.28, 841.89], letter: [612, 792] };
+function layout(w, h) {
+  var size = segVal($('#size')), or = segVal($('#orient')), m = +segVal($('#margin'));
+  var pw, ph;
+  if (size === 'fit') { pw = w * 0.75 + 2 * m; ph = h * 0.75 + 2 * m; if ((or === 'portrait' && pw > ph) || (or === 'landscape' && ph > pw)) { var t0 = pw; pw = ph; ph = t0; } }
+  else { pw = SIZES[size][0]; ph = SIZES[size][1]; var land = or === 'landscape' || (or === 'auto' && w > h); if (land) { pw = SIZES[size][1]; ph = SIZES[size][0]; } }
+  var aw = pw - 2 * m, ah = ph - 2 * m, s = Math.min(aw / w, ah / h); if (size === 'fit' && or === 'auto') s = Math.min(s, 0.75);
+  var dw = w * s, dh = h * s;
+  return { pw: pw, ph: ph, x: (pw - dw) / 2, y: (ph - dh) / 2, w: dw, h: dh };
+}
+function render() {
+  $('#work').classList.toggle('hidden', !imgs.length);
+  var G = $('#grid'); G.innerHTML = '';
+  imgs.forEach(function (it, i) {
+    var L = layout(it.img.naturalWidth, it.img.naturalHeight);
+    var p = el('div', { class: 'pg', draggable: 'true', 'data-i': i });
+    var ar = L.pw / L.ph;
+    p.innerHTML = '<div class="pv"><div style="position:relative;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);' + (ar > 0.75 ? 'width:100%;' : 'height:100%;') + 'aspect-ratio:' + L.pw + '/' + L.ph + '"><img alt="" src="' + it.img.src + '" style="position:absolute;box-shadow:none;left:' + (L.x / L.pw * 100) + '%;top:' + (L.y / L.ph * 100) + '%;width:' + (L.w / L.pw * 100) + '%;height:' + (L.h / L.ph * 100) + '%;max-width:none;max-height:none"></div></div>' +
+      '<span class="cap" title="' + escH(it.file.name) + '">' + (i + 1) + '. ' + escH(it.file.name) + '</span>' +
+      '<div class="pgbtns"><button class="btn btn-sm" type="button" data-a="up" aria-label="Move left"' + (i === 0 ? ' disabled' : '') + '>←</button><button class="btn btn-sm" type="button" data-a="down" aria-label="Move right"' + (i === imgs.length - 1 ? ' disabled' : '') + '>→</button><button class="btn btn-sm" type="button" data-a="rm" aria-label="Remove ' + escH(it.file.name) + '">✕</button></div>';
+    G.appendChild(p);
+  });
+}
+$('#grid').addEventListener('click', function (e) {
+  var b = e.target.closest('button[data-a]'); if (!b) return;
+  var i = +b.closest('[data-i]').dataset.i;
+  if (b.dataset.a === 'rm') imgs.splice(i, 1); else move(imgs, i, b.dataset.a === 'up' ? -1 : 1);
+  render();
+});
+makeSortable($('#grid'), imgs, render);
+function toPngBytes(img) {
+  var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+  c.getContext('2d').drawImage(img, 0, 0);
+  return IT.canvasToBlob(c, 'image/png').then(readBuf);
+}
+function toJpgBytes(img) {
+  var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+  var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0);
+  return IT.canvasToBlob(c, 'image/jpeg', 0.92).then(readBuf);
+}
+function embed(doc, it) {
+  var t = it.file.type;
+  if (t === 'image/jpeg') return readBuf(it.file).then(function (b) { return doc.embedJpg(b); }).then(function (im) {
+    // EXIF-rotated JPEGs: browser shows rotated dimensions; re-encode so the PDF matches what you see
+    if ((im.width > im.height) !== (it.img.naturalWidth > it.img.naturalHeight) && im.width !== im.height) return toJpgBytes(it.img).then(function (b) { return doc.embedJpg(b); });
+    return im;
+  }).catch(function () { return toJpgBytes(it.img).then(function (b) { return doc.embedJpg(b); }); });
+  if (t === 'image/png') return readBuf(it.file).then(function (b) { return doc.embedPng(b); }).catch(function () { return toPngBytes(it.img).then(function (b) { return doc.embedPng(b); }); });
+  return toPngBytes(it.img).then(function (b) { return doc.embedPng(b); }); // WebP, GIF, BMP → PNG via canvas
+}
+$('#goBtn').onclick = function () {
+  var btn = this; if (!imgs.length) return;
+  busy(btn, true, 'Converting…');
+  var doc;
+  PDFLib.PDFDocument.create().then(function (d) {
+    doc = d; var chain = Promise.resolve();
+    imgs.forEach(function (it, i) {
+      chain = chain.then(function () {
+        $('#prog').textContent = 'Adding image ' + (i + 1) + ' of ' + imgs.length + '…';
+        return embed(doc, it).then(function (im) {
+          var L = layout(it.img.naturalWidth, it.img.naturalHeight);
+          var pg = doc.addPage([L.pw, L.ph]);
+          pg.drawImage(im, { x: L.x, y: L.ph - L.y - L.h, width: L.w, height: L.h });
+        });
+      });
+    });
+    return chain;
+  }).then(function () { doc.setCreator('Instant Tools'); return doc.save(); }).then(function (bytes) {
+    var name = ($('#outName').value.trim() || 'images').replace(/\.pdf$/i, '') + '.pdf';
+    IT.download(pdfBlob(bytes), name);
+    $('#prog').textContent = 'Done — ' + imgs.length + ' page' + (imgs.length > 1 ? 's' : '') + ', ' + IT.formatBytes(bytes.length) + '. Your download has started.';
+    IT.toast('PDF ready');
+  }).catch(function (e) { $('#prog').textContent = 'Error: ' + (e.message || e); }).finally(function () { busy(btn, false); });
+};
+
+})();
+</script>
+</body>
+</html>

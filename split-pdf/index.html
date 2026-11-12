@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Split PDF Online — Extract Pages Free &amp; Offline</title>
+<meta name="description" content="Split PDF files for free: extract page ranges like 1-3,5, split every page into its own PDF, or split every N pages. Runs in your browser with no upload.">
+<meta name="keywords" content="split pdf, extract pdf pages, separate pdf pages, split pdf offline, pdf splitter free, split pdf every page, split pdf by range">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/split-pdf/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Split PDF — Free &amp; Private">
+<meta property="og:description" content="Extract pages or split a PDF into many files in your browser. No upload, works offline.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/split-pdf/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Split PDF","url":"https://soumyaswaraj.github.io/instant-tools/split-pdf/","applicationCategory":"UtilitiesApplication","operatingSystem":"Any (browser-based)","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Split PDF files for free: extract page ranges like 1-3,5, split every page into its own PDF, or split every N pages. Runs in your browser with no upload.","featureList":["Extract custom page ranges","Split every page into its own PDF","Split every N pages","Visual page thumbnails","Works offline","No upload — files stay on your device"]},{"@type":"HowTo","name":"How to split a PDF","step":[{"@type":"HowToStep","text":"Drop a PDF file into the box, or tap to choose one."},{"@type":"HowToStep","text":"Pick a mode: extract page ranges, split every page, or split every N pages. Click thumbnails to select pages."},{"@type":"HowToStep","text":"Press Split PDF, then download each output file or all of them."}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do I extract specific pages from a PDF?","acceptedAnswer":{"@type":"Answer","text":"Choose Extract ranges and type pages like 1-3,5,8-10, or click page thumbnails to select them. Press Split PDF to get a new PDF containing only those pages."}},{"@type":"Question","name":"Can I split a PDF into single pages?","acceptedAnswer":{"@type":"Answer","text":"Yes. Choose Every page and each page becomes its own PDF file. Download them one by one or all at once."}},{"@type":"Question","name":"Is my PDF uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. Splitting happens in your browser with JavaScript. The file never leaves your device and the tool also works offline."}},{"@type":"Question","name":"Does splitting reduce quality?","acceptedAnswer":{"@type":"Answer","text":"No. Pages are copied without re-rendering, so text, fonts and images remain identical to the original PDF."}},{"@type":"Question","name":"Is there a page or file size limit?","acceptedAnswer":{"@type":"Answer","text":"There is no fixed limit. Very large PDFs depend on your device memory; desktop browsers comfortably handle files with hundreds of pages."}}]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Instant Tools","item":"https://soumyaswaraj.github.io/instant-tools/"},{"@type":"ListItem","position":2,"name":"Split PDF","item":"https://soumyaswaraj.github.io/instant-tools/split-pdf/"}]}]}
+</script>
+<style>
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-top:16px}
+.pg{position:relative;background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.pg .pv{width:100%;aspect-ratio:3/4;display:grid;place-items:center;background:var(--surface-2);border-radius:8px;overflow:hidden}
+.pg .pv canvas,.pg .pv img{max-width:100%;max-height:100%;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:transform .25s;background:#fff}
+.pg .cap{font-size:.8rem;color:var(--muted);font-weight:600;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pg .pgbtns{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.pg .pgbtns .btn{padding:4px 8px;min-height:0;font-size:.78rem}
+.pg.sel{border-color:var(--brand);background:var(--brand-soft)}
+.pg button.pick{all:unset;cursor:pointer;width:100%;display:flex;flex-direction:column;align-items:center;gap:6px}
+.pg button.pick:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:16px}
+.opts label.lbl,.lbl{display:block;font-weight:600;font-size:.88rem;margin-bottom:6px}
+.outlist{display:grid;gap:8px;margin-top:14px}
+.dragging{opacity:.4}
+.drop-target{border-color:var(--brand)!important}
+.progress{font-size:.88rem;color:var(--muted);margin-top:10px;min-height:1.2em}
+.tool-app .file-list{display:grid;gap:8px;margin-top:16px}
+.pg .num{position:absolute;top:12px;left:12px;background:var(--surface);border:1px solid var(--border);border-radius:999px;font-size:.72rem;font-weight:700;padding:1px 7px}.pg.sel .num{background:var(--brand);color:#fff;border-color:var(--brand)}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#pdf">PDF tools</a> › Split PDF</nav>
+
+  <section class="hero">
+    <span class="eyebrow">PDF tool</span>
+    <h1><span class="gradient-text">Split PDF</span> and extract pages</h1>
+    <p class="lead">Split a PDF into separate files or extract selected pages into a new PDF — free, private and processed entirely in your browser.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Split PDF">
+    <div class="dropzone" id="drop"><div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></svg></div><strong>Drop a PDF here or tap to choose</strong><small>One PDF file · No upload — processed in your browser</small><input type="file"></div>
+    <div id="work" class="hidden">
+      <div class="file-item"><span class="badge">PDF</span><div class="meta"><div class="name" id="fname"></div><div class="sub" id="finfo"></div></div><button class="btn btn-sm" id="change" type="button">Change file</button></div>
+      <div class="panel" style="margin-top:16px">
+        <span class="lbl" id="modeLbl">Split mode</span>
+        <div class="seg" id="mode" role="group" aria-labelledby="modeLbl"><button type="button" data-v="ranges" aria-pressed="true">Extract ranges</button><button type="button" data-v="each" aria-pressed="false">Every page</button><button type="button" data-v="n" aria-pressed="false">Every N pages</button></div>
+        <div id="optRanges" class="opts">
+          <div><label class="lbl" for="ranges">Pages to extract</label><input class="input mono" id="ranges" placeholder="e.g. 1-3,5,8-10" autocomplete="off"><small class="muted">Tip: click thumbnails below to select pages.</small></div>
+          <div><span class="lbl">Output</span><label class="check"><input type="checkbox" id="sepRanges"> One PDF per range</label><div class="row" style="margin-top:8px"><button class="btn btn-sm" type="button" id="selAll">Select all</button><button class="btn btn-sm" type="button" id="selNone">Clear</button></div></div>
+        </div>
+        <div id="optN" class="opts hidden"><div><label class="lbl" for="nPages">Pages per file</label><input class="input" type="number" id="nPages" min="1" value="2"></div></div>
+        <p class="muted" id="summary" style="margin:12px 0 0"></p>
+      </div>
+      <div class="actions"><button class="btn btn-primary" id="splitBtn" type="button">Split PDF</button><button class="btn hidden" id="dlAll" type="button">Download all</button></div>
+      <p class="progress" id="prog" aria-live="polite"></p>
+      <div class="outlist" id="outs"></div>
+      <div class="pgrid" id="grid" aria-label="Pages"></div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to split a PDF</h2>
+      <ol><li>Drop a PDF file into the box, or tap to choose one.</li><li>Pick a mode: extract page ranges, split every page, or split every N pages. Click thumbnails to select pages.</li><li>Press Split PDF, then download each output file or all of them.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is a PDF splitter?</h2>
+      <p>A PDF splitter creates new PDF files from selected pages of an existing PDF. This tool offers three modes: extract ranges such as "1-3,5,8-10" into one PDF (or one file per range), split every page into its own PDF, or split into chunks of N pages.</p>
+      <p>Pages are copied losslessly with pdf-lib, so text stays selectable and images keep full resolution. Thumbnails are rendered locally with pdf.js. Your PDF never leaves your device and the tool works offline after the first visit.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>How do I extract specific pages from a PDF?</summary><p>Choose Extract ranges and type pages like 1-3,5,8-10, or click page thumbnails to select them. Press Split PDF to get a new PDF containing only those pages.</p></details>
+      <details><summary>Can I split a PDF into single pages?</summary><p>Yes. Choose Every page and each page becomes its own PDF file. Download them one by one or all at once.</p></details>
+      <details><summary>Is my PDF uploaded anywhere?</summary><p>No. Splitting happens in your browser with JavaScript. The file never leaves your device and the tool also works offline.</p></details>
+      <details><summary>Does splitting reduce quality?</summary><p>No. Pages are copied without re-rendering, so text, fonts and images remain identical to the original PDF.</p></details>
+      <details><summary>Is there a page or file size limit?</summary><p>There is no fixed limit. Very large PDFs depend on your device memory; desktop browsers comfortably handle files with hundreds of pages.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-pdf" href="../merge-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v6a4 4 0 0 0 4 4h0a4 4 0 0 1 4 4v4"/><path d="M16 3v6a4 4 0 0 1-4 4"/><path d="m5 18 3 3 3-3"/></svg></span><span><h3>Merge PDF</h3><p>Combine many PDFs into one.</p></span></a>
+        <a class="tool-card cat-pdf" href="../organize-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span><span><h3>Organize PDF</h3><p>Reorder or delete pages.</p></span></a>
+        <a class="tool-card cat-pdf" href="../pdf-to-jpg/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></span><span><h3>PDF to JPG</h3><p>Convert PDF pages to images.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/vendor/pdf-lib.min.js"></script>
+<script src="../assets/vendor/pdf.min.js"></script>
+<script>
+(function () {
+'use strict';
+
+var $ = function (s) { return document.querySelector(s); };
+function el(tag, attrs, html) { var e = document.createElement(tag); if (attrs) for (var k in attrs) e.setAttribute(k, attrs[k]); if (html != null) e.innerHTML = html; return e; }
+function escH(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function segInit(seg, cb) { seg.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; seg.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); cb && cb(b.dataset.v); }); }
+function segVal(seg) { var b = seg.querySelector('[aria-pressed=true]'); return b && b.dataset.v; }
+function readBuf(file) { return file.arrayBuffer ? file.arrayBuffer() : new Promise(function (r) { var fr = new FileReader(); fr.onload = function () { r(fr.result); }; fr.readAsArrayBuffer(file); }); }
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = '../assets/vendor/pdf.worker.min.js';
+function openPdfJs(buf) { return pdfjsLib.getDocument({ data: new Uint8Array(buf.slice(0)) }).promise; }
+function renderThumb(pdf, n, maxW) {
+  return pdf.getPage(n).then(function (page) {
+    var v = page.getViewport({ scale: 1 }); var s = (maxW || 180) / v.width; var vp = page.getViewport({ scale: s });
+    var c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+    return page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise.then(function () { return c; });
+  });
+}
+function pdfBlob(bytes) { return new Blob([bytes], { type: 'application/pdf' }); }
+function busy(btn, on, label) { if (on) { btn._l = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + (label || 'Working…'); } else { btn.disabled = false; if (btn._l) btn.innerHTML = btn._l; } }
+
+
+var buf = null, nPages = 0, base = 'document', sel = new Set(), outputs = [];
+var input = IT.dropzone($('#drop'), { accept: 'application/pdf,.pdf', onFiles: function (f) { load(f[0]); } });
+$('#change').onclick = function () { input.click(); };
+segInit($('#mode'), function (v) { $('#optRanges').classList.toggle('hidden', v !== 'ranges'); $('#optN').classList.toggle('hidden', v !== 'n'); summarize(); });
+function parseRanges(s, max) {
+  var groups = [], bad = false;
+  s.split(/[,;\s]+/).forEach(function (part) {
+    if (!part) return;
+    var m = part.match(/^(\d+)?\s*-\s*(\d+)?$/), a, b;
+    if (m) { a = m[1] ? +m[1] : 1; b = m[2] ? +m[2] : max; } else if (/^\d+$/.test(part)) { a = b = +part; } else { bad = true; return; }
+    a = Math.max(1, a); b = Math.min(max, b);
+    if (a > b) { bad = a > max; if (bad) return; var t = a; a = b; b = t; }
+    var g = []; for (var i = a; i <= b; i++) g.push(i); if (g.length) groups.push(g);
+  });
+  return { groups: groups, bad: bad };
+}
+function toRanges(set) {
+  var a = Array.from(set).sort(function (x, y) { return x - y; }), out = [], i = 0;
+  while (i < a.length) { var s = a[i], e = s; while (a[i + 1] === e + 1) { e++; i++; } out.push(s === e ? String(s) : s + '-' + e); i++; }
+  return out.join(',');
+}
+function syncSel() { $('#grid').querySelectorAll('.pg').forEach(function (p) { var n = +p.dataset.n; var on = sel.has(n); p.classList.toggle('sel', on); p.querySelector('button').setAttribute('aria-pressed', on); }); summarize(); }
+$('#ranges').addEventListener('input', function () { sel = new Set(); parseRanges(this.value, nPages).groups.forEach(function (g) { g.forEach(function (n) { sel.add(n); }); }); syncSel(); });
+$('#selAll').onclick = function () { sel = new Set(); for (var i = 1; i <= nPages; i++) sel.add(i); $('#ranges').value = toRanges(sel); syncSel(); };
+$('#selNone').onclick = function () { sel = new Set(); $('#ranges').value = ''; syncSel(); };
+$('#nPages').addEventListener('input', summarize); $('#sepRanges').addEventListener('change', summarize);
+$('#grid').addEventListener('click', function (e) {
+  var b = e.target.closest('button.pick'); if (!b) return;
+  var n = +b.closest('.pg').dataset.n;
+  if (segVal($('#mode')) !== 'ranges') { $('#mode').querySelector('[data-v=ranges]').click(); }
+  if (sel.has(n)) sel.delete(n); else sel.add(n);
+  $('#ranges').value = toRanges(sel); syncSel();
+});
+function plan() {
+  var m = segVal($('#mode')), g = [];
+  if (m === 'each') { for (var i = 1; i <= nPages; i++) g.push([i]); }
+  else if (m === 'n') { var k = Math.max(1, parseInt($('#nPages').value, 10) || 1); for (var s = 1; s <= nPages; s += k) { var c = []; for (var j = s; j < s + k && j <= nPages; j++) c.push(j); g.push(c); } }
+  else { var r = parseRanges($('#ranges').value, nPages).groups; if (r.length) g = $('#sepRanges').checked ? r : [[].concat.apply([], r)]; }
+  return g;
+}
+function summarize() {
+  if (!nPages) return; var g = plan();
+  var tot = g.reduce(function (a, x) { return a + x.length; }, 0);
+  $('#summary').textContent = g.length ? 'Will create ' + g.length + ' PDF file' + (g.length > 1 ? 's' : '') + ' with ' + tot + ' page' + (tot > 1 ? 's' : '') + ' in total.' : 'Enter page ranges or click thumbnails to select pages.';
+}
+function load(file) {
+  if (!file || !(/pdf$/i.test(file.type) || /\.pdf$/i.test(file.name))) { IT.toast('Please choose a PDF file'); return; }
+  base = IT.baseName(file.name); outputs = []; $('#outs').innerHTML = ''; $('#dlAll').classList.add('hidden'); $('#prog').textContent = '';
+  readBuf(file).then(function (b) {
+    buf = b; return openPdfJs(b);
+  }).then(function (pdf) {
+    nPages = pdf.numPages; sel = new Set(); $('#ranges').value = '';
+    $('#drop').classList.add('hidden'); $('#work').classList.remove('hidden');
+    $('#fname').textContent = file.name; $('#finfo').textContent = nPages + ' pages · ' + IT.formatBytes(file.size);
+    $('#ranges').placeholder = 'e.g. 1-' + Math.min(3, nPages) + (nPages > 4 ? ',5' : '');
+    var G = $('#grid'); G.innerHTML = '';
+    for (var i = 1; i <= nPages; i++) { var p = el('div', { class: 'pg', 'data-n': i }); p.innerHTML = '<button type="button" class="pick" aria-pressed="false" aria-label="Select page ' + i + '"><span class="pv"></span><span class="cap">Page ' + i + '</span></button><span class="num">' + i + '</span>'; G.appendChild(p); }
+    summarize();
+    var chain = Promise.resolve();
+    for (var n = 1; n <= nPages; n++) (function (n) { chain = chain.then(function () { return renderThumb(pdf, n, 160).then(function (c) { var pv = G.querySelector('[data-n="' + n + '"] .pv'); if (pv) pv.appendChild(c); }); }); })(n);
+  }).catch(function (e) { IT.toast(/password/i.test(e && e.name + e.message) ? 'This PDF is password protected' : 'Could not open this PDF'); });
+}
+$('#splitBtn').onclick = function () {
+  var btn = this, groups = plan();
+  if (!groups.length) { IT.toast('Select at least one page'); $('#ranges').focus(); return; }
+  busy(btn, true, 'Splitting…'); outputs = []; $('#outs').innerHTML = '';
+  PDFLib.PDFDocument.load(buf, { ignoreEncryption: true }).then(function (src) {
+    var chain = Promise.resolve();
+    groups.forEach(function (g, gi) {
+      chain = chain.then(function () {
+        $('#prog').textContent = 'Creating file ' + (gi + 1) + ' of ' + groups.length + '…';
+        return PDFLib.PDFDocument.create().then(function (d) {
+          return d.copyPages(src, g.map(function (n) { return n - 1; })).then(function (ps) { ps.forEach(function (p) { d.addPage(p); }); return d.save(); });
+        }).then(function (bytes) {
+          var label = toRanges(new Set(g)); var name = base + (groups.length === 1 && segVal($('#mode')) === 'ranges' ? '-pages-' : '-') + label.replace(/,/g, '_') + '.pdf';
+          outputs.push({ name: name, blob: pdfBlob(bytes), pages: g.length });
+        });
+      });
+    });
+    return chain;
+  }).then(function () {
+    var O = $('#outs');
+    outputs.forEach(function (o, i) { var it = el('div', { class: 'file-item' }); it.innerHTML = '<span class="badge">PDF</span><div class="meta"><div class="name">' + escH(o.name) + '</div><div class="sub">' + o.pages + ' page' + (o.pages > 1 ? 's' : '') + ' · ' + IT.formatBytes(o.blob.size) + '</div></div><button class="btn btn-sm btn-primary" type="button" data-o="' + i + '">Download</button>'; O.appendChild(it); });
+    $('#prog').textContent = 'Done — ' + outputs.length + ' file' + (outputs.length > 1 ? 's' : '') + ' ready.';
+    $('#dlAll').classList.toggle('hidden', outputs.length < 2);
+    if (outputs.length === 1) IT.download(outputs[0].blob, outputs[0].name);
+    IT.toast('Split complete');
+  }).catch(function (e) { $('#prog').textContent = 'Error: ' + (e.message || e); }).finally(function () { busy(btn, false); });
+};
+$('#outs').addEventListener('click', function (e) { var b = e.target.closest('[data-o]'); if (b) { var o = outputs[+b.dataset.o]; IT.download(o.blob, o.name); } });
+$('#dlAll').onclick = function () { var i = 0; (function next() { if (i >= outputs.length) return; IT.download(outputs[i].blob, outputs[i].name); i++; setTimeout(next, 400); })(); IT.toast('Downloading ' + outputs.length + ' files…'); };
+
+})();
+</script>
+</body>
+</html>

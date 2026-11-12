@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>UUID Generator v4 &amp; v7 — Free, Bulk, Offline | Instant Tools</title>
+<meta name="description" content="Generate UUID v4 and time-ordered v7 IDs in bulk (up to 1,000). Uppercase, no-hyphen and brace options, copy or download, plus a UUID validator. Offline.">
+<meta name="keywords" content="uuid generator, guid generator, uuid v4, uuid v7, random uuid, bulk uuid generator, uuid validator, generate guid online, crypto.randomUUID">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/uuid-generator/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="UUID Generator — Free & Private">
+<meta property="og:description" content="Generate UUID v4 and v7 in bulk with format options, and validate any UUID — free and offline.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/uuid-generator/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "UUID Generator", "url": "https://soumyaswaraj.github.io/instant-tools/uuid-generator/", "applicationCategory": "DeveloperApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Generate UUID v4 and time-ordered v7 IDs in bulk (up to 1,000). Uppercase, no-hyphen and brace options, copy or download, plus a UUID validator. Offline.", "featureList": ["UUID v4 (random) and v7 (time-ordered)", "Bulk generation up to 1,000", "Uppercase, no-hyphens and braces formats", "Copy all or download .txt", "UUID validator with version, variant and timestamp", "Works offline", "No upload — data stays on your device"]}, {"@type": "HowTo", "name": "How to generate UUIDs", "step": [{"@type": "HowToStep", "text": "Choose UUID v4 (random) or v7 (time-ordered)."}, {"@type": "HowToStep", "text": "Set how many you need and pick uppercase, no-hyphens or braces formatting."}, {"@type": "HowToStep", "text": "Click Generate UUIDs, then copy them all or download a .txt file."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is the difference between UUID v4 and v7?", "acceptedAnswer": {"@type": "Answer", "text": "UUID v4 is 122 bits of pure randomness. UUID v7 starts with a 48-bit Unix timestamp in milliseconds followed by random bits, so v7 IDs sort by creation time and make better database primary keys."}}, {"@type": "Question", "name": "Are these UUIDs truly random and unique?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. They use the browser's cryptographically secure generator (crypto.randomUUID or crypto.getRandomValues). With 122 random bits, the chance of a v4 collision is negligible even across billions of IDs."}}, {"@type": "Question", "name": "How many UUIDs can I generate at once?", "acceptedAnswer": {"@type": "Answer", "text": "You can generate between 1 and 1,000 UUIDs per click, then copy them all or download them as a .txt file with one UUID per line."}}, {"@type": "Question", "name": "Is a GUID the same as a UUID?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. GUID (globally unique identifier) is Microsoft's name for a UUID. GUIDs are often written in uppercase with curly braces, which you can enable with the Uppercase and Braces options."}}, {"@type": "Question", "name": "How does the UUID validator detect the version?", "acceptedAnswer": {"@type": "Answer", "text": "The version is the first hex digit of the third group and the variant comes from the first digit of the fourth group. For v1, v6 and v7 the validator also decodes the embedded timestamp."}}, {"@type": "Question", "name": "Are generated UUIDs sent or stored anywhere?", "acceptedAnswer": {"@type": "Answer", "text": "No. UUIDs are created in your browser and never leave your device. The generator works offline."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "UUID Generator", "item": "https://soumyaswaraj.github.io/instant-tools/uuid-generator/"}]}]}
+</script>
+<style>
+.uu-hero{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:16px;border:1px dashed var(--border);border-radius:var(--radius-sm);background:var(--surface-2);margin-bottom:16px}
+.uu-hero code{flex:1;min-width:0;font-size:1.15rem;font-weight:700;word-break:break-all;color:var(--brand)}
+.uu-opts{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:flex-end}
+.uu-opts .field{margin-bottom:10px}.uu-opts #count{width:140px}.uu-opts .check{margin-bottom:18px}
+.uu-list{margin-top:16px}#list{min-height:240px}
+.uu-h{font-size:1.05rem;margin:24px 0 10px}
+.uu-res dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:10px 0 0}
+.uu-res dt{color:var(--muted);font-size:.85rem}.uu-res dd{margin:0;font-family:var(--mono);font-size:.88rem;word-break:break-all}
+.badge.bad{background:color-mix(in srgb,var(--err) 14%,transparent);color:var(--err)}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#dev">Developer tools</a> › UUID Generator</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Developer tool</span>
+    <h1><span class="gradient-text">UUID Generator</span> (v4 &amp; v7)</h1>
+    <p class="lead">This UUID generator creates cryptographically secure UUID v4 and time-ordered v7 identifiers, one at a time or 1,000 at once, and validates any UUID — free, private and offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="UUID Generator">
+
+    <div class="uu-hero"><code class="mono" id="one" aria-live="polite"></code><button class="btn btn-sm" id="copyOne" type="button">Copy</button><button class="btn btn-sm" id="newOne" type="button" aria-label="Generate a new UUID">New</button></div>
+    <div class="panel uu-opts">
+      <div class="field"><span class="label" id="verl">Version</span><div class="seg" role="group" aria-labelledby="verl"><button type="button" data-v="4" aria-pressed="true">v4 random</button><button type="button" data-v="7" aria-pressed="false">v7 time-ordered</button></div></div>
+      <div class="field"><label for="count">How many (1–1000)</label><input class="input" id="count" type="number" min="1" max="1000" value="10" inputmode="numeric"></div>
+      <label class="check" for="upper"><input type="checkbox" id="upper"> Uppercase</label>
+      <label class="check" for="nohy"><input type="checkbox" id="nohy"> No hyphens</label>
+      <label class="check" for="braces"><input type="checkbox" id="braces"> {Braces}</label>
+    </div>
+    <div class="actions"><button class="btn btn-primary" id="gen" type="button">Generate UUIDs</button><button class="btn" id="copyAll" type="button">Copy all</button><button class="btn" id="dl" type="button">Download .txt</button></div>
+    <div class="field uu-list"><label for="list">Generated UUIDs <span class="muted" id="cnt"></span></label><textarea class="textarea" id="list" readonly spellcheck="false"></textarea></div>
+    <h2 class="uu-h">UUID validator</h2>
+    <div class="field"><label for="val">Paste a UUID to validate and inspect</label><input class="input mono" id="val" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. 0190f2a4-7b6e-7c3d-9a1f-2b3c4d5e6f70"></div>
+    <div class="panel uu-res" id="vres" aria-live="polite"><span class="muted">Accepts standard, uppercase, braced, URN and 32-character forms.</span></div>
+
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to generate UUIDs</h2>
+      <ol><li>Choose UUID v4 (random) or v7 (time-ordered).</li><li>Set how many you need and pick uppercase, no-hyphens or braces formatting.</li><li>Click Generate UUIDs, then copy them all or download a .txt file.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is a UUID?</h2>
+      <p>A UUID (universally unique identifier), also called a GUID, is a 128-bit value written as 32 hexadecimal digits in the 8-4-4-4-12 pattern, for example 550e8400-e29b-41d4-a716-446655440000. UUIDs are defined in RFC 9562 (formerly RFC 4122) and let systems create unique IDs without a central server.</p>
+      <p>Version 4 UUIDs contain 122 random bits. Version 7 UUIDs put a 48-bit Unix millisecond timestamp first, then a 12-bit counter and 62 random bits, so they sort chronologically and index efficiently in databases. This tool uses crypto.randomUUID for v4 when available, falling back to crypto.getRandomValues, and builds v7 IDs with a monotonic counter within the same millisecond.</p>
+      <p>All IDs are generated locally in your browser. Nothing is uploaded or logged, and the generator works offline.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>What is the difference between UUID v4 and v7?</summary><p>UUID v4 is 122 bits of pure randomness. UUID v7 starts with a 48-bit Unix timestamp in milliseconds followed by random bits, so v7 IDs sort by creation time and make better database primary keys.</p></details>
+      <details><summary>Are these UUIDs truly random and unique?</summary><p>Yes. They use the browser&#x27;s cryptographically secure generator (crypto.randomUUID or crypto.getRandomValues). With 122 random bits, the chance of a v4 collision is negligible even across billions of IDs.</p></details>
+      <details><summary>How many UUIDs can I generate at once?</summary><p>You can generate between 1 and 1,000 UUIDs per click, then copy them all or download them as a .txt file with one UUID per line.</p></details>
+      <details><summary>Is a GUID the same as a UUID?</summary><p>Yes. GUID (globally unique identifier) is Microsoft&#x27;s name for a UUID. GUIDs are often written in uppercase with curly braces, which you can enable with the Uppercase and Braces options.</p></details>
+      <details><summary>How does the UUID validator detect the version?</summary><p>The version is the first hex digit of the third group and the variant comes from the first digit of the fourth group. For v1, v6 and v7 the validator also decodes the embedded timestamp.</p></details>
+      <details><summary>Are generated UUIDs sent or stored anywhere?</summary><p>No. UUIDs are created in your browser and never leave your device. The generator works offline.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-dev" href="../password-generator/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span><h3>Password Generator</h3><p>Strong random passwords.</p></span></a>
+        <a class="tool-card cat-dev" href="../hash-generator/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg></span><span><h3>Hash Generator (MD5/SHA)</h3><p>MD5, SHA-1, SHA-256 hashes.</p></span></a>
+        <a class="tool-card cat-dev" href="../base64-encoder/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg></span><span><h3>Base64 Encode/Decode</h3><p>Encode and decode Base64.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)},ver='4';
+  var H=[];for(var i=0;i<256;i++)H.push((i+256).toString(16).slice(1));
+  function fmt(b){var h='';for(var i=0;i<16;i++){h+=H[b[i]];if(i===3||i===5||i===7||i===9)h+='-'}return h}
+  function v4(){
+    if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();
+    var b=new Uint8Array(16);crypto.getRandomValues(b);b[6]=(b[6]&0x0f)|0x40;b[8]=(b[8]&0x3f)|0x80;return fmt(b);
+  }
+  var lastMs=-1,seq=0;
+  function v7(){ // RFC 9562: 48-bit Unix ms, ver 7, 12-bit counter (rand_a), variant, 62 random bits
+    var b=new Uint8Array(16);crypto.getRandomValues(b);var ms=Date.now();
+    if(ms<=lastMs){seq++;if(seq>0xfff){lastMs++;seq=b[7]&0x7f}ms=lastMs}else{lastMs=ms;seq=((b[6]&0x0f)<<8|b[7])&0x7ff}
+    var t=ms;for(var i=5;i>=0;i--){b[i]=t%256;t=Math.floor(t/256)}
+    b[6]=0x70|((seq>>8)&0x0f);b[7]=seq&0xff;b[8]=(b[8]&0x3f)|0x80;return fmt(b);
+  }
+  function style(u){var nh=$('nohy').checked;if(nh)u=u.replace(/-/g,'');if($('upper').checked)u=u.toUpperCase();if($('braces').checked)u='{'+u+'}';return u}
+  function make(){return style(ver==='7'?v7():v4())}
+  function gen(){
+    var n=Math.max(1,Math.min(1000,parseInt($('count').value,10)||1));if(String(n)!==$('count').value)$('count').value=n;
+    var out=[];for(var i=0;i<n;i++)out.push(make());
+    $('list').value=out.join('\n');$('cnt').textContent='('+n+' × v'+ver+')';$('one').textContent=out[0];
+  }
+  document.querySelectorAll('[data-v]').forEach(function(b){b.addEventListener('click',function(){ver=b.dataset.v;document.querySelectorAll('[data-v]').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});gen()})});
+  ['upper','nohy','braces'].forEach(function(id){$(id).addEventListener('change',gen)});
+  $('count').addEventListener('change',gen);
+  $('gen').addEventListener('click',gen);
+  $('newOne').addEventListener('click',function(){$('one').textContent=make()});
+  $('copyOne').addEventListener('click',function(){IT.copy($('one').textContent)});
+  $('copyAll').addEventListener('click',function(){IT.copy($('list').value)});
+  $('dl').addEventListener('click',function(){IT.download(new Blob([$('list').value+'\n'],{type:'text/plain'}),'uuids-v'+ver+'.txt')});
+  // validator
+  var VN={1:'Version 1 (time-based, MAC)',2:'Version 2 (DCE security)',3:'Version 3 (MD5 name-based)',4:'Version 4 (random)',5:'Version 5 (SHA-1 name-based)',6:'Version 6 (reordered time)',7:'Version 7 (Unix time-ordered)',8:'Version 8 (custom)'};
+  function gregorian(t100ns){var ms=Number((t100ns-122192928000000000n)/10000n);return new Date(ms)}
+  function validate(){
+    var raw=$('val').value.trim(),r=$('vres');
+    if(!raw){r.innerHTML='<span class="muted">Accepts standard, uppercase, braced, URN and 32-character forms.</span>';return}
+    var s=raw.replace(/^urn:uuid:/i,'').replace(/^\{(.*)\}$/,'$1');
+    var ok=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)||/^[0-9a-f]{32}$/i.test(s);
+    if(!ok){r.innerHTML='<span class="badge bad">✗ Not a valid UUID</span><p class="muted" style="margin:8px 0 0">A UUID is 32 hexadecimal digits, usually grouped 8-4-4-4-12 with hyphens.</p>';return}
+    var h=s.replace(/-/g,'').toLowerCase(),canon=h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);
+    var v=parseInt(h[12],16),vn=parseInt(h[16],16),variant=vn<8?'NCS (reserved, legacy)':vn<12?'RFC 9562 / RFC 4122 (10xx)':vn<14?'Microsoft (reserved, 110x)':'Future (reserved, 111x)';
+    var rows=[['Canonical',canon],['Version',h==='00000000000000000000000000000000'?'Nil UUID':h==='ffffffffffffffffffffffffffffffff'?'Max UUID':(VN[v]||'Unknown ('+v+')')],['Variant',variant]];
+    try{
+      if(v===7&&vn>=8&&vn<12){var ms=parseInt(h.slice(0,12),16);rows.push(['Timestamp',new Date(ms).toISOString()+' ('+ms+' ms)'])}
+      if(v===1&&vn>=8&&vn<12){var t=BigInt('0x'+h.slice(13,16)+h.slice(8,12)+h.slice(0,8));rows.push(['Timestamp',gregorian(t).toISOString()]);rows.push(['Node',h.slice(20).match(/../g).join(':')])}
+      if(v===6&&vn>=8&&vn<12){var t6=BigInt('0x'+h.slice(0,12)+h.slice(13,16));rows.push(['Timestamp',gregorian(t6).toISOString()])}
+    }catch(e){}
+    r.innerHTML='<span class="badge ok">✓ Valid UUID</span><dl>'+rows.map(function(x){return '<dt>'+x[0]+'</dt><dd>'+x[1]+'</dd>'}).join('')+'</dl>';
+  }
+  $('val').addEventListener('input',validate);
+  gen();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rotate &amp; Flip Image — Rotate Photos Online | Instant Tools</title>
+<meta name="description" content="Rotate images 90°, 180°, 270° or any custom angle and flip them horizontally or vertically with a live preview. Free, private, no upload, works offline.">
+<meta name="keywords" content="rotate image, flip image, rotate photo, mirror image, flip image horizontally, rotate image 90 degrees, rotate picture online, straighten photo, rotate jpg, flip photo">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/rotate-flip-image/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Rotate &amp; Flip Image — Free &amp; Private">
+<meta property="og:description" content="Rotate photos by any angle and mirror them horizontally or vertically. Live preview, no upload.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/rotate-flip-image/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Rotate & Flip Image","url":"https://soumyaswaraj.github.io/instant-tools/rotate-flip-image/","applicationCategory":"MultimediaApplication","operatingSystem":"Any (browser-based)","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Rotate images 90°, 180°, 270° or any custom angle and flip them horizontally or vertically with a live preview. Free, private, no upload, works offline.","featureList":["Rotate 90°, 180° and 270°","Custom angle from -180° to 180°","Flip horizontal and vertical","Live preview","Background color or transparent corners","Works offline","No upload — files stay on your device"]},{"@type":"HowTo","name":"How to rotate and flip an image","step":[{"@type":"HowToStep","text":"Drop an image onto the box or tap to choose one."},{"@type":"HowToStep","text":"Use the rotate and flip buttons, or drag the angle slider to straighten the photo; the preview updates live."},{"@type":"HowToStep","text":"Choose the output format and click Download."}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do I rotate an image 90 degrees?","acceptedAnswer":{"@type":"Answer","text":"Click Rotate right to turn it 90° clockwise or Rotate left for 90° counter-clockwise. Click again for 180° or 270°, then download."}},{"@type":"Question","name":"How do I mirror or flip a photo?","acceptedAnswer":{"@type":"Answer","text":"Click Flip horizontal to mirror it left to right, as is often needed for selfies, or Flip vertical to mirror it top to bottom."}},{"@type":"Question","name":"How do I straighten a crooked photo?","acceptedAnswer":{"@type":"Answer","text":"Drag the custom angle slider or type an angle such as -2.5. The preview updates live. Then use the Image Cropper to trim the corners if you do not want them."}},{"@type":"Question","name":"What happens to the corners when I rotate by a custom angle?","acceptedAnswer":{"@type":"Answer","text":"The canvas expands to fit the whole rotated image. Corners stay transparent in PNG and WebP; in JPG they are filled with the background color you pick."}},{"@type":"Question","name":"Is rotating an image lossless?","acceptedAnswer":{"@type":"Answer","text":"Rotations of 90°, 180° and 270° and flips keep every pixel, and saving as PNG is fully lossless. JPG and WebP output apply compression at the chosen quality."}}]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Instant Tools","item":"https://soumyaswaraj.github.io/instant-tools/"},{"@type":"ListItem","position":2,"name":"Rotate & Flip Image","item":"https://soumyaswaraj.github.io/instant-tools/rotate-flip-image/"}]}]}
+</script>
+<style>
+.ws{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
+@media (max-width:860px){.ws{grid-template-columns:minmax(0,1fr)}}
+.ws .preview{padding:12px}
+.ws .preview canvas,.ws .preview img{max-width:100%;height:auto}
+.side .field:last-child{margin-bottom:0}
+.side h3{font-size:.95rem;margin:0 0 10px}
+.range-row{display:flex;align-items:center;gap:10px}
+.range-row output{min-width:3.2em;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.pair{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end}
+.pair .x{padding-bottom:12px;color:var(--muted)}
+.quad{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quad .field{margin:0}
+.color-row{display:flex;gap:8px;align-items:center}
+.color-row input[type=color]{width:44px;height:44px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);padding:3px;cursor:pointer}
+.file-line{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.file-line .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.stats{margin-top:14px}
+.stat b{font-size:1.05rem}
+
+.tbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tbtns .btn{padding:0 10px;font-size:.88rem}
+.tbtns .btn[aria-pressed="true"]{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
+.angle-row{display:grid;grid-template-columns:1fr 84px;gap:10px;align-items:center}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#image">Image tools</a> › Rotate &amp; Flip Image</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Image tool</span>
+    <h1><span class="gradient-text">Rotate &amp; flip images</span> instantly</h1>
+    <p class="lead">Rotate &amp; Flip Image turns a JPG, PNG or WebP picture by 90°, 180°, 270° or any custom angle and mirrors it horizontally or vertically, with a live preview — free, private and offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Rotate &amp; Flip Image">
+    <div class="dropzone" id="drop" aria-label="Drop an image here or tap to choose">
+      <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></div>
+      <strong>Drop an image here or tap to choose</strong>
+      <small>JPG, PNG, WebP, GIF, BMP · processed locally, never uploaded</small>
+      <input type="file" aria-label="Choose image files">
+    </div>
+    <div id="app" class="hidden">
+      <div class="file-line"><span class="name" id="fname"></span><button type="button" class="btn btn-sm" id="change">Choose another image</button></div>
+      <div class="ws">
+        <div>
+          <div class="preview"><canvas id="cv" aria-label="Rotated image preview"></canvas></div>
+          <div class="stats" aria-live="polite" id="stats"></div>
+        </div>
+        <div class="panel side">
+          <div class="field"><span class="label">Rotate &amp; flip</span><div class="tbtns">
+            <button type="button" class="btn" id="rl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Rotate left</button>
+            <button type="button" class="btn" id="rr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Rotate right</button>
+            <button type="button" class="btn" id="fh" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M8 7l-5 5 5 5V7zM16 7l5 5-5 5V7z"/></svg>Flip horizontal</button>
+            <button type="button" class="btn" id="fv" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h18"/><path d="M7 8l5-5 5 5H7zM7 16l5 5 5-5H7z"/></svg>Flip vertical</button>
+          </div></div>
+          <div class="field"><label for="ang">Custom angle (°)</label><div class="angle-row"><input type="range" id="ang" min="-180" max="180" step="0.5" value="0" aria-describedby="angd"><input class="input" id="angn" type="number" min="-180" max="180" step="0.5" value="0" aria-label="Custom angle in degrees"></div><small class="muted" id="angd">Total rotation: <span id="tot">0°</span></small></div>
+          <div class="field"><label for="bg">Corner background (custom angles)</label><div class="color-row"><input type="color" id="bg" value="#ffffff"><label class="check" style="margin:0"><input type="checkbox" id="transp" checked> Transparent (PNG/WebP)</label></div></div>
+          <div class="field"><label for="fmt">Output format</label><select class="select" id="fmt"><option value="same">Same as original</option><option value="image/jpeg">JPG</option><option value="image/png">PNG</option><option value="image/webp">WebP</option></select></div>
+          <div class="field" id="q-f"><label for="q">Quality</label><div class="range-row"><input type="range" id="q" min="10" max="100" value="92"><output id="qv" for="q">92%</output></div></div>
+          <div class="field row"><button type="button" class="btn btn-primary" id="dl" style="flex:1">Download</button><button type="button" class="btn" id="reset">Reset</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to rotate and flip an image</h2>
+      <ol><li>Drop an image onto the box or tap to choose one.</li><li>Use the rotate and flip buttons, or drag the angle slider to straighten the photo; the preview updates live.</li><li>Choose the output format and click Download.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is a Rotate &amp; Flip Image tool?</h2>
+      <p>A rotate and flip tool changes an image’s orientation. Rotating by 90°, 180° or 270° keeps every pixel: the canvas simply swaps width and height. Flipping mirrors the image horizontally (left to right) or vertically (top to bottom), which is useful for selfies, scans and design assets.</p>
+      <p>Custom angles from −180° to 180° in 0.5° steps help straighten tilted horizons. For angles that are not multiples of 90°, the canvas grows to fit the whole rotated image and the corners are left transparent (PNG and WebP) or filled with the background color you choose.</p>
+      <p>Export as PNG, JPG or WebP. All processing runs in your browser — nothing is uploaded, and the tool works offline.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>How do I rotate an image 90 degrees?</summary><p>Click Rotate right to turn it 90° clockwise or Rotate left for 90° counter-clockwise. Click again for 180° or 270°, then download.</p></details>
+      <details><summary>How do I mirror or flip a photo?</summary><p>Click Flip horizontal to mirror it left to right, as is often needed for selfies, or Flip vertical to mirror it top to bottom.</p></details>
+      <details><summary>How do I straighten a crooked photo?</summary><p>Drag the custom angle slider or type an angle such as -2.5. The preview updates live. Then use the Image Cropper to trim the corners if you do not want them.</p></details>
+      <details><summary>What happens to the corners when I rotate by a custom angle?</summary><p>The canvas expands to fit the whole rotated image. Corners stay transparent in PNG and WebP; in JPG they are filled with the background color you pick.</p></details>
+      <details><summary>Is rotating an image lossless?</summary><p>Rotations of 90°, 180° and 270° and flips keep every pixel, and saving as PNG is fully lossless. JPG and WebP output apply compression at the chosen quality.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-image" href="../image-cropper/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg></span><span><h3>Image Cropper</h3><p>Crop to 1:1, 16:9 or any size.</p></span></a>
+        <a class="tool-card cat-image" href="../watermark-image/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.7l5.7 5.7a8 8 0 1 1-11.4 0z"/></svg></span><span><h3>Add Watermark to Image</h3><p>Stamp text or a logo on photos.</p></span></a>
+        <a class="tool-card cat-pdf" href="../rotate-pdf/"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M15 15a3 3 0 1 1-1-2.2M15 11v2h-2"/></svg></span><span><h3>Rotate PDF</h3><p>Rotate PDF pages permanently.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/bmp': 'bmp' };
+var WEBP_OK = (function () { try { var c = document.createElement('canvas'); c.width = c.height = 1; return c.toDataURL('image/webp').indexOf('data:image/webp') === 0; } catch (e) { return false; } })();
+function natural(img) { return { w: img.naturalWidth || img.width || 1024, h: img.naturalHeight || img.height || 1024 }; }
+function seg(el, onChange) {
+  el.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b || b.disabled) return;
+    el.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    onChange(b.dataset.v);
+  });
+}
+function debounce(fn, ms) { var t; return function () { clearTimeout(t); t = setTimeout(fn, ms); }; }
+
+function outType(file, sel) {
+  var t = sel === 'same' ? file.type : sel;
+  if (!/^image\/(jpeg|png|webp)$/.test(t)) t = 'image/png';
+  if (t === 'image/webp' && !WEBP_OK) t = 'image/png';
+  return t;
+}
+
+function statsHtml(rows) { return rows.map(function (r) { return '<div class="stat"><b>' + r[1] + '</b><span>' + r[0] + '</span></div>'; }).join(''); }
+function setupSingle(onImage) {
+  var drop = $('#drop'), app = $('#app');
+  var input = IT.dropzone(drop, { accept: 'image/*', paste: true, onFiles: function (files) {
+    var f = files.filter(function (x) { return /^image\//.test(x.type); })[0];
+    if (!f) { IT.toast('Please choose an image file'); return; }
+    IT.loadImage(f).then(function (img) {
+      $('#fname').textContent = f.name + ' · ' + IT.formatBytes(f.size);
+      drop.classList.add('hidden'); app.classList.remove('hidden');
+      onImage(f, img);
+    }, function () { IT.toast('Could not open this image in your browser'); });
+  } });
+  $('#change').addEventListener('click', function () { input.click(); });
+}
+
+(function () {
+  var file, img, IW, IH, quarter = 0, flipH = false, flipV = false, angle = 0;
+  var cv = $('#cv'), ang = $('#ang'), angn = $('#angn'), fmt = $('#fmt'), q = $('#q'), bg = $('#bg'), transp = $('#transp');
+  setupSingle(function (f, im) { file = f; img = im; var d = natural(im); IW = d.w; IH = d.h; reset(); });
+  function total() { var t = (quarter * 90 + angle) % 360; if (t > 180) t -= 360; if (t <= -180) t += 360; return t; }
+  function geom(t) {
+    var r = t * Math.PI / 180, c = Math.abs(Math.cos(r)), s = Math.abs(Math.sin(r));
+    if (t % 90 === 0) { var sw = Math.abs(t) % 180 === 90; return { r: r, w: sw ? IH : IW, h: sw ? IW : IH }; }
+    return { r: r, w: Math.ceil(IW * c + IH * s), h: Math.ceil(IW * s + IH * c) };
+  }
+  function paint(canvas, k, ty) {
+    var t = total(), g = geom(t), w = Math.max(1, Math.round(g.w * k)), h = Math.max(1, Math.round(g.h * k));
+    canvas.width = w; canvas.height = h;
+    var ctx = canvas.getContext('2d'); ctx.imageSmoothingQuality = 'high';
+    ctx.clearRect(0, 0, w, h);
+    if (ty === 'image/jpeg' || !transp.checked) { ctx.fillStyle = bg.value; ctx.fillRect(0, 0, w, h); }
+    ctx.save(); ctx.translate(w / 2, h / 2); ctx.rotate(g.r); ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+    ctx.drawImage(img, -IW * k / 2, -IH * k / 2, IW * k, IH * k); ctx.restore();
+    return g;
+  }
+  function render() {
+    if (!img) return;
+    var ty = outType(file, fmt.value), t = total(), g0 = geom(t);
+    var k = Math.min(1, 1400 / Math.max(g0.w, g0.h));
+    var g = paint(cv, k, ty);
+    $('#tot').textContent = (Math.round(t * 10) / 10) + '°';
+    $('#fh').setAttribute('aria-pressed', flipH); $('#fv').setAttribute('aria-pressed', flipV);
+    $('#q-f').classList.toggle('hidden', ty === 'image/png');
+    $('#stats').innerHTML = statsHtml([['Original', IW + '×' + IH], ['Output', g.w + '×' + g.h], ['Rotation', (Math.round(t * 10) / 10) + '°'], ['Flip', (flipH ? 'H' : '') + (flipH && flipV ? ' + ' : '') + (flipV ? 'V' : '') || 'None']]);
+  }
+  function reset() { quarter = 0; flipH = flipV = false; angle = 0; ang.value = angn.value = 0; render(); }
+  $('#rl').addEventListener('click', function () { quarter = (quarter + 3) % 4; render(); });
+  $('#rr').addEventListener('click', function () { quarter = (quarter + 1) % 4; render(); });
+  $('#fh').addEventListener('click', function () { flipH = !flipH; render(); });
+  $('#fv').addEventListener('click', function () { flipV = !flipV; render(); });
+  ang.addEventListener('input', function () { angle = +ang.value; angn.value = ang.value; render(); });
+  angn.addEventListener('input', function () { var v = Math.max(-180, Math.min(180, +angn.value || 0)); angle = v; ang.value = v; render(); });
+  [fmt, bg, transp].forEach(function (el) { el.addEventListener('input', render); el.addEventListener('change', render); });
+  q.addEventListener('input', function () { $('#qv').textContent = q.value + '%'; });
+  $('#reset').addEventListener('click', reset);
+  document.addEventListener('keydown', function (e) {
+    if (!img || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+    if (e.key === '[') { quarter = (quarter + 3) % 4; render(); } else if (e.key === ']') { quarter = (quarter + 1) % 4; render(); }
+  });
+  $('#dl').addEventListener('click', async function () {
+    if (!img) return;
+    var ty = outType(file, fmt.value), c = document.createElement('canvas'); paint(c, 1, ty);
+    var b = await IT.canvasToBlob(c, ty, q.value / 100);
+    if (!b) { IT.toast('This image is too large to export in your browser'); return; }
+    IT.download(b, IT.baseName(file.name) + '-rotated.' + EXT[ty]);
+    IT.toast('Saved · ' + IT.formatBytes(b.size));
+  });
+})();
+</script>
+</body>
+</html>

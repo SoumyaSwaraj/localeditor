@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Photo Filters &amp; Editor — Free, Offline | Instant Tools</title>
+<meta name="description" content="Edit photos online with brightness, contrast, saturation, blur, grayscale, sepia, hue and invert sliders plus presets. Free, no upload, full resolution.">
+<meta name="keywords" content="photo filters online, image filters, photo editor, adjust brightness contrast, saturation, grayscale image, sepia filter, black and white photo, blur image, invert colors">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/image-filters/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Photo Filters &amp; Editor — Free &amp; Private">
+<meta property="og:description" content="Adjust brightness, contrast, saturation and more, apply preset filters, and download at full resolution.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/image-filters/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "Photo Filters & Editor", "url": "https://soumyaswaraj.github.io/instant-tools/image-filters/", "applicationCategory": "MultimediaApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Edit photos online with brightness, contrast, saturation, blur, grayscale, sepia, hue and invert sliders plus presets. Free, no upload, full resolution.", "featureList": ["8 adjustment sliders", "One-click presets with live thumbnails", "Before/after compare", "Exports at original resolution", "Works offline", "No upload — files stay on your device"]}, {"@type": "HowTo", "name": "How to apply filters to a photo", "step": [{"@type": "HowToStep", "text": "Drop a JPG, PNG or WebP photo into the box."}, {"@type": "HowToStep", "text": "Tap a preset or fine-tune the brightness, contrast, saturation, blur, grayscale, sepia, hue and invert sliders."}, {"@type": "HowToStep", "text": "Click Download to save the edited photo at its original resolution."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Will the downloaded photo keep its original resolution?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The preview is scaled to fit your screen, but the download is rendered at the photo's full original width and height."}}, {"@type": "Question", "name": "Which filters and adjustments are available?", "acceptedAnswer": {"@type": "Answer", "text": "Brightness, contrast, saturation, blur, grayscale, sepia, hue rotation and invert, plus presets such as Vivid, Mono, Vintage, Warm, Cool, Fade, Noir and Dramatic."}}, {"@type": "Question", "name": "Can I compare the edited photo with the original?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Press and hold the Compare button to temporarily see the original photo, then release to return to your edit."}}, {"@type": "Question", "name": "Are my photos uploaded to a server?", "acceptedAnswer": {"@type": "Answer", "text": "No. All editing happens in your browser with the Canvas API. Your photos never leave your device, and the tool works offline."}}, {"@type": "Question", "name": "Which image formats are supported?", "acceptedAnswer": {"@type": "Answer", "text": "Any image your browser can open, including JPG, PNG, WebP, GIF, AVIF and BMP. JPG input saves as JPG; other formats save as PNG or WebP."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "Photo Filters & Editor", "item": "https://soumyaswaraj.github.io/instant-tools/image-filters/"}]}]}
+</script>
+<style>.fx-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px;margin-top:16px}
+@media(max-width:820px){.fx-layout{grid-template-columns:1fr}}
+.fx-layout .preview canvas{max-width:100%;height:auto}
+.fx-sl{margin-bottom:10px}
+.fx-sl label{display:flex;justify-content:space-between;font-weight:600;font-size:.88rem;margin-bottom:2px}
+.fx-sl label output{color:var(--muted);font-family:var(--mono);font-weight:500}
+.fx-sl input{width:100%;accent-color:var(--brand)}
+.presets{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 10px;margin-top:12px;scrollbar-width:thin}
+.presets button{flex:none;border:2px solid transparent;border-radius:12px;background:var(--surface);padding:4px;cursor:pointer;color:var(--text);font:600 .75rem var(--font);display:flex;flex-direction:column;align-items:center;gap:4px}
+.presets button[aria-pressed="true"]{border-color:var(--brand)}
+.presets canvas{width:72px;height:72px;border-radius:8px;object-fit:cover;display:block}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#image">Image tools</a> › Photo Filters &amp; Editor</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Image tool</span>
+    <h1><span class="gradient-text">Photo Filters</span> &amp; Image Editor</h1>
+    <p class="lead">Adjust brightness, contrast, saturation, blur, grayscale, sepia, hue and invert with live sliders or one-click presets, then download at the original resolution — free, private and offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Photo Filters &amp; Editor">
+    <div class="dropzone" id="drop">
+      <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
+      <strong>Drop a photo here or tap to choose</strong>
+      <small>JPG, PNG, WebP · or paste with Ctrl+V · processed locally, never uploaded</small>
+      <input type="file" aria-label="Choose photo">
+    </div>
+    <div id="work" class="hidden">
+      <div class="presets" id="presets" role="group" aria-label="Preset filters"></div>
+      <div class="fx-layout">
+        <div>
+          <div class="preview"><canvas id="cv" role="img" aria-label="Edited photo preview"></canvas></div>
+          <p class="muted" id="info" style="font-size:.85rem;margin:8px 0 0"></p>
+        </div>
+        <div class="panel">
+          <div id="sliders"></div>
+          <div class="actions">
+            <button class="btn btn-primary" id="dl" type="button">Download</button>
+            <button class="btn" id="cmp" type="button" aria-label="Hold to compare with original">Hold to compare</button>
+            <button class="btn" id="reset" type="button">Reset</button>
+            <button class="btn" id="another" type="button">New photo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to apply filters to a photo</h2>
+      <ol><li>Drop a JPG, PNG or WebP photo into the box.</li><li>Tap a preset or fine-tune the brightness, contrast, saturation, blur, grayscale, sepia, hue and invert sliders.</li><li>Click Download to save the edited photo at its original resolution.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is an online photo filter editor?</h2>
+      <p>A photo filter editor changes the color and tone of an image by applying adjustments such as brightness, contrast, saturation, hue rotation, grayscale, sepia, invert and Gaussian blur. This tool uses the HTML5 Canvas 2D filter property, the same filter functions as CSS, so the preview and the exported file match exactly.</p><p>The live preview is rendered at screen size for speed, while the download is re-rendered at the photo's original pixel dimensions. Blur is scaled proportionally so it looks the same at full size. JPG photos are saved as JPG at 92% quality; PNG and WebP keep their format. In browsers without canvas filter support, a built-in pixel color matrix is used instead.</p><p>Your photos are processed only on your device. Nothing is uploaded, and the editor works offline.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>Will the downloaded photo keep its original resolution?</summary><p>Yes. The preview is scaled to fit your screen, but the download is rendered at the photo&#x27;s full original width and height.</p></details>
+      <details><summary>Which filters and adjustments are available?</summary><p>Brightness, contrast, saturation, blur, grayscale, sepia, hue rotation and invert, plus presets such as Vivid, Mono, Vintage, Warm, Cool, Fade, Noir and Dramatic.</p></details>
+      <details><summary>Can I compare the edited photo with the original?</summary><p>Yes. Press and hold the Compare button to temporarily see the original photo, then release to return to your edit.</p></details>
+      <details><summary>Are my photos uploaded to a server?</summary><p>No. All editing happens in your browser with the Canvas API. Your photos never leave your device, and the tool works offline.</p></details>
+      <details><summary>Which image formats are supported?</summary><p>Any image your browser can open, including JPG, PNG, WebP, GIF, AVIF and BMP. JPG input saves as JPG; other formats save as PNG or WebP.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-image" href="../image-cropper/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2"/></svg></span><span><h3>Image Cropper</h3><p>Crop to any size or ratio.</p></span></a>
+        <a class="tool-card cat-image" href="../color-picker/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 0 0 0 20c1 0 2-.8 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A5.7 5.7 0 0 0 22 9.8C22 5.5 17.5 2 12 2z"/></svg></span><span><h3>Image Color Picker</h3><p>Pick HEX colors and palettes.</p></span></a>
+        <a class="tool-card cat-image" href="../image-compressor/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></span><span><h3>Image Compressor</h3><p>Shrink JPG, PNG and WebP files.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var DEF={brightness:100,contrast:100,saturate:100,blur:0,grayscale:0,sepia:0,hue:0,invert:0};
+  var SL=[['brightness','Brightness',0,200,'%'],['contrast','Contrast',0,200,'%'],['saturate','Saturation',0,300,'%'],['blur','Blur',0,20,'px'],['grayscale','Grayscale',0,100,'%'],['sepia','Sepia',0,100,'%'],['hue','Hue rotate',-180,180,'°'],['invert','Invert',0,100,'%']];
+  var PRE=[['Original',{}],['Vivid',{contrast:115,saturate:150}],['Mono',{grayscale:100,contrast:110}],['Noir',{grayscale:100,contrast:150,brightness:90}],['Vintage',{sepia:50,contrast:90,brightness:105,saturate:85}],['Warm',{sepia:25,saturate:130,hue:-10}],['Cool',{hue:15,saturate:110,brightness:103}],['Fade',{contrast:80,brightness:110,saturate:80}],['Dramatic',{contrast:140,saturate:120,brightness:95}],['Sepia',{sepia:100}],['Invert',{invert:100}],['Dreamy',{blur:2,brightness:110,saturate:120}]];
+  var v=Object.assign({},DEF),img=null,file=null,cv=$('cv'),ctx=cv.getContext('2d'),comparing=false,curPreset=0;
+  var hasFilter=(function(){var c=document.createElement('canvas').getContext('2d');return c&&'filter' in c&&(c.filter='blur(1px)',c.filter==='blur(1px)')})();
+  SL.forEach(function(s){var d=document.createElement('div');d.className='fx-sl';d.innerHTML='<label for="s-'+s[0]+'">'+s[1]+' <output id="o-'+s[0]+'"></output></label><input type="range" id="s-'+s[0]+'" min="'+s[2]+'" max="'+s[3]+'" step="1">';
+    $('sliders').appendChild(d);var i=d.querySelector('input');i.addEventListener('input',function(){v[s[0]]=+i.value;curPreset=-1;markPreset();sync();render()})});
+  function sync(){SL.forEach(function(s){$('s-'+s[0]).value=v[s[0]];$('o-'+s[0]).textContent=v[s[0]]+s[4]})}
+  function fstr(o,blurScale){return 'brightness('+o.brightness+'%) contrast('+o.contrast+'%) saturate('+o.saturate+'%) blur('+(o.blur*(blurScale||1)).toFixed(2)+'px) grayscale('+o.grayscale+'%) sepia('+o.sepia+'%) hue-rotate('+o.hue+'deg) invert('+o.invert+'%)'}
+  function paint(c,im,w,h,o,blurScale){c.canvas.width=w;c.canvas.height=h;
+    if(hasFilter){c.filter=fstr(o,blurScale);var b=o.blur*(blurScale||1);if(b>0){c.drawImage(im,-b*2,-b*2,w+b*4,h+b*4)}else c.drawImage(im,0,0,w,h);c.filter='none'}
+    else{c.drawImage(im,0,0,w,h);matrix(c,w,h,o)}}
+  // Fallback: approximate CSS filter chain with a per-pixel color matrix (no blur)
+  function matrix(c,w,h,o){var id=c.getImageData(0,0,w,h),d=id.data,M=[1,0,0,0,1,0,0,0,1],A=[0,0,0];
+    function mul(N,add){var R=[];for(var r=0;r<3;r++)for(var k=0;k<3;k++)R[r*3+k]=N[r*3]*M[k]+N[r*3+1]*M[3+k]+N[r*3+2]*M[6+k];var nA=[0,1,2].map(function(r){return N[r*3]*A[0]+N[r*3+1]*A[1]+N[r*3+2]*A[2]+(add?add[r]:0)});M=R;A=nA}
+    var b=o.brightness/100;mul([b,0,0,0,b,0,0,0,b]);var ct=o.contrast/100,off=(1-ct)*127.5;mul([ct,0,0,0,ct,0,0,0,ct],[off,off,off]);
+    var s=o.saturate/100;mul([.213+.787*s,.715-.715*s,.072-.072*s,.213-.213*s,.715+.285*s,.072-.072*s,.213-.213*s,.715-.715*s,.072+.928*s]);
+    var g=1-o.grayscale/100;mul([.2126+.7874*g,.7152-.7152*g,.0722-.0722*g,.2126-.2126*g,.7152+.2848*g,.0722-.0722*g,.2126-.2126*g,.7152-.7152*g,.0722+.9278*g]);
+    var p=1-o.sepia/100;mul([.393+.607*p,.769-.769*p,.189-.189*p,.349-.349*p,.686+.314*p,.168-.168*p,.272-.272*p,.534-.534*p,.131+.869*p]);
+    var a=o.hue*Math.PI/180,C=Math.cos(a),S=Math.sin(a);mul([.213+C*.787-S*.213,.715-C*.715-S*.715,.072-C*.072+S*.928,.213-C*.213+S*.143,.715+C*.285+S*.140,.072-C*.072-S*.283,.213-C*.213-S*.787,.715-C*.715+S*.715,.072+C*.928+S*.072]);
+    var inv=o.invert/100;
+    for(var i=0;i<d.length;i+=4){var r=d[i],gg=d[i+1],bb=d[i+2];for(var k=0;k<3;k++){var x=M[k*3]*r+M[k*3+1]*gg+M[k*3+2]*bb+A[k];x=x*(1-inv)+(255-x)*inv;d[i+k]=x<0?0:x>255?255:x}}
+    c.putImageData(id,0,0)}
+  function dims(max){var W=img.naturalWidth,H=img.naturalHeight,s=Math.min(1,max/Math.max(W,H));return[Math.round(W*s),Math.round(H*s),s]}
+  var raf;function render(){cancelAnimationFrame(raf);raf=requestAnimationFrame(function(){if(!img)return;var d=dims(Math.min(1600,Math.max(600,cv.parentNode.clientWidth*(window.devicePixelRatio||1))));paint(ctx,img,d[0],d[1],comparing?DEF:v,d[2])})}
+  function markPreset(){[].forEach.call($('presets').children,function(b,i){b.setAttribute('aria-pressed',i===curPreset)})}
+  function buildPresets(){$('presets').innerHTML='';var W=img.naturalWidth,H=img.naturalHeight,s=144/Math.min(W,H),tw=Math.round(W*s),th=Math.round(H*s);
+    var base=document.createElement('canvas');base.width=144;base.height=144;base.getContext('2d').drawImage(img,(144-tw)/2,(144-th)/2,tw,th);
+    PRE.forEach(function(p,i){var b=document.createElement('button');b.type='button';var c=document.createElement('canvas');var o=Object.assign({},DEF,p[1]);paint(c.getContext('2d'),base,144,144,o,144/Math.max(W,H));
+      b.appendChild(c);b.appendChild(document.createTextNode(p[0]));b.onclick=function(){v=Object.assign({},DEF,p[1]);curPreset=i;markPreset();sync();render()};$('presets').appendChild(b)});markPreset()}
+  IT.dropzone($('drop'),{accept:'image/*',paste:true,onFiles:function(f){f=f[0];if(!f)return;IT.loadImage(f).then(function(im){img=im;file=f;
+    $('drop').classList.add('hidden');$('work').classList.remove('hidden');$('info').textContent=f.name+' · '+im.naturalWidth+'×'+im.naturalHeight+' · '+IT.formatBytes(f.size)+(hasFilter?'':' · blur unavailable in this browser');
+    buildPresets();sync();render()}).catch(function(){IT.toast('Could not open that image')})}});
+  $('reset').onclick=function(){v=Object.assign({},DEF);curPreset=0;markPreset();sync();render()};
+  $('another').onclick=function(){$('work').classList.add('hidden');$('drop').classList.remove('hidden');$('drop').querySelector('input').click()};
+  function cmp(on){return function(e){if(e.type==='keydown'&&e.key!==' '&&e.key!=='Enter')return;if(e.cancelable)e.preventDefault();comparing=on;render()}}
+  ['pointerdown','keydown'].forEach(function(n){$('cmp').addEventListener(n,cmp(true))});['pointerup','pointerleave','pointercancel','keyup','blur'].forEach(function(n){$('cmp').addEventListener(n,cmp(false))});
+  $('dl').onclick=function(){if(!img)return;var b=$('dl');b.disabled=true;b.textContent='Rendering…';setTimeout(function(){
+    var c=document.createElement('canvas').getContext('2d');paint(c,img,img.naturalWidth,img.naturalHeight,v,1);
+    var jpg=/jpe?g/i.test(file.type),webp=/webp/i.test(file.type),t=jpg?'image/jpeg':webp?'image/webp':'image/png';
+    IT.canvasToBlob(c.canvas,t,.92).then(function(bl){b.disabled=false;b.textContent='Download';if(!bl)return IT.toast('Image too large for this browser');IT.download(bl,IT.baseName(file.name)+'-edited.'+(jpg?'jpg':webp?'webp':'png'));IT.toast('Saved '+img.naturalWidth+'×'+img.naturalHeight+' · '+IT.formatBytes(bl.size))})},30)};
+  window.addEventListener('resize',render);
+})();
+
+</script>
+</body>
+</html>

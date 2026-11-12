@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Word Counter &amp; Character Counter — Free, Offline</title>
+<meta name="description" content="Free word counter: count words, characters with and without spaces, sentences, paragraphs, reading and speaking time, and keyword density. Private and offline.">
+<meta name="keywords" content="word counter, character counter, word count tool, count characters, reading time calculator, keyword density checker, sentence counter, paragraph counter">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/word-counter/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Word &amp; Character Counter — Free &amp; Private">
+<meta property="og:description" content="Count words, characters, sentences, reading time and keyword density instantly in your browser.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/word-counter/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "Word & Character Counter", "url": "https://soumyaswaraj.github.io/instant-tools/word-counter/", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Free word counter: count words, characters with and without spaces, sentences, paragraphs, reading and speaking time, and keyword density. Private and offline.", "featureList": ["Live word and character count", "Characters with and without spaces", "Sentence and paragraph count", "Reading and speaking time", "Keyword density excluding stopwords", "Autosaved draft", "Works offline", "No upload — data stays on your device"]}, {"@type": "HowTo", "name": "How to count words and characters", "step": [{"@type": "HowToStep", "text": "Type or paste your text into the box."}, {"@type": "HowToStep", "text": "Read the live counts for words, characters, sentences, paragraphs, reading and speaking time."}, {"@type": "HowToStep", "text": "Check the keyword density table to see your most-used words, then copy or clear the text."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How are words counted?", "acceptedAnswer": {"@type": "Answer", "text": "A word is any run of letters or digits, including apostrophes and hyphens inside it, so “don't” and “well-known” each count as one word. Punctuation and extra spaces are ignored."}}, {"@type": "Question", "name": "How is reading time calculated?", "acceptedAnswer": {"@type": "Answer", "text": "Reading time divides the word count by 238 words per minute, the average adult silent reading speed. Speaking time uses 140 words per minute, a typical presentation pace."}}, {"@type": "Question", "name": "Does the character count include spaces?", "acceptedAnswer": {"@type": "Answer", "text": "Both are shown. “Characters” counts every character including spaces and line breaks, and “without spaces” excludes all whitespace."}}, {"@type": "Question", "name": "What is keyword density?", "acceptedAnswer": {"@type": "Answer", "text": "Keyword density is how often a word appears as a percentage of all words. The table shows your top 10 words, excluding common stopwords like “the”, “and” and “is”."}}, {"@type": "Question", "name": "Is my text saved or uploaded?", "acceptedAnswer": {"@type": "Answer", "text": "Your text is never uploaded. A draft is saved only in your browser's local storage on this device so it survives a reload; click Clear to remove it."}}, {"@type": "Question", "name": "Does the word counter work offline?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. After the first visit the page is cached, so you can count words with no internet connection, including from the installed app."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "Word & Character Counter", "item": "https://soumyaswaraj.github.io/instant-tools/word-counter/"}]}]}
+</script>
+<style>.wc-kd{width:100%;border-collapse:collapse;font-size:.92rem}
+.wc-kd th,.wc-kd td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+.wc-kd th{color:var(--muted);font-weight:600;font-size:.8rem}
+.wc-kd td.n{text-align:right;font-variant-numeric:tabular-nums}
+.wc-bar{height:6px;border-radius:4px;background:var(--brand);opacity:.75;min-width:2px}
+.wc-wrap{display:grid;gap:16px}
+.wc-stats .stat b{font-variant-numeric:tabular-nums}
+.wc-save{font-size:.8rem}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#text">Text tools</a> › Word &amp; Character Counter</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Text tool</span>
+    <h1><span class="gradient-text">Word Counter</span> &amp; Character Counter</h1>
+    <p class="lead">Paste or type text to instantly count words, characters (with and without spaces), sentences, paragraphs, reading time and keyword density — free, private and fully offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Word &amp; Character Counter">
+    <div class="wc-wrap">
+      <div class="field" style="margin:0">
+        <label for="txt">Your text</label>
+        <textarea id="txt" class="textarea" style="min-height:240px;font-family:var(--font);font-size:1rem" placeholder="Start typing or paste your text here…" spellcheck="true"></textarea>
+        <div class="row" style="justify-content:space-between;margin-top:6px"><span class="muted wc-save" id="saved" aria-live="polite"></span><span class="muted wc-save" id="sel"></span></div>
+      </div>
+      <div class="stats wc-stats" aria-live="polite">
+        <div class="stat"><b id="sWords">0</b><span>Words</span></div>
+        <div class="stat"><b id="sChars">0</b><span>Characters</span></div>
+        <div class="stat"><b id="sNoSp">0</b><span>Characters (no spaces)</span></div>
+        <div class="stat"><b id="sSent">0</b><span>Sentences</span></div>
+        <div class="stat"><b id="sPara">0</b><span>Paragraphs</span></div>
+        <div class="stat"><b id="sRead">0 sec</b><span>Reading time</span></div>
+        <div class="stat"><b id="sSpeak">0 sec</b><span>Speaking time</span></div>
+        <div class="stat"><b id="sAvg">0</b><span>Avg. word length</span></div>
+      </div>
+      <div class="actions" style="margin:0">
+        <button class="btn btn-primary" type="button" id="copy">Copy text</button>
+        <button class="btn" type="button" id="sample">Try sample</button>
+        <button class="btn" type="button" id="clear">Clear</button>
+      </div>
+      <div class="panel">
+        <h3 style="margin:0 0 8px;font-size:1rem">Keyword density <span class="muted" style="font-weight:400;font-size:.85rem">(top 10, stopwords excluded)</span></h3>
+        <div style="overflow-x:auto"><table class="wc-kd"><thead><tr><th scope="col">Keyword</th><th scope="col" style="text-align:right">Count</th><th scope="col" style="text-align:right">Density</th><th scope="col" style="width:30%"><span class="hidden">Bar</span></th></tr></thead><tbody id="kd"><tr><td colspan="4" class="muted">Keywords appear here as you type.</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to count words and characters</h2>
+      <ol><li>Type or paste your text into the box.</li><li>Read the live counts for words, characters, sentences, paragraphs, reading and speaking time.</li><li>Check the keyword density table to see your most-used words, then copy or clear the text.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is Word &amp; Character Counter?</h2>
+      <p>A word counter is a tool that counts the words, characters, sentences and paragraphs in a piece of text. This one updates on every keystroke and runs entirely in your browser, so your text is never uploaded to a server.</p><p>Words are counted as runs of letters or numbers (apostrophes and hyphens inside a word keep it as one word), and it handles accented and non-Latin scripts. Reading time assumes 238 words per minute and speaking time assumes 140 words per minute — common averages for adult silent reading and presentations. Keyword density lists the top 10 words, excluding common English stopwords such as “the”, “and” and “of”.</p><p>Your draft is autosaved in your browser's local storage on this device only, so it survives a page reload. The tool works offline once loaded and has no length limit beyond your device's memory.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>How are words counted?</summary><p>A word is any run of letters or digits, including apostrophes and hyphens inside it, so “don&#x27;t” and “well-known” each count as one word. Punctuation and extra spaces are ignored.</p></details>
+      <details><summary>How is reading time calculated?</summary><p>Reading time divides the word count by 238 words per minute, the average adult silent reading speed. Speaking time uses 140 words per minute, a typical presentation pace.</p></details>
+      <details><summary>Does the character count include spaces?</summary><p>Both are shown. “Characters” counts every character including spaces and line breaks, and “without spaces” excludes all whitespace.</p></details>
+      <details><summary>What is keyword density?</summary><p>Keyword density is how often a word appears as a percentage of all words. The table shows your top 10 words, excluding common stopwords like “the”, “and” and “is”.</p></details>
+      <details><summary>Is my text saved or uploaded?</summary><p>Your text is never uploaded. A draft is saved only in your browser&#x27;s local storage on this device so it survives a reload; click Clear to remove it.</p></details>
+      <details><summary>Does the word counter work offline?</summary><p>Yes. After the first visit the page is cached, so you can count words with no internet connection, including from the installed app.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-text" href="../case-converter/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18 7 6l4 12M4.5 14h5M15 10.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM17.5 9v9"/></svg></span><span><h3>Case Converter</h3><p>UPPER, lower, Title, camelCase and more.</p></span></a>
+        <a class="tool-card cat-text" href="../text-diff/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 8h4M7 6v4M15 16h4"/></svg></span><span><h3>Text Compare (Diff)</h3><p>Highlight differences between two texts.</p></span></a>
+        <a class="tool-card cat-text" href="../lorem-ipsum-generator/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 10h16M4 14h10M4 18h12"/></svg></span><span><h3>Lorem Ipsum Generator</h3><p>Placeholder paragraphs, sentences, words.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+(function(){
+var ta=document.getElementById('txt'),KEY='it-word-counter-draft';
+var STOP=new Set('a about above after again against all am an and any are aren\'t as at be because been before being below between both but by can can\'t cannot could couldn\'t did didn\'t do does doesn\'t doing don\'t down during each few for from further had hadn\'t has hasn\'t have haven\'t having he he\'d he\'ll he\'s her here here\'s hers herself him himself his how how\'s i i\'d i\'ll i\'m i\'ve if in into is isn\'t it it\'s its itself let\'s me more most mustn\'t my myself no nor not of off on once only or other ought our ours ourselves out over own same shan\'t she she\'d she\'ll she\'s should shouldn\'t so some such than that that\'s the their theirs them themselves then there there\'s these they they\'d they\'ll they\'re they\'ve this those through to too under until up very was wasn\'t we we\'d we\'ll we\'re we\'ve were weren\'t what what\'s when when\'s where where\'s which while who who\'s whom why why\'s with won\'t would wouldn\'t you you\'d you\'ll you\'re you\'ve your yours yourself yourselves also just will can may might must shall us one get got like'.split(' '));
+var WORD=/[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu;
+function $(id){return document.getElementById(id)}
+function fmtTime(words,wpm){var s=Math.round(words/wpm*60);if(s<60)return s+' sec';var m=Math.floor(s/60),r=s%60;if(m<60)return m+' min'+(r?' '+r+' sec':'');var h=Math.floor(m/60);return h+' hr '+(m%60)+' min'}
+function n(x){return x.toLocaleString()}
+function esc(s){return s.replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function analyze(t){
+  var words=t.match(WORD)||[];
+  var chars=Array.from(t).length,nosp=Array.from(t.replace(/\s/g,'')).length;
+  var trimmed=t.trim();
+  var sent=trimmed?(trimmed.match(/[^.!?。！？]+(?:[.!?。！？]+|$)/g)||[]).filter(function(s){return /[\p{L}\p{N}]/u.test(s)}).length:0;
+  var para=trimmed?trimmed.split(/\n\s*\n+/).filter(function(p){return p.trim()}).length:0;
+  var letters=words.reduce(function(a,w){return a+Array.from(w).length},0);
+  return {words:words,chars:chars,nosp:nosp,sent:sent,para:para,avg:words.length?(letters/words.length).toFixed(1):'0'};
+}
+var timer,saveTimer;
+function render(){
+  var r=analyze(ta.value),wc=r.words.length;
+  $('sWords').textContent=n(wc);$('sChars').textContent=n(r.chars);$('sNoSp').textContent=n(r.nosp);
+  $('sSent').textContent=n(r.sent);$('sPara').textContent=n(r.para);
+  $('sRead').textContent=fmtTime(wc,238);$('sSpeak').textContent=fmtTime(wc,140);$('sAvg').textContent=r.avg;
+  var freq=new Map();
+  r.words.forEach(function(w){w=w.toLowerCase().replace(/’/g,"'");if(w.length<2||STOP.has(w)||/^\d+$/.test(w))return;freq.set(w,(freq.get(w)||0)+1)});
+  var top=Array.from(freq.entries()).sort(function(a,b){return b[1]-a[1]||a[0].localeCompare(b[0])}).slice(0,10);
+  var kd=$('kd');
+  if(!top.length){kd.innerHTML='<tr><td colspan="4" class="muted">Keywords appear here as you type.</td></tr>';return}
+  var max=top[0][1];
+  kd.innerHTML=top.map(function(e){var pct=(e[1]/wc*100);return '<tr><td>'+esc(e[0])+'</td><td class="n">'+e[1]+'</td><td class="n">'+pct.toFixed(1)+'%</td><td><div class="wc-bar" style="width:'+(e[1]/max*100)+'%"></div></td></tr>'}).join('');
+}
+function schedule(){clearTimeout(timer);timer=setTimeout(render,ta.value.length>200000?150:0);clearTimeout(saveTimer);saveTimer=setTimeout(save,500)}
+function save(){try{if(ta.value)localStorage.setItem(KEY,ta.value);else localStorage.removeItem(KEY);$('saved').textContent=ta.value?'Draft saved on this device':''}catch(e){}}
+ta.addEventListener('input',schedule);
+function selInfo(){var s=ta.value.slice(ta.selectionStart,ta.selectionEnd);$('sel').textContent=s?'Selection: '+n((s.match(WORD)||[]).length)+' words, '+n(Array.from(s).length)+' chars':''}
+ta.addEventListener('select',selInfo);ta.addEventListener('keyup',selInfo);ta.addEventListener('mouseup',selInfo);
+$('copy').addEventListener('click',function(){if(!ta.value)return IT.toast('Nothing to copy');IT.copy(ta.value)});
+$('clear').addEventListener('click',function(){ta.value='';render();save();$('sel').textContent='';ta.focus()});
+$('sample').addEventListener('click',function(){ta.value="Instant Tools is a collection of free browser tools that work offline. Every tool runs on your device, so your files and text are never uploaded.\n\nThis word counter shows words, characters, sentences and paragraphs as you type. It also estimates reading time and speaking time, and lists your most frequent keywords. Writers, students and marketers use a word counter to hit essay limits, meta description lengths and social media character limits.";render();save()});
+try{var d=localStorage.getItem(KEY);if(d){ta.value=d;$('saved').textContent='Draft restored from this device'}}catch(e){}
+render();
+})();
+</script>
+</body>
+</html>

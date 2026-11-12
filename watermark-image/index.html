@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Add Watermark to Image — Free &amp; Offline | Instant Tools</title>
+<meta name="description" content="Add a text or logo watermark to photos in your browser. Choose position, tile, opacity, size, color and rotation, batch process and download. Free, no upload.">
+<meta name="keywords" content="add watermark to image, watermark photo online, text watermark, logo watermark, batch watermark images, tile watermark, free watermark tool, offline">
+<link rel="canonical" href="https://soumyaswaraj.github.io/instant-tools/watermark-image/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#5b5bf7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Instant Tools">
+<meta property="og:title" content="Add Watermark to Image — Free &amp; Private">
+<meta property="og:description" content="Add text or logo watermarks to many images at once, privately in your browser.">
+<meta property="og:url" content="https://soumyaswaraj.github.io/instant-tools/watermark-image/">
+<meta property="og:image" content="https://soumyaswaraj.github.io/instant-tools/assets/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/css/app.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "WebApplication", "name": "Add Watermark to Image", "url": "https://soumyaswaraj.github.io/instant-tools/watermark-image/", "applicationCategory": "MultimediaApplication", "operatingSystem": "Any (browser-based)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Add a text or logo watermark to photos in your browser. Choose position, tile, opacity, size, color and rotation, batch process and download. Free, no upload.", "featureList": ["Text or logo image watermark", "9-position grid plus tiled pattern", "Opacity, size, color and rotation controls", "Batch watermark multiple images", "Works offline", "No upload — files stay on your device"]}, {"@type": "HowTo", "name": "How to add a watermark to an image", "step": [{"@type": "HowToStep", "text": "Drop one or more JPG, PNG or WebP images into the box."}, {"@type": "HowToStep", "text": "Choose a text or logo watermark and set position, opacity, size, color and rotation."}, {"@type": "HowToStep", "text": "Click Download to save each watermarked image, or Download all for the whole batch."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is this watermark tool free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. It is completely free with no sign-up, no limits on the number of images and no watermark of our own added to your output."}}, {"@type": "Question", "name": "Are my photos uploaded anywhere?", "acceptedAnswer": {"@type": "Answer", "text": "No. Watermarks are drawn in your browser with the Canvas API. Your images never leave your device, and the tool works offline."}}, {"@type": "Question", "name": "Can I use my logo as a watermark?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Switch to Logo mode and choose a PNG with transparency for the best result. You can scale, rotate, fade and tile the logo just like text."}}, {"@type": "Question", "name": "Can I watermark many images at once?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Drop multiple images and the same watermark settings are applied to each one. Use Download all to save the whole batch."}}, {"@type": "Question", "name": "Does adding a watermark reduce image quality?", "acceptedAnswer": {"@type": "Answer", "text": "The image is processed at its original resolution. PNG output is lossless; JPG output is re-encoded at 92% quality, which is visually indistinguishable for most photos."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Instant Tools", "item": "https://soumyaswaraj.github.io/instant-tools/"}, {"@type": "ListItem", "position": 2, "name": "Add Watermark to Image", "item": "https://soumyaswaraj.github.io/instant-tools/watermark-image/"}]}]}
+</script>
+<style>.wm-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;margin-top:16px}
+@media(max-width:820px){.wm-layout{grid-template-columns:1fr}}
+.pos-grid{display:grid;grid-template-columns:repeat(3,40px);gap:6px}
+.pos-grid button{width:40px;height:40px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;display:grid;place-items:center}
+.pos-grid button::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.pos-grid button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft)}
+.pos-grid button[aria-pressed="true"]::after{background:var(--brand)}
+.wm-layout label{display:block;font-weight:600;font-size:.9rem;margin-bottom:6px}
+.wm-layout input[type=range]{width:100%;accent-color:var(--brand)}
+.wm-layout input[type=color]{width:52px;height:44px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);padding:3px}
+.preview canvas{max-width:100%;height:auto}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.thumbs button{padding:0;border:2px solid transparent;border-radius:8px;cursor:pointer;background:none}
+.thumbs button[aria-current="true"]{border-color:var(--brand)}
+.thumbs img{width:52px;height:52px;object-fit:cover;border-radius:6px;display:block}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to tool</a>
+<header class="site-header"><div class="container">
+  <a class="logo" href="../"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Instant Tools</a>
+  <span class="nav-spacer"></span>
+  <button class="btn btn-sm install-btn" type="button">Install app</button>
+  <a class="btn btn-sm" href="../#all-tools">All tools</a>
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div></header>
+
+<main id="main" class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <a href="../#image">Image tools</a> › Add Watermark to Image</nav>
+
+  <section class="hero">
+    <span class="eyebrow">Image tool</span>
+    <h1>Add a <span class="gradient-text">Watermark to Images</span></h1>
+    <p class="lead">Add a text or logo watermark to one photo or a whole batch, with full control over position, tiling, opacity, size, color and rotation — free, private and offline.</p>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>100% free</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>No upload — runs on your device</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+    </div>
+  </section>
+
+  <section class="card tool-app" aria-label="Add Watermark to Image">
+    <div class="dropzone" id="drop">
+      <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
+      <strong>Drop images here or tap to choose</strong>
+      <small>JPG, PNG, WebP · multiple files OK · processed locally, never uploaded</small>
+      <input type="file" aria-label="Choose images">
+    </div>
+    <div id="work" class="wm-layout hidden">
+      <div>
+        <div class="preview"><canvas id="cv" aria-label="Watermark preview"></canvas></div>
+        <div class="thumbs" id="thumbs" aria-label="Images in batch"></div>
+        <p class="muted" id="info" style="margin:8px 0 0;font-size:.85rem"></p>
+      </div>
+      <div class="panel">
+        <div class="field"><div class="seg" role="group" aria-label="Watermark type"><button type="button" data-mode="text" aria-pressed="true">Text</button><button type="button" data-mode="logo" aria-pressed="false">Logo image</button></div></div>
+        <div class="field" id="textOpts"><label for="wmText">Watermark text</label><input class="input" id="wmText" value="© Your Name"></div>
+        <div class="field hidden" id="logoOpts"><label for="logoFile">Logo file (PNG with transparency works best)</label><input class="input" type="file" id="logoFile" accept="image/*"></div>
+        <div class="field"><label>Position</label>
+          <div class="row" style="align-items:flex-start"><div class="pos-grid" id="pos" role="group" aria-label="Position"></div>
+          <label class="check" style="font-weight:500"><input type="checkbox" id="tile"> Tile across image</label></div></div>
+        <div class="field"><label for="opacity">Opacity: <span id="opV">50</span>%</label><input type="range" id="opacity" min="5" max="100" value="50"></div>
+        <div class="field"><label for="size">Size: <span id="szV">6</span>% of width</label><input type="range" id="size" min="2" max="60" value="6"></div>
+        <div class="field"><label for="rot">Rotation: <span id="rtV">0</span>°</label><input type="range" id="rot" min="-180" max="180" value="0"></div>
+        <div class="row" id="colorRow"><div><label for="color">Color</label><input type="color" id="color" value="#ffffff"></div>
+          <label class="check"><input type="checkbox" id="shadow" checked> Shadow</label>
+          <label class="check"><input type="checkbox" id="bold" checked> Bold</label></div>
+        <div class="actions">
+          <button class="btn btn-primary" id="dl" type="button">Download</button>
+          <button class="btn" id="dlAll" type="button">Download all</button>
+          <button class="btn" id="clear" type="button">Clear</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <h2>How to add a watermark to an image</h2>
+      <ol><li>Drop one or more JPG, PNG or WebP images into the box.</li><li>Choose a text or logo watermark and set position, opacity, size, color and rotation.</li><li>Click Download to save each watermarked image, or Download all for the whole batch.</li></ol>
+    </section>
+    <section class="card">
+      <h2>What is Add Watermark to Image?</h2>
+      <p>An image watermark is a semi-transparent text or logo drawn on top of a photo to mark ownership and discourage reuse. This tool draws the watermark with the HTML5 Canvas API at the image's full original resolution, so no quality is lost beyond the chosen export format.</p><p>You can place the mark in any of 9 grid positions or repeat it as a diagonal tile across the whole image. Watermark size scales with each image's width, so a batch of mixed sizes looks consistent. Supported inputs are JPG, PNG, WebP, GIF (first frame) and BMP; output keeps the original format where possible (JPG stays JPG at 92% quality, others export as PNG).</p><p>All processing happens locally on your device. Images are never uploaded to a server, and the tool keeps working offline once the page has loaded.</p>
+    </section>
+    <section class="card faq">
+      <h2>Frequently asked questions</h2>
+      <details><summary>Is this watermark tool free?</summary><p>Yes. It is completely free with no sign-up, no limits on the number of images and no watermark of our own added to your output.</p></details>
+      <details><summary>Are my photos uploaded anywhere?</summary><p>No. Watermarks are drawn in your browser with the Canvas API. Your images never leave your device, and the tool works offline.</p></details>
+      <details><summary>Can I use my logo as a watermark?</summary><p>Yes. Switch to Logo mode and choose a PNG with transparency for the best result. You can scale, rotate, fade and tile the logo just like text.</p></details>
+      <details><summary>Can I watermark many images at once?</summary><p>Yes. Drop multiple images and the same watermark settings are applied to each one. Use Download all to save the whole batch.</p></details>
+      <details><summary>Does adding a watermark reduce image quality?</summary><p>The image is processed at its original resolution. PNG output is lossless; JPG output is re-encoded at 92% quality, which is visually indistinguishable for most photos.</p></details>
+    </section>
+    <section class="card">
+      <h2>Related tools</h2>
+      <div class="tools-grid">
+        <a class="tool-card cat-image" href="../image-resizer/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></span><span><h3>Image Resizer</h3><p>Resize to exact pixels or percent.</p></span></a>
+        <a class="tool-card cat-image" href="../image-compressor/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></span><span><h3>Image Compressor</h3><p>Shrink JPG, PNG and WebP files.</p></span></a>
+        <a class="tool-card cat-pdf" href="../watermark-pdf/"><span class="ti"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span><span><h3>Watermark PDF</h3><p>Stamp text on every PDF page.</p></span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <span>© Instant Tools · Free, private browser tools that work offline.</span>
+  <span><a href="../">All tools</a> · <a href="../about/">About &amp; privacy</a></span>
+</div></footer>
+<script src="../assets/js/app.js"></script>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var items=[], cur=0, logo=null, mode='text', pos=8;
+  var cv=$('cv'), ctx=cv.getContext('2d');
+  var posNames=['Top left','Top center','Top right','Middle left','Center','Middle right','Bottom left','Bottom center','Bottom right'];
+  posNames.forEach(function(n,i){var b=document.createElement('button');b.type='button';b.setAttribute('aria-label',n);b.title=n;b.setAttribute('aria-pressed',i===pos);b.onclick=function(){pos=i;[].forEach.call($('pos').children,function(c,j){c.setAttribute('aria-pressed',j===i)});$('tile').checked=false;render()};$('pos').appendChild(b)});
+  IT.dropzone($('drop'),{accept:'image/*',multiple:true,paste:true,onFiles:function(files){
+    files=files.filter(function(f){return /^image\//.test(f.type)});
+    if(!files.length)return IT.toast('Please choose image files');
+    Promise.all(files.map(function(f){return IT.loadImage(f).then(function(img){return{file:f,img:img}})})).then(function(list){
+      items=items.concat(list); $('work').classList.remove('hidden'); thumbs(); render();
+    }).catch(function(){IT.toast('Could not read one of the images')});
+  }});
+  function thumbs(){var t=$('thumbs');t.innerHTML='';if(items.length<2)return;items.forEach(function(it,i){var b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Preview '+it.file.name);b.setAttribute('aria-current',i===cur);var im=document.createElement('img');im.src=it.img.src;im.alt='';b.appendChild(im);b.onclick=function(){cur=i;thumbs();render()};t.appendChild(b)})}
+  function draw(c,img){
+    var W=img.naturalWidth,H=img.naturalHeight; c.canvas.width=W;c.canvas.height=H; c.drawImage(img,0,0);
+    var op=$('opacity').value/100, sz=$('size').value/100, rot=$('rot').value*Math.PI/180, tile=$('tile').checked;
+    var w,h,drawMark;
+    if(mode==='text'){
+      var txt=$('wmText').value||' ', fs=Math.max(8,W*sz*0.6);
+      c.font=($('bold').checked?'700 ':'400 ')+fs+'px Inter,system-ui,Arial,sans-serif';
+      w=c.measureText(txt).width; h=fs;
+      drawMark=function(){c.fillStyle=$('color').value; c.textAlign='center'; c.textBaseline='middle';
+        if($('shadow').checked){c.shadowColor='rgba(0,0,0,.45)';c.shadowBlur=fs*0.12;c.shadowOffsetX=c.shadowOffsetY=fs*0.04}
+        c.fillText(txt,0,0); c.shadowColor='transparent'};
+    } else {
+      if(!logo)return; w=W*sz*2.5; h=w*logo.naturalHeight/logo.naturalWidth;
+      drawMark=function(){c.drawImage(logo,-w/2,-h/2,w,h)};
+    }
+    c.save(); c.globalAlpha=op;
+    if(tile){
+      var gx=w*1.6+W*0.04, gy=h*3+W*0.04, diag=Math.hypot(W,H);
+      c.translate(W/2,H/2); c.rotate(rot||-Math.PI/6);
+      for(var y=-diag/2;y<diag/2;y+=gy){var off=(Math.round(y/gy)%2)*gx/2; for(var x=-diag/2;x<diag/2;x+=gx){c.save();c.translate(x+off,y);drawMark();c.restore()}}
+    } else {
+      var m=Math.min(W,H)*0.04, col=pos%3, row=Math.floor(pos/3);
+      var bw=Math.abs(w*Math.cos(rot))+Math.abs(h*Math.sin(rot)), bh=Math.abs(w*Math.sin(rot))+Math.abs(h*Math.cos(rot));
+      var x=[m+bw/2,W/2,W-m-bw/2][col], y=[m+bh/2,H/2,H-m-bh/2][row];
+      c.translate(x,y); c.rotate(rot); drawMark();
+    }
+    c.restore();
+  }
+  var raf;
+  function render(){cancelAnimationFrame(raf);raf=requestAnimationFrame(function(){
+    var it=items[cur]; if(!it)return; draw(ctx,it.img);
+    $('info').textContent=it.file.name+' · '+it.img.naturalWidth+'×'+it.img.naturalHeight+' · '+IT.formatBytes(it.file.size)+(items.length>1?' · '+items.length+' images in batch':'');
+  })}
+  ['wmText','opacity','size','rot','color','shadow','bold','tile'].forEach(function(id){$(id).addEventListener('input',render);$(id).addEventListener('change',render)});
+  $('opacity').addEventListener('input',function(){$('opV').textContent=this.value});
+  $('size').addEventListener('input',function(){$('szV').textContent=this.value});
+  $('rot').addEventListener('input',function(){$('rtV').textContent=this.value});
+  [].forEach.call(document.querySelectorAll('[data-mode]'),function(b){b.onclick=function(){mode=b.dataset.mode;[].forEach.call(document.querySelectorAll('[data-mode]'),function(x){x.setAttribute('aria-pressed',x===b)});
+    $('textOpts').classList.toggle('hidden',mode!=='text');$('logoOpts').classList.toggle('hidden',mode!=='logo');$('colorRow').classList.toggle('hidden',mode!=='text');
+    if(mode==='logo'&&$('size').value<10){$('size').value=12;$('szV').textContent=12}
+    if(mode==='logo'&&!logo)IT.toast('Choose a logo image'); render()}});
+  $('logoFile').addEventListener('change',function(){var f=this.files[0];if(!f)return;IT.loadImage(f).then(function(img){logo=img;render()})});
+  function exportOne(it){var c=document.createElement('canvas').getContext('2d');draw(c,it.img);
+    var jpg=/jpe?g/.test(it.file.type), webp=/webp/.test(it.file.type), type=jpg?'image/jpeg':webp?'image/webp':'image/png';
+    return IT.canvasToBlob(c.canvas,type,0.92).then(function(b){IT.download(b,IT.baseName(it.file.name)+'-watermarked.'+(jpg?'jpg':webp?'webp':'png'))})}
+  $('dl').onclick=function(){if(items[cur])exportOne(items[cur])};
+  $('dlAll').onclick=function(){var i=0;(function next(){if(i>=items.length)return IT.toast('Downloaded '+items.length+' images');exportOne(items[i++]).then(function(){setTimeout(next,300)})})()};
+  $('clear').onclick=function(){items=[];cur=0;$('work').classList.add('hidden');$('thumbs').innerHTML=''};
+})();
+
+</script>
+</body>
+</html>
