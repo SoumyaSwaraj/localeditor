@@ -145,7 +145,9 @@
     size = size || l.size || 48;
     var text = String(l.text == null ? '' : l.text);
     if (l.uppercase) text = text.toUpperCase();
-    ctx.font = (l.italic ? 'italic ' : 'normal ') + (l.weight || 400) + ' ' + size + 'px ' + fontFamily(l.font);
+    /* 700 is the format's default weight (LE.project and stringify use it); measuring a weightless draft at 400
+       picked the wrong face once Inter 400 was loaded on the page, so shrunk text overflowed after import. */
+    ctx.font = (l.italic ? 'italic ' : 'normal ') + (l.weight || 700) + ' ' + size + 'px ' + fontFamily(l.font);
     var lh = (l.lineHeight || 1.2) * size;
     if (l.curve) return { height: lh, lines: [text], broke: false };
     var spacing = (l.letterSpacing || 0) * (size / (l.size || size));
