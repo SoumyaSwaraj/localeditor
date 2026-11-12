@@ -230,7 +230,38 @@
     buildOverlay(c);
     buildBar(c);
     c.renderToolbar();
+    ED.view = { prev: c.scene.view ? c.scene.view() : null, auto: !!c.S.autoFit };
+    frameView(c);
+    var session = ED;
+    /* The phone sheet slides away first; frame again once the stage has its full size. */
+    [80, 360].forEach(function (ms) { setTimeout(function () { if (ED === session && !ED.gkey && !Object.keys(ED.ptrs).length) frameView(c); }, ms); });
     return true;
+  }
+  /* Show the page and as much of the photo's overflow as fits above the edit bar. */
+  function frameView(c) {
+    if (!c.scene.setView) return;
+    var el = c.E.sceneEl;
+    var sw = el.clientWidth, sh = el.clientHeight;
+    var barH = ED.bar ? ED.bar.offsetHeight + (c.isPhone() ? 16 : 36) : 0;
+    var d = c.doc();
+    var W = d.width, Hh = d.height;
+    var hx = W / 2, hy = Hh / 2;
+    var info = c.scene.backgroundInfo && c.scene.backgroundInfo();
+    if (info && info.spec.fit !== 'tile') {
+      hx = Math.max(hx, Math.abs(info.place.cx - W / 2) + info.place.dw / 2);
+      hy = Math.max(hy, Math.abs(info.place.cy - Hh / 2) + info.place.dh / 2);
+    }
+    var pad = c.isPhone() ? 14 : 28;
+    var aw = sw - pad * 2, ah = sh - barH - pad * 2;
+    if (aw < 40 || ah < 40) return;
+    var zPage = Math.min(aw / W, ah / Hh);
+    var z = Math.min(zPage, Math.max(Math.min(aw / (2 * hx), ah / (2 * hy)), zPage * 0.6));
+    c.scene.setView(z, sw / 2 - (W / 2) * z, pad + ah / 2 - (Hh / 2) * z);
+  }
+  function restoreView(c, view) {
+    if (!view || !c.scene.setView) return;
+    if (view.auto) c.fit();
+    else if (view.prev) c.scene.setView(view.prev.zoom, view.prev.panX, view.prev.panY);
   }
   function apply(next) {
     ED.cur = next;
@@ -254,8 +285,9 @@
   }
   function finish(keep) {
     if (!ED) return;
-    var c = ED.c, start = ED.start, cur = ED.cur, phonePanel = ED.phonePanel;
+    var c = ED.c, start = ED.start, cur = ED.cur, phonePanel = ED.phonePanel, view = ED.view;
     teardown();
+    restoreView(c, view);
     c.scene.setBackground(start, { history: false });
     if (keep && JSON.stringify(start) !== JSON.stringify(cur)) c.scene.setBackground(cur);
     c.renderToolbar();
@@ -835,8 +867,8 @@
     });
     if (g.children.length) b.appendChild(g);
     var row = c.h('<div class="sxb-row2"></div>');
-    row.appendChild(U().btn(c, 'From device', 'uploads', 'btn btn-ghost btn-sm', function () { pickDevice(c); }));
-    row.appendChild(U().btn(c, 'Browse & stock', 'search', 'btn btn-ghost btn-sm', function () { openSources(c); }));
+    row.appendChild(U().btn(c, 'Upload', 'uploads', 'btn btn-ghost btn-sm', function () { pickDevice(c); }));
+    row.appendChild(U().btn(c, 'Stock photos', 'search', 'btn btn-ghost btn-sm', function () { openSources(c); }));
     b.appendChild(row);
     var one = c.one();
     if (isPhoto(bg) && one && one.type === 'image' && one.src) b.appendChild(U().btn(c, 'Use selected photo as background', 'background', 'btn btn-ghost btn-sm sx-block', function () { fromLayer(c, one.id); }));

@@ -88,6 +88,26 @@ cases['photo background: panel fit modes, rotate, flip, blur, dim, adjust land i
   h.assert.equal((await bg(page)).adjust.brightness, 30, 'earlier gesture kept');
   await page.evaluate(() => window.LEStudio.scene.redo());
   h.assert.equal((await bg(page)).adjust.saturation, -50, 'redo');
+  /* Replace through the shared photo picker: uploads, this device, stock. */
+  const other = await page.evaluate(async () => {
+    const c = window.LEStudio;
+    const blob = await (await fetch('/assets/photos/collage/arch-03.jpg')).blob();
+    const meta = await c.ingest(new File([blob], 'arch-03.jpg', { type: 'image/jpeg' }));
+    c.renderPanel(true);
+    return meta.id;
+  });
+  await page.waitForTimeout(200);
+  await clickText(page, '.sxb-hero-act', 'Replace');
+  h.assert(await page.evaluate(() => !document.getElementById('sx-modal').hidden), 'Replace opens the photo picker');
+  await page.evaluate((id) => {
+    const t = [...document.querySelectorAll('#sx-modal .sx-thumb')];
+    t[t.length - 1].click();
+  }, other);
+  await page.waitForTimeout(400);
+  b = await bg(page);
+  h.assert.equal(b.src, other, 'Replace swaps the photo');
+  h.assert.equal(b.blur, 12, 'Replace keeps the look');
+  h.assert(await page.evaluate(() => document.getElementById('sx-modal').hidden), 'Picker closes');
   /* Filter look. */
   await page.evaluate(() => [...document.querySelectorAll('.sxb-filters .sx-filter')].find((x) => x.textContent.trim() === 'Mono').click());
   h.assert.equal((await bg(page)).filter.name, 'mono', 'filter');

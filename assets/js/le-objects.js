@@ -1485,6 +1485,15 @@
     this._mark();
   };
   P.pageRect = function () { return this._rectToScreen({ x: 0, y: 0, w: this._doc.width, h: this._doc.height }); };
+  P.view = function () { return { zoom: this._zoom, panX: this._panX, panY: this._panY }; };
+  P.setView = function (zoom, panX, panY) {
+    this._zoom = clamp(num(zoom, this._zoom), 0.05, 8);
+    this._panX = num(panX, this._panX);
+    this._panY = num(panY, this._panY);
+    this._mark();
+    this._layout();
+    this._emit('zoom', { zoom: this._zoom, panX: this._panX, panY: this._panY });
+  };
   /* Natural size of the background photo after its crop, and where it sits on the page (document units). */
   P.backgroundInfo = function () {
     var bg = this._doc.background;
@@ -1979,6 +1988,12 @@
     ['src', 'blur', 'tile'].forEach(function (k) { if (c[k] && c[k].canvas) self._dropCanvas(c[k].canvas); });
     this._bgc = {};
   };
+  P._dropBgPart = function (k) {
+    var c = this._bgc;
+    if (!c || !c[k]) return;
+    if (c[k].canvas) this._dropCanvas(c[k].canvas);
+    c[k] = null;
+  };
   P._bgRaw = function (bg, s) {
     var node = assetNode(this._assets[bg.src]);
     if (!node) return null;
@@ -1996,7 +2011,7 @@
     var raw = this._bgRaw(bg, s);
     if (!raw) return null;
     var look = bgLook(bg, s);
-    if (!imageSteps(look, false).length) return raw;
+    if (!imageSteps(look, false).length) { this._dropBgPart('src'); return raw; }
     var mul = this._level() === 'high' ? 2 : this._level() === 'mid' ? 1.5 : 1;
     var p = bgPlace(s, this._doc.width, this._doc.height, raw.sw, raw.sh);
     var need = Math.max(64, Math.min(this._previewMax(), Math.ceil(Math.max(p.dw, p.dh) * mul)));
@@ -2120,6 +2135,8 @@
     var preview = !opts.bitmaps;
     var cache = preview ? (this._bgc || (this._bgc = {})) : null;
     var res = ctxScale(ctx);
+    if (preview && !s.blur) this._dropBgPart('blur');
+    if (preview && s.fit !== 'tile') this._dropBgPart('tile');
     ctx.save();
     ctx.globalAlpha = ctx.globalAlpha * s.opacity;
     if (s.blur > 0) {
