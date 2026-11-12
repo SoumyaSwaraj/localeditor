@@ -8,7 +8,6 @@ const pages = require('../scripts/build-pages');
 const build = require('../scripts/build');
 
 const ROOT = path.resolve(__dirname, '..');
-const GOLD_INK = 'rgb(42, 31, 10)';
 const site = pages.load();
 const read = (url) => fs.readFileSync(path.join(ROOT, url, 'index.html'), 'utf8');
 const textOf = (html) => html.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ');
@@ -211,10 +210,9 @@ site.pages.forEach((e) => {
         h.assert.noErrors(page);
         h.assert(await h.noOverflow(page), e.url + ' scrolls sideways at ' + vp + ' ' + theme);
         const info = await page.evaluate(() => ({
-          golds: [...document.querySelectorAll('main .btn-gold')].map((b) => getComputedStyle(b).color),
           small: [...document.querySelectorAll('.pg-row-go, .pg-row-main, .pg-hub, .hp-tool')].filter((a) => a.offsetParent && a.getBoundingClientRect().height < 44).length,
         }));
-        info.golds.forEach((c) => h.assert.equal(c, '' + GOLD_INK, e.url + ' gold ink'));
+        (await h.inkContrast(page, 'main .btn-primary, main .btn-gold')).forEach((c) => h.assert(c.ratio >= 4.5, e.url + ' primary text ' + c.color + ' on ' + c.bg + ' is ' + c.ratio + ':1'));
         if (vp !== 'desktop') h.assert.equal(info.small, 0, e.url + ' has touch targets under 44px');
         await page.context().close();
       }

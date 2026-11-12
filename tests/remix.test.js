@@ -97,11 +97,11 @@ cases['opening a #d= link shows the shared-template sheet and applies only on co
   const before = await page.evaluate(() => ({ id: window.LEStudio.S.project.id, n: window.LEStudio.scene.layers().length }));
   await page.evaluate((p) => { location.hash = 'd=' + p; }, link);
   await page.waitForSelector('.sxd-sheet .sxd-preview canvas');
-  const sheet = await page.evaluate(() => ({ text: document.querySelector('.sxd-sheet').textContent, id: window.LEStudio.S.project.id, n: window.LEStudio.scene.layers().length, gold: getComputedStyle(document.querySelector('.sxd-sheet [data-yes]')).color }));
+  const sheet = await page.evaluate(() => ({ text: document.querySelector('.sxd-sheet').textContent, id: window.LEStudio.S.project.id, n: window.LEStudio.scene.layers().length }));
   h.assert(/YouTube thumbnail/.test(sheet.text) && /1 page/.test(sheet.text) && /1 photo slot/.test(sheet.text) && /Originally by Jo/.test(sheet.text), 'sheet shows name, pages, slots, credit: ' + sheet.text);
   h.assert.equal(sheet.id, before.id, 'nothing replaced before confirming');
   h.assert.equal(sheet.n, before.n, 'open design unchanged');
-  h.assert.equal(sheet.gold, 'rgb(42, 31, 10)', 'gold button ink');
+  (await h.inkContrast(page, '.sxd-sheet [data-yes]')).forEach((c) => h.assert(c.ratio >= 4.5, 'primary button text ' + c.color + ' on ' + c.bg + ' is ' + c.ratio + ':1'));
   await page.click('.sxd-sheet [data-no]');
   await page.waitForTimeout(200);
   h.assert.equal(await page.evaluate(() => window.LEStudio.S.project.id), before.id, 'Cancel keeps the design');

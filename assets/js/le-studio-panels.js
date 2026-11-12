@@ -1839,6 +1839,7 @@
       b3.appendChild(go);
       }
       body.appendChild(s3);
+      if (window.LE && LE.surround) LE.surround.section(c, body);
       if (window.LE && LE.support && LE.support.studioSettings) LE.support.studioSettings(c, body);
     }
   };

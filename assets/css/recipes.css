@@ -14,7 +14,7 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
 /* File inputs styled as buttons */
 .rx-filebtn { position: relative; cursor: pointer; }
 .rx-filebtn input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0 0 0 0); pointer-events: none; }
-.rx-filebtn:focus-within { outline: 2px solid var(--focus-ring, #6A4FE8); outline-offset: 2px; }
+.rx-filebtn:focus-within { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .btn svg { width: 18px; height: 18px; flex: none; }
 .btn-sm svg { width: 16px; height: 16px; }
 
@@ -42,7 +42,7 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
   width: 100%; height: 44px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--ink);
   padding: 0 16px 0 40px; font: 500 15px var(--font);
 }
-.rx-search input:focus { outline: none; border-color: var(--amethyst, #7457F0); box-shadow: 0 0 0 3px var(--accent-soft, rgba(116, 87, 240, 0.12)); }
+.rx-search input:focus { outline: none; border-color: var(--amethyst, var(--primary)); box-shadow: 0 0 0 3px var(--accent-soft, rgba(63, 103, 217, 0.12)); }
 .rx-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 6px; margin: 0 -2px 8px; }
 .rx-chips::-webkit-scrollbar { display: none; }
 .rx-chip {
@@ -53,7 +53,7 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
 .rx-chip:hover { border-color: var(--border-hover); }
 .rx-chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
 .rx-chip[aria-pressed="true"] small { color: inherit; opacity: 0.7; }
-.rx-chip:focus-visible { outline: 2px solid var(--focus-ring, #6A4FE8); outline-offset: 2px; }
+.rx-chip:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 
 /* Gallery */
 .rx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px 16px; }
@@ -61,7 +61,7 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
 .rx-card { min-width: 0; }
 .rx-card[hidden] { display: none; }
 .rx-card-btn { display: grid; gap: 8px; width: 100%; padding: 0; border: 0; background: none; text-align: left; color: inherit; border-radius: 18px; -webkit-tap-highlight-color: transparent; }
-.rx-card-btn:focus-visible { outline: 2px solid var(--focus-ring, #6A4FE8); outline-offset: 4px; }
+.rx-card-btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
 .rx-card-art {
   position: relative; display: block; aspect-ratio: 4 / 5; border-radius: var(--r-lg, 20px); overflow: hidden;
   background: var(--surface-2);
@@ -73,7 +73,7 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
 .rx-card.is-peek .rx-card-art .is-before[src] { opacity: 1; }
 .rx-card.is-peek .rx-card-art .is-after { opacity: 0; }
 .rx-peek {
-  position: absolute; left: 10px; bottom: 10px; padding: 4px 10px; border-radius: 999px; background: rgba(20, 18, 26, 0.62); color: #fff;
+  position: absolute; left: 10px; bottom: 10px; padding: 4px 10px; border-radius: 999px; background: rgba(19, 19, 19, 0.62); color: #fff;
   font-size: 12px; font-weight: 700; opacity: 0; transition: opacity 0.2s; pointer-events: none;
 }
 .rx-card.is-peek .rx-peek { opacity: 1; }
@@ -123,7 +123,7 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
 /* Dialogs */
 .rx-sheet { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 24px; }
 .rx-sheet[hidden] { display: none; }
-.rx-scrim { position: absolute; inset: 0; background: rgba(14, 12, 20, 0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.2s; }
+.rx-scrim { position: absolute; inset: 0; background: rgba(13, 13, 13, 0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.2s; }
 .rx-sheet.is-on .rx-scrim { opacity: 1; }
 .rx-dialog {
   position: relative; width: min(1040px, 100%); max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); overflow: auto; overscroll-behavior: contain;
@@ -139,7 +139,7 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
   border: 1px solid var(--border); background: var(--surface); color: var(--ink); display: grid; place-items: center; box-shadow: var(--shadow-xs, none);
 }
 .rx-x svg { width: 18px; height: 18px; }
-.rx-x:focus-visible { outline: 2px solid var(--focus-ring, #6A4FE8); outline-offset: 2px; }
+.rx-x:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .rx-import { display: grid; gap: 12px; }
 .rx-import h2 { margin: 0; padding-right: 48px; }
 .rx-label { font-size: 14px; font-weight: 650; color: var(--muted); }
@@ -161,8 +161,8 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
   background-size: 20px; background-position: center; background-repeat: no-repeat;
 }
 .rx-compare input[type="range"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; touch-action: pan-y; }
-.rx-compare:focus-within { box-shadow: 0 0 0 2px var(--focus-ring, #6A4FE8); }
-.rx-tag { position: absolute; bottom: 12px; padding: 4px 10px; border-radius: 999px; background: rgba(20, 18, 26, 0.6); color: #fff; font-size: 12px; font-weight: 700; pointer-events: none; }
+.rx-compare:focus-within { box-shadow: 0 0 0 2px var(--focus-ring); }
+.rx-tag { position: absolute; bottom: 12px; padding: 4px 10px; border-radius: 999px; background: rgba(19, 19, 19, 0.6); color: #fff; font-size: 12px; font-weight: 700; pointer-events: none; }
 .rx-tag.is-l { left: 12px; }
 .rx-tag.is-r { right: 12px; }
 .rx-d-photo { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
@@ -179,7 +179,7 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
 .rx-strength { display: grid; gap: 6px; padding: 12px 14px; border-radius: 16px; background: var(--surface-2); }
 .rx-strength-row { display: flex; justify-content: space-between; font-weight: 650; font-size: 14px; }
 .rx-strength output { font-variant-numeric: tabular-nums; color: var(--muted); }
-.rx-strength input[type="range"] { width: 100%; accent-color: var(--amethyst, #7457F0); height: 28px; }
+.rx-strength input[type="range"] { width: 100%; accent-color: var(--amethyst, var(--primary)); height: 28px; }
 .rx-d-main .btn { min-height: 46px; }
 .rx-sharebox { display: grid; gap: 10px; padding: 14px; border-radius: 16px; border: 1px solid var(--border); }
 .rx-sharebox[hidden] { display: none; }
@@ -190,7 +190,7 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
 .rx-qr svg { width: 200px; height: 200px; border-radius: 12px; box-shadow: 0 0 0 1px var(--border); }
 .rx-qr small { color: var(--muted); font-size: 12.5px; }
 .rx-notices:empty { display: none; }
-.rx-notices p { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--brand-soft, #F8F1DE); font-size: 13.5px; }
+.rx-notices p { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--brand-soft, #F1F1F1); font-size: 13.5px; }
 .rx-h3 { font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 6px !important; }
 .rx-steps { list-style: none; counter-reset: rx; padding: 0; display: grid; gap: 2px; }
 .rx-steps li { counter-increment: rx; display: grid; grid-template-columns: 28px 1fr auto; gap: 0 8px; align-items: baseline; padding: 10px 2px; border-bottom: 1px solid var(--line); }
@@ -202,13 +202,13 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
 .rx-json { border-radius: 14px; border: 1px solid var(--border); }
 
 /* Drop overlay */
-.rx-drop { position: fixed; inset: 12px; z-index: 90; display: grid; place-items: center; border-radius: 24px; border: 2px dashed var(--amethyst, #7457F0); background: color-mix(in srgb, var(--surface) 88%, transparent); pointer-events: none; }
+.rx-drop { position: fixed; inset: 12px; z-index: 90; display: grid; place-items: center; border-radius: 24px; border: 2px dashed var(--amethyst, var(--primary)); background: color-mix(in srgb, var(--surface) 88%, transparent); pointer-events: none; }
 .rx-drop[hidden] { display: none; }
 .rx-drop div { display: grid; gap: 4px; text-align: center; }
 .rx-drop b { font-size: 1.3rem; }
 .rx-drop span { color: var(--muted); }
 
-:root[data-theme="dark"] .rx-notices p { background: #2A2418; }
+:root[data-theme="dark"] .rx-notices p { background: #252525; }
 
 @media (max-width: 860px) {
   .rx-d { grid-template-columns: 1fr; gap: 16px; }

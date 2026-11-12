@@ -100,7 +100,7 @@ const head = ({ title, desc, url, rootRel, extra = '' }) => `<!doctype html>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${url}">
 <meta name="robots" content="index,follow,max-image-preview:large">
-<meta name="theme-color" content="#141318">
+<meta name="theme-color" content="#161616">
 <link rel="manifest" href="${rootRel}manifest.webmanifest">
 <link rel="icon" href="${rootRel}assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="${rootRel}assets/icons/icon-192.png">
@@ -310,8 +310,8 @@ function manifestJSON() {
     display: 'standalone',
     display_override: ['standalone', 'minimal-ui'],
     orientation: 'any',
-    background_color: '#E7E5EB',
-    theme_color: '#141318',
+    background_color: '#FAFAFA',
+    theme_color: '#161616',
     categories: ['photo', 'productivity', 'utilities', 'graphics'],
     prefer_related_applications: false,
     icons: [
@@ -416,7 +416,7 @@ function walk(dir, out = []) {
   return out;
 }
 /* Downloaded on request and owned by a runtime cache (listed in the storage manager), never precached. */
-const ON_DEMAND = /^assets\/js\/expert\/mock-fx\.js$|^tools\/[^/]+\/|^agent-kit\/|^examples\/|^assets\/vendor\/raw-decoder\/|^assets\/js\/raw\/|^assets\/fonts\/originals\/|^assets\/vendor\/tesseract\/|^assets\/vendor\/pdf-lib-crypt|^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
+const ON_DEMAND = /^assets\/js\/expert\/mock-fx\.js$|^tools\/[^/]+\/|^agent-kit\/|^examples\/|^assets\/vendor\/raw-decoder\/|^assets\/js\/raw\/|^assets\/fonts\/originals\/|^assets\/vendor\/tesseract\/|^assets\/vendor\/pdf-lib-crypt|^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/fonts\/(cjk|previews)\/|^assets\/data\/fonts-(cjk|details)\.json$|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
 /* If one of these fails to download, the new version is not installed (the old one keeps working). */
 const CRITICAL = ['./', './offline.html', './studio/', './assets/js/app.js', './assets/css/app.css', './assets/js/le-pwa.js', './assets/css/le-pwa.css', './manifest.webmanifest'];
 
@@ -489,7 +489,7 @@ function packSizes() {
   const all = walk(ROOT);
   const editor = all.filter((f) => !ON_DEMAND.test(f) && !PAGES.notPrecached(f) && f !== PACKS_JSON);
   const basic = editor.filter((f) => !EXPERT.test(f)).map(fileInfo);
-  const expert = editor.filter((f) => EXPERT.test(f)).map(fileInfo);   /* not mock-fx.js and other on-demand files */
+  const expert = all.filter((f) => EXPERT.test(f) && !ON_DEMAND.test(f)).map(fileInfo);   /* test-only files such as the mock registry are never part of a pack */
   const models = all.filter((f) => MODELS.test(f)).map((f) => Object.assign(fileInfo(f), { model: modelIdOf(f) }));
   const fonts = totals(all.filter((f) => FONT_LIBRARY.test(f)).map(fileInfo));
   const icons = totals(all.filter((f) => ICON_PACKS.test(f) && /\.json$/.test(f)).map(fileInfo));

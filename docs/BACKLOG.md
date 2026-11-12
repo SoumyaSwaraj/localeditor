@@ -57,5 +57,10 @@ Kept by the lead architect. Things reported by the team that are not yet assigne
 ## Site data pass 2 (not yet assigned)
 Built and merged but still marked "coming soon" or missing on the hubs and feature pages: the nine makers of set 2 (movie poster, album cover, front page, event kit, invitation with QR, scan-to-pay poster, Wi-Fi sign, app-store screenshots, link cards) and the seven print makers (calendar, chart, labels, stickers, photo book, zine, catalogue); PDF office tools (saved details, compare, bundle, stamps, workflows, fingerprint and `/verify/`); PDF documents (searchable-text convert, invoices, tables to spreadsheet); agent mode. Each needs a verified launch link and wording written from the code. Do this once fonts, the command line and expert mode have landed, in one pass.
 
+## Light first load (L1) — not finished
+- The studio's blocking scripts are 496 KB gzip, over the 480 KB budget the loading test sets (marked as a known bug in `tests/loading.test.js`). The deferral mechanism exists (`LE.modules.defer`, `docs/LOADING.md`) but only the stock module uses it. Recipes, export, privacy, makers, cut-out, agent mode, the font picker and the originals list each need the small change described there. First paint did not get measurably faster yet.
+- The cut-out chooser and the font picker must be checked against `LE.downloads` now that it exists (both were written against the stub).
+- The storage manager's downloads section is missing if it opens before the download manager has loaded.
+
 ## Never verified in this build environment
 Real iPhones and Android phones, Safari, Firefox, the on-screen keyboard, screen readers, the Android share sheet, real AWS (deploy, CloudFront function, headers policy), and every stock API (Pixabay, Pexels, Openverse, Unsplash are all tested against mocked responses).

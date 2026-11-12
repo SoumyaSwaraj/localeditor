@@ -8,10 +8,16 @@ node_modules/
 /assets/models/pro/
 __pycache__/
 
+# maps lab: larger depth candidates fetched by scripts/fetch-maps-models.js
+/assets/models/maps/local/
+
 # OCR language packs fetched by scripts/fetch-ocr-data.js (the English pack is committed)
 /assets/models/ocr/more/
 
+# Chinese, Japanese and Korean fonts, fetched at deploy time (node scripts/fetch-fonts.js --cjk; see docs/FONTS.md)
+/assets/fonts/cjk/
 # camera RAW module build cache: toolchain, sources, objects (tools/raw-decoder/build.sh)
 /tools/raw-decoder/.cache/
 # sample RAW files fetched by scripts/fetch-raw-samples.js
 /labs/raw/samples/
+__pycache__/

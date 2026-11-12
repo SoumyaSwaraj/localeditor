@@ -1,142 +1,220 @@
-/* LocalEditor offline font library. Manifest is injected by scripts/fetch-fonts.js. */
+/* LocalEditor font library (LE.fonts). See docs/FONTS.md.
+   This file carries only the family names (for list()/css() at once); everything else loads on demand:
+     assets/data/fonts-index.json    slim index: styles, feel, scripts, faces, sizes, previews (first use of the picker or a font)
+     assets/data/fonts-cjk.json      slice table of the Chinese/Japanese/Korean families (first CJK use)
+     assets/data/fonts-details.json  copyright, package and per-file sizes (info view only)
+     assets/fonts/library/<slug>/    woff2 per script subset; only the slices a text needs are fetched
+     assets/fonts/previews/pack-*.bin  name-only preview subsets, 16 families per pack
+   Caches: le-fonts-v1 (fonts fetched when used; the service worker fills it and may trim it, least recently used first)
+           le-fonts-saved-v1 ("Save for offline"; never trimmed automatically, listed in the storage manager). */
 (function () {
   'use strict';
 
-  var MANIFEST = /*MANIFEST*/[{"family":"Inter","slug":"inter","category":"sans","weights":[400,700],"italic":true,"italicWeights":[400],"license":"OFL-1.1","version":"20","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/inter/inter-400-latin-ext.woff2","latin":"assets/fonts/library/inter/inter-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/inter/inter-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/inter/inter-700-latin-ext.woff2","latin":"assets/fonts/library/inter/inter-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/inter/inter-700.woff"},"400i":{"woff2":{"latin-ext":"assets/fonts/library/inter/inter-400-italic-latin-ext.woff2","latin":"assets/fonts/library/inter/inter-400-italic-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/inter/inter-400-italic.woff"}}},{"family":"Poppins","slug":"poppins","category":"sans","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"24","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/poppins/poppins-400-latin-ext.woff2","latin":"assets/fonts/library/poppins/poppins-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/poppins/poppins-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/poppins/poppins-700-latin-ext.woff2","latin":"assets/fonts/library/poppins/poppins-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/poppins/poppins-700.woff"}}},{"family":"Montserrat","slug":"montserrat","category":"sans","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"31","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/montserrat/montserrat-400-latin-ext.woff2","latin":"assets/fonts/library/montserrat/montserrat-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/montserrat/montserrat-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/montserrat/montserrat-700-latin-ext.woff2","latin":"assets/fonts/library/montserrat/montserrat-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/montserrat/montserrat-700.woff"}}},{"family":"DM Sans","slug":"dm-sans","category":"sans","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"17","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/dm-sans/dm-sans-400-latin-ext.woff2","latin":"assets/fonts/library/dm-sans/dm-sans-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/dm-sans/dm-sans-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/dm-sans/dm-sans-700-latin-ext.woff2","latin":"assets/fonts/library/dm-sans/dm-sans-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/dm-sans/dm-sans-700.woff"}}},{"family":"Manrope","slug":"manrope","category":"sans","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"23","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/manrope/manrope-400-latin-ext.woff2","latin":"assets/fonts/library/manrope/manrope-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/manrope/manrope-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/manrope/manrope-700-latin-ext.woff2","latin":"assets/fonts/library/manrope/manrope-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/manrope/manrope-700.woff"}}},{"family":"Space Grotesk","slug":"space-grotesk","category":"sans","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"22","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/space-grotesk/space-grotesk-400-latin-ext.woff2","latin":"assets/fonts/library/space-grotesk/space-grotesk-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/space-grotesk/space-grotesk-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/space-grotesk/space-grotesk-700-latin-ext.woff2","latin":"assets/fonts/library/space-grotesk/space-grotesk-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/space-grotesk/space-grotesk-700.woff"}}},{"family":"Outfit","slug":"outfit","category":"sans","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"15","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/outfit/outfit-400-latin-ext.woff2","latin":"assets/fonts/library/outfit/outfit-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/outfit/outfit-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/outfit/outfit-700-latin-ext.woff2","latin":"assets/fonts/library/outfit/outfit-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/outfit/outfit-700.woff"}}},{"family":"Nunito","slug":"nunito","category":"sans","weights":[400,700],"italic":true,"italicWeights":[400],"license":"OFL-1.1","version":"32","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/nunito/nunito-400-latin-ext.woff2","latin":"assets/fonts/library/nunito/nunito-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/nunito/nunito-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/nunito/nunito-700-latin-ext.woff2","latin":"assets/fonts/library/nunito/nunito-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/nunito/nunito-700.woff"},"400i":{"woff2":{"latin-ext":"assets/fonts/library/nunito/nunito-400-italic-latin-ext.woff2","latin":"assets/fonts/library/nunito/nunito-400-italic-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/nunito/nunito-400-italic.woff"}}},{"family":"Work Sans","slug":"work-sans","category":"sans","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"24","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/work-sans/work-sans-400-latin-ext.woff2","latin":"assets/fonts/library/work-sans/work-sans-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/work-sans/work-sans-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/work-sans/work-sans-700-latin-ext.woff2","latin":"assets/fonts/library/work-sans/work-sans-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/work-sans/work-sans-700.woff"}}},{"family":"Rubik","slug":"rubik","category":"sans","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"31","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/rubik/rubik-400-latin-ext.woff2","latin":"assets/fonts/library/rubik/rubik-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/rubik/rubik-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/rubik/rubik-700-latin-ext.woff2","latin":"assets/fonts/library/rubik/rubik-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/rubik/rubik-700.woff"}}},{"family":"Plus Jakarta Sans","slug":"plus-jakarta-sans","category":"sans","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"12","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/plus-jakarta-sans/plus-jakarta-sans-400-latin-ext.woff2","latin":"assets/fonts/library/plus-jakarta-sans/plus-jakarta-sans-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/plus-jakarta-sans/plus-jakarta-sans-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/plus-jakarta-sans/plus-jakarta-sans-700-latin-ext.woff2","latin":"assets/fonts/library/plus-jakarta-sans/plus-jakarta-sans-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/plus-jakarta-sans/plus-jakarta-sans-700.woff"}}},{"family":"Playfair Display","slug":"playfair-display","category":"serif","weights":[400,700],"italic":true,"italicWeights":[400],"license":"OFL-1.1","version":"40","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/playfair-display/playfair-display-400-latin-ext.woff2","latin":"assets/fonts/library/playfair-display/playfair-display-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/playfair-display/playfair-display-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/playfair-display/playfair-display-700-latin-ext.woff2","latin":"assets/fonts/library/playfair-display/playfair-display-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/playfair-display/playfair-display-700.woff"},"400i":{"woff2":{"latin-ext":"assets/fonts/library/playfair-display/playfair-display-400-italic-latin-ext.woff2","latin":"assets/fonts/library/playfair-display/playfair-display-400-italic-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/playfair-display/playfair-display-400-italic.woff"}}},{"family":"Lora","slug":"lora","category":"serif","weights":[400,700],"italic":true,"italicWeights":[400],"license":"OFL-1.1","version":"37","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/lora/lora-400-latin-ext.woff2","latin":"assets/fonts/library/lora/lora-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/lora/lora-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/lora/lora-700-latin-ext.woff2","latin":"assets/fonts/library/lora/lora-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/lora/lora-700.woff"},"400i":{"woff2":{"latin-ext":"assets/fonts/library/lora/lora-400-italic-latin-ext.woff2","latin":"assets/fonts/library/lora/lora-400-italic-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/lora/lora-400-italic.woff"}}},{"family":"Merriweather","slug":"merriweather","category":"serif","weights":[400,700],"italic":true,"italicWeights":[400],"license":"OFL-1.1","version":"33","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/merriweather/merriweather-400-latin-ext.woff2","latin":"assets/fonts/library/merriweather/merriweather-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/merriweather/merriweather-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/merriweather/merriweather-700-latin-ext.woff2","latin":"assets/fonts/library/merriweather/merriweather-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/merriweather/merriweather-700.woff"},"400i":{"woff2":{"latin-ext":"assets/fonts/library/merriweather/merriweather-400-italic-latin-ext.woff2","latin":"assets/fonts/library/merriweather/merriweather-400-italic-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/merriweather/merriweather-400-italic.woff"}}},{"family":"DM Serif Display","slug":"dm-serif-display","category":"serif","weights":[400],"italic":true,"italicWeights":[400],"license":"OFL-1.1","version":"17","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/dm-serif-display/dm-serif-display-400-latin-ext.woff2","latin":"assets/fonts/library/dm-serif-display/dm-serif-display-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/dm-serif-display/dm-serif-display-400.woff"},"400i":{"woff2":{"latin-ext":"assets/fonts/library/dm-serif-display/dm-serif-display-400-italic-latin-ext.woff2","latin":"assets/fonts/library/dm-serif-display/dm-serif-display-400-italic-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/dm-serif-display/dm-serif-display-400-italic.woff"}}},{"family":"Cormorant Garamond","slug":"cormorant-garamond","category":"serif","weights":[400,700],"italic":true,"italicWeights":[400],"license":"OFL-1.1","version":"21","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/cormorant-garamond/cormorant-garamond-400-latin-ext.woff2","latin":"assets/fonts/library/cormorant-garamond/cormorant-garamond-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/cormorant-garamond/cormorant-garamond-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/cormorant-garamond/cormorant-garamond-700-latin-ext.woff2","latin":"assets/fonts/library/cormorant-garamond/cormorant-garamond-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/cormorant-garamond/cormorant-garamond-700.woff"},"400i":{"woff2":{"latin-ext":"assets/fonts/library/cormorant-garamond/cormorant-garamond-400-italic-latin-ext.woff2","latin":"assets/fonts/library/cormorant-garamond/cormorant-garamond-400-italic-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/cormorant-garamond/cormorant-garamond-400-italic.woff"}}},{"family":"Libre Baskerville","slug":"libre-baskerville","category":"serif","weights":[400,700],"italic":true,"italicWeights":[400],"license":"OFL-1.1","version":"24","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/libre-baskerville/libre-baskerville-400-latin-ext.woff2","latin":"assets/fonts/library/libre-baskerville/libre-baskerville-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/libre-baskerville/libre-baskerville-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/libre-baskerville/libre-baskerville-700-latin-ext.woff2","latin":"assets/fonts/library/libre-baskerville/libre-baskerville-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/libre-baskerville/libre-baskerville-700.woff"},"400i":{"woff2":{"latin-ext":"assets/fonts/library/libre-baskerville/libre-baskerville-400-italic-latin-ext.woff2","latin":"assets/fonts/library/libre-baskerville/libre-baskerville-400-italic-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/libre-baskerville/libre-baskerville-400-italic.woff"}}},{"family":"Fraunces","slug":"fraunces","category":"serif","weights":[400,700],"italic":true,"italicWeights":[400],"license":"OFL-1.1","version":"38","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/fraunces/fraunces-400-latin-ext.woff2","latin":"assets/fonts/library/fraunces/fraunces-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/fraunces/fraunces-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/fraunces/fraunces-700-latin-ext.woff2","latin":"assets/fonts/library/fraunces/fraunces-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/fraunces/fraunces-700.woff"},"400i":{"woff2":{"latin-ext":"assets/fonts/library/fraunces/fraunces-400-italic-latin-ext.woff2","latin":"assets/fonts/library/fraunces/fraunces-400-italic-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/fraunces/fraunces-400-italic.woff"}}},{"family":"EB Garamond","slug":"eb-garamond","category":"serif","weights":[400,700],"italic":true,"italicWeights":[400],"license":"OFL-1.1","version":"33","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/eb-garamond/eb-garamond-400-latin-ext.woff2","latin":"assets/fonts/library/eb-garamond/eb-garamond-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/eb-garamond/eb-garamond-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/eb-garamond/eb-garamond-700-latin-ext.woff2","latin":"assets/fonts/library/eb-garamond/eb-garamond-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/eb-garamond/eb-garamond-700.woff"},"400i":{"woff2":{"latin-ext":"assets/fonts/library/eb-garamond/eb-garamond-400-italic-latin-ext.woff2","latin":"assets/fonts/library/eb-garamond/eb-garamond-400-italic-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/eb-garamond/eb-garamond-400-italic.woff"}}},{"family":"Instrument Serif","slug":"instrument-serif","category":"serif","weights":[400],"italic":true,"italicWeights":[400],"license":"OFL-1.1","version":"5","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/instrument-serif/instrument-serif-400-latin-ext.woff2","latin":"assets/fonts/library/instrument-serif/instrument-serif-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/instrument-serif/instrument-serif-400.woff"},"400i":{"woff2":{"latin-ext":"assets/fonts/library/instrument-serif/instrument-serif-400-italic-latin-ext.woff2","latin":"assets/fonts/library/instrument-serif/instrument-serif-400-italic-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/instrument-serif/instrument-serif-400-italic.woff"}}},{"family":"Bebas Neue","slug":"bebas-neue","category":"display","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"16","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/bebas-neue/bebas-neue-400-latin-ext.woff2","latin":"assets/fonts/library/bebas-neue/bebas-neue-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/bebas-neue/bebas-neue-400.woff"}}},{"family":"Anton","slug":"anton","category":"display","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"27","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/anton/anton-400-latin-ext.woff2","latin":"assets/fonts/library/anton/anton-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/anton/anton-400.woff"}}},{"family":"Archivo Black","slug":"archivo-black","category":"display","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"23","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/archivo-black/archivo-black-400-latin-ext.woff2","latin":"assets/fonts/library/archivo-black/archivo-black-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/archivo-black/archivo-black-400.woff"}}},{"family":"Abril Fatface","slug":"abril-fatface","category":"display","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"25","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/abril-fatface/abril-fatface-400-latin-ext.woff2","latin":"assets/fonts/library/abril-fatface/abril-fatface-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/abril-fatface/abril-fatface-400.woff"}}},{"family":"Righteous","slug":"righteous","category":"display","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"18","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/righteous/righteous-400-latin-ext.woff2","latin":"assets/fonts/library/righteous/righteous-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/righteous/righteous-400.woff"}}},{"family":"Lobster","slug":"lobster","category":"display","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"32","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/lobster/lobster-400-latin-ext.woff2","latin":"assets/fonts/library/lobster/lobster-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/lobster/lobster-400.woff"}}},{"family":"Bungee","slug":"bungee","category":"display","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"17","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/bungee/bungee-400-latin-ext.woff2","latin":"assets/fonts/library/bungee/bungee-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/bungee/bungee-400.woff"}}},{"family":"Oswald","slug":"oswald","category":"display","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"57","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/oswald/oswald-400-latin-ext.woff2","latin":"assets/fonts/library/oswald/oswald-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/oswald/oswald-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/oswald/oswald-700-latin-ext.woff2","latin":"assets/fonts/library/oswald/oswald-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/oswald/oswald-700.woff"}}},{"family":"Syne","slug":"syne","category":"display","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"24","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/syne/syne-400-latin-ext.woff2","latin":"assets/fonts/library/syne/syne-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/syne/syne-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/syne/syne-700-latin-ext.woff2","latin":"assets/fonts/library/syne/syne-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/syne/syne-700.woff"}}},{"family":"Dancing Script","slug":"dancing-script","category":"handwriting","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"29","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/dancing-script/dancing-script-400-latin-ext.woff2","latin":"assets/fonts/library/dancing-script/dancing-script-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/dancing-script/dancing-script-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/dancing-script/dancing-script-700-latin-ext.woff2","latin":"assets/fonts/library/dancing-script/dancing-script-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/dancing-script/dancing-script-700.woff"}}},{"family":"Great Vibes","slug":"great-vibes","category":"handwriting","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"21","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/great-vibes/great-vibes-400-latin-ext.woff2","latin":"assets/fonts/library/great-vibes/great-vibes-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/great-vibes/great-vibes-400.woff"}}},{"family":"Caveat","slug":"caveat","category":"handwriting","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"23","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/caveat/caveat-400-latin-ext.woff2","latin":"assets/fonts/library/caveat/caveat-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/caveat/caveat-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/caveat/caveat-700-latin-ext.woff2","latin":"assets/fonts/library/caveat/caveat-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/caveat/caveat-700.woff"}}},{"family":"Sacramento","slug":"sacramento","category":"handwriting","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"17","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/sacramento/sacramento-400-latin-ext.woff2","latin":"assets/fonts/library/sacramento/sacramento-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/sacramento/sacramento-400.woff"}}},{"family":"Pacifico","slug":"pacifico","category":"handwriting","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"23","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/pacifico/pacifico-400-latin-ext.woff2","latin":"assets/fonts/library/pacifico/pacifico-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/pacifico/pacifico-400.woff"}}},{"family":"Satisfy","slug":"satisfy","category":"handwriting","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"22","files":{"400":{"woff2":{"latin":"assets/fonts/library/satisfy/satisfy-400-latin.woff2"},"unicodeRange":{"latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/satisfy/satisfy-400.woff"}}},{"family":"Allura","slug":"allura","category":"handwriting","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"23","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/allura/allura-400-latin-ext.woff2","latin":"assets/fonts/library/allura/allura-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/allura/allura-400.woff"}}},{"family":"Kalam","slug":"kalam","category":"handwriting","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"18","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/kalam/kalam-400-latin-ext.woff2","latin":"assets/fonts/library/kalam/kalam-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/kalam/kalam-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/kalam/kalam-700-latin-ext.woff2","latin":"assets/fonts/library/kalam/kalam-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/kalam/kalam-700.woff"}}},{"family":"Shadows Into Light","slug":"shadows-into-light","category":"handwriting","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"22","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/shadows-into-light/shadows-into-light-400-latin-ext.woff2","latin":"assets/fonts/library/shadows-into-light/shadows-into-light-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/shadows-into-light/shadows-into-light-400.woff"}}},{"family":"Homemade Apple","slug":"homemade-apple","category":"handwriting","weights":[400],"italic":false,"italicWeights":[],"license":"Apache-2.0","version":"24","files":{"400":{"woff2":{"latin":"assets/fonts/library/homemade-apple/homemade-apple-400-latin.woff2"},"unicodeRange":{"latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/homemade-apple/homemade-apple-400.woff"}}},{"family":"Mr Dafoe","slug":"mr-dafoe","category":"handwriting","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"15","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/mr-dafoe/mr-dafoe-400-latin-ext.woff2","latin":"assets/fonts/library/mr-dafoe/mr-dafoe-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/mr-dafoe/mr-dafoe-400.woff"}}},{"family":"Alex Brush","slug":"alex-brush","category":"handwriting","weights":[400],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"23","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/alex-brush/alex-brush-400-latin-ext.woff2","latin":"assets/fonts/library/alex-brush/alex-brush-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/alex-brush/alex-brush-400.woff"}}},{"family":"JetBrains Mono","slug":"jetbrains-mono","category":"mono","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"24","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/jetbrains-mono/jetbrains-mono-400-latin-ext.woff2","latin":"assets/fonts/library/jetbrains-mono/jetbrains-mono-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/jetbrains-mono/jetbrains-mono-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/jetbrains-mono/jetbrains-mono-700-latin-ext.woff2","latin":"assets/fonts/library/jetbrains-mono/jetbrains-mono-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/jetbrains-mono/jetbrains-mono-700.woff"}}},{"family":"Space Mono","slug":"space-mono","category":"mono","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"17","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/space-mono/space-mono-400-latin-ext.woff2","latin":"assets/fonts/library/space-mono/space-mono-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/space-mono/space-mono-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/space-mono/space-mono-700-latin-ext.woff2","latin":"assets/fonts/library/space-mono/space-mono-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/space-mono/space-mono-700.woff"}}},{"family":"IBM Plex Mono","slug":"ibm-plex-mono","category":"mono","weights":[400,700],"italic":false,"italicWeights":[],"license":"OFL-1.1","version":"20","files":{"400":{"woff2":{"latin-ext":"assets/fonts/library/ibm-plex-mono/ibm-plex-mono-400-latin-ext.woff2","latin":"assets/fonts/library/ibm-plex-mono/ibm-plex-mono-400-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/ibm-plex-mono/ibm-plex-mono-400.woff"},"700":{"woff2":{"latin-ext":"assets/fonts/library/ibm-plex-mono/ibm-plex-mono-700-latin-ext.woff2","latin":"assets/fonts/library/ibm-plex-mono/ibm-plex-mono-700-latin.woff2"},"unicodeRange":{"latin-ext":"U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF","latin":"U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},"woff":"assets/fonts/library/ibm-plex-mono/ibm-plex-mono-700.woff"}}}]/*MANIFEST_END*/;
+  /* Generated by scripts/fetch-fonts.js: "Family|style|weights|italic|cjk;..." */
+  var NAMES = /*NAMES*/"Inter|sans|100-900|i;Geist|sans|100-900;Roboto|sans|100-900|i;IBM Plex Sans|sans|100-700|i;DM Sans|sans|100-1000|i;Manrope|sans|200-800;Montserrat|sans|100-900|i;Fraunces|serif|100-900|i;Space Grotesk|sans|300-700;Poppins|sans|400,700|i;Plus Jakarta Sans|sans|200-800|i;Source Serif 4|serif|200-900|i;Figtree|sans|300-900|i;Open Sans|sans|300-800|i;Playfair Display|serif|400-900|i;JetBrains Mono|mono|100-800|i;Archivo|sans|100-900|i;Bricolage Grotesque|sans|200-800;Outfit|sans|100-900;Noto Sans JP|sans|100-900||c;Nunito|sans|200-1000|i;Newsreader|serif|200-800|i;Source Sans 3|sans|200-900|i;Instrument Sans|sans|400-700;Noto Sans|sans|100-900|i;Instrument Serif|serif|400|i;Cormorant Garamond|serif|300-700|i;Lato|sans|400,700|i;Geist Mono|mono|100-900;Oswald|display|200-700;IBM Plex Mono|mono|400,700|i;Hanken Grotesk|sans|100-900;Lora|serif|400-700|i;Public Sans|sans|100-900;EB Garamond|serif|400-800|i;Noto Sans SC|sans|100-900||c;Caveat|handwriting|400-700;Barlow Condensed|sans|400,700;Sora|sans|100-800;Inter Tight|sans|100-900;Barlow|sans|400,700|i;Nunito Sans|sans|200-1000|i;Anton|display|400;Archivo Black|display|400;Noto Sans Arabic|sans|100-900;Work Sans|sans|100-900;Arimo|sans|400-700;Jost|sans|100-900|i;Noto Sans TC|sans|100-900||c;Merriweather|serif|300-900|i;Onest|sans|100-900;Bebas Neue|display|400;Rubik|sans|300-900|i;Schibsted Grotesk|sans|400-900;IBM Plex Sans Arabic|sans|400,700;Fredoka|display|300-700;League Gothic|display|400;Literata|serif|200-900|i;Raleway|sans|100-900|i;DM Serif Display|serif|400|i;Noto Sans KR|sans|100-900||c;Cinzel|serif|400-900;Tinos|serif|400,700|i;Atkinson Hyperlegible|sans|400,700|i;Lexend|sans|100-900;Libre Baskerville|serif|400-700|i;Dancing Script|handwriting|400-700;Unbounded|display|200-900;Sacramento|handwriting|400;Great Vibes|handwriting|400;Bodoni Moda|serif|400-900;IBM Plex Serif|serif|400,700|i;Noto Sans Devanagari|sans|100-900;Noto Serif|serif|100-900|i;Mulish|sans|200-1000;Roboto Condensed|sans|100-900|i;Be Vietnam Pro|sans|400,700;Quicksand|sans|300-700;Vazirmatn|sans|100-900;Cairo|sans|200-1000;Press Start 2P|display|400;Noto Sans Thai|sans|100-900;Syne|display|400-800;Chakra Petch|display|400,700;Spectral|serif|400,700|i;Pacifico|handwriting|400;Roboto Mono|mono|100-700;Baloo 2|display|400-800;Fira Sans|sans|400,700|i;Libre Franklin|sans|100-900;Space Mono|mono|400,700;Roboto Slab|serif|100-900;Noto Sans Hebrew|sans|100-900;Orbitron|display|400-900;Heebo|sans|100-900;Urbanist|sans|100-900;Noto Sans Bengali|sans|100-900;Amiri|serif|400,700|i;Noto Naskh Arabic|serif|400-700;Kanit|sans|400,700|i;Patrick Hand|handwriting|400;Karla|sans|200-800;Kalam|handwriting|400,700;Crimson Pro|serif|200-900|i;Josefin Sans|sans|100-700|i;Pixelify Sans|display|400-700;Permanent Marker|handwriting|400;Tajawal|sans|400,700;Bitter|serif|100-900|i;Noto Sans Tamil|sans|100-900;DM Mono|mono|400;Prompt|sans|400,700;Pinyon Script|handwriting|400;Young Serif|serif|400;Rajdhani|display|400,700;Comic Neue|handwriting|400,700|i;PT Serif|serif|400,700|i;Silkscreen|display|400,700;Allura|handwriting|400;Sarabun|sans|400,700;Exo 2|sans|100-900;Comfortaa|display|300-700;Homemade Apple|handwriting|400;Lilita One|display|400;Marcellus|serif|400;PT Sans|sans|400,700|i;Fira Code|mono|300-700;Source Code Pro|mono|200-900;Noto Sans Telugu|sans|100-900;Red Hat Display|sans|300-900;Bangers|display|400;Assistant|sans|200-800;IBM Plex Sans Thai|sans|400,700;Noto Sans Malayalam|sans|100-900;Frank Ruhl Libre|serif|300-900;Noto Sans Gujarati|sans|100-900;Libre Caslon Text|serif|400,700|i;Alegreya|serif|400-900|i;Noto Kufi Arabic|sans|100-900;Overpass|sans|100-900;Noto Sans Gurmukhi|sans|100-900;Abril Fatface|display|400;Mitr|sans|400,700;Itim|handwriting|400;Special Elite|display|400;Mrs Saint Delafield|handwriting|400;Zilla Slab|serif|400,700|i;Bungee|display|400;Noto Nastaliq Urdu|serif|400-700;Titillium Web|sans|400,700;Gloock|serif|400;Cormorant|serif|300-700;Yellowtail|handwriting|400;Noto Sans Kannada|sans|100-900;Hind|sans|400,700;Alfa Slab One|display|400;Gochi Hand|handwriting|400;League Spartan|sans|100-900;Kaushan Script|handwriting|400;Lobster|display|400;Alex Brush|handwriting|400;Audiowide|display|400;Cabin|sans|400-700;Luckiest Guy|display|400;Crimson Text|serif|400,700|i;Russo One|display|400;Righteous|display|400;Mali|handwriting|400,700;Dosis|sans|200-800;Courier Prime|mono|400,700|i;Noto Serif Devanagari|serif|100-900;Varela Round|sans|400;Architects Daughter|handwriting|400;Italiana|serif|400;Aref Ruqaa|display|400,700;Titan One|display|400;Domine|serif|400-700;Modak|display|400;Parisienne|handwriting|400;Caveat Brush|handwriting|400;Trirong|serif|400,700;Teko|display|300-700;Satisfy|handwriting|400;Hind Siliguri|sans|400,700;Reem Kufi|display|400-700;Noto Serif Kannada|serif|100-900;Amatic SC|handwriting|400,700;Chivo|sans|100-900;Shrikhand|display|400;Inconsolata|mono|200-900;Lalezar|display|400;Mr Dafoe|handwriting|400;Almarai|sans|400,700;Palanquin|sans|400,700;Creepster|display|400;Mukta|sans|400,700;Prata|serif|400;Martel|serif|400,700;VT323|mono|400;UnifrakturMaguntia|display|400;Suez One|serif|400;Vollkorn|serif|400-900|i;Noto Sans Mono|mono|100-900;Noto Serif Thai|serif|100-900;Secular One|display|400;Rye|display|400;Noto Serif Hebrew|serif|100-900;Poiret One|display|400;El Messiri|sans|400-700;Monoton|display|400;Chewy|display|400;Yeseva One|serif|400;Shadows Into Light|handwriting|400;Tiro Devanagari Hindi|serif|400;Marck Script|handwriting|400;Noto Serif Bengali|serif|100-900;Staatliches|display|400;Black Ops One|display|400;Rozha One|serif|400;Arvo|serif|400,700|i;Asap|sans|100-900;Bree Serif|serif|400;Fjalla One|display|400;Indie Flower|handwriting|400;Gloria Hallelujah|handwriting|400;Hind Vadodara|sans|400,700;Tangerine|handwriting|400,700;Yatra One|display|400;Rock Salt|handwriting|400;Baloo Da 2|display|400-800;Sriracha|handwriting|400;Catamaran|sans|100-900;Noto Serif Tamil|serif|100-900;Baloo Thambi 2|display|400-800;Baloo Tamma 2|display|400-800;Cookie|handwriting|400;Stardos Stencil|display|400,700;Baloo Bhai 2|display|400-800;Noto Serif Telugu|serif|100-900;Rubik Glitch|display|400;Noto Serif Gurmukhi|serif|100-900;Baloo Chettan 2|display|400-800;Noto Serif Gujarati|serif|100-900;Baloo Tammudu 2|display|400-800;Noto Serif Malayalam|serif|100-900;Baloo Paaji 2|display|400-800;Galada|display|400;Charm|handwriting|400,700;Hind Madurai|sans|400,700;Rubik Bubbles|display|400;Abel|sans|400;Patua One|serif|400;Manjari|sans|400,700;Amita|handwriting|400,700;Mandali|sans|400;Mukta Mahee|sans|400,700;Chilanka|handwriting|400"/*NAMES_END*/;
   var CACHE = 'le-fonts-v1';
+  var SAVED = 'le-fonts-saved-v1';
+  var INDEX_URL = 'assets/data/fonts-index.json';
+  var STYLE_LABEL = { sans: 'Sans', serif: 'Serif', display: 'Display', handwriting: 'Handwriting', mono: 'Monospace' };
+  var FEEL = { trust: 'Trustworthy', calm: 'Calm', friendly: 'Friendly', playful: 'Playful', elegant: 'Elegant', bold: 'Bold', urgent: 'Urgent', tense: 'Edgy', nostalgic: 'Nostalgic', technical: 'Technical' };
+  var SCRIPT_LABEL = {
+    latin: 'Latin', vietnamese: 'Vietnamese', cyrillic: 'Cyrillic', greek: 'Greek', devanagari: 'Hindi (Devanagari)', bengali: 'Bengali', tamil: 'Tamil',
+    telugu: 'Telugu', gujarati: 'Gujarati', gurmukhi: 'Punjabi (Gurmukhi)', kannada: 'Kannada', malayalam: 'Malayalam', arabic: 'Arabic', hebrew: 'Hebrew',
+    thai: 'Thai', 'chinese-simplified': 'Chinese (Simplified)', 'chinese-traditional': 'Chinese (Traditional)', japanese: 'Japanese', korean: 'Korean'
+  };
+  var SUBSET_SCRIPT = { latin: 'latin', 'latin-ext': 'latin', vietnamese: 'vietnamese' };
+  var ESSENTIALS = ['Inter', 'Roboto', 'Open Sans', 'Montserrat', 'Poppins', 'Lato', 'Raleway', 'Nunito', 'DM Sans', 'Playfair Display', 'Merriweather', 'Lora',
+    'EB Garamond', 'Source Serif 4', 'Oswald', 'Bebas Neue', 'Anton', 'Archivo Black', 'Abril Fatface', 'Caveat', 'Dancing Script', 'Pacifico', 'Great Vibes',
+    'Permanent Marker', 'JetBrains Mono', 'Space Mono'];
+  /* Missing glyphs: which library family draws a script a font lacks (sans, serif). */
+  var FALLBACK = {
+    latin: ['Noto Sans', 'Noto Serif'], vietnamese: ['Noto Sans', 'Noto Serif'], cyrillic: ['Noto Sans', 'Noto Serif'], greek: ['Noto Sans', 'Noto Serif'],
+    devanagari: ['Noto Sans Devanagari', 'Noto Serif Devanagari'], bengali: ['Noto Sans Bengali', 'Noto Serif Bengali'], tamil: ['Noto Sans Tamil', 'Noto Serif Tamil'],
+    telugu: ['Noto Sans Telugu', 'Noto Serif Telugu'], gujarati: ['Noto Sans Gujarati', 'Noto Serif Gujarati'], gurmukhi: ['Noto Sans Gurmukhi', 'Noto Serif Gurmukhi'],
+    kannada: ['Noto Sans Kannada', 'Noto Serif Kannada'], malayalam: ['Noto Sans Malayalam', 'Noto Serif Malayalam'], arabic: ['Noto Sans Arabic', 'Noto Naskh Arabic'],
+    hebrew: ['Noto Sans Hebrew', 'Noto Serif Hebrew'], thai: ['Noto Sans Thai', 'Noto Serif Thai'], japanese: ['Noto Sans JP'], korean: ['Noto Sans KR'],
+    'chinese-simplified': ['Noto Sans SC'], 'chinese-traditional': ['Noto Sans TC']
+  };
+
+  var core = [];
+  var byName = {};
+  String(NAMES || '').split(';').forEach(function (row) {
+    if (!row) return;
+    var p = row.split('|');
+    var ws = p[2] || '400';
+    var weights = [];
+    if (ws.indexOf('-') > 0) {
+      var a = Number(ws.split('-')[0]), b = Number(ws.split('-')[1]);
+      for (var w = Math.ceil(a / 100) * 100; w <= b; w += 100) weights.push(w);
+    } else weights = ws.split(',').map(Number);
+    var f = { family: p[0], style: p[1] || 'sans', weights: weights, italic: p[3] === 'i', cjk: p[4] === 'c', variable: ws.indexOf('-') > 0 };
+    core.push(f);
+    byName[f.family.toLowerCase()] = f;
+  });
+
+  var index = null;
+  var indexP = null;
+  var cjkData = null;
+  var cjkP = null;
+  var cjkAvail = null;
+  var meta = {};      /* lower-case family or slug -> index entry */
+  var parsed = {};    /* range string -> [[a, b], ...] */
   var pending = {};
   var loaded = {};
+  var fallbacks = {}; /* family -> [fallback family, ...] */
+  var listeners = [];
 
   function base() {
     var root = document.documentElement.getAttribute('data-root') || '';
     if (root && root.charAt(root.length - 1) !== '/') root += '/';
     return root;
   }
-
-  function asset(rel) {
-    return base() + String(rel || '').replace(/^\//, '');
+  function asset(rel) { return base() + String(rel || '').replace(/^\//, ''); }
+  function abs(rel) { return new URL(asset(rel), document.baseURI).href; }
+  function lsGet(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } }
+  function emit(type, detail) {
+    listeners.slice().forEach(function (fn) { try { fn(type, detail); } catch (e) { console.error(e); } });
+    try { window.dispatchEvent(new CustomEvent('le-fonts:' + type, { detail: detail })); } catch (e) { /* old browsers */ }
+  }
+  function fmt(n) {
+    if (!n) return '0 KB';
+    if (n < 1024 * 1024) return Math.max(1, Math.round(n / 1024)) + ' KB';
+    return (n / 1048576).toFixed(n < 10 * 1048576 ? 1 : 0) + ' MB';
   }
 
-  function abs(rel) {
-    return new URL(asset(rel), document.baseURI).href;
+  /* ---------- Index ---------- */
+  function fetchJSON(rel) {
+    var href = abs(rel);
+    return fetch(href).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }).catch(function (err) {
+      if (!window.caches) throw err;
+      /* Offline without a service worker copy: the saved-fonts cache keeps the index too. */
+      return caches.open(SAVED).then(function (c) { return c.match(href); }).then(function (hit) {
+        if (!hit) throw err;
+        return hit.json();
+      });
+    });
   }
-
+  function ready() {
+    if (index) return Promise.resolve(index);
+    if (indexP) return indexP;
+    indexP = fetchJSON(INDEX_URL).then(function (data) {
+      index = data;
+      (index.families || []).forEach(function (f) {
+        meta[f.family.toLowerCase()] = f;
+        meta[f.slug] = f;
+        if (!byName[f.family.toLowerCase()]) {
+          var c = { family: f.family, style: f.style, weights: f.weights, italic: f.italic, cjk: !!f.cjk, variable: !!f.wght };
+          core.push(c);
+          byName[f.family.toLowerCase()] = c;
+        }
+      });
+      emit('index', { families: index.families.length });
+      return index;
+    }, function (err) { indexP = null; throw err; });
+    return indexP;
+  }
+  function cjk() {
+    if (cjkData) return Promise.resolve(cjkData);
+    if (!cjkP) cjkP = fetchJSON('assets/data/fonts-cjk.json').then(function (d) { cjkData = d; return d; }, function (e) { cjkP = null; throw e; });
+    return cjkP;
+  }
+  /* The CJK files are fetched at deploy time (scripts/fetch-fonts.js --cjk); a copy without them says so. */
+  function cjkAvailable() {
+    if (cjkAvail) return cjkAvail;
+    cjkAvail = fetch(abs('assets/fonts/cjk/available.json'), { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      return j && j.families ? j.families : [];
+    }).catch(function () { cjkAvail = null; return []; });
+    return cjkAvail;
+  }
   function find(name) {
-    var n = String(name || '').toLowerCase();
-    for (var i = 0; i < MANIFEST.length; i++) {
-      if (MANIFEST[i].family.toLowerCase() === n || MANIFEST[i].slug === n) return MANIFEST[i];
-    }
-    return null;
+    var n = String(name || '').toLowerCase().replace(/^["']|["']$/g, '');
+    return meta[n] || null;
   }
 
-  function fallback(category) {
-    if (category === 'serif') return 'serif';
-    if (category === 'handwriting') return 'cursive';
-    if (category === 'mono') return 'monospace';
-    return 'sans-serif';
-  }
-
-  function nearest(list, weight) {
-    if (!list || !list.length) return weight;
-    if (list.indexOf(weight) >= 0) return weight;
-    var best = list[0];
-    var diff = Math.abs(best - weight);
-    for (var i = 1; i < list.length; i++) {
-      var d = Math.abs(list[i] - weight);
-      if (d < diff) { diff = d; best = list[i]; }
-    }
-    return best;
-  }
-
-  function faceKey(meta, weight, italic) {
-    var w = nearest(italic ? (meta.italicWeights || []) : meta.weights, weight);
-    if (italic && (!meta.italicWeights || !meta.italicWeights.length)) {
-      return { key: String(nearest(meta.weights, weight)), italic: false, weight: nearest(meta.weights, weight) };
-    }
-    if (italic) return { key: String(w) + 'i', italic: true, weight: w };
-    return { key: String(nearest(meta.weights, weight)), italic: false, weight: nearest(meta.weights, weight) };
-  }
-
-  function slot(meta, weight, italic) {
-    var picked = faceKey(meta, weight, italic);
-    return { picked: picked, files: meta.files[picked.key] || null };
-  }
-
-  function fileList(meta) {
+  /* ---------- Ranges ---------- */
+  function rangesOf(text) {
+    if (!text) return [];
+    if (parsed[text]) return parsed[text];
     var out = [];
-    var files = meta.files || {};
-    Object.keys(files).forEach(function (key) {
-      var item = files[key];
-      if (item.woff) out.push(item.woff);
-      var woff2 = item.woff2 || {};
-      Object.keys(woff2).forEach(function (subset) { out.push(woff2[subset]); });
+    String(text).split(',').forEach(function (part) {
+      part = part.trim().replace(/^U\+/i, '');
+      if (!part) return;
+      if (part.indexOf('?') >= 0) { out.push([parseInt(part.replace(/\?/g, '0'), 16), parseInt(part.replace(/\?/g, 'F'), 16)]); return; }
+      var ab = part.split('-');
+      var a = parseInt(ab[0], 16);
+      out.push([a, ab[1] ? parseInt(ab[1], 16) : a]);
+    });
+    parsed[text] = out;
+    return out;
+  }
+  function inRanges(list, cp) {
+    for (var i = 0; i < list.length; i++) if (cp >= list[i][0] && cp <= list[i][1]) return true;
+    return false;
+  }
+  function rangeFor(m, subset) {
+    if (m.source === 'localeditor') return '';
+    if (m.cjk) return cjkData && cjkData[m.slug] ? cjkData[m.slug].ranges[subset] || '' : '';
+    return (m.ranges && m.ranges[subset]) || (index && index.ranges[subset]) || '';
+  }
+  function subsetsOf(m) {
+    if (m.source === 'localeditor') return ['all'];
+    if (m.cjk) return cjkData && cjkData[m.slug] ? cjkData[m.slug].subsets : [];
+    return m.subsets || [];
+  }
+  function codepoints(text) {
+    var out = {};
+    var s = String(text || '');
+    for (var i = 0; i < s.length; i++) {
+      var cp = s.codePointAt(i);
+      if (cp > 0xFFFF) i++;
+      if (cp > 32) out[cp] = 1;
+    }
+    return Object.keys(out).map(Number);
+  }
+  function scriptOfSubset(s) { return SUBSET_SCRIPT[s] || s; }
+
+  /* ---------- Files ---------- */
+  function faceFor(m, weight, italic) {
+    var faces = m.faces || [];
+    if (m.wght) return { key: italic && faces.indexOf('vi') >= 0 ? 'vi' : 'v', weight: m.wght[0] + ' ' + m.wght[1], italic: italic && faces.indexOf('vi') >= 0 };
+    var want = italic ? faces.filter(function (k) { return /i$/.test(k); }) : [];
+    if (!want.length) { want = faces.filter(function (k) { return !/i$/.test(k); }); italic = false; }
+    var best = want[0];
+    want.forEach(function (k) { if (Math.abs(parseInt(k, 10) - weight) < Math.abs(parseInt(best, 10) - weight)) best = k; });
+    return { key: best, weight: String(parseInt(best, 10) || 400), italic: !!italic };
+  }
+  function fileFor(m, subset, face) {
+    if (m.source === 'localeditor') return m.dir + m.files[face];
+    var dir = (m.cjk ? 'assets/fonts/cjk/' : (index && index.base) || 'assets/fonts/library/') + m.slug + '/';
+    return dir + m.slug + '-' + subset + '-' + face + '.' + m.rev + '.woff2';
+  }
+  function filesOf(m) {
+    var out = [];
+    (m.faces || []).forEach(function (face) {
+      subsetsOf(m).forEach(function (s) { if (!(m.missing && m.missing[face] && m.missing[face].indexOf(s) >= 0)) out.push(fileFor(m, s, face)); });
     });
     return out;
   }
-
+  function fromCaches(href) {
+    if (!window.caches) return Promise.resolve(null);
+    return caches.open(SAVED).then(function (c) { return c.match(href); }).then(function (hit) {
+      if (hit) return hit;
+      return caches.open(CACHE).then(function (c) { return c.match(href, { ignoreSearch: true }); });
+    }).catch(function () { return null; });
+  }
   function fetchBytes(rel) {
     var href = abs(rel);
-    var fromNet = function () {
+    return fromCaches(href).then(function (hit) {
+      if (hit) return hit.arrayBuffer();
       return fetch(href).then(function (res) {
         if (!res.ok) throw new Error('Font file failed (' + res.status + ')');
         return res.arrayBuffer();
       });
-    };
-    if (!window.caches) return fromNet();
-    return caches.open(CACHE).then(function (cache) {
-      return cache.match(href).then(function (hit) {
-        if (hit) return hit.arrayBuffer();
-        return fromNet();
-      });
-    }).catch(fromNet);
-  }
-
-  function list() {
-    return MANIFEST.map(function (f) {
-      return {
-        family: f.family,
-        category: f.category,
-        weights: f.weights.slice(),
-        italic: !!f.italic,
-        preview: 'Aa'
-      };
     });
-  }
-
-  function css(family) {
-    var meta = find(family);
-    var name = meta ? meta.family : String(family || 'sans-serif');
-    var stack = meta ? fallback(meta.category) : 'sans-serif';
-    return '"' + name.replace(/"/g, '') + '", ' + stack;
-  }
-
-  function previewFile(meta) {
-    var files = meta.files || {};
-    var key = files['400'] ? '400' : Object.keys(files)[0];
-    var item = key ? files[key] : null;
-    if (!item || !item.woff2) return null;
-    var subset = item.woff2.latin ? 'latin' : Object.keys(item.woff2)[0];
-    if (!subset) return null;
-    return {
-      weight: parseInt(key, 10) || 400,
-      italic: /i$/.test(key),
-      file: item.woff2[subset],
-      unicodeRange: (item.unicodeRange && item.unicodeRange[subset]) || ''
-    };
-  }
-
-  function previewCSS() {
-    var lines = [];
-    MANIFEST.forEach(function (meta) {
-      var face = previewFile(meta);
-      if (!face) return;
-      lines.push(
-        '@font-face{font-family:"' + meta.family.replace(/"/g, '') + '";font-style:' + (face.italic ? 'italic' : 'normal') +
-        ';font-weight:' + face.weight + ';font-display:swap;src:url("' + asset(face.file) + '") format("woff2");' +
-        (face.unicodeRange ? 'unicode-range:' + face.unicodeRange + ';' : '') + '}'
-      );
-    });
-    return lines.join('\n');
   }
 
   function addFace(family, buf, weight, italic, unicodeRange) {
@@ -144,114 +222,559 @@
     var desc = { weight: String(weight), style: italic ? 'italic' : 'normal', display: 'swap' };
     if (unicodeRange) desc.unicodeRange = unicodeRange;
     var face = new FontFace(family, buf, desc);
-    return face.load().then(function (loadedFace) {
-      document.fonts.add(loadedFace);
-      return document.fonts.ready.then(function () { return loadedFace; });
-    });
+    return face.load().then(function (f) { document.fonts.add(f); return f; });
   }
 
-  function ensurePreview(family) {
-    var meta = find(family);
-    if (!meta) return Promise.reject(new Error('Unknown font ' + family));
-    var face = previewFile(meta);
-    if (!face) return Promise.reject(new Error('No preview for ' + meta.family));
-    var key = 'preview|' + meta.family;
-    if (loaded[key] || pending[key]) return pending[key] || Promise.resolve();
-    pending[key] = fetchBytes(face.file).then(function (buf) {
-      return addFace(meta.family, buf, face.weight, face.italic, face.unicodeRange);
-    }).then(function () {
-      loaded[key] = true;
-      delete pending[key];
-    }).catch(function (err) {
-      delete pending[key];
-      throw err;
-    });
-    return pending[key];
-  }
-
-  function load(family, weight, italic) {
-    var meta = find(family);
-    if (!meta) return Promise.reject(new Error('Unknown font ' + family));
-    var picked = slot(meta, Number(weight) || 400, !!italic);
-    if (!picked.files) return Promise.reject(new Error('No files for ' + meta.family));
-    var key = meta.family + '|' + picked.picked.key;
-    if (loaded[key]) return Promise.resolve();
-    if (pending[key]) return pending[key];
-    var woff2 = picked.files.woff2 || {};
-    var subsets = Object.keys(woff2);
-    if (!subsets.length && picked.files.woff) subsets = ['embed'];
-    pending[key] = Promise.all(subsets.map(function (subset) {
-      var rel = subset === 'embed' ? picked.files.woff : woff2[subset];
-      var range = picked.files.unicodeRange && picked.files.unicodeRange[subset];
-      return fetchBytes(rel).then(function (buf) {
-        return addFace(meta.family, buf, picked.picked.weight, picked.picked.italic, range || '');
+  /* Which subsets a load needs: the text's, the scripts asked for, or Latin plus the family's own script. */
+  function pickSubsets(m, opts) {
+    var subs = subsetsOf(m);
+    if (m.source === 'localeditor') return subs;
+    if (opts.subsets) return subs.filter(function (s) { return opts.subsets.indexOf(s) >= 0; });
+    if (opts.text != null && opts.text !== '') {
+      var cps = codepoints(opts.text);
+      var need = subs.filter(function (s) {
+        var r = rangesOf(rangeFor(m, s));
+        for (var i = 0; i < cps.length; i++) if (inRanges(r, cps[i])) return true;
+        return false;
       });
-    })).then(function () {
-      loaded[key] = true;
-      delete pending[key];
-    }).catch(function (err) {
-      delete pending[key];
-      throw err;
+      if (need.length || m.cjk) return need;
+    }
+    if (opts.scripts && opts.scripts.length) return subs.filter(function (s) { return opts.scripts.indexOf(scriptOfSubset(s)) >= 0; });
+    if (m.cjk) return [];
+    var primary = (m.scripts || ['latin'])[0];
+    return subs.filter(function (s) { return s === 'latin' || s === 'latin-ext' || (primary !== 'latin' && scriptOfSubset(s) === primary); });
+  }
+
+  function normalize(a, b) {
+    if (a && typeof a === 'object') return a;
+    return { weights: [Number(a) || 400], italic: !!b };
+  }
+
+  function touch(family) {
+    var r = lsGet('le-studio-fonts', []).filter(function (x) { return x !== family; });
+    r.unshift(family);
+    lsSet('le-studio-fonts', r.slice(0, 12));
+  }
+
+  /* load(family, weight, italic)                 old form: Latin (and the family's own script) at one weight
+     load(family, { weights, italic, scripts, text, subsets })  only the slices the text or scripts need */
+  function load(family, a, b) {
+    var opts = normalize(a, b);
+    return ready().then(function () {
+      var m = find(family);
+      if (!m) throw new Error('Unknown font ' + family);
+      var pre = m.cjk ? Promise.all([cjk(), cjkAvailable()]).then(function (r) {
+        if (r[1].indexOf(m.slug) < 0) { var e = new Error(m.family + ' is not available on this copy of LocalEditor'); e.code = 'not-available'; throw e; }
+      }) : Promise.resolve();
+      return pre.then(function () {
+        var weights = opts.weights || [opts.weight || 400];
+        var faces = {};
+        weights.forEach(function (w) { var f = faceFor(m, Number(w) || 400, !!opts.italic); faces[f.key] = f; });
+        if (opts.italic === 'both' || opts.both) weights.forEach(function (w) { var f = faceFor(m, Number(w) || 400, true); faces[f.key] = f; });
+        var subs = pickSubsets(m, opts);
+        var jobs = [];
+        Object.keys(faces).forEach(function (k) {
+          var f = faces[k];
+          subs.forEach(function (s) {
+            if (m.missing && m.missing[k] && m.missing[k].indexOf(s) >= 0) return;
+            var key = m.family + '|' + k + '|' + s;
+            if (loaded[key]) return;
+            if (!pending[key]) {
+              pending[key] = fetchBytes(fileFor(m, s, k)).then(function (buf) {
+                return addFace(m.family, buf, f.weight, f.italic, rangeFor(m, s));
+              }).then(function () {
+                loaded[key] = true;
+                delete pending[key];
+              }, function (err) { delete pending[key]; throw err; });
+            }
+            jobs.push(pending[key]);
+          });
+        });
+        return Promise.all(jobs).then(function () {
+          if (jobs.length) emit('loaded', { family: m.family });
+          return { family: m.family, subsets: subs };
+        });
+      });
     });
-    return pending[key];
   }
 
-  function bytes(family, weight, italic) {
-    var meta = find(family);
-    if (!meta) return Promise.reject(new Error('Unknown font ' + family));
-    var picked = slot(meta, Number(weight) || 400, !!italic);
-    if (!picked.files || !picked.files.woff) return Promise.reject(new Error('No embeddable file for ' + meta.family));
-    return fetchBytes(picked.files.woff);
+  /* ---------- Missing glyphs ---------- */
+  function cjkScript(cp) {
+    if ((cp >= 0x3040 && cp <= 0x30FF) || (cp >= 0x31F0 && cp <= 0x31FF)) return 'japanese';
+    if ((cp >= 0xAC00 && cp <= 0xD7AF) || (cp >= 0x1100 && cp <= 0x11FF) || (cp >= 0x3130 && cp <= 0x318F)) return 'korean';
+    if ((cp >= 0x4E00 && cp <= 0x9FFF) || (cp >= 0x3400 && cp <= 0x4DBF) || (cp >= 0x3000 && cp <= 0x303F) || (cp >= 0xFF00 && cp <= 0xFFEF) || (cp >= 0x20000 && cp <= 0x2FFFF)) return 'han';
+    return null;
+  }
+  function scriptOfCp(cp) {
+    var c = cjkScript(cp);
+    if (c) return c;
+    if (!index) return null;
+    var order = ['latin', 'latin-ext', 'vietnamese', 'cyrillic', 'greek', 'devanagari', 'bengali', 'tamil', 'telugu', 'gujarati', 'gurmukhi', 'kannada', 'malayalam', 'arabic', 'hebrew', 'thai'];
+    for (var i = 0; i < order.length; i++) {
+      var r = index.ranges[order[i]];
+      if (r && inRanges(rangesOf(r), cp)) return scriptOfSubset(order[i]);
+    }
+    return null;
+  }
+  function hanScript(text) {
+    var s = String(text || '');
+    if (/[぀-ヿ]/.test(s)) return 'japanese';
+    if (/[가-힯]/.test(s)) return 'korean';
+    var lang = String((document.documentElement.lang || '') + ' ' + (navigator.language || '')).toLowerCase();
+    if (/\bja/.test(lang)) return 'japanese';
+    if (/\bko/.test(lang)) return 'korean';
+    if (/zh-(tw|hk|mo|hant)/.test(lang)) return 'chinese-traditional';
+    return 'chinese-simplified';
+  }
+  /* Scripts in `text` that `family` cannot draw: { script: [codepoints] } */
+  function missing(family, text) {
+    var m = find(family);
+    var out = {};
+    if (!m || !index) return out;
+    var subs = subsetsOf(m);
+    var lists = m.source === 'localeditor' ? null : subs.map(function (s) { return rangesOf(rangeFor(m, s)); });
+    codepoints(text).forEach(function (cp) {
+      if (cp < 0x80) return;
+      if (lists) { for (var i = 0; i < lists.length; i++) if (inRanges(lists[i], cp)) return; }
+      else if (cp < 0x250) return;
+      if (m.cjk && cjkScript(cp)) return;
+      var sc = scriptOfCp(cp);
+      if (!sc) return;
+      if (sc === 'han') sc = hanScript(text);
+      (out[sc] = out[sc] || []).push(cp);
+    });
+    return out;
+  }
+  function fallbackFamily(script, style) {
+    var list = FALLBACK[script];
+    if (!list) return null;
+    return (style === 'serif' && list[1]) ? list[1] : list[0];
+  }
+  /* Load what `text` needs in `family`, and a library family for any script it lacks.
+     Resolves { family, fallbacks: [{ script, family, available }] }; css(family) then lists the fallbacks. */
+  function prepare(family, text, opts) {
+    opts = opts || {};
+    return ready().then(function () {
+      var m = find(family);
+      if (!m) return { family: family, fallbacks: [] };
+      var mainJob = load(m.family, { weights: [opts.weight || 400], italic: !!opts.italic, text: text }).catch(function () {});
+      var miss = missing(m.family, text);
+      var jobs = Object.keys(miss).map(function (sc) {
+        var fb = fallbackFamily(sc, m.style);
+        if (!fb || fb === m.family) return Promise.resolve(null);
+        var chars = miss[sc].map(function (cp) { return String.fromCodePoint(cp); }).join('') + ' ';
+        return load(fb, { weights: [opts.weight || 400], italic: !!opts.italic, text: chars }).then(function () {
+          var list = fallbacks[m.family] || (fallbacks[m.family] = []);
+          if (list.indexOf(fb) < 0) list.push(fb);
+          return { script: sc, family: fb, available: true };
+        }, function (err) {
+          return { script: sc, family: fb, available: false, reason: err && err.code };
+        });
+      });
+      return Promise.all([mainJob].concat(jobs)).then(function (r) {
+        return { family: m.family, fallbacks: r.slice(1).filter(Boolean) };
+      });
+    });
   }
 
+  /* ---------- CSS ---------- */
+  function generic(style) {
+    if (style === 'serif') return 'serif';
+    if (style === 'handwriting') return 'cursive';
+    if (style === 'mono') return 'monospace';
+    return 'sans-serif';
+  }
+  function quote(n) { return '"' + String(n).replace(/"/g, '') + '"'; }
+  function css(family) {
+    var key = String(family || '').toLowerCase();
+    var c = byName[key];
+    var m = meta[key];
+    if (!c && !m) {
+      if (!family) return 'sans-serif';
+      if (String(family).indexOf(',') >= 0 || String(family).charAt(0) === '"') return String(family);
+      return quote(family) + ', sans-serif';
+    }
+    var name = (m || c).family;
+    var stack = [quote(name)];
+    (fallbacks[name] || []).forEach(function (f) { stack.push(quote(f)); });
+    stack.push(generic((m || c).style));
+    return stack.join(', ');
+  }
+
+  /* ---------- Listing ---------- */
+  function entry(c) {
+    var m = meta[c.family.toLowerCase()];
+    var o = { family: c.family, category: c.style, style: c.style, weights: c.weights.slice(), italic: !!c.italic, preview: 'Aa', variable: !!c.variable, cjk: !!c.cjk };
+    if (m) {
+      o.slug = m.slug; o.kind = m.kind; o.feel = m.feel.slice(); o.scripts = m.scripts.slice(); o.rank = m.rank; o.bytes = m.bytes;
+      o.license = m.license; o.source = m.source || 'google'; if (m.wght) o.wght = m.wght.slice();
+    }
+    return o;
+  }
+  function collectionIds(m) {
+    var ids = ['style-' + m.style];
+    (m.feel || []).forEach(function (f) { ids.push('feel-' + f); });
+    (m.scripts || []).forEach(function (s) { ids.push('script-' + s); });
+    if (ESSENTIALS.indexOf(m.family) >= 0) ids.push('essentials');
+    if (m.source === 'localeditor') ids.push('originals');
+    return ids;
+  }
+  /* list(filter): every family, or those matching { style, feel, script, collection, q, source }.
+     Feel, script and collection filters need the index: call LE.fonts.ready() first. */
+  function list(filter) {
+    var out = core.map(entry);
+    if (index) {
+      out.sort(function (a, b) { return (a.rank || 9999) - (b.rank || 9999); });
+    }
+    if (!filter) return out;
+    var q = String(filter.q || '').trim().toLowerCase();
+    var favs = filter.favourites ? favourites() : null;
+    var recents = filter.recent ? recent() : null;
+    return out.filter(function (f) {
+      if (filter.style && f.style !== filter.style) return false;
+      if (filter.feel && (!f.feel || f.feel.indexOf(filter.feel) < 0)) return false;
+      if (filter.script && (!f.scripts || f.scripts.indexOf(filter.script) < 0)) return false;
+      if (filter.source && f.source !== filter.source) return false;
+      if (filter.collection) { var m = find(f.family); if (!m || collectionIds(m).indexOf(filter.collection) < 0) return false; }
+      if (favs && favs.indexOf(f.family) < 0) return false;
+      if (recents && recents.indexOf(f.family) < 0) return false;
+      if (filter.families && filter.families.indexOf(f.family) < 0) return false;
+      if (q) {
+        var hay = (f.family + ' ' + (f.kind || '') + ' ' + (STYLE_LABEL[f.style] || '') + ' ' + (f.feel || []).map(function (x) { return FEEL[x]; }).join(' ') + ' ' + (f.scripts || []).map(function (s) { return SCRIPT_LABEL[s] || s; }).join(' ')).toLowerCase();
+        var words = q.split(/\s+/);
+        for (var i = 0; i < words.length; i++) if (hay.indexOf(words[i]) < 0) return false;
+      }
+      return true;
+    });
+  }
+  function search(q) {
+    var res = list({ q: q });
+    var ql = String(q || '').trim().toLowerCase();
+    res.sort(function (a, b) {
+      var sa = a.family.toLowerCase().indexOf(ql) === 0 ? 0 : a.family.toLowerCase().indexOf(ql) >= 0 ? 1 : 2;
+      var sb = b.family.toLowerCase().indexOf(ql) === 0 ? 0 : b.family.toLowerCase().indexOf(ql) >= 0 ? 1 : 2;
+      return sa - sb || (a.rank || 9999) - (b.rank || 9999);
+    });
+    return res;
+  }
+  function collections() {
+    if (!index) return [];
+    var out = [];
+    function add(id, name, fams) {
+      if (!fams.length) return;
+      out.push({ id: id, name: name, families: fams.map(function (f) { return f.family; }), bytes: fams.reduce(function (a, f) { return a + (f.bytes || 0); }, 0) });
+    }
+    var fams = index.families.filter(function (f) { return !f.cjk; });
+    add('essentials', 'Essentials', ESSENTIALS.map(find).filter(Boolean));
+    add('originals', 'LocalEditor originals', index.families.filter(function (f) { return f.source === 'localeditor'; }));
+    Object.keys(STYLE_LABEL).forEach(function (s) { add('style-' + s, STYLE_LABEL[s], fams.filter(function (f) { return f.style === s; })); });
+    Object.keys(FEEL).forEach(function (k) { add('feel-' + k, FEEL[k], fams.filter(function (f) { return f.feel.indexOf(k) >= 0; })); });
+    Object.keys(SCRIPT_LABEL).forEach(function (s) { add('script-' + s, SCRIPT_LABEL[s], index.families.filter(function (f) { return f.scripts.indexOf(s) >= 0 && (s !== 'latin' || !f.cjk); })); });
+    return out;
+  }
+  function recent() { return lsGet('le-studio-fonts', []).filter(function (f) { return byName[String(f).toLowerCase()]; }); }
+  function favourites() { return lsGet('le-fonts-favourites', []); }
+  function setFavourite(family, on) {
+    var f = favourites().filter(function (x) { return x !== family; });
+    if (on) f.unshift(family);
+    lsSet('le-fonts-favourites', f);
+    emit('favourites', { family: family, on: !!on });
+    return f;
+  }
+  function pairs(family) {
+    var m = find(family);
+    if (!m || !index) return [];
+    var out = [];
+    (index.pairs || []).forEach(function (p) {
+      if (p[0] === m.family && out.indexOf(p[1]) < 0) out.push(p[1]);
+      if (p[1] === m.family && out.indexOf(p[0]) < 0) out.push(p[0]);
+    });
+    if (out.length < 3) {
+      /* Contrast the style, share a feel, prefer popular text families. */
+      var want = m.style === 'serif' || m.style === 'display' || m.style === 'handwriting' ? 'sans' : 'serif';
+      index.families.filter(function (f) { return f.style === want && !f.cjk && f.scripts[0] === m.scripts[0] && f.feel.some(function (x) { return m.feel.indexOf(x) >= 0; }); })
+        .slice(0, 6).forEach(function (f) { if (out.length < 3 && out.indexOf(f.family) < 0 && f.family !== m.family) out.push(f.family); });
+    }
+    return out.slice(0, 4);
+  }
+
+  /* ---------- Previews ---------- */
+  var packs = {};
+  var previewDone = {};
+  function previewName(family) { var m = find(family); return m ? 'LEP ' + m.slug : null; }
+  function pack(i) {
+    if (!packs[i]) packs[i] = fetchBytes('assets/fonts/previews/' + index.previews[i]).catch(function (e) { delete packs[i]; throw e; });
+    return packs[i];
+  }
+  /* preview(family): loads the tiny name-only subset; resolves the CSS font-family to use for the name. */
+  function preview(family) {
+    return ready().then(function () {
+      var m = find(family);
+      if (!m || !m.preview) throw new Error('No preview for ' + family);
+      var name = 'LEP ' + m.slug;
+      if (previewDone[name]) return previewDone[name];
+      previewDone[name] = Promise.all(m.preview.map(function (p) {
+        return pack(p[0]).then(function (buf) {
+          return addFace(name, buf.slice(p[1], p[1] + p[2]), '400', false, p[3]);
+        });
+      })).then(function () { return quote(name); }, function (e) { delete previewDone[name]; throw e; });
+      return previewDone[name];
+    });
+  }
+  /* Kept for older callers: makes the real family usable for Latin at 400. */
+  function ensurePreview(family) { return load(family, { weights: [400], scripts: ['latin'] }); }
+  function previewCSS() { return ''; }
+
+  /* ---------- PDF: the source-format step in front of le-pdf.js embedFont() ---------- */
+  var scriptsP = {};
+  function loadScript(rel, test) {
+    if (test()) return Promise.resolve();
+    if (scriptsP[rel]) return scriptsP[rel];
+    scriptsP[rel] = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = asset(rel);
+      s.onload = function () { resolve(); };
+      s.onerror = function () { delete scriptsP[rel]; reject(new Error('Could not load ' + rel)); };
+      document.head.appendChild(s);
+    });
+    return scriptsP[rel];
+  }
+  function pdfTools() {
+    return Promise.all([
+      loadScript('assets/vendor/fontkit.umd.min.js', function () { return !!window.fontkit; }),
+      loadScript('assets/vendor/woff2-decompress.js', function () { return !!window.LEWoff2Decompress; }),
+      loadScript('assets/js/le-fonts-sfnt.js', function () { return !!window.LEFontSfnt; })
+    ]);
+  }
+  var sfntCache = {};
+  /* bytes(family, weight, italic[, text]) -> TrueType bytes pdf-lib can embed.
+     Decodes the face's woff2 slices, instances a variable font at `weight`, merges the slices (main script first).
+     With `text`, only the slices that text needs are fetched. */
+  function bytes(family, weight, italic, text) {
+    weight = Number(weight) || 400;
+    return ready().then(function () {
+      var m = find(family);
+      if (!m) throw new Error('Unknown font ' + family);
+      var pre = m.cjk ? Promise.all([cjk(), cjkAvailable()]).then(function (r) { if (r[1].indexOf(m.slug) < 0) throw new Error(m.family + ' is not available on this copy'); }) : Promise.resolve();
+      return pre.then(function () {
+        var f = faceFor(m, weight, !!italic);
+        var subs = text ? pickSubsets(m, { text: text }) : (m.cjk ? [] : subsetsOf(m));
+        if (m.cjk && !subs.length) throw new Error('Pass the text to embed a Chinese, Japanese or Korean font');
+        var primary = (m.scripts || ['latin'])[0];
+        subs = subs.filter(function (s) { return !(m.missing && m.missing[f.key] && m.missing[f.key].indexOf(s) >= 0); });
+        subs.sort(function (a, b) {
+          var pa = scriptOfSubset(a) === primary ? (a === 'latin-ext' ? 1 : 0) : 2, pb = scriptOfSubset(b) === primary ? (b === 'latin-ext' ? 1 : 0) : 2;
+          return pa - pb;
+        });
+        var key = m.slug + '|' + f.key + '|' + (m.wght ? weight : '') + '|' + subs.join(',');
+        if (sfntCache[key]) return sfntCache[key];
+        sfntCache[key] = pdfTools().then(function () {
+          return Promise.all(subs.map(function (s) { return fetchBytes(fileFor(m, s, f.key)).then(window.LEFontSfnt.decode); }));
+        }).then(function (ttfs) {
+          return window.LEFontSfnt.build(ttfs, { wght: m.wght ? weight : null });
+        }).catch(function (err) {
+          delete sfntCache[key];
+          /* The original 44 families still ship one WOFF per face; use it if the woff2 path fails. */
+          var legacy = m.woff && (m.woff[f.key] || m.woff[String(nearestLegacy(m.woff, weight, italic))]);
+          if (legacy) return fetchBytes('assets/fonts/library/' + m.slug + '/' + legacy).then(function (b) { return new Uint8Array(b); });
+          throw err;
+        });
+        return sfntCache[key];
+      });
+    });
+  }
+  function nearestLegacy(woff, weight, italic) {
+    var keys = Object.keys(woff).filter(function (k) { return /i$/.test(k) === !!italic; });
+    if (!keys.length) keys = Object.keys(woff);
+    return keys.reduce(function (a, k) { return Math.abs(parseInt(k, 10) - weight) < Math.abs(parseInt(a, 10) - weight) ? k : a; }, keys[0]);
+  }
+
+  /* ---------- Save for offline ---------- */
+  function targetFamilies(target) {
+    if (Array.isArray(target)) return target.map(find).filter(Boolean);
+    if (target === 'all') return index.families.filter(function (f) { return !f.cjk; });
+    var m = find(target);
+    if (m) return [m];
+    var col = collections().filter(function (c) { return c.id === target; })[0];
+    return col ? col.families.map(find).filter(Boolean) : [];
+  }
+  /* Bytes a save would download (already saved files are not counted twice by saveOffline, but are here). */
+  function sizeOf(target) {
+    return ready().then(function () { return targetFamilies(target).reduce(function (a, m) { return a + (m.bytes || 0); }, 0); });
+  }
+  function saveOffline(target, onProgress) {
+    return ready().then(function () {
+      var fams = targetFamilies(target);
+      var pre = fams.some(function (m) { return m.cjk; }) ? Promise.all([cjk(), cjkAvailable()]).then(function (r) { return r[1]; }) : Promise.resolve([]);
+      return pre.then(function (ok) {
+        {
+          fams = fams.filter(function (m) { return !m.cjk || (ok || []).indexOf(m.slug) >= 0; });
+          var jobs = [];
+          fams.forEach(function (m) { filesOf(m).forEach(function (rel) { jobs.push({ m: m, rel: rel }); }); });
+          var total = jobs.length, done = 0, got = 0;
+          var totalBytes = fams.reduce(function (a, m) { return a + (m.bytes || 0); }, 0);
+          /* Total bytes up front; already saved files are skipped, so an interrupted save resumes where it stopped. */
+          var D = window.LE && window.LE.downloads;
+          var chip = D && D.track ? D.track('fonts-' + (typeof target === 'string' ? target : 'set'), { name: fams.length === 1 ? fams[0].family : fams.length + ' fonts', bytes: totalBytes }) : null;
+          if (onProgress) onProgress({ loaded: 0, total: total, bytes: 0, totalBytes: totalBytes, family: null });
+          return caches.open(SAVED).then(function (saved) {
+            return caches.open(CACHE).then(function (lib) {
+              function one(job) {
+                var href = abs(job.rel);
+                return saved.match(href).then(function (hit) {
+                  if (hit) return hit.headers.get('x-le-bytes') ? Number(hit.headers.get('x-le-bytes')) : 0;
+                  return lib.match(href, { ignoreSearch: true }).then(function (cached) {
+                    return cached || fetch(href).then(function (res) { if (!res.ok) throw new Error('Font file failed (' + res.status + ')'); return res; });
+                  }).then(function (res) { return res.blob(); }).then(function (blob) {
+                    var h = new Headers({ 'content-type': 'font/woff2', 'x-le-bytes': String(blob.size), 'x-le-at': String(Date.now()), 'x-le-family': job.m.family, 'x-le-why': 'saved' });
+                    return saved.put(href, new Response(blob, { headers: h })).then(function () { return lib.delete(href, { ignoreSearch: true }); }).then(function () { return blob.size; });
+                  });
+                }).then(function (n) {
+                  done++; got += n || 0;
+                  if (chip && chip.progress) chip.progress(got);
+                  if (onProgress) onProgress({ loaded: done, total: total, bytes: got, totalBytes: totalBytes, family: job.m.family });
+                });
+              }
+              var queue = jobs.slice();
+              function lane() { var j = queue.shift(); return j ? one(j).then(lane) : Promise.resolve(); }
+              var lanes = [];
+              for (var i = 0; i < 4; i++) lanes.push(lane());
+              /* The index and its previews too, so the picker works offline without a service worker copy. */
+              var extra = fetch(abs(INDEX_URL)).then(function (r) { return r.ok ? saved.put(abs(INDEX_URL), r) : null; }).catch(function () {});
+              return Promise.all(lanes.concat([extra]));
+            });
+          }).then(function () {
+            if (chip && chip.done) chip.done();
+            emit('saved', { families: fams.map(function (m) { return m.family; }) });
+            return { families: fams.map(function (m) { return m.family; }), files: total, bytes: got };
+          }, function (err) { if (chip && chip.fail) chip.fail(err); throw err; });
+        }
+      });
+    });
+  }
+  /* Keeps the slices this session loaded for `families` in the saved cache (x-le-why: design), so a saved design
+     works offline without the person doing anything. Only what the design's text needed, not whole families. */
+  function keep(families) {
+    if (!window.caches || !index) return Promise.resolve(0);
+    var want = {};
+    (families || []).forEach(function (f) { var m = find(f); if (m) want[m.family] = m; });
+    var rels = [];
+    Object.keys(loaded).forEach(function (k) {
+      var p = k.split('|');
+      var m = want[p[0]];
+      if (m) rels.push({ m: m, rel: fileFor(m, p[2], p[1]) });
+    });
+    if (!rels.length) return Promise.resolve(0);
+    return caches.open(SAVED).then(function (saved) {
+      return caches.open(CACHE).then(function (lib) {
+        return Promise.all(rels.map(function (r) {
+          var href = abs(r.rel);
+          return saved.match(href).then(function (hit) {
+            if (hit) return 0;
+            return lib.match(href, { ignoreSearch: true }).then(function (c) { return c || fetch(href).then(function (res) { if (!res.ok) throw new Error(String(res.status)); return res; }); })
+              .then(function (res) { return res.blob(); }).then(function (blob) {
+                var h = new Headers({ 'content-type': 'font/woff2', 'x-le-bytes': String(blob.size), 'x-le-at': String(Date.now()), 'x-le-family': r.m.family, 'x-le-why': 'design' });
+                return saved.put(href, new Response(blob, { headers: h })).then(function () { return lib.delete(href, { ignoreSearch: true }); }).then(function () { return 1; });
+              });
+          }).catch(function () { return 0; });
+        }));
+      });
+    }).then(function (r) {
+      var n = r.reduce(function (a, b) { return a + b; }, 0);
+      if (n) emit('kept', { families: Object.keys(want) });
+      return n;
+    });
+  }
+  function removeOffline(target) {
+    return ready().then(function () {
+      var fams = targetFamilies(target);
+      var hrefs = {};
+      fams.forEach(function (m) { filesOf(m).forEach(function (rel) { hrefs[abs(rel)] = 1; }); });
+      return Promise.all([SAVED, CACHE].map(function (name) {
+        return caches.open(name).then(function (c) {
+          return c.keys().then(function (keys) {
+            return Promise.all(keys.filter(function (k) { return hrefs[k.url.split('?')[0]]; }).map(function (k) { return c.delete(k); }));
+          });
+        });
+      })).then(function (r) {
+        var n = r[0].length + r[1].length;
+        emit('removed', { families: fams.map(function (m) { return m.family; }) });
+        return n;
+      });
+    });
+  }
+  function slugFromUrl(u) { var m = /\/assets\/fonts\/(?:library|cjk|originals)\/([\w-]+)\//.exec(u); return m ? m[1] : null; }
+  function entriesOf(name) {
+    if (!window.caches) return Promise.resolve([]);
+    return caches.open(name).then(function (c) {
+      return c.keys().then(function (keys) {
+        return Promise.all(keys.map(function (k) {
+          return c.match(k).then(function (r) {
+            var n = r ? Number(r.headers.get('x-le-bytes')) || Number(r.headers.get('content-length')) : 0;
+            if (n || !r) return { url: k.url, bytes: n };
+            return r.blob().then(function (b) { return { url: k.url, bytes: b.size }; });
+          });
+        }));
+      });
+    }).catch(function () { return []; });
+  }
+  /* usage(): per family, bytes saved for offline and bytes cached because they were used. */
+  function usage() {
+    return Promise.all([entriesOf(SAVED), entriesOf(CACHE), ready().catch(function () { return null; })]).then(function (r) {
+      var fams = {};
+      function add(list, field) {
+        list.forEach(function (x) {
+          var slug = slugFromUrl(x.url);
+          if (!slug) return;
+          var m = meta[slug];
+          var o = fams[slug] || (fams[slug] = { slug: slug, family: m ? m.family : slug, saved: 0, cached: 0, files: 0, total: m ? m.bytes : 0 });
+          o[field] += x.bytes;
+          o.files++;
+        });
+      }
+      add(r[0], 'saved');
+      add(r[1], 'cached');
+      return Object.keys(fams).map(function (k) {
+        var o = fams[k];
+        o.bytes = o.saved + o.cached;
+        o.offline = o.total > 0 && o.saved >= o.total;
+        return o;
+      }).sort(function (a, b) { return b.bytes - a.bytes; });
+    });
+  }
   function isOffline(family) {
-    var meta = find(family);
-    if (!meta || !window.caches) return Promise.resolve(false);
-    var files = fileList(meta);
-    if (!files.length) return Promise.resolve(false);
-    return caches.open(CACHE).then(function (cache) {
-      return Promise.all(files.map(function (rel) { return cache.match(abs(rel)); }));
-    }).then(function (hits) {
-      return hits.every(function (hit) { return !!hit; });
+    var m0 = find(family);
+    var go = m0 ? Promise.resolve() : ready();
+    return go.then(function () {
+      var m = find(family);
+      if (!m || !window.caches) return false;
+      var files = filesOf(m);
+      if (!files.length) return false;
+      return caches.open(SAVED).then(function (c) {
+        return Promise.all(files.map(function (rel) { return c.match(abs(rel)); }));
+      }).then(function (hits) { return hits.every(Boolean); });
     }).catch(function () { return false; });
   }
-
-  function saveAllOffline(onProgress) {
-    var files = [];
-    MANIFEST.forEach(function (meta) {
-      fileList(meta).forEach(function (rel) { files.push(rel); });
-    });
-    var total = files.length;
-    var done = 0;
-    function step() {
-      if (!files.length) return Promise.resolve();
-      var rel = files.shift();
-      var href = abs(rel);
-      return fetch(href).then(function (res) {
-        if (!res.ok) throw new Error('Font file failed (' + res.status + ')');
-        return caches.open(CACHE).then(function (cache) {
-          return cache.put(href, res);
-        });
-      }).then(function () {
-        done++;
-        if (onProgress) onProgress({ loaded: done, total: total, file: rel });
-        return step();
-      });
-    }
-    var lanes = [];
-    for (var i = 0; i < 4; i++) lanes.push(step());
-    return Promise.all(lanes).then(function () {});
+  function saveAllOffline(onProgress) { return saveOffline('all', onProgress); }
+  function details(family) {
+    return fetchJSON('assets/data/fonts-details.json').then(function (d) { var m = find(family); return m ? d[m.slug] || null : null; });
   }
+  function on(fn) { listeners.push(fn); return function () { listeners = listeners.filter(function (x) { return x !== fn; }); }; }
+
+  (window.LE_SUPPORT_DEFS = window.LE_SUPPORT_DEFS || []).push({ id: 'fonts.library', name: 'Font library', needs: ['fetch', 'font-loading'], wants: ['cache-storage'] });
 
   var LE = window.LE = window.LE || {};
   LE.fonts = {
-    list: list,
-    load: load,
-    isOffline: isOffline,
-    saveAllOffline: saveAllOffline,
-    css: css,
-    bytes: bytes,
-    previewCSS: previewCSS,
-    ensurePreview: ensurePreview
+    /* existing API */
+    list: list, load: load, isOffline: isOffline, saveAllOffline: saveAllOffline, css: css, bytes: bytes, previewCSS: previewCSS, ensurePreview: ensurePreview,
+    /* library */
+    ready: ready, find: function (f) { var m = find(f); return m ? entry(byName[m.family.toLowerCase()] || m) : (byName[String(f || '').toLowerCase()] ? entry(byName[String(f).toLowerCase()]) : null); },
+    search: search, collections: collections, recent: recent, favourites: favourites, setFavourite: setFavourite, pairs: pairs, details: details,
+    preview: preview, previewName: previewName, sizeOf: sizeOf, saveOffline: saveOffline, keep: keep, removeOffline: removeOffline, usage: usage,
+    missing: missing, prepare: prepare, fallbackFor: fallbackFamily, fallbacks: function (f) { return (fallbacks[f] || []).slice(); },
+    cjkAvailable: cjkAvailable, touch: touch, on: on, fmt: fmt,
+    labels: { style: STYLE_LABEL, feel: FEEL, script: SCRIPT_LABEL },
+    caches: { used: CACHE, saved: SAVED },
+    _files: function (f) { var m = find(f); return m ? filesOf(m) : []; }
   };
 })();

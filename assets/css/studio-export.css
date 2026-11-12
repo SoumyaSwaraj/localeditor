@@ -15,7 +15,7 @@
 }
 .sxe-act { min-height: 48px; justify-content: center; font-weight: 720; }
 .sxe-act .sx-ic { width: 18px; height: 18px; }
-.sxe-act.btn-gold, .sxe-act.btn-gold span { color: var(--gold-ink, #2A1F0A); }
+.sxe-act.btn-gold, .sxe-act.btn-gold span { color: var(--gold-ink); }
 .sxe-act.is-unsupported { opacity: 0.62; }
 .sxe-actions + * { margin-top: 0 !important; }
 
@@ -142,7 +142,7 @@
 .sxe-make { width: 100%; min-height: 48px; justify-content: center; margin-top: 16px !important; }
 .sxe-make .sx-ic { fill: currentColor; }
 .sxe-replay-out:empty { display: none; }
-.sxe-video { display: block; width: 100%; max-height: 52vh; object-fit: contain; border-radius: var(--r-sm, 10px); background: var(--side, #141318); }
+.sxe-video { display: block; width: 100%; max-height: 52vh; object-fit: contain; border-radius: var(--r-sm, 10px); background: var(--side, #141414); }
 
 /* Support explanation dialog. */
 .sxe-gate p { margin: 0 0 10px; line-height: 1.5; }

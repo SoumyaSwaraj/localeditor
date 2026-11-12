@@ -10,7 +10,7 @@
 .sxc-ask { margin: 0 0 12px; }
 .sxc-ask h3 { margin: 0 0 6px; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
 .sxc-ask-p { margin: 0 0 12px; font-size: 13.5px; line-height: 1.5; color: var(--muted); text-wrap: pretty; min-height: 3em; }
-.sxc-ask .btn-gold, .sxc-tk-go .btn-gold { color: var(--gold-ink, #2A1F0A); }
+.sxc-ask .btn-gold, .sxc-tk-go .btn-gold { color: var(--gold-ink); }
 .sxc-other { margin: 4px 0 0; border-top: 1px solid var(--line); }
 .sxc-other > summary, .sxc-about > summary {
   display: flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; list-style: none;

@@ -4,8 +4,8 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--bg, #EEEBF3);
-  color: var(--ink, #17131F);
+  background: var(--stage, var(--bg, #EDEDED));
+  color: var(--ink, #151515);
   font-family: var(--font, "Plus Jakarta Sans", sans-serif);
   touch-action: none;
   user-select: none;
@@ -13,7 +13,7 @@
   outline: none;
 }
 .le-scene:focus-visible {
-  outline: 2px solid var(--amethyst, #7457F0);
+  outline: 2px solid var(--amethyst, var(--primary));
   outline-offset: -2px;
 }
 .le-scene .le-view {
@@ -49,7 +49,7 @@
 }
 .le-hover {
   display: none;
-  border: 1.5px solid #7457F0;
+  border: 1.5px solid var(--primary);
   z-index: 2;
 }
 @media (pointer: fine) {
@@ -57,21 +57,21 @@
 }
 .le-sel {
   display: none;
-  border: 1.5px solid var(--amethyst, #7457F0);
+  border: 1.5px solid var(--amethyst, var(--primary));
   z-index: 3;
 }
 .le-sel.is-on { display: block; }
 .le-crop {
   display: none;
   border: 1.5px solid #fff;
-  box-shadow: 0 0 0 9999px rgba(17, 15, 23, 0.5);
+  box-shadow: 0 0 0 9999px rgba(16, 16, 16, 0.5);
   z-index: 4;
 }
 .le-crop.is-on { display: block; }
 .le-marquee {
   display: none;
-  border: 1px solid var(--amethyst, #7457F0);
-  background: rgba(116, 87, 240, 0.14);
+  border: 1px solid var(--amethyst, var(--primary));
+  background: rgba(63, 103, 217, 0.14);
   z-index: 3;
 }
 .le-marquee.is-on { display: block; }
@@ -101,9 +101,9 @@
   box-sizing: border-box;
   transform: translate(-50%, -50%);
   background: #fff;
-  border: 1.5px solid #E2B15A;
+  border: 1.5px solid var(--primary);
   border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(23, 19, 31, 0.28);
+  box-shadow: 0 1px 3px rgba(21, 21, 21, 0.28);
   pointer-events: none;
 }
 .le-h[data-h="n"]::after, .le-h[data-h="s"]::after { width: 24px; height: 8px; }
@@ -114,7 +114,7 @@
     height: 12px;
     margin: -6px 0 0 -6px;
     background: #fff;
-    border: 1.5px solid #E2B15A;
+    border: 1.5px solid var(--primary);
     border-radius: 2px;
   }
   .le-h::after { content: none; }
@@ -192,11 +192,11 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  border: 1px dashed var(--amethyst, #7457F0);
+  border: 1px dashed var(--amethyst, var(--primary));
   border-radius: 2px;
   background: transparent;
-  color: var(--ink, #17131F);
-  caret-color: var(--ink, #17131F);
+  color: var(--ink, #151515);
+  caret-color: var(--ink, #151515);
   resize: none;
   overflow: hidden;
   white-space: pre-wrap;
