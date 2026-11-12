@@ -101,6 +101,7 @@
     var on = modeOn();
     EL.bar.hidden = !on;
     document.documentElement.classList.toggle('sxa-on', on);
+    if (on && window.LEStudio && typeof LEStudio.coach === 'function') LEStudio.coach('hide');   /* no first-run marks over agent mode */
     if (!on) { EL.bar.innerHTML = ''; reserve(); return; }
     var queued = a.queue.length + (a.running ? 1 : 0);
     var who, sub, tone = '';

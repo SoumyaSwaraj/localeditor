@@ -2055,6 +2055,8 @@
   /* ctx.coach(i) shows mark i if it is the next one due; ctx.coach('off') turns guidance off for good. */
   function coachMark(i) {
     if (i === 'off') { lsSet(COACH_KEY, 'done'); hideCoach(); return; }
+    /* Never over agent mode (its banner and activity panel sit where the marks point); 'hide' clears one now. */
+    if (i === 'hide' || document.documentElement.classList.contains('sxa-on')) { clearTimeout(S.coachWait); if (S.coachEl) hideCoach(); return; }
     if (S.coachEl || coachStep() !== i || !COACH[i] || !S.project || S.editing) return;
     if (!E.toast.hidden) { clearTimeout(S.coachWait); S.coachWait = setTimeout(function () { coachMark(i); }, 2800); return; }
     var t = COACH[i].target();

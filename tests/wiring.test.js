@@ -126,4 +126,20 @@ cases['phone 360 px: the remover is icon-only, so Filters stays on the photo too
   h.assert.noErrors(page);
 };
 
+cases['first-run coach marks never show while agent mode is on'] = async ({ browser, base, h }) => {
+  const page = await h.newDesign(browser, base, 'desktop', 'Instagram post');
+  await page.waitForSelector('.sx-coach.is-on', { timeout: 8000 });
+  /* Agent mode turns on (?agent=1 → the person allows): the visible mark goes, and no later mark appears. */
+  await page.evaluate(() => { const done = LEAgent.begin({ name: 'Test agent', task: 'Coach check', wait: 4000 }); window.__begin = done; });
+  await page.waitForSelector('.sxa-ask [data-yes], .sxa-sheet [data-yes], [data-yes]', { timeout: 8000 });
+  await page.click('[data-yes]');
+  await page.evaluate(() => window.__begin);
+  await page.waitForFunction(() => document.documentElement.classList.contains('sxa-on'), null, { timeout: 8000 });
+  await page.waitForTimeout(300);
+  h.assert.equal(await page.locator('.sx-coach.is-on').count(), 0, 'the mark is hidden when agent mode turns on');
+  const shown = await page.evaluate(async () => { for (const i of [0, 1, 2]) window.LEStudio.coach(i); await new Promise((r) => setTimeout(r, 400)); return document.querySelectorAll('.sx-coach.is-on').length; });
+  h.assert.equal(shown, 0, 'no coach mark while agent mode is on');
+  h.assert.noErrors(page);
+};
+
 module.exports = cases;
