@@ -1,0 +1,888 @@
+{
+ "generated": "tools/typefoundry/build_all.py",
+ "source": "localeditor",
+ "collection": "LocalEditor originals",
+ "research": "docs/research/typeface-psychology.md",
+ "families": [
+  {
+   "family": "Loudline",
+   "slug": "loudline",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "attention",
+   "feel": [
+    "bold",
+    "urgent"
+   ],
+   "description": "Tall, heavy and narrow. Made to be seen from across the street.",
+   "uses": [
+    "Sale posters",
+    "Thumbnails",
+    "Event headlines"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/loudline/loudline-400.woff2",
+     "woff": "assets/fonts/originals/loudline/loudline-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/loudline/loudline-700.woff2",
+     "woff": "assets/fonts/originals/loudline/loudline-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 16684,
+     "woff": 21496
+    },
+    "700": {
+     "woff2": 17216,
+     "woff": 22172
+    }
+   }
+  },
+  {
+   "family": "Wideshout",
+   "slug": "wideshout",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "attention",
+   "feel": [
+    "bold",
+    "playful"
+   ],
+   "description": "Extra wide and loud. Best for one or two big words.",
+   "uses": [
+    "Banners",
+    "Logos",
+    "Short headlines"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/wideshout/wideshout-400.woff2",
+     "woff": "assets/fonts/originals/wideshout/wideshout-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/wideshout/wideshout-700.woff2",
+     "woff": "assets/fonts/originals/wideshout/wideshout-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 18440,
+     "woff": 23516
+    },
+    "700": {
+     "woff2": 18904,
+     "woff": 24012
+    }
+   }
+  },
+  {
+   "family": "Spotlit",
+   "slug": "spotlit",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "attention",
+   "feel": [
+    "elegant",
+    "bold"
+   ],
+   "description": "Dramatic thick-and-thin serif. Glamorous at big sizes.",
+   "uses": [
+    "Magazine covers",
+    "Beauty and fashion",
+    "Event posters"
+   ],
+   "category": "serif",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/spotlit/spotlit-400.woff2",
+     "woff": "assets/fonts/originals/spotlit/spotlit-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/spotlit/spotlit-700.woff2",
+     "woff": "assets/fonts/originals/spotlit/spotlit-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 18944,
+     "woff": 24112
+    },
+    "700": {
+     "woff2": 20016,
+     "woff": 25164
+    }
+   }
+  },
+  {
+   "family": "Headbrick",
+   "slug": "headbrick",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "attention",
+   "feel": [
+    "bold",
+    "nostalgic"
+   ],
+   "description": "Chunky slab serif. Loud, sturdy and a little retro.",
+   "uses": [
+    "Market signs",
+    "Price boards",
+    "Posters"
+   ],
+   "category": "serif",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/headbrick/headbrick-400.woff2",
+     "woff": "assets/fonts/originals/headbrick/headbrick-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/headbrick/headbrick-700.woff2",
+     "woff": "assets/fonts/originals/headbrick/headbrick-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 17508,
+     "woff": 22428
+    },
+    "700": {
+     "woff2": 17904,
+     "woff": 22824
+    }
+   }
+  },
+  {
+   "family": "Flarepoint",
+   "slug": "flarepoint",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "attention",
+   "feel": [
+    "bold",
+    "technical"
+   ],
+   "description": "Round, black and sharp-cut. Modern and punchy.",
+   "uses": [
+    "Social posts",
+    "App promos",
+    "Thumbnails"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/flarepoint/flarepoint-400.woff2",
+     "woff": "assets/fonts/originals/flarepoint/flarepoint-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/flarepoint/flarepoint-700.woff2",
+     "woff": "assets/fonts/originals/flarepoint/flarepoint-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 16756,
+     "woff": 21572
+    },
+    "700": {
+     "woff2": 17232,
+     "woff": 22060
+    }
+   }
+  },
+  {
+   "family": "Anchorline",
+   "slug": "anchorline",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "trust",
+   "feel": [
+    "trust",
+    "calm"
+   ],
+   "description": "Clear, open and steady. Easy to read in long lines.",
+   "uses": [
+    "Menus",
+    "Leaflets",
+    "Captions and body text"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/anchorline/anchorline-400.woff2",
+     "woff": "assets/fonts/originals/anchorline/anchorline-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/anchorline/anchorline-700.woff2",
+     "woff": "assets/fonts/originals/anchorline/anchorline-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 16716,
+     "woff": 21288
+    },
+    "700": {
+     "woff2": 17216,
+     "woff": 21928
+    }
+   }
+  },
+  {
+   "family": "Northwall",
+   "slug": "northwall",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "trust",
+   "feel": [
+    "trust",
+    "nostalgic"
+   ],
+   "description": "Solid, dependable serif. Feels established.",
+   "uses": [
+    "Certificates",
+    "Notices",
+    "Reports"
+   ],
+   "category": "serif",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/northwall/northwall-400.woff2",
+     "woff": "assets/fonts/originals/northwall/northwall-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/northwall/northwall-700.woff2",
+     "woff": "assets/fonts/originals/northwall/northwall-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 18676,
+     "woff": 23836
+    },
+    "700": {
+     "woff2": 19376,
+     "woff": 24688
+    }
+   }
+  },
+  {
+   "family": "Plainfield",
+   "slug": "plainfield",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "trust",
+   "feel": [
+    "calm",
+    "trust"
+   ],
+   "description": "Calm and wide. Good for prices and menus.",
+   "uses": [
+    "Price lists",
+    "Menus",
+    "Business cards"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/plainfield/plainfield-400.woff2",
+     "woff": "assets/fonts/originals/plainfield/plainfield-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/plainfield/plainfield-700.woff2",
+     "woff": "assets/fonts/originals/plainfield/plainfield-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 16628,
+     "woff": 21268
+    },
+    "700": {
+     "woff2": 16960,
+     "woff": 21756
+    }
+   }
+  },
+  {
+   "family": "Clearwell",
+   "slug": "clearwell",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "trust",
+   "feel": [
+    "friendly",
+    "trust"
+   ],
+   "description": "Soft-edged and very legible. Friendly without being silly.",
+   "uses": [
+    "Health and care",
+    "School notices",
+    "Signs"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/clearwell/clearwell-400.woff2",
+     "woff": "assets/fonts/originals/clearwell/clearwell-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/clearwell/clearwell-700.woff2",
+     "woff": "assets/fonts/originals/clearwell/clearwell-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 19072,
+     "woff": 23852
+    },
+    "700": {
+     "woff2": 19364,
+     "woff": 24344
+    }
+   }
+  },
+  {
+   "family": "Hearthbook",
+   "slug": "hearthbook",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "trust",
+   "feel": [
+    "elegant",
+    "trust"
+   ],
+   "description": "Classic bookish serif. Warm, literate and credible.",
+   "uses": [
+    "Invitations",
+    "Quotes",
+    "Long reads"
+   ],
+   "category": "serif",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/hearthbook/hearthbook-400.woff2",
+     "woff": "assets/fonts/originals/hearthbook/hearthbook-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/hearthbook/hearthbook-700.woff2",
+     "woff": "assets/fonts/originals/hearthbook/hearthbook-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 19704,
+     "woff": 25108
+    },
+    "700": {
+     "woff2": 20248,
+     "woff": 25728
+    }
+   }
+  },
+  {
+   "family": "Sunbun",
+   "slug": "sunbun",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "positive",
+   "feel": [
+    "friendly",
+    "playful"
+   ],
+   "description": "Round and sunny. Cheerful without shouting.",
+   "uses": [
+    "Kids and family",
+    "Cafes",
+    "Birthday cards"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/sunbun/sunbun-400.woff2",
+     "woff": "assets/fonts/originals/sunbun/sunbun-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/sunbun/sunbun-700.woff2",
+     "woff": "assets/fonts/originals/sunbun/sunbun-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 18620,
+     "woff": 23512
+    },
+    "700": {
+     "woff2": 19084,
+     "woff": 24132
+    }
+   }
+  },
+  {
+   "family": "Doodlebee",
+   "slug": "doodlebee",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "positive",
+   "feel": [
+    "playful",
+    "friendly"
+   ],
+   "description": "Hand-drawn and bouncy. Like a note from a friend.",
+   "uses": [
+    "Greeting cards",
+    "Stickers",
+    "Casual posts"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/doodlebee/doodlebee-400.woff2",
+     "woff": "assets/fonts/originals/doodlebee/doodlebee-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/doodlebee/doodlebee-700.woff2",
+     "woff": "assets/fonts/originals/doodlebee/doodlebee-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 27776,
+     "woff": 33564
+    },
+    "700": {
+     "woff2": 27916,
+     "woff": 33712
+    }
+   }
+  },
+  {
+   "family": "Butterleaf",
+   "slug": "butterleaf",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "positive",
+   "feel": [
+    "friendly",
+    "nostalgic"
+   ],
+   "description": "Soft, warm serif with round ends. Cosy and inviting.",
+   "uses": [
+    "Bakeries",
+    "Recipes",
+    "Wedding stationery"
+   ],
+   "category": "serif",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/butterleaf/butterleaf-400.woff2",
+     "woff": "assets/fonts/originals/butterleaf/butterleaf-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/butterleaf/butterleaf-700.woff2",
+     "woff": "assets/fonts/originals/butterleaf/butterleaf-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 24864,
+     "woff": 30924
+    },
+    "700": {
+     "woff2": 25604,
+     "woff": 31700
+    }
+   }
+  },
+  {
+   "family": "Puffpop",
+   "slug": "puffpop",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "positive",
+   "feel": [
+    "playful",
+    "bold"
+   ],
+   "description": "Puffy and fun. Big, round and happy.",
+   "uses": [
+    "Party invites",
+    "Toy and sweet shops",
+    "Stickers"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/puffpop/puffpop-400.woff2",
+     "woff": "assets/fonts/originals/puffpop/puffpop-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/puffpop/puffpop-700.woff2",
+     "woff": "assets/fonts/originals/puffpop/puffpop-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 19396,
+     "woff": 24472
+    },
+    "700": {
+     "woff2": 20344,
+     "woff": 25416
+    }
+   }
+  },
+  {
+   "family": "Breezeway",
+   "slug": "breezeway",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "positive",
+   "feel": [
+    "calm",
+    "friendly"
+   ],
+   "description": "Light and breezy, leaning forward. Relaxed and upbeat.",
+   "uses": [
+    "Travel",
+    "Wellness",
+    "Summer posts"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/breezeway/breezeway-400.woff2",
+     "woff": "assets/fonts/originals/breezeway/breezeway-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/breezeway/breezeway-700.woff2",
+     "woff": "assets/fonts/originals/breezeway/breezeway-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 17456,
+     "woff": 22392
+    },
+    "700": {
+     "woff2": 18132,
+     "woff": 23160
+    }
+   }
+  },
+  {
+   "family": "Shardcut",
+   "slug": "shardcut",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "tension",
+   "feel": [
+    "tense",
+    "bold"
+   ],
+   "description": "Sharp and angular. Aggressive energy for games and sport.",
+   "uses": [
+    "Gaming",
+    "Sport",
+    "Rock posters"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/shardcut/shardcut-400.woff2",
+     "woff": "assets/fonts/originals/shardcut/shardcut-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/shardcut/shardcut-700.woff2",
+     "woff": "assets/fonts/originals/shardcut/shardcut-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 18476,
+     "woff": 23748
+    },
+    "700": {
+     "woff2": 18344,
+     "woff": 23616
+    }
+   }
+  },
+  {
+   "family": "Frostgrid",
+   "slug": "frostgrid",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "tension",
+   "feel": [
+    "technical",
+    "tense"
+   ],
+   "description": "Square and cool. Machine-like and precise.",
+   "uses": [
+    "Tech launches",
+    "Sci-fi",
+    "Data and labels"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/frostgrid/frostgrid-400.woff2",
+     "woff": "assets/fonts/originals/frostgrid/frostgrid-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/frostgrid/frostgrid-700.woff2",
+     "woff": "assets/fonts/originals/frostgrid/frostgrid-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 18460,
+     "woff": 23196
+    },
+    "700": {
+     "woff2": 19204,
+     "woff": 24112
+    }
+   }
+  },
+  {
+   "family": "Quakeline",
+   "slug": "quakeline",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "tension",
+   "feel": [
+    "tense",
+    "urgent"
+   ],
+   "description": "Shaky and uneasy. For horror, warnings and suspense.",
+   "uses": [
+    "Horror and Halloween",
+    "Warnings",
+    "Suspense titles"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/quakeline/quakeline-400.woff2",
+     "woff": "assets/fonts/originals/quakeline/quakeline-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/quakeline/quakeline-700.woff2",
+     "woff": "assets/fonts/originals/quakeline/quakeline-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 26892,
+     "woff": 32592
+    },
+    "700": {
+     "woff2": 27236,
+     "woff": 33060
+    }
+   }
+  },
+  {
+   "family": "Spikemark",
+   "slug": "spikemark",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "tension",
+   "feel": [
+    "tense",
+    "elegant"
+   ],
+   "description": "Spiky, high-contrast serif. Dark, dramatic, a bit dangerous.",
+   "uses": [
+    "Thrillers",
+    "Metal and goth",
+    "Luxury with an edge"
+   ],
+   "category": "serif",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/spikemark/spikemark-400.woff2",
+     "woff": "assets/fonts/originals/spikemark/spikemark-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/spikemark/spikemark-700.woff2",
+     "woff": "assets/fonts/originals/spikemark/spikemark-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 19212,
+     "woff": 24376
+    },
+    "700": {
+     "woff2": 19220,
+     "woff": 24504
+    }
+   }
+  },
+  {
+   "family": "Wrongway",
+   "slug": "wrongway",
+   "source": "localeditor",
+   "version": "1.000",
+   "intent": "tension",
+   "feel": [
+    "tense",
+    "nostalgic"
+   ],
+   "description": "Upside-down contrast. Odd, edgy and attention-grabbing.",
+   "uses": [
+    "Western and circus",
+    "Protest posters",
+    "Music flyers"
+   ],
+   "category": "sans",
+   "weights": [
+    400,
+    700
+   ],
+   "italic": false,
+   "license": "LocalEditor-Proprietary (pending owner decision)",
+   "files": {
+    "400": {
+     "woff2": "assets/fonts/originals/wrongway/wrongway-400.woff2",
+     "woff": "assets/fonts/originals/wrongway/wrongway-400.woff"
+    },
+    "700": {
+     "woff2": "assets/fonts/originals/wrongway/wrongway-700.woff2",
+     "woff": "assets/fonts/originals/wrongway/wrongway-700.woff"
+    }
+   },
+   "bytes": {
+    "400": {
+     "woff2": 17872,
+     "woff": 22564
+    },
+    "700": {
+     "woff2": 17748,
+     "woff": 22448
+    }
+   }
+  }
+ ]
+}
