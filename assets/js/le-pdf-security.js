@@ -3075,7 +3075,7 @@
 
     /* D4 */
     VIEWS.safety = function (pane) {
-      pane.appendChild(header('Is it safe to open?', 'Nothing in the file is run. It is only read.'));
+      pane.appendChild(header('Is it safe to open?', 'Nothing in the file is run. It is only read. This looks for active content; it is not a virus scan.'));
       pane.appendChild(privacyLine());
       var src = originalSource();
       var key = src && src.docId;
