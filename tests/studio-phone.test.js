@@ -17,21 +17,29 @@ const PANELS = ['design', 'elements', 'text', 'uploads', 'draw', 'adjust', 'filt
     h.assert.noErrors(page);
   };
 
-  cases[tag + ' tab bar: every tab is a real touch target (>= 40px) and tapping it opens that panel as a sheet'] = async ({ browser, base, h }) => {
+  cases[tag + ' tab bar: every tab is a real touch target (>= 40px), all fit on screen, and every tool opens as a sheet in at most two taps (More)'] = async ({ browser, base, h }) => {
     const page = await h.newDesign(browser, base, vp, 'Instagram post');
-    const btns = await page.locator('#sx-tabs [data-panel-btn]').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { id: e.dataset.panelBtn, w: r.width, h: r.height }; }));
-    h.assert(btns.length >= 12, 'tab count ' + btns.length);
+    const btns = await page.locator('#sx-tabs [data-panel-btn]').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { id: e.dataset.panelBtn, w: r.width, h: r.height, l: r.left, r: r.right }; }));
+    h.assert(btns.length === 5 && btns[4].id === 'more', 'four tools + More: ' + btns.map((b) => b.id));
     h.assert(btns.every((b) => b.w >= 40 && b.h >= 40), 'tab sizes: ' + JSON.stringify(btns.filter((b) => b.w < 40 || b.h < 40)));
+    const vw = await page.evaluate(() => innerWidth);
+    h.assert(btns.every((b) => b.l >= 0 && b.r <= vw + 1), 'every tab is on screen without scrolling the bar');
     for (const id of PANELS) {
-      const t = page.locator('#sx-tabs [data-panel-btn=' + id + ']');
-      await t.scrollIntoViewIfNeeded();
-      await t.tap();
+      const direct = btns.some((b) => b.id === id);
+      if (direct) await page.locator('#sx-tabs [data-panel-btn=' + id + ']').tap();
+      else {
+        if ((await page.evaluate(() => window.LEStudio.S.panel)) !== 'more') await page.locator('#sx-tabs [data-panel-btn=more]').tap();
+        await page.waitForTimeout(400);
+        await page.locator('#sx-panel-body [data-panel-btn=' + id + ']').tap();
+      }
       await page.waitForTimeout(450);
-      const info = await page.evaluate(() => { const p = document.getElementById('sx-panel'); const r = p.getBoundingClientRect(); return { hidden: p.hidden, top: r.top, h: r.height, bottom: r.bottom, vh: innerHeight, kids: document.getElementById('sx-panel-body').children.length, open: document.getElementById('sx').classList.contains('sheet-open') }; });
-      h.assert(!info.hidden && info.open && info.kids > 0, id + ': sheet open with content ' + JSON.stringify(info));
-      h.assert(info.h > 120 && info.h < info.vh, id + ': sheet height sane ' + info.h);
+      const info = await page.evaluate(() => { const p = document.getElementById('sx-panel'); const r = p.getBoundingClientRect(); return { panel: window.LEStudio.S.panel, hidden: p.hidden, top: r.top, h: r.height, bottom: r.bottom, vh: innerHeight, kids: document.getElementById('sx-panel-body').children.length, open: document.getElementById('sx').classList.contains('sheet-open') }; });
+      h.assert(info.panel === id && !info.hidden && info.open && info.kids > 0, id + ': sheet open with content ' + JSON.stringify(info));
+      h.assert(info.h > 100 && info.h < info.vh, id + ': sheet height sane ' + info.h);
       h.assert(await h.noOverflow(page), id + ': sideways scroll with the sheet open');
-      h.assert(await page.locator('#sx-tabs [data-panel-btn=' + id + ']').getAttribute('aria-pressed') === 'true', id + ': tab shows pressed state');
+      const pressed = await page.locator('#sx-tabs [data-panel-btn=' + (direct ? id : 'more') + ']').getAttribute('aria-pressed');
+      h.assert(pressed === 'true', id + ': ' + (direct ? 'its tab' : 'More') + ' shows pressed state');
+      if (!direct) { await page.locator('#sx-tabs [data-panel-btn=more]').tap(); await page.waitForTimeout(350); }
     }
     h.assert.noErrors(page);
   };
@@ -55,33 +63,35 @@ const PANELS = ['design', 'elements', 'text', 'uploads', 'draw', 'adjust', 'filt
     const height = () => page.evaluate(() => document.getElementById('sx-panel').getBoundingClientRect().height);
     const snap = () => page.evaluate(() => window.LEStudio.S.sheet);
     const h0 = await height();
-    h.assert.equal(await snap(), 0, 'starts at the short snap');
+    h.assert.equal(await snap(), 'half', 'Text opens at the half snap');
     let g = await page.locator('#sx-grip').boundingBox();
     await h.touchDrag(page, { x: g.x + g.width / 2, y: g.y + g.height / 2 }, { x: g.x + g.width / 2, y: g.y - 260 }, 10);
     await page.waitForTimeout(500);
     const h1 = await height();
-    h.assert(h1 > h0 + 100 && (await snap()) === 1, 'snapped tall: ' + h0 + ' -> ' + h1);
+    h.assert(h1 > h0 + 100 && (await snap()) === 'full', 'snapped tall: ' + h0 + ' -> ' + h1);
     g = await page.locator('#sx-grip').boundingBox();
     await h.touchDrag(page, { x: g.x + g.width / 2, y: g.y + 8 }, { x: g.x + g.width / 2, y: g.y + 330 }, 10);
     await page.waitForTimeout(500);
     const h2 = await height();
-    h.assert(h2 < h1 - 100 && (await snap()) === 0, 'snapped back short: ' + h1 + ' -> ' + h2);
+    h.assert(h2 < h1 - 100 && (await snap()) !== 'full', 'snapped back down: ' + h1 + ' -> ' + h2);
     g = await page.locator('#sx-grip').boundingBox();
     await h.touchDrag(page, { x: g.x + g.width / 2, y: g.y + 8 }, { x: g.x + g.width / 2, y: g.y + 380 }, 10);
     await page.waitForTimeout(500);
     h.assert(await page.locator('#sx-panel').isHidden(), 'dragging far down closes the sheet');
   };
 
-  cases[tag + ' tapping the grip toggles between the two snap heights'] = async ({ browser, base, h }) => {
+  cases[tag + ' tapping the grip steps the sheet up a snap (half to full), and back down from full'] = async ({ browser, base, h }) => {
     const page = await h.newDesign(browser, base, vp, 'Instagram post');
     await page.locator('#sx-tabs [data-panel-btn=elements]').tap();
     await page.waitForTimeout(500);
-    const g = await page.locator('#sx-grip').boundingBox();
+    let g = await page.locator('#sx-grip').boundingBox();
     await page.touchscreen.tap(g.x + g.width / 2, g.y + g.height / 2);
     await page.waitForTimeout(500);
-    h.assert.equal(await page.evaluate(() => window.LEStudio.S.sheet), 1, 'tap expands');
-    await page.touchscreen.tap(g.x + g.width / 2, g.y + 8);
+    h.assert.equal(await page.evaluate(() => window.LEStudio.S.sheet), 'full', 'tap expands');
+    g = await page.locator('#sx-grip').boundingBox();
+    await page.touchscreen.tap(g.x + g.width / 2, g.y + g.height / 2);
     await page.waitForTimeout(500);
+    h.assert.equal(await page.evaluate(() => window.LEStudio.S.sheet), 'half', 'tap from full steps back to half');
   };
 
   cases[tag + ' add text from the Text sheet, then drag it with a finger: it moves'] = async ({ browser, base, h }) => {
@@ -133,7 +143,7 @@ const PANELS = ['design', 'elements', 'text', 'uploads', 'draw', 'adjust', 'filt
     }
   };
 
-  cases['KNOWN-BUG: ' + tag + ' text size +/- buttons in the text toolbar are at least 40px wide (QA-005)'] = async ({ browser, base, h }) => {
+  cases[tag + ' text size +/- buttons in the text toolbar are at least 40px wide (QA-005)'] = async ({ browser, base, h }) => {
     const page = await h.newDesign(browser, base, vp, 'Instagram post');
     const [t] = await h.addLayers(page, [{ type: 'text', text: 'Hi', x: 100, y: 100, w: 400, h: 120, size: 80 }]);
     await h.select(page, [t]);
@@ -144,7 +154,7 @@ const PANELS = ['design', 'elements', 'text', 'uploads', 'draw', 'adjust', 'filt
     }
   };
 
-  cases['KNOWN-BUG: ' + tag + ' the middle of a selected heading is not covered by a resize handle, so a finger can drag it (QA-004)'] = async ({ browser, base, h }) => {
+  cases[tag + ' the middle of a selected heading is not covered by a resize handle, so a finger can drag it (QA-004)'] = async ({ browser, base, h }) => {
     const page = await h.newDesign(browser, base, vp, 'Instagram post');
     await page.locator('#sx-tabs [data-panel-btn=text]').tap();
     await page.waitForTimeout(450);
@@ -193,7 +203,7 @@ const PANELS = ['design', 'elements', 'text', 'uploads', 'draw', 'adjust', 'filt
     await page.waitForSelector('#sx-panel:not([hidden])');
   };
 
-  cases['KNOWN-BUG: ' + tag + ' header Download and File buttons are at least 40px tall (QA-006)'] = async ({ browser, base, h }) => {
+  cases[tag + ' header Download and File buttons are at least 40px tall (QA-006)'] = async ({ browser, base, h }) => {
     const page = await h.newDesign(browser, base, vp, 'Instagram post');
     for (const sel of ['#sx-head [data-cmd=fileMenu]', '#sx-head .sx-download', '#sx-head [data-cmd=undo]']) {
       const b = await page.locator(sel).boundingBox();

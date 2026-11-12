@@ -36,13 +36,35 @@
     ]));
     return true;
   }
-  var svgUrls = {};
+  /* Object-URL memo caches with a size limit: the least recently used URL is revoked when the cache is full, and every cache
+     is emptied when a design closes (P._releaseUrls). Shared with the colour and icon modules. */
+  var URL_CACHES = P._urlCaches = {};
+  P._urlCache = function (name, max) {
+    if (URL_CACHES[name]) return URL_CACHES[name];
+    var m = new Map();
+    function drop(u) { try { URL.revokeObjectURL(u); } catch (e) {} }
+    var c = URL_CACHES[name] = {
+      get: function (k) { if (!m.has(k)) return undefined; var v = m.get(k); m.delete(k); m.set(k, v); return v; },
+      set: function (k, v) {
+        if (m.has(k) && m.get(k) !== v) drop(m.get(k));
+        m.delete(k); m.set(k, v);
+        while (m.size > (max || 200)) { var f = m.keys().next().value; drop(m.get(f)); m.delete(f); }
+        return v;
+      },
+      clear: function () { m.forEach(drop); m.clear(); },
+      size: function () { return m.size; },
+      max: max || 200
+    };
+    return c;
+  };
+  P._releaseUrls = function () { Object.keys(URL_CACHES).forEach(function (k) { URL_CACHES[k].clear(); }); };
+  var svgUrls = P._urlCache('svg', 400);
   function svgUrl(id, color) {
     var key = id + '|' + (color || '');
-    if (svgUrls[key]) return svgUrls[key];
+    var hit = svgUrls.get(key);
+    if (hit) return hit;
     var markup = LE.assets.svg(id, color ? { color: color } : {});
-    svgUrls[key] = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml' }));
-    return svgUrls[key];
+    return svgUrls.set(key, URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml' })));
   }
   function draggable(node, data) {
     node.draggable = true;
@@ -121,11 +143,12 @@
       '<div class="sx-start-inner">' +
       '<div class="sx-hero"><span class="sx-eyebrow">' + c.ic('shield') + 'Private studio · works offline</span>' +
       '<h1>Design something <em>beautiful.</em></h1>' +
-      '<p>Layers, text, stickers, filters and every social size — edited live on your device. Nothing is uploaded, ever.</p>' +
+      '<p>Photos, text, stickers and every social size, made on your device. Nothing is uploaded.</p>' +
       '<div class="sx-hero-act"><button type="button" class="btn btn-gold btn-lg" data-s="open">' + c.ic('image') + '<span>Open a photo</span></button>' +
-      '<button type="button" class="btn btn-ghost btn-lg" data-s="sample">' + c.ic('sparkle') + '<span>Try the sample</span></button>' +
-      '<button type="button" class="btn btn-ghost btn-lg" data-s="import">' + c.ic('file') + '<span>Import .leproject</span></button></div>' +
-      '<small class="sx-hero-drop">or drop photos anywhere · paste with Ctrl V</small></div>' +
+      '<button type="button" class="btn btn-ghost btn-lg" data-s="sample">' + c.ic('sparkle') + '<span>Try the sample</span></button></div>' +
+      '<div class="sx-start-quick"><span>Or make a post from a photo</span><div class="sx-quick-row">' +
+      [['ig-post', 'Square post'], ['ig-portrait', 'Portrait post'], ['ig-story', 'Story']].map(function (q) { return '<button type="button" class="sx-quick-chip" data-q="' + q[0] + '">' + c.esc(q[1]) + '</button>'; }).join('') + '</div></div>' +
+      '<small class="sx-hero-drop">' + (c.coarse && c.coarse() ? '' : 'Or drop photos anywhere · paste with Ctrl V · ') + '<button type="button" class="sx-link" data-s="import">' + c.ic('file') + 'Open a .leproject file</button></small></div>' +
       '<div class="sx-start-sec"><h2>Start with a size</h2><div class="sx-size-row"></div></div>' +
       '<div class="sx-start-sec sx-start-recent" hidden><div class="sx-sec-head"><h2>Your designs</h2><button type="button" class="sx-link" data-s="all">See all</button></div><div class="sx-proj-row"></div></div>' +
       '</div>';
@@ -133,6 +156,10 @@
     host.querySelector('[data-s="sample"]').onclick = function () { c.useSample(); };
     host.querySelector('[data-s="import"]').onclick = function () { c.pickFiles('project'); };
     host.querySelector('[data-s="all"]').onclick = function () { c.openPanel('projects'); };
+    [].forEach.call(host.querySelectorAll('[data-q]'), function (b) {
+      var s0 = c.SIZES.filter(function (x) { return x.id === b.getAttribute('data-q'); })[0];
+      b.onclick = function () { if (c.photoTo) c.photoTo(s0.w, s0.h, s0.name); else c.pickFiles('add'); };
+    });
     var row = host.querySelector('.sx-size-row');
     ['ig-post', 'ig-portrait', 'ig-story', 'yt-thumb', 'fb-cover', 'li-banner', 'pin', 'a4'].forEach(function (id) {
       var s = c.SIZES.filter(function (x) { return x.id === id; })[0];
@@ -145,6 +172,7 @@
     row.appendChild(custom);
     LE.project.list().then(function (list) {
       if (!list.length) return;
+      if (c.coach) c.coach('off');
       var sec = host.querySelector('.sx-start-recent');
       if (!sec) return;
       sec.hidden = false;
@@ -421,7 +449,7 @@
     };
     custom.querySelector('.sx-sec-body').appendChild(form);
     body.appendChild(custom);
-    body.appendChild(note(c, 'Hover a size to preview it, tap to pin it, then choose “Use this size”. Your original photo is never changed.'));
+    body.appendChild(note(c, (c.say ? c.say('Hover a size to preview it, click to pin it, then choose “Use this size”. Your original photo is never changed.', 'Tap a size to preview it, then choose “Use this size”. Your original photo is never changed.') : 'Hover a size to preview it, click to pin it, then choose “Use this size”. Your original photo is never changed.')));
   }
   function focalPad(c, st) {
     var base = c.baseLayer();
@@ -770,7 +798,7 @@
       mb.onclick = function () { c.openPanel('apps', { app: 'meme', back: 'text' }); };
       m.querySelector('.sx-sec-body').appendChild(mb);
       body.appendChild(m);
-      body.appendChild(note(c, 'Double-click any text on the canvas to edit it in place. Text stays editable forever — it is only flattened when you download.'));
+      body.appendChild(note(c, (c.say ? c.say('Double-click any text on the canvas to edit it in place. Text stays editable forever — it is only flattened when you download.', 'Double-tap any text on the canvas to type. Text stays editable forever — it is only flattened when you download.') : 'Double-click any text on the canvas to edit it in place. Text stays editable forever — it is only flattened when you download.')));
     }
   };
 
@@ -871,7 +899,7 @@
         } else stockHost.appendChild(note(c, 'Stock photos are not available yet.'));
         return;
       }
-      var top = c.h('<div class="sx-upload-cta"><button type="button" class="btn btn-gold sx-block">' + c.ic('uploads') + '<span>Upload photos</span></button><small>Drag photos onto the canvas, or paste with Ctrl V. They never leave this device.</small></div>');
+      var top = c.h('<div class="sx-upload-cta"><button type="button" class="btn btn-gold sx-block">' + c.ic('uploads') + '<span>Upload photos</span></button><small>' + c.esc((c.say ? c.say('Drag photos onto the canvas, or paste with Ctrl V. They never leave this device.', 'Choose photos from this phone. They never leave this device.') : 'Drag photos onto the canvas, or paste with Ctrl V. They never leave this device.')) + '</small></div>');
       top.querySelector('button').onclick = function () { c.pickFiles(c.S.project ? 'add' : 'add'); };
       body.appendChild(top);
       var mine = c.ui.section('In this design');
@@ -988,7 +1016,7 @@
       }));
       row.appendChild(btn(c, 'Filters', 'filters', 'btn btn-ghost btn-sm', function () { c.openPanel('filters'); }));
       body.appendChild(row);
-      body.appendChild(note(c, 'Edits are live and non-destructive. Double-click a slider label to reset it.'));
+      body.appendChild(note(c, (c.say ? c.say('Edits are live and non-destructive. Double-click a slider label to reset it.', 'Edits are live and non-destructive. Double-tap a slider label to reset it.') : 'Edits are live and non-destructive. Double-click a slider label to reset it.')));
     }
   };
   function auto(c, id) {
@@ -1479,7 +1507,7 @@
     var one = c.one();
     if (one && one.type === 'group') tools.appendChild(btn(c, 'Ungroup', 'ungroup', 'btn btn-ghost btn-sm', function () { c.scene.ungroup(one.id); }));
     if (tools.children.length) body.appendChild(tools);
-    body.appendChild(note(c, 'Drag to reorder. Double-click a name to rename. Shift-click to select several.'));
+    body.appendChild(note(c, (c.say ? c.say('Drag to reorder. Double-click a name to rename. Shift-click to select several.', 'Drag to reorder. Double-tap a name to rename. Tap and hold a layer on the canvas to select several.') : 'Drag to reorder. Double-click a name to rename. Shift-click to select several.')));
   }
   function labelOf(l) {
     if (l.type === 'text') return String(l.text || 'Text').split('\n')[0].slice(0, 28);
@@ -1625,7 +1653,7 @@
       }
       var g = c.h('<div class="sx-proj-grid"><div class="sx-loading">Loading…</div></div>');
       body.appendChild(g);
-      var drop = c.h('<div class="sx-dropzone">' + c.ic('file') + '<span>Drop a <b>.leproject</b> file here to import it</span></div>');
+      var drop = c.h('<div class="sx-dropzone">' + c.ic('file') + '<span>' + (c.coarse && c.coarse() ? 'Open a <b>.leproject</b> file to import it' : 'Drop a <b>.leproject</b> file here to import it') + '</span></div>');
       drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('is-over'); });
       drop.addEventListener('dragleave', function () { drop.classList.remove('is-over'); });
       drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('is-over'); var f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) c.importProject(f); });
@@ -1690,7 +1718,7 @@
         if (!vs.length) { host.appendChild(note(c, 'Versions are saved automatically as you work. Save a named version before big changes.')); return; }
         vs.forEach(function (v) {
           var card = c.h('<button type="button" class="sx-version' + (v.kind === 'checkpoint' ? ' is-check' : '') + '"><span class="sx-version-art"></span><span class="sx-version-txt"><b>' + c.esc(v.label || (v.kind === 'checkpoint' ? 'Version' : 'Autosave')) + '</b><small>' + when(v.at) + (v.doc ? ' · ' + v.doc.pages[0].width + '×' + v.doc.pages[0].height : '') + '</small></span><span class="sx-version-go">Preview</span></button>');
-          if (v.thumb) { var im = new Image(); im.alt = ''; im.src = URL.createObjectURL(v.thumb); card.querySelector('.sx-version-art').appendChild(im); }
+          if (v.thumb) { var im = new Image(); im.alt = ''; im.onload = im.onerror = function () { URL.revokeObjectURL(im.src); }; im.src = URL.createObjectURL(v.thumb); card.querySelector('.sx-version-art').appendChild(im); }
           card.onclick = function () { if (c.isPhone()) c.closePanel(); c.previewVersion(v); };
           host.appendChild(card);
         });
@@ -1909,7 +1937,7 @@
         if (ins[1].value.trim()) list.push(mk(ins[1].value.trim(), H * 0.97 - size * 1.25));
         c.batch(function () { var made = list.map(function (l) { return c.scene.add(l); }); c.scene.select(made); });
       }));
-      body.appendChild(note(c, 'Captions are normal text layers — double-click to edit.'));
+      body.appendChild(note(c, (c.say ? c.say('Captions are normal text layers — double-click to edit.', 'Captions are normal text layers — double-tap to edit.') : 'Captions are normal text layers — double-click to edit.')));
     },
     palette: function (c, body) {
       if (needProject(c, body)) return;

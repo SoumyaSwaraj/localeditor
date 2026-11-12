@@ -97,7 +97,7 @@ cases['leaving with unsaved edits autosaves instead of losing them (pagehide flu
 };
 
 /* keyboard / accessibility regressions (filed in docs/QA-REPORT.md) */
-cases['KNOWN-BUG: toolbar buttons keep keyboard focus after they are activated or the design autosaves (QA-007)'] = async ({ browser, base, h }) => {
+cases['toolbar buttons keep keyboard focus after they are activated or the design autosaves (QA-007)'] = async ({ browser, base, h }) => {
   const page = await h.newDesign(browser, base, 'desktop', 'Instagram post');
   const [t] = await h.addLayers(page, [{ type: 'text', text: 'Hello', x: 100, y: 100, w: 500, h: 140, size: 90 }]);
   await h.select(page, [t]);
@@ -108,7 +108,7 @@ cases['KNOWN-BUG: toolbar buttons keep keyboard focus after they are activated o
   const inTool = await page.evaluate(() => !!document.activeElement.closest('#sx-tool'));
   h.assert(inTool, 'focus after Enter on Italic is on ' + (await page.evaluate(() => document.activeElement.tagName)));
 };
-cases['KNOWN-BUG: the File menu opened with the keyboard moves focus into the menu and Arrow keys move between items (QA-008)'] = async ({ browser, base, h }) => {
+cases['the File menu opened with the keyboard moves focus into the menu and Arrow keys move between items (QA-008)'] = async ({ browser, base, h }) => {
   const page = await h.newDesign(browser, base, 'desktop', 'Instagram post');
   await page.focus('#sx-head [data-cmd=fileMenu]');
   await page.keyboard.press('Enter');
@@ -116,7 +116,7 @@ cases['KNOWN-BUG: the File menu opened with the keyboard moves focus into the me
   await page.keyboard.press('ArrowDown');
   h.assert(await page.evaluate(() => document.getElementById('sx-pop').contains(document.activeElement)), 'focus is inside the opened menu');
 };
-cases['KNOWN-BUG: the shortcuts dialog traps Tab focus while it is open (QA-011)'] = async ({ browser, base, h }) => {
+cases['the shortcuts dialog traps Tab focus while it is open (QA-011)'] = async ({ browser, base, h }) => {
   const page = await h.newDesign(browser, base, 'desktop', 'Instagram post');
   await page.locator('#sx-scene').click({ position: { x: 3, y: 3 } });
   await page.keyboard.press('?');
@@ -124,7 +124,7 @@ cases['KNOWN-BUG: the shortcuts dialog traps Tab focus while it is open (QA-011)
   for (let i = 0; i < 10; i++) await page.keyboard.press('Tab');
   h.assert(await page.evaluate(() => document.getElementById('sx-modal').contains(document.activeElement)), 'focus escaped the dialog');
 };
-cases['KNOWN-BUG: dialog accessible names are plain text, not HTML source (QA-002)'] = async ({ browser, base, h }) => {
+cases['dialog accessible names are plain text, not HTML source (QA-002)'] = async ({ browser, base, h }) => {
   const page = await h.open(browser, base, '/studio/', 'desktop');
   await page.locator('.sx-size-card').filter({ hasText: 'Custom size' }).click();
   await page.waitForSelector('#sx-modal [role=dialog]');
