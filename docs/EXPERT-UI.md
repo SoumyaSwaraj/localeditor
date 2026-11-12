@@ -10,7 +10,7 @@ live gallery `labs/expert-controls/`, tests `tests/expert-ui.test.js`.
   header (an icon toggle on phones), a File-menu entry, `?mode=expert` (applied once, then removed from the address), the
   remembered choice (`localStorage['le-studio-mode']`), the `expert.workspace` support definition and the gate, the
   "Edited in Expert" marker on layers with expert data, and a toast with **Open in Expert** when such a design opens in Simple.
-- The first switch loads `expert/expert.js` (core), which loads `expert.css`, then `spline.js` and `controls/base.js`, then
+- The first switch loads `expert/expert.js` (core), which loads `expert.css`, then `../fx/curves.js` (the spline, owned by the renderer) and `controls/base.js`, then
   the rest in parallel. Nothing in `assets/js/expert/` loads before that. `mock-fx.js` is test-only and never loaded by the app.
 - `ctx.mode('expert' | 'simple')` switches from code. Switching never changes the document or adds an undo step.
 - The build must keep `assets/js/expert/**` and `assets/css/expert.css` out of the core bundle and precache them as

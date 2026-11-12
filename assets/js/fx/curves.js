@@ -1,6 +1,7 @@
 /* LocalEditor curve spline: monotone cubic (Fritsch–Carlson) through control points in 0–1.
  * One definition for the curve editor's drawing and the renderer's lookup table (docs/EXPERT-UI.md "Curves").
- * No dependencies: the renderer can load this file on its own and use LE.curves.lut(points, 256). */
+ * No dependencies. Lives with the renderer (it was assets/js/expert/spline.js): LE.fx loads it before anything draws, and the
+ * workspace loads the same file for the curve editor. Change the maths here and both follow; tests/fx.test.js pins them together. */
 (function (global) {
   'use strict';
   var LE = global.LE = global.LE || {};

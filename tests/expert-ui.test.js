@@ -38,7 +38,7 @@ async function expert(page, mock) {
 const undoCount = (page) => page.evaluate(() => window.LEStudio.scene._hist.undo.length);
 const base0 = (page) => page.evaluate(() => (window.LEStudio.targetImage() || {}).id);
 const fx = (page) => page.evaluate(() => { const l = window.LEStudio.targetImage(); return window.LEStudio.scene.layer(l.id).fx || []; });
-const mask = (page) => page.evaluate(() => { const l = window.LEStudio.targetImage(); return window.LEStudio.scene.layer(l.id).mask; });
+const mask = (page) => page.evaluate(() => { const l = window.LEStudio.targetImage(); return window.LEStudio.scene.layer(l.id).layerMask; });   /* the composable mask (LE.expert.doc.MASK) */
 async function openSec(page, sec) {
   await page.evaluate((s) => window.LE.expert.workspace.components().develop.open(s, true), sec);
   await page.waitForTimeout(80);
@@ -322,7 +322,7 @@ cases['mask manager builds the documented parts structure'] = async ({ browser, 
   await add('Luminance range');
   await add('Colour range');
   let m = await mask(page);
-  h.assert(m && Array.isArray(m.parts), 'layer.mask = { parts }');
+  h.assert(m && Array.isArray(m.parts), 'layer.layerMask = { parts }');
   h.assert.equal(m.parts.map((p) => p.kind).join(','), 'linear,radial,luma,color', 'kinds in order');
   const lin = m.parts[0];
   ['x0', 'y0', 'x1', 'y1', 'mode', 'invert', 'feather', 'density'].forEach((k) => h.assert(k in lin, 'linear has ' + k));
@@ -349,7 +349,7 @@ cases['mask manager builds the documented parts structure'] = async ({ browser, 
   await row.click({ button: 'right' });
   await page.locator('#sx-pop button', { hasText: 'Paste mask' }).click();
   await page.waitForTimeout(80);
-  const tm = await page.evaluate(() => { const ls = window.LEStudio.scene.layers(); return ls[ls.length - 1].mask; });
+  const tm = await page.evaluate(() => { const ls = window.LEStudio.scene.layers(); return ls[ls.length - 1].layerMask; });
   h.assert(tm && tm.parts && tm.parts.length === 4, 'mask pasted on another layer');
 };
 
@@ -465,7 +465,7 @@ cases['layers panel: reorder, blend, opacity, mask toggle, effect reorder and to
   await page.keyboard.press('Enter');
   await page.waitForTimeout(150);
   const adj = await page.evaluate(() => window.LEStudio.scene.layers().filter((l) => l.type === 'adjust'));
-  h.assert(adj.length === 1 && adj[0].fx[0].type === 'mock.curves', 'adjustment layer added from the searchable menu');
+  h.assert(adj.length === 1 && adj[0].fx[0].type === 'mock.curves', 'adjustment layer added from the searchable menu: ' + JSON.stringify(adj.map((a) => (a.fx || []).map((e) => e.type))));
   h.assert(await page.locator('#xp-right .xp-lay.is-adjust').count(), 'adjustment layer listed as a first-class row');
   h.assert.noErrors(page);
 };

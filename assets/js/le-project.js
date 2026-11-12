@@ -159,7 +159,11 @@
     function scan(doc) {
       if (!doc) return;
       if (doc.background && doc.background.src) ids[doc.background.src] = 1;
-      (doc.layers || []).forEach(function (l) { if (l.type === 'image' && l.src) ids[l.src] = 1; if (l.cutout && l.cutout.asset) ids[l.cutout.asset] = 1; });
+      (doc.layers || []).forEach(function (l) {
+        if (l.type === 'image' && l.src) ids[l.src] = 1;
+        if (l.cutout && l.cutout.asset) ids[l.cutout.asset] = 1;   /* cut-out masks */
+        if (LE.Scene && LE.Scene.expertAssets) LE.Scene.expertAssets(l).forEach(function (id) { ids[id] = 1; });   /* masks, retouch overlays, maps, LUTs */
+      });
     }
     ((project && project.pages) || []).forEach(scan);
     return Object.keys(ids).filter(function (k) { return /^[a-f0-9]{64}$/.test(k); });
@@ -549,7 +553,7 @@
   function idOk(v, max) { return typeof v === 'string' && v.length <= (max || 64) && /^[\w:.-]+$/.test(v); }
   function sanitizeLayer(src, errors) {
     if (!src || typeof src !== 'object' || Array.isArray(src)) return null;
-    var types = ['image', 'text', 'shape', 'svg', 'path', 'group'];
+    var types = ['image', 'text', 'shape', 'svg', 'path', 'group', 'adjust'];
     if (types.indexOf(src.type) < 0) { errors.push('A layer has an unknown type and was left out.'); return null; }
     var l = {
       id: idOk(src.id, 48) ? src.id : uid('l'), type: src.type, name: str(src.name, 120, src.type),
@@ -628,7 +632,9 @@
       l.width = clamp(num(src.width, 4), 0.5, 2000);
       l.color = safeColor(src.color) || '#17131F';
       l.mode = oneOf(src.mode, ['pen', 'marker', 'highlighter'], 'pen');
-    }
+    } else if (l.type === 'adjust') l.clip = bool(src.clip);
+    /* Expert fields (fx, layerMask, transform, retouch, maps, raw): the same shape check LE.Scene applies; LE.fx validates entries before they run. */
+    if (LE.Scene && LE.Scene.expertOf) LE.Scene.expertOf(src, l);
     return l;
   }
   /* Photo background framing and look (see le-objects.js "Photo backgrounds"); only fields that are present are kept. */
