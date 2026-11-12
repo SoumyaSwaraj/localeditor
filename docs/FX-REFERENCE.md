@@ -61,6 +61,33 @@ differs slightly from one well-known editor's), and the usual definitions of lin
 (burn with `2s` below half, dodge with `2s − 1` above), linear light (`b + 2s − 1`), pin light, hard mix (`b + s ≥ 1`), subtract,
 divide, darker/lighter colour (whole colour by luminosity). Dissolve is a seeded threshold on alpha in document space.
 
+### Passes and cost
+
+Measured with `LE.fx.profile` on the sandbox's software GL (SwiftShader), a 200 × 250 cut-out, each effect's agent example; use
+the numbers to compare effects, not to judge real GPUs. Pass counts include the renderer's own alpha and output passes; a
+spatial stack is split into tiles when its rectangle (picture + `grow` + reach border) exceeds the memory budget, and every tile
+repeats the passes.
+
+| Effect | Passes per rectangle | Draft (while dragging) |
+|---|---|---|
+| `glass-reflection`, `match-color`, `ambient-light` | 0 extra: merged into the colour pass | same |
+| `floating-shadow` | 1 (analytic ellipse) | same |
+| `mesh-warp` | 1 (Newton inverse, 10 steps per pixel) | same |
+| `edge-light` | 3 + one blur | half resolution |
+| `contact-shadow` | 2 + one blur | half resolution |
+| `inner-shadow`, `outer-glow`, `inner-glow` | 2 + one blur | half resolution |
+| `refine-edge` | up to 4 + three blurs | half resolution |
+| `long-shadow` | log2(length in pixels) + 2 | half resolution |
+| `studio-shadow` | 2 + one blur per layer (1–4) | at most 2 layers |
+| `cast-shadow` | 2 + blur levels (up to 3 blurs at ½–⅛ resolution) | 2 levels instead of 4 |
+| `floor-reflection`, `water-reflection` | 2 + blur levels (as cast-shadow) | 2 levels instead of 4 |
+| `light-wrap`, `blend-options`, `apply-image`, `displace` | 1–5 at draw time, on the visible region | the draw-time draft |
+
+The cast shadow is the expensive one: every pixel of the shadow reads the silhouette up to the shadow's length away, so its tile
+reach is that length (about 1.3 × the subject height at 40° elevation). On the sandbox a 200 × 250 cut-out with a 215-pixel-tall
+subject took about 8 s (single rectangle 918 × 968, split into tiles); contact, floating and studio shadows took 0.1–0.4 s,
+reflections about 0.5 s.
+
 ### Proposed on-canvas handles
 
 - `point` parameters (`anchor` on every shadow and reflection) already get a handle from the workspace.
