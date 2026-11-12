@@ -1,0 +1,87 @@
+{
+ "full.jpg": {
+  "exif.description": "Synthetic test caption",
+  "exif.make": "Pixelfone",
+  "exif.model": "PF-7 Pro",
+  "exif.software": "PF Camera 3.1",
+  "exif.modified": "2024-05-02 10:15:00",
+  "exif.artist": "Test Artist",
+  "exif.copyright": "Test Copyright 2024",
+  "exif.xpauthor": "Test XP Author",
+  "exif.taken": "2024-05-01 18:42:07",
+  "exif.digitized": "2024-05-01 18:42:07",
+  "exif.tz": "UTC+05:30",
+  "exif.settings": "1/120 s · f/1.8 · ISO 100 · 4.2 mm",
+  "exif.makernote": "64 B of camera-specific data (Apple iOS)",
+  "exif.comment": "Synthetic user comment",
+  "exif.uid": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+  "exif.owner": "Test Owner",
+  "exif.serial": "SN-0042-TEST",
+  "exif.lens": "PF-7 back camera 4.2mm f/1.8",
+  "gps.position": "48.85822° N, 2.29450° E",
+  "gps.altitude": "35.5 m above sea level",
+  "gps.direction": "271.5° (west)",
+  "gps.time": "2024-05-01 13:12:07 UTC",
+  "thumbnail": "160 × 120 JPEG preview, 1.9 KB",
+  "xmp.creator": "XMP Test Creator",
+  "xmp.rights": "XMP Test Rights",
+  "xmp.keywords": "alpha, beta",
+  "xmp.tool": "PF Camera 3.1",
+  "xmp.history": "2 recorded steps (Test Editor 2.0)",
+  "xmp.ids": "1 identifier that can link copies of this file",
+  "xmp.people": "Test Person A",
+  "iptc.byline": "IPTC Test Author",
+  "iptc.city": "Testville",
+  "iptc.country": "Testland",
+  "iptc.caption": "IPTC test caption",
+  "iptc.keywords": "kw1 · kw2",
+  "iptc.copyright": "IPTC Test Copyright",
+  "iptc.date": "2024-05-01 18:42:07",
+  "icc": "Test RGB Profile · 173 B",
+  "jpeg.comment": "Synthetic comment",
+  "c2pa": "Present: a signed record of how the image was made or edited",
+  "jpeg.mpf": "1 more image stored with this one",
+  "jpeg.trailer": "1.9 KB — more images (e.g. a depth map or second camera)",
+  "_region": "Europe · Northern and Eastern hemispheres",
+  "_orientation": 6
+ },
+ "gps-only.jpg": {
+  "gps.position": "22.95190° S, 43.21050° W",
+  "_region": "South America · Southern and Western hemispheres"
+ },
+ "clean.jpg": {},
+ "orient6.jpg": {
+  "_orientation": 6
+ },
+ "meta.png": {
+  "png.author": "PNG Test Author",
+  "png.comment": "PNG test comment",
+  "png.description": "PNG compressed description",
+  "xmp.creator": "PNG XMP Creator",
+  "png.parameters": "a test prompt, steps: 20",
+  "png.time": "2024-05-02 10:15:00 UTC",
+  "exif.model": "PNG Cam",
+  "gps.position": "35.68950° N, 139.69170° E",
+  "icc": "Test RGB Profile · 173 B",
+  "_region": "Asia · Northern and Eastern hemispheres"
+ },
+ "meta.webp": {
+  "exif.make": "WebCam Co",
+  "exif.taken": "2023-12-24 08:00:00",
+  "gps.position": "33.85680° S, 151.21530° E",
+  "xmp.rights": "WebP Rights",
+  "icc": "Test RGB Profile · 173 B",
+  "_region": "Oceania"
+ },
+ "fake.heic": {
+  "exif.make": "HeicCam",
+  "gps.position": "40.71280° N, 74.00600° W",
+  "_unsupported": true
+ },
+ "hostile-xss.jpg": {
+  "exif.make": "<img src=x onerror=\"window.__pwned=1\">",
+  "exif.model": "<script>window.__pwned=1</script>",
+  "xmp.creator": "<img src=x onerror=window.__pwned=1>",
+  "jpeg.comment": "gnp.exe"
+ }
+}
