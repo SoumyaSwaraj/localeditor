@@ -48,7 +48,7 @@ masks and blend per entry live in the layers panel.
 
 ## Panels from registrations
 
-You write a registration (`docs/EXPERT-MODE.md`, "Effect registry"); the workspace reads `LE.fx.describe()` and builds:
+You write a registration (`docs/EXPERT-MODE.md`, "Effect registry"); the workspace reads `LE.fx.defs()` (frozen and shared; read again only when `LE.fx.version()` has moved) and builds:
 
 | Param type | Control | Value |
 |---|---|---|
@@ -69,6 +69,7 @@ You write a registration (`docs/EXPERT-MODE.md`, "Effect registry"); the workspa
 ```js
 ui: { section: 'Colour grading', controls: [
   { heading: 'Tone' },                                  // sub-heading
+  { action: 'grade.auto', label: 'Auto' },              // a button: an action from the registry (LE.fx.actions), applied as one undo step
   'exposure',                                           // default control
   { param: 'temp', gradient: 'temperature', label: 'Temperature', fine: true },
   { param: 'protect', when: { style: 'highlight' } },   // shown only when style is 'highlight'

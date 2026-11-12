@@ -166,7 +166,7 @@ A `group` layer is a box; members point at it with `groupId`. Members are listed
 
 ## Expert fields
 
-Optional, on any layer. The model is in `docs/EXPERT-MODE.md`; effect ids, parameters and ranges come from the effect registry (`LE.fx.describe()` in the studio, `docs/FX-AUTHORING.md` for the contract). A design that uses them still opens in the simple studio and draws the same.
+Optional, on any layer. The model is in `docs/EXPERT-MODE.md`; effect ids, parameters and ranges come from the effect registry (`LE.fx.describe()` lists them and `LE.fx.describe(id)` gives one in full, in the studio; `localeditor catalog fx [id]` on the command line; `docs/FX-AUTHORING.md` has the contract). An effect has up to 48 parameters; a parameter may be a flat list of up to 4,096 numbers (16,384 per layer). A LUT parameter holds an asset id; a file with embedded images carries the LUT text as a `data:text/plain;base64,…` URI of up to 4 MB in its place, and that is the only place such a URI is read. On a photo layer the cut-out is applied before the effects. A design that uses them still opens in the simple studio and draws the same.
 
 | Key | Type | Notes |
 |---|---|---|
@@ -190,7 +190,7 @@ Optional, on any layer. The model is in `docs/EXPERT-MODE.md`; effect ids, param
 | `asset` | `asset`: an image source; its alpha times its brightness |
 | `subject` | the layer's cut-out |
 | `depth` | `near far soft` (0 nearest, 1 farthest); needs `maps.depth` |
-| `face` | `part`: `skin eyes lips teeth brows under-eyes`; needs `maps.face` |
+| `face` | `part`: `skin eyes lips teeth brows under-eyes inner-mouth` (`underEyes` and `innerMouth` are read and stored hyphenated); needs `maps.face` |
 
 `feather` shapes `linear` and `radial` parts only; `blur` softens any part.
 
