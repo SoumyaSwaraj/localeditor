@@ -1372,7 +1372,7 @@
     m.editors.forEach(function (e) { if (e.stats && e.stats.text) rows.push([e.name, e.stats.text]); });
     if (r.version) rows.push(['App version', r.version]);
     rows.push(['Installed', isInstalled() ? 'Yes' : canInstall() ? 'No — <button type="button" class="lp-link" data-lp-install>install</button>' : 'No']);
-    return '<dl class="lp-dl">' + rows.map(function (x) { return '<div><dt>' + esc(x[0]) + '</dt><dd>' + (x[0] === 'Installed' ? x[1] : esc(x[1])) + '</dd></div>'; }).join('') + '</dl>';
+    return '<dl class="lp-dl">' + rows.map(function (x) { return '<div><dt>' + esc(x[0]) + '</dt><dd>' + (x[0] === 'Installed' ? x[1] : esc(x[1])) + '</dd></div>'; }).join('') + '</dl>' + '<p class="lp-sub"><a class="lp-link" href="' + BASE + 'device-check/">What works on this device</a></p>';
   }
   function busyBtn(b, text) { b.disabled = true; b._label = b.innerHTML; b.textContent = text; }
   function bindStorage(d, body, r) {
