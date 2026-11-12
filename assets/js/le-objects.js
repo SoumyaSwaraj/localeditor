@@ -2424,6 +2424,9 @@
     var alpha = this._opacity(layer);
     if (alpha <= 0) return;
     ctx.save();
+    /* Page-to-pixel transform before the layer's own rotation and flip: canvas shadows are in pixels and ignore the
+       transform, so the document's shadow is scaled by it (preview zoom and pixel ratio, export scale). */
+    var pm = layer.shadow && typeof ctx.getTransform === 'function' ? ctx.getTransform() : null;
     ctx.globalAlpha = alpha;
     ctx.globalCompositeOperation = blendOf(layer.blend);
     if (opts.local) {
@@ -2438,10 +2441,16 @@
     }
     var skipShadow = opts.preview && this._level() === 'low';
     if (layer.shadow && !skipShadow) {
+      var sx = num(layer.shadow.x, 0), sy = num(layer.shadow.y, 8), sk = 1;
+      if (pm) {
+        sk = Math.sqrt(Math.abs(pm.a * pm.d - pm.b * pm.c)) || 1;
+        var dx = pm.a * sx + pm.c * sy, dy = pm.b * sx + pm.d * sy;
+        sx = dx; sy = dy;
+      }
       ctx.shadowColor = layer.shadow.color || 'rgba(23,19,31,.35)';
-      ctx.shadowBlur = num(layer.shadow.blur, 16);
-      ctx.shadowOffsetX = num(layer.shadow.x, 0);
-      ctx.shadowOffsetY = num(layer.shadow.y, 8);
+      ctx.shadowBlur = num(layer.shadow.blur, 16) * sk;
+      ctx.shadowOffsetX = sx;
+      ctx.shadowOffsetY = sy;
     }
     try {
       if (layer.type === 'image') this._paintImage(ctx, layer, opts);
