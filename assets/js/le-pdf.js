@@ -804,6 +804,102 @@
     return 'Helvetica';
   }
 
+  /* Font files for fontkit. Two faults in the vendored @pdf-lib/fontkit 1.1.1 broke custom fonts:
+     1. Its WOFF reader fails on several library faces ("Trying to access beyond buffer length"), so the WOFF is unwrapped
+        to a plain TrueType/OpenType file first (tables inflated with DecompressionStream).
+     2. Its subsetter copies each glyph's bytes and then writes the short (2-byte) loca format, which stores offset / 2.
+        Faces that ship the long loca format may have odd-length glyphs (Inter, EB Garamond, Lobster, Caveat...), so every
+        offset after the first odd glyph is rounded down and the glyphs that follow are cut or empty. Padding each glyph to
+        an even length before subsetting keeps every offset exact. */
+  async function inflateZlib(u8) {
+    if (typeof DecompressionStream !== 'function') throw new Error('No DecompressionStream');
+    var stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+  function sfntTables(u8) {
+    var dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    var count = dv.getUint16(4);
+    var out = [];
+    for (var i = 0; i < count; i++) {
+      var o = 12 + i * 16;
+      out.push({ tag: dv.getUint32(o), sum: dv.getUint32(o + 4), data: u8.subarray(dv.getUint32(o + 8), dv.getUint32(o + 8) + dv.getUint32(o + 12)) });
+    }
+    return { flavor: dv.getUint32(0), tables: out };
+  }
+  function writeSfnt(flavor, tables) {
+    var n = tables.length, es = 1, lg = 0;
+    while (es * 2 <= n) { es *= 2; lg++; }
+    var size = 12 + 16 * n;
+    tables.forEach(function (t) { size += (t.data.length + 3) & ~3; });
+    var out = new Uint8Array(size);
+    var dv = new DataView(out.buffer);
+    dv.setUint32(0, flavor); dv.setUint16(4, n); dv.setUint16(6, es * 16); dv.setUint16(8, lg); dv.setUint16(10, n * 16 - es * 16);
+    var at = 12 + 16 * n;
+    tables.forEach(function (t, i) {
+      var o = 12 + i * 16;
+      dv.setUint32(o, t.tag); dv.setUint32(o + 4, t.sum >>> 0); dv.setUint32(o + 8, at); dv.setUint32(o + 12, t.data.length);
+      out.set(t.data, at);
+      at += (t.data.length + 3) & ~3;
+    });
+    return out;
+  }
+  function tagOf(s) { return ((s.charCodeAt(0) << 24) | (s.charCodeAt(1) << 16) | (s.charCodeAt(2) << 8) | s.charCodeAt(3)) >>> 0; }
+  function evenGlyphs(flavor, tables) {
+    var find = function (s) { var t = tagOf(s); return tables.filter(function (x) { return x.tag === t; })[0]; };
+    var head = find('head'), loca = find('loca'), glyf = find('glyf'), maxp = find('maxp');
+    if (!head || !loca || !glyf || !maxp) return null;
+    var hv = new DataView(head.data.buffer, head.data.byteOffset, head.data.byteLength);
+    var longFmt = hv.getInt16(50) === 1;
+    var glyphs = new DataView(maxp.data.buffer, maxp.data.byteOffset, maxp.data.byteLength).getUint16(4);
+    var lv = new DataView(loca.data.buffer, loca.data.byteOffset, loca.data.byteLength);
+    var offs = [];
+    for (var i = 0; i <= glyphs; i++) offs.push(longFmt ? lv.getUint32(i * 4) : lv.getUint16(i * 2) * 2);
+    var odd = false;
+    for (i = 0; i < glyphs; i++) if ((offs[i + 1] - offs[i]) % 2) { odd = true; break; }
+    if (!odd) return null;
+    var total = 0;
+    for (i = 0; i < glyphs; i++) total += (offs[i + 1] - offs[i] + 1) & ~1;
+    var g2 = new Uint8Array(total), l2 = new Uint8Array((glyphs + 1) * 4), l2v = new DataView(l2.buffer), at = 0;
+    for (i = 0; i < glyphs; i++) {
+      l2v.setUint32(i * 4, at);
+      g2.set(glyf.data.subarray(offs[i], offs[i + 1]), at);
+      at += (offs[i + 1] - offs[i] + 1) & ~1;
+    }
+    l2v.setUint32(glyphs * 4, at);
+    var h2 = head.data.slice(0);
+    new DataView(h2.buffer).setInt16(50, 1);
+    return tables.map(function (t) {
+      if (t === glyf) return { tag: t.tag, sum: 0, data: g2 };
+      if (t === loca) return { tag: t.tag, sum: 0, data: l2 };
+      if (t === head) return { tag: t.tag, sum: t.sum, data: h2 };
+      return t;
+    });
+  }
+  async function fontFileForPdf(input) {
+    var u8 = input instanceof Uint8Array ? input : new Uint8Array(input);
+    if (u8.length < 12) return u8;
+    var dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    var flavor, tables;
+    if (dv.getUint32(0) === 0x774F4646) { /* 'wOFF' */
+      flavor = dv.getUint32(4);
+      tables = [];
+      for (var i = 0, n = dv.getUint16(12); i < n; i++) {
+        var o = 44 + i * 20, off = dv.getUint32(o + 4), comp = dv.getUint32(o + 8), len = dv.getUint32(o + 12);
+        var data = u8.subarray(off, off + comp);
+        if (comp < len) data = await inflateZlib(data);
+        tables.push({ tag: dv.getUint32(o), sum: dv.getUint32(o + 16), data: data });
+      }
+    } else {
+      var parsed = sfntTables(u8);
+      flavor = parsed.flavor;
+      tables = parsed.tables;
+    }
+    var even = evenGlyphs(flavor, tables);
+    if (even) tables = even;
+    else if (dv.getUint32(0) !== 0x774F4646) return u8;
+    return writeSfnt(flavor, tables);
+  }
+
   async function embedFont(doc, family, weight, italic, report) {
     var cache = doc.__leFonts || (doc.__leFonts = {});
     var key = String(family || 'Helvetica') + '/' + (weight || 400) + '/' + (italic ? 'i' : 'n');
@@ -819,7 +915,7 @@
             doc.registerFontkit(global.fontkit);
             doc.__leFontkit = true;
           }
-          var bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+          var bytes = await fontFileForPdf(buf);
           try {
             cache[key] = await doc.embedFont(bytes, { subset: true });
           } catch (e1) {
@@ -2877,6 +2973,8 @@
     signatureFromPoints: signatureFromPoints,
     signatureFromText: signatureFromText,
     cleanSignatureImage: cleanSignatureImage,
+    embedFont: embedFont,
+    fontFileForPdf: fontFileForPdf,
     lastReport: null
   };
 })(typeof window !== 'undefined' ? window : globalThis);
