@@ -99,7 +99,7 @@ cases['tab edit → the file changes (normalised, atomic); invalid file is not a
     h.assert(/^\{\n {2}"\$schema"/.test(text), 'written in the normalised long form');
     h.assert(!fs.readdirSync(s.dir).some((f) => /\.tmp$/.test(f)), 'no temp files left behind');
     fs.writeFileSync(s.file, '{ "format": "localeditor-design", "version": 1, "pages": [ { "layers": [ { "id": "x", "type": "blob" } ] } ] }');
-    await until(() => s.status() && s.status().ok === false, 15000, 'status.json reports the error');
+    await until(() => s.status() && s.status().ok === false && s.status().errors[0].path === '/pages/0/layers/0/type', 15000, 'status.json reports the error');
     const st = s.status();
     h.assert(st.errors[0].path === '/pages/0/layers/0/type', 'error with a JSON pointer: ' + JSON.stringify(st.errors));
     await sleep(500);

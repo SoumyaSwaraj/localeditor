@@ -117,6 +117,8 @@ class Link {
       return;
     }
     this.gone = false;
+    /* An editor (or an agent) may be half-way through writing: give a file that is not JSON yet one more look. */
+    if (!first) { try { JSON.parse(text); } catch (e) { await new Promise((r) => setTimeout(r, 350)); try { text = F.readDesign(this.abs); } catch (e2) { return; } } }
     if (!first && text === this.lastWritten) return;
     if (!first && this.lastFileText === text) return;
     this.lastFileText = text;
