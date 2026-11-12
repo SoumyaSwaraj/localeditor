@@ -306,7 +306,7 @@
       if (el.getAttribute('face')) st.fam = famOf(el.getAttribute('face'), st.fam);
     }
     /* never draw text the reader cannot see: very light text on the white page is darkened */
-    if (luminance(st.color) > 0.93 && !st.bg) st.color = [0.55, 0.55, 0.55];
+    if (luminance(st.color) > 0.93 && !st.bg && !(st.canvas && luminance(st.canvas) < 0.75)) st.color = [0.55, 0.55, 0.55];
     return st;
   };
   function famOf(v, cur) {
@@ -637,12 +637,14 @@
         var ccss = cssMap(td.getAttribute('style'));
         var cs = inherit(st);
         if (td.tagName === 'TH') cs.b = true;
+        var cellBg = parseColor(ccss['background-color'] || td.getAttribute('bgcolor')) || rbg;
+        if (cellBg) cs.canvas = cellBg; /* light text on a dark cell stays light */
         self.applyCss(cs, ccss, td);
         var align = (ccss['text-align'] || td.getAttribute('align') || '').toLowerCase();
         var defaults = /^(left|right|center|justify)$/.test(align) ? { align: align } : null;
         var blocks = self.blocksOf(td, cs, depth + 1, defaults);
         blocks.forEach(function (b) { if (b.t === 'p') { b.sa = Math.min(b.sa, cs.size * 0.3); b.sb = 0; } });
-        var bg = parseColor(ccss['background-color'] || td.getAttribute('bgcolor')) || rbg;
+        var bg = cellBg;
         cells.push({
           blocks: blocks, th: td.tagName === 'TH',
           colspan: clamp(Math.round(num(td.getAttribute('colspan'), 1)), 1, LIMIT.cols),
