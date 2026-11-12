@@ -1519,7 +1519,7 @@
           LE.project.snapshot(p.id, opts.label || '', { project: p, thumb: thumb }).catch(function () {});
         }
       });
-    }).catch(function () { setSave('error'); });
+    }).catch(function (err) { setSave('error'); if (window.LEPwa) LEPwa.reportQuotaError(err); });
   }
   function flushSave() { if (S.dirty) saveNow(); }
   function checkpoint(label) {
@@ -2474,6 +2474,32 @@
     });
   }
   boot();
+
+  /* Install hooks (le-pwa.js): files opened from the system or shared to the app, saving before an update,
+     and the memory guard that lets big bitmaps go while the tab is in the background. */
+  function pwaHooks(P) {
+    if (!P || !P.registerEditor) return;
+    P.onLaunchFiles(function (files) {
+      var recipe = files.filter(function (f) { return /\.leworkflow$/i.test(f.name); })[0];
+      var rest = files.filter(function (f) { return f !== recipe; });
+      if (rest.length) addFiles(rest);
+      if (recipe) { openPanel('recipes'); if (S.onRecipeFile) S.onRecipeFile(recipe); }
+    });
+    P.registerEditor({
+      name: 'Photo studio',
+      isBusy: function () { return !!S.project; },
+      save: function () { return S.dirty ? saveNow() : null; },
+      discard: function () { clearTimeout(S.saveTimer); S.dirty = false; try { localStorage.removeItem('le-studio-last'); } catch (e) {} },
+      release: function () { if (scene._clearBitmaps) scene._clearBitmaps(); },
+      restore: function () { if (scene._mark) scene._mark(); },
+      stats: function () {
+        var n = 0, px = 0;
+        Object.keys(S.mem).forEach(function (k) { var c = S.mem[k] && S.mem[k].canvas; if (c) { n++; px += c.width * c.height; } });
+        return { photos: n, bytes: px * 4, text: n ? n + ' photo' + (n > 1 ? 's' : '') + ' open, about ' + Math.round(px * 4 / 1048576) + ' MB of image memory' : 'No photos open' };
+      }
+    });
+  }
+  if (window.LEPwa) pwaHooks(window.LEPwa); else window.addEventListener('le-pwa-ready', function () { pwaHooks(window.LEPwa); }, { once: true });
   var checks = LE.recipes && LE.recipes.selfCheck ? LE.recipes.selfCheck() : [];
   checks.forEach(function (c) { if (!c.ok) console.warn(c.name, c.errors); });
 })();

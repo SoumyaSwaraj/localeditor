@@ -1,23 +1,27 @@
 {
+  "id": "/",
   "name": "LocalEditor",
   "short_name": "LocalEditor",
-  "description": "Private image studio and everyday tools that stay on your device.",
+  "description": "A private photo studio, PDF studio and everyday tools. Everything stays on your device and works offline.",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "./",
   "scope": "./",
-  "id": "./",
   "display": "standalone",
   "display_override": [
-    "window-controls-overlay",
-    "standalone"
+    "standalone",
+    "minimal-ui"
   ],
+  "orientation": "any",
   "background_color": "#E7E5EB",
   "theme_color": "#141318",
-  "orientation": "any",
   "categories": [
+    "photo",
     "productivity",
     "utilities",
-    "photo"
+    "graphics"
   ],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "assets/icons/icon-192.png",
@@ -40,49 +44,155 @@
     {
       "src": "assets/icons/icon.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "type": "image/webp",
+      "src": "assets/screenshots/studio-narrow.webp",
+      "sizes": "780x1688",
+      "form_factor": "narrow",
+      "label": "The photo studio on a phone: layers, text and filters, all on your device"
+    },
+    {
+      "type": "image/webp",
+      "src": "assets/screenshots/home-narrow.webp",
+      "sizes": "780x1688",
+      "form_factor": "narrow",
+      "label": "Every tool in one place, working offline"
+    },
+    {
+      "type": "image/webp",
+      "src": "assets/screenshots/studio-wide.webp",
+      "sizes": "1440x900",
+      "form_factor": "wide",
+      "label": "Design with layers, templates and collages"
+    },
+    {
+      "type": "image/webp",
+      "src": "assets/screenshots/home-wide.webp",
+      "sizes": "1440x900",
+      "form_factor": "wide",
+      "label": "A private photo studio, a PDF studio and 30 tools"
     }
   ],
   "shortcuts": [
     {
-      "name": "Image Compressor",
+      "name": "Photo studio",
+      "short_name": "Studio",
+      "description": "Start a new design",
+      "url": "./studio/",
+      "icons": [
+        {
+          "src": "assets/icons/shortcuts/studio-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Make a collage",
+      "short_name": "Collage",
+      "description": "Arrange several photos",
+      "url": "./studio/?tool=collage",
+      "icons": [
+        {
+          "src": "assets/icons/shortcuts/collage-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "PDF studio",
+      "short_name": "PDF",
+      "description": "Edit, sign and fill PDFs",
+      "url": "./pdf-studio/",
+      "icons": [
+        {
+          "src": "assets/icons/shortcuts/pdf-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Compress a photo",
+      "short_name": "Compress",
+      "description": "Shrink a photo for the web or email",
       "url": "./image-compressor/",
       "icons": [
         {
-          "src": "assets/icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Merge PDF",
-      "url": "./merge-pdf/",
-      "icons": [
-        {
-          "src": "assets/icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "JPG to PDF",
-      "url": "./jpg-to-pdf/",
-      "icons": [
-        {
-          "src": "assets/icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "QR Code Generator",
-      "url": "./qr-code-generator/",
-      "icons": [
-        {
-          "src": "assets/icons/icon-192.png",
-          "sizes": "192x192"
+          "src": "assets/icons/shortcuts/compress-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
         }
       ]
     }
-  ]
+  ],
+  "file_handlers": [
+    {
+      "action": "./studio/",
+      "accept": {
+        "application/vnd.localeditor.project+zip": [
+          ".leproject"
+        ],
+        "application/vnd.localeditor.workflow+json": [
+          ".leworkflow"
+        ],
+        "image/png": [
+          ".png"
+        ],
+        "image/jpeg": [
+          ".jpg",
+          ".jpeg"
+        ],
+        "image/webp": [
+          ".webp"
+        ],
+        "image/gif": [
+          ".gif"
+        ],
+        "image/avif": [
+          ".avif"
+        ]
+      },
+      "icons": [
+        {
+          "src": "assets/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ],
+      "launch_type": "single-client"
+    }
+  ],
+  "share_target": {
+    "action": "./studio/?share-target=1",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "media",
+          "accept": [
+            "image/*",
+            ".leproject",
+            ".leworkflow"
+          ]
+        }
+      ]
+    }
+  },
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  }
 }
