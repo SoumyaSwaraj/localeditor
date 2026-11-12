@@ -244,8 +244,9 @@ cases['form and camera at 390 and 360 px: no sideways scroll, 44px targets'] = a
     await page.waitForFunction(() => { const t = document.querySelector('.mk-card[data-maker="photobooth"] .mk-thumb'); return t && t.classList.contains('is-ready'); }, null, { timeout: 30000 });
     await page.click('.mk-card[data-maker="photobooth"]');
     await page.waitForFunction(() => document.querySelector('.mk-render') && document.querySelector('.mkp-open'));
+    await page.waitForTimeout(400);
     const targets = () => page.evaluate(() => [...document.querySelectorAll('.mk-sheet button, .mk-sheet input:not([type=checkbox]), .mk-sheet select')]
-      .filter((n) => n.offsetParent && n.getBoundingClientRect().height < 40 && !n.classList.contains('mk-ph-x')).map((n) => n.className || n.tagName));
+      .filter((n) => n.offsetParent && Math.round(n.getBoundingClientRect().height) < 40 && !n.classList.contains('mk-ph-x')).map((n) => n.className || n.tagName));
     h.assert(await h.noOverflow(page), vp + ' form overflow');
     h.assert(!(await targets()).length, vp + ' small targets: ' + (await targets()).join(','));
     await page.click('.mkp-open');

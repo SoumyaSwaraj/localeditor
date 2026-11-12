@@ -228,7 +228,7 @@
       var next = S.target >= 0 ? S.target : S.shots.filter(Boolean).length;
       countEl.textContent = S.shots.filter(Boolean).length >= n && S.target < 0 ? 'All ' + n + ' frames taken' : 'Frame ' + Math.min(n, next + 1) + ' of ' + n;
       done.disabled = !S.shots.filter(Boolean).length;
-      shoot.textContent = S.target >= 0 ? 'Retake frame ' + (S.target + 1) : S.shots.filter(Boolean).length >= n ? 'Take them again' : S.shots.length ? 'Next frame' : 'Start';
+      shoot.textContent = S.busy ? 'Hold still…' : S.target >= 0 ? 'Retake frame ' + (S.target + 1) : S.shots.filter(Boolean).length >= n ? 'Take them again' : S.shots.length ? 'Next frame' : 'Start';
     }
     function drawThumbs() {
       thumbs.innerHTML = '';
@@ -296,7 +296,7 @@
     }
     shoot.onclick = function () {
       if (S.busy || !S.stream) return;
-      S.busy = true; shoot.disabled = true;
+      S.busy = true; shoot.disabled = true; shoot.textContent = 'Hold still…';
       if (S.target >= 0) { takeOne(S.target, false); return; }
       var have = S.shots.filter(Boolean).length;
       if (have >= n) { S.shots.forEach(function (cv) { if (cv) cv.width = 0; }); S.shots = []; have = 0; drawThumbs(); }

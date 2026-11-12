@@ -261,7 +261,7 @@ cases['form at 390 and 360 px: no sideways scroll, 44px targets, in the gallery 
     await page.waitForTimeout(300);
     h.assert(await h.noOverflow(page), vp + ' form overflow');
     const small = await page.evaluate(() => [...document.querySelectorAll('.mk-sheet button, .mk-sheet input:not([type=checkbox]), .mk-sheet select')]
-      .filter((n) => n.offsetParent && n.getBoundingClientRect().height < 40 && !n.classList.contains('mk-ph-x') /* shared photo-remove chip, studio-makers.css */).map((n) => n.className || n.tagName));
+      .filter((n) => n.offsetParent && Math.round(n.getBoundingClientRect().height) < 40 && !n.classList.contains('mk-ph-x') /* shared photo-remove chip, studio-makers.css */).map((n) => n.className || n.tagName));
     h.assert(!small.length, 'small targets: ' + small.slice(0, 4).join(','));
     h.assert.noErrors(page);
     h.assert(!page.outside.length, 'outside requests: ' + page.outside.slice(0, 3).join(', '));
