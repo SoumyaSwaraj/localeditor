@@ -42,7 +42,7 @@ body.pb-open { overflow: hidden; }
   display: flex; align-items: center; gap: 12px; padding: 10px 16px; min-height: 60px;
   background: var(--surface); border-bottom: 1px solid var(--line);
 }
-.pb-close { flex: none; }
+.pb-close { flex: none; width: 44px; height: 44px; }
 .pb-head-text { min-width: 0; }
 .pb-head h2 { margin: 0; font-size: 17px; font-weight: 720; letter-spacing: -0.02em; line-height: 1.25; }
 .pb-head-sub { display: flex; align-items: center; gap: 6px; margin: 2px 0 0; font-size: 12.5px; color: var(--faint); }
@@ -219,6 +219,12 @@ body.pb-open { overflow: hidden; }
   .pb-file-meta { grid-column: 2; grid-row: 2; }
   .pb-file-x { grid-column: 3; grid-row: 1 / span 2; }
   .pb-preview { padding: 10px; }
+  .pb-work .ps-seg button { min-height: 44px; }
+  .pb-work .ps-sw { width: 44px; height: 44px; }
+  .pb-work .ps-slider-v { height: 44px; min-width: 56px; }
+  .pb-work .ps-slider-head { align-items: center; }
+  .pb-work .btn-sm, .pb-g-acts .btn, .pb-work button.chip.pb-chip { min-height: 44px; }
+  .pb-peek { min-height: 44px; }
   .pb-entry { font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) {

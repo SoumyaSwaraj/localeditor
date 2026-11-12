@@ -358,8 +358,8 @@
       bits = Math.min(bits, dictWords.length * Math.log2(WORDS.length) + (pw.length - covered - (dictWords.length - 1)) * 3 + (letters - covered) * 4.7);
     }
     if (/^(.)\1+$/.test(pw)) { bits = 4; hints.push('Repeating one character is easy to guess.'); }
-    if (/^\d+$/.test(pw)) { bits = Math.min(bits, pw.length * 3.32); hints.push('Only digits: easy to try every combination.'); }
     if (/^\d{6,8}$/.test(pw) || parseDate(pw)) { bits = Math.min(bits, 16); hints.push('Dates (like a date of birth) are easy to guess for anyone who knows the person.'); }
+    if (/^\d+$/.test(pw)) { bits = Math.min(bits, pw.length * 3.32); hints.push('Only digits: easy to try every combination.'); }
     if (/^(password|passw0rd|qwerty|letmein|welcome|admin|123456|111111|abc123|iloveyou)/i.test(pw)) { bits = Math.min(bits, 10); hints.push('This is one of the most common passwords.'); }
     if (/(0123|1234|2345|3456|4567|5678|6789|abcd|qwer|asdf)/i.test(pw)) bits -= 8;
     bits = Math.max(0, Math.round(bits));
@@ -1333,7 +1333,7 @@
       pw = '';
       files.push({ name: check.names[i], bytes: out, row: i + 1 });
       summaryRows.push([String(i + 1), check.names[i], crypt ? 'yes' : 'no', opts.watermark && opts.watermark.text ? 'yes' : 'no', String(out.length)]);
-      if (i % 4 === 3) await tick();
+      await tick();
     }
     checkCancel(opts);
     progress(opts, rows.length, rows.length, 'Done');
@@ -1491,7 +1491,7 @@
       pw = '';
       files.push({ name: names[i], bytes: out, recipient: who, id: id });
       summary.push([who, names[i], id, crypt ? 'yes' : 'no']);
-      if (i % 4 === 3) await tick();
+      await tick();
     }
     checkCancel(opts);
     progress(opts, rows.length, rows.length, 'Done');
