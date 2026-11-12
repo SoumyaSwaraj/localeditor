@@ -452,6 +452,74 @@
     }
   };
 
+  /* ---------- The open design format (.ledesign.json): reading expert fields; le-design.js calls this when a file has any ---------- */
+  FX.design = {
+    /* drafts: [{ l (layer being built), path, expert: { raw, type, page } }]. ctx: { rep (err, warn), imgs (list resolved next), src(value, path, ref) }.
+       Returns a function to call once the images are resolved. */
+    read: function (drafts, ctx) {
+      var rep = ctx.rep, todo = [];
+      drafts.forEach(function (d) {
+        var raw = d.expert.raw, type = d.expert.type, path = d.path, l = d.l, refs = [];
+        var where = { page: d.expert.page, layer: l.id };
+        if (type === 'image' && isObj(raw.fxBaked) && !d.fx) {
+          d.fx = clone(raw.fxBaked);
+          d.fxImg = ctx.src(raw.fxBaked.src, path + '/fxBaked/src', where);
+          if (d.fxImg && d.fxImg.kind !== 'remote') ctx.imgs.push(d.fxImg);
+        }
+        if (raw.fx != null && !Array.isArray(raw.fx)) { rep.err(path + '/fx', 'fx is a list of effect entries: [{ "type": "exposure", "p": { "ev": 0.5 } }].'); raw.fx = null; }
+        ['fxMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { if (raw[k] != null && !isObj(raw[k])) { rep.err(path + '/' + k, k + ' must be an object.'); raw[k] = null; } });
+        try { raw = clone({ fx: raw.fx, fxMask: raw.fxMask, transform: raw.transform, retouch: raw.retouch, maps: raw.maps, raw: raw.raw }); } catch (e) { rep.err(path, 'The expert fields of this layer could not be read.'); return; }
+        /* Every "asset" is an image source like src. It is swapped for a marker while the shape is checked, and resolved with the other images. */
+        (function walk(o, at, depth) {
+          if (!o || typeof o !== 'object' || depth > 6) return;
+          Object.keys(o).slice(0, 600).forEach(function (k) {
+            if (k === 'asset' && typeof o[k] === 'string') {
+              var img = ctx.src(o[k], at + '/asset', where);
+              if (img && img.kind === 'remote') { rep.warn(at + '/asset', 'remote-asset', 'Masks and maps cannot be remote images; this one was left out.', l.id); img = null; }
+              o[k] = 'x:ref:' + refs.length;
+              refs.push(img);
+              if (img) ctx.imgs.push(img);
+            } else if (o[k] && typeof o[k] === 'object') walk(o[k], at + '/' + k, depth + 1);
+          });
+        })(raw, path, 0);
+        var x = LE.Scene.expertOf(raw, {});
+        if (Array.isArray(raw.fx) && (!x.fx || x.fx.length !== Math.min(raw.fx.length, LIMITS.stack))) rep.warn(path + '/fx', 'bad-effect', 'An effect entry needs a "type" such as "exposure"; entries without one were left out.', l.id);
+        if (Array.isArray(raw.fx) && raw.fx.length > LIMITS.stack) rep.warn(path + '/fx', 'too-many', 'A layer can have up to ' + LIMITS.stack + ' effects; the rest were left out.', l.id);
+        if (isObj(raw.transform) && !x.transform) rep.err(path + '/transform/quad', 'transform.quad is four [x, y] corners in page units: top-left, top-right, bottom-right, bottom-left.');
+        todo.push({ d: d, x: x, refs: refs });
+      });
+      return function () {
+        todo.forEach(function (t) {
+          var d = t.d, l = d.l;
+          (function fix(o) {
+            if (!o || typeof o !== 'object') return;
+            if (Array.isArray(o)) { for (var i = o.length - 1; i >= 0; i--) { fix(o[i]); if (o[i] && o[i].asset === null) o.splice(i, 1); } return; }
+            Object.keys(o).forEach(function (k) {
+              var m = typeof o[k] === 'string' ? /^x:ref:(\d+)$/.exec(o[k]) : null;
+              if (k === 'asset' && m) { var img = t.refs[Number(m[1])]; o[k] = img && img.id ? img.id : null; }
+              else if (m) delete o[k];
+              else { fix(o[k]); if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k]) && o[k].asset === null) delete o[k]; }
+            });
+          })(t.x);
+          Object.keys(t.x).forEach(function (k) { l[k] = t.x[k]; });
+          if (l.fxMask && !l.fxMask.parts.length) delete l.fxMask;
+          if (l.maps && !Object.keys(l.maps).length) delete l.maps;
+          (l.fx || []).forEach(function (e, i) {
+            var r = FX.validate(e, d.path + '/fx/' + i);
+            r.errors.forEach(function (m) { rep.warn(m.path, m.code, m.message + ' It is kept in the file but not drawn.', l.id); });
+            r.warnings.forEach(function (m) { rep.warn(m.path, m.code, m.message, l.id); });
+            if (r.ok) l.fx[i] = r.entry;
+          });
+          if (l.fxMask) {
+            var w = [], cm = cleanMask(l.fxMask, d.path + '/fxMask', w);
+            w.forEach(function (m) { rep.warn(m.path, m.code, m.message, l.id); });
+            if (cm) l.fxMask = cm; else delete l.fxMask;
+          }
+        });
+      };
+    }
+  };
+
   /* ---------- Loader ---------- */
   var base = (function () {
     var s = document.currentScript && document.currentScript.src;

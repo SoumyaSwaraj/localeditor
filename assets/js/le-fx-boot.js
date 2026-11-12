@@ -1,5 +1,4 @@
-/* LocalEditor: loads the effect renderer when a document needs it. See docs/EXPERT-MODE.md and docs/FX-AUTHORING.md.
-   Stays tiny: everything else is in assets/js/fx/, fetched on first use. */
+/* LocalEditor: loads the effect renderer (assets/js/fx/) when a document needs it. See docs/FX-AUTHORING.md. Keep this file tiny. */
 (function () {
   'use strict';
   var LE = window.LE = window.LE || {}, job = null, scenes = [];
@@ -17,7 +16,7 @@
   }
   LE.fxBoot = {
     needs: needs, load: load,
-    /* Part of LE.Scene's bitmap cache key: every expert field, what the frame clip and scale depend on, and the renderer's state. */
+    /* For LE.Scene's bitmap cache key: the expert fields, what clip and scale depend on, the renderer's state. */
     key: function (l) { return has(l) ? JSON.stringify([l.fx, l.fxMask, l.transform, l.retouch, l.maps, l.mask, l.maskPath, l.radius, l.w, l.h]) + (LE.fx && LE.fx.stamp ? LE.fx.stamp() : '') : 0; },
     layer: function (scene, layer, target, preview) {
       return load(scene).then(function (fx) { return fx.layer(scene, layer, target, preview); }, function () {

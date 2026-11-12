@@ -206,7 +206,7 @@ For `asset`, `luma`, `color`, `subject`, `depth` and `face`, `feather` is a blur
   ] }
 ```
 
-What the reader does with them: the shape is checked always (sizes, types, forbidden keys); when the effect registry can be loaded, every entry is checked against its effect: unknown parameters are dropped and out-of-range values clamped, each with a warning. An entry whose `type` is not known is kept in the file and not drawn (warning `unknown-type`), so a file made by a newer build survives a round trip through an older one. In the long form, an entry is written as `id`, `type`, then `on`, `amount`, `blend`, `mask` when they are not the defaults, then `p` with its keys sorted and every parameter present.
+What the reader does with them: the shape is checked always (sizes, types, forbidden keys); when the effect registry can be loaded, every entry is checked against its effect: unknown parameters are dropped and out-of-range values clamped, each with a warning. An entry whose `type` is not known is kept in the file and not drawn (warning `unknown-type`), so a file made by a newer build survives a round trip through an older one. In the long form the keys inside expert fields are sorted, and an entry carries every field and every parameter (`amount`, `blend`, `id`, `mask`, `on`, `p`, `type`), so a file reads the same after any number of round trips.
 
 ## Fills and colours
 

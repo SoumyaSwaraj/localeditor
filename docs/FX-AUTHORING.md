@@ -7,7 +7,7 @@ The contract for step X0a of `docs/EXPERT-MODE.md`, as built. Feature teams (X1�
 | File | Loaded | Holds |
 |---|---|---|
 | `assets/js/le-fx-boot.js` | with the studio (about 2 KB) | `LE.fxBoot`: detects expert data, loads the rest, redraws |
-| `assets/js/fx/le-fx.js` | on demand | registry, validation, `LE.fx.ops`, quad maths, the loader |
+| `assets/js/fx/le-fx.js` | on demand | registry, validation, `LE.fx.ops`, quad maths, the open-format reader (`LE.fx.design`), the loader |
 | `assets/js/fx/le-fx-gl.js` | by `le-fx.js` | WebGL2 renderer, pass builder, masks, tiling, colour management, the scene hooks |
 | `assets/js/fx/le-fx-basic.js` | by `le-fx.js` | the starter effects |
 | `assets/js/fx/le-fx-analyze.js` | first `LE.fx.analyze` call (or at load when an effect declares `needs: ['stats']`) | image statistics |
@@ -187,7 +187,7 @@ passes: function (g, p) {
 
 - The image is processed in tiles (one when it fits in the memory budget and the texture limit). Each tile is extended by the sum of `radius(p, scale)` over the stack plus the reach of mask feathers. Declare the truth: too small shows seams, too large wastes time. Tile rectangles sit on a 64-pixel grid (256 for very wide blurs) so pyramid levels line up between tiles.
 - Outside the image, `g.source` is edge-extended (`edge: 'transparent'` on `g.blur` for the other behaviour). In the silhouette stage the outside is transparent.
-- A stack that reads more than a tile can carry (about 3,700 pixels each side at an 8,192 texture limit, 1,660 at 4,096) is clamped with a console note; such a stack can show seams at export size.
+- **Limits, so that no parameter can run away.** When the whole picture fits in one rectangle (most previews) any radius is exact, because beyond the picture everything is its extended edge. When it has to be tiled, a tile can carry a reach of about 1,200 pixels on a `high` device, 740 on `mid` and 410 on `low` (a Gaussian of roughly 270, 180 and 95 pixels standard deviation at export scale); a wider stack is clamped with a console note and can show soft seams. A result may extend beyond the layer box by at most 2,048 pixels, twice the picture's longer side and six times its area. A render whose rectangles add up to more than 480 MP (240 on `mid`, 120 on `low`; a sixth of that for previews) is done at half resolution, repeatedly if needed, with a console note.
 - Procedural detail (grain, textures) must be a function of `docPos()` and a `seed` parameter. Preview and export then show the same pattern at different sampling densities.
 - `LE.fx.interactive(true)`: stacks with spatial or silhouette effects render at half resolution, `g.draft` is set and `draft(p)` is applied. `LE.fx.interactive(false)` refines. Listeners (`LE.fx.on`) hear `draft`, `refine`, `lost`, `restored`.
 - Colour: 8-bit sRGB in, linear or display-referred floating point inside, 8-bit out with ordered dithering. `LE.fx.apply(canvas, { colorSpace: 'display-p3' })` returns a Display-P3 canvas where the browser supports it; the studio's compositor is sRGB, so the scene path stays sRGB.
@@ -200,7 +200,7 @@ passes: function (g, p) {
 | `LE.fx.apply(source, { fx, mask, quad, scale, tile, preview, key, colorSpace, pad })` | a canvas or image through a stack; returns a canvas with `._fx = { pad, padPx, … }`. Tests, thumbnails, tools |
 | `LE.fx.interactive(bool)`, `LE.fx.on(fn)`, `LE.fx.stamp()` | draft/refine, events, the cache stamp |
 | `LE.fx.status()` | `{ available, lost, float, p3, maxTexture, renderer, memory: { bytes, cacheBytes, budget }, stats, warnings }` |
-| `LE.fx.configure({ tile, budgetMB, eightBit })`, `LE.fx.trim(all)`, `LE.fx.profile(bool)` | tests and the bench; `trim` frees GPU memory |
+| `LE.fx.configure({ tile, budgetMB, workMP, eightBit })`, `LE.fx.trim(all)`, `LE.fx.profile(bool)` | tests and the bench; `trim` frees GPU memory |
 | `LE.fx.problems(doc)`, `LE.fx.cleanMask(mask)`, `LE.fx.assetsOf(layer)` | what would be skipped; a validated mask; asset ids a layer needs |
 | `LE.fx.quad.unit(layer)`, `.corners(layer)`, `.homography(points)`, `.invert(m)` | perspective maths |
 | `LE.fx.math` | `curveLUT`, `parseColor`, `srgbToLinear`, `linearToSrgb`, `blurReach`, `wbMatrix`, `toneLUT`, `hash` |
@@ -248,7 +248,7 @@ LE.fxBoot.load().then(function (fx) { return fx.describe(); });
 
 - `fx.page(browser, base, { configure })`: a blank page with the renderer and every pack loaded (`window.fxT` has `load`, `fit`, `card`, `png`, `diff`).
 - `fx.render(page, { photo | card, alpha, size, fx, mask, quad, tile, scale, preview, interactive })` → PNG buffer.
-- `fx.golden(page, name, png, { max, over })`: compares with `tests/golden/fx/<name>.png`. `FX_GOLDEN=create node tests/run.js fx` writes missing ones, `FX_GOLDEN=update` rewrites all; look at the image before committing it.
+- `fx.golden(page, name, png, { max, over })`: compares with `tests/golden/fx/<name>.png`. `FX_GOLDEN=create node tests/run.js fx` writes missing ones, `FX_GOLDEN=update` rewrites all; look at the image before committing it. `legacy-sample.png` and `legacy-collage.png` are different: they were drawn by the engine as it was before X0a and prove that documents without expert data did not change, so regenerate them only when a deliberate change to the legacy pipeline lands.
 - `fx.same(page, a, b, what, { max, over })`, `fx.diff(page, a, b, limit)` → `{ max, mean, over, at }`.
 - `fx.attach(page)`, `fx.shot(page, scale)`, `fx.legacy(page, kind)` for studio pages.
 

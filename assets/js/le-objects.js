@@ -389,44 +389,36 @@
     if (word(m.sig, 16)) out.sig = word(m.sig, 16);
     return out;
   }
-  /* Expert fields (docs/EXPERT-MODE.md, docs/FX-AUTHORING.md): fx stack, fxMask, transform.quad, retouch, maps, raw.
-     Only the shape is checked here (types, sizes, forbidden keys); LE.fx checks every entry against its effect's schema before it runs. */
-  var FX_BAD = { __proto__: 1, constructor: 1, prototype: 1 };
+  /* Expert fields (docs/FX-AUTHORING.md): fx, fxMask, transform.quad, retouch, maps, raw. Shape only (types, sizes, forbidden
+     keys); LE.fx checks every entry against its effect's schema before it runs. */
   function fxVal(v, d, inList) {
     if (typeof v === 'number') return isFinite(v) ? v : null;
     if (typeof v === 'boolean') return v;
     if (typeof v === 'string') return v.replace(/[^\w #:.,()%\/+-]/g, '').slice(0, 120);
-    if (v == null || typeof v !== 'object' || d > 3) return null;
+    if (!v || typeof v !== 'object' || d > 3) return null;
     if (Array.isArray(v)) return v.slice(0, inList ? 4 : 512).map(function (x) { return fxVal(x, d + 1, true); });
     var o = {};
-    Object.keys(v).slice(0, 24).forEach(function (k) { if (!FX_BAD[k] && /^[a-zA-Z][\w-]{0,31}$/.test(k)) o[k] = fxVal(v[k], d + 1, inList); });
+    Object.keys(v).slice(0, 24).forEach(function (k) { if (/^[a-zA-Z][\w-]{0,31}$/.test(k) && k !== 'constructor' && k !== 'prototype') o[k] = fxVal(v[k], d + 1, inList); });
     return o;
   }
-  function fxObj(v, d) { v = fxVal(v, d); return v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length ? v : null; }
+  function fxObj(v, d) { v = fxVal(v, d); return v && !Array.isArray(v) && Object.keys(v).length ? v : null; }
   function fxMaskOf(m) {
-    if (!m || typeof m !== 'object' || !Array.isArray(m.parts)) return null;
-    var parts = m.parts.slice(0, 8).map(function (q) { q = fxObj(q, 2); return q && typeof q.kind === 'string' ? q : null; }).filter(Boolean);
+    var parts = m && Array.isArray(m.parts) ? m.parts.slice(0, 8).map(function (q) { q = fxObj(q, 2); return q && typeof q.kind === 'string' ? q : null; }).filter(Boolean) : [];
     return parts.length ? { parts: parts } : null;
   }
-  function fxStackOf(list) {
-    if (!Array.isArray(list)) return null;
-    var out = [];
-    list.slice(0, 32).forEach(function (e) {
-      if (!e || typeof e !== 'object' || Array.isArray(e) || typeof e.type !== 'string' || !/^[a-z][a-z0-9-]{1,39}$/.test(e.type)) return;
-      out.push({
+  function expertOf(src, layer) {
+    var fx = (Array.isArray(src.fx) ? src.fx : []).slice(0, 32).map(function (e) {
+      return e && typeof e.type === 'string' && /^[a-z][a-z0-9-]{1,39}$/.test(e.type) ? {
         id: typeof e.id === 'string' && /^[\w.-]{1,40}$/.test(e.id) ? e.id : uid(), type: e.type, on: e.on !== false, amount: clamp(num(e.amount, 1), 0, 1),
         blend: typeof e.blend === 'string' && /^[a-z-]{1,20}$/.test(e.blend) ? e.blend : 'normal', mask: fxMaskOf(e.mask), p: fxObj(e.p, 1) || {}
-      });
-    });
-    return out.length ? out : null;
-  }
-  function expertOf(src, layer) {
-    var fx = fxStackOf(src.fx), mask = fxMaskOf(src.fxMask || (src.mask && typeof src.mask === 'object' ? src.mask : null));
+      } : null;
+    }).filter(Boolean);
+    var mask = fxMaskOf(src.fxMask || (typeof src.mask === 'object' ? src.mask : null));
     var q = src.transform && src.transform.quad, rt = src.retouch, maps = fxObj(src.maps, 0), raw = fxObj(src.raw, 2);
     ['fx', 'fxMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { delete layer[k]; });
-    if (fx) layer.fx = fx;
+    if (fx.length) layer.fx = fx;
     if (mask) layer.fxMask = mask;
-    if (Array.isArray(q) && q.length === 4 && q.every(function (c) { return Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number' && isFinite(c[0]) && isFinite(c[1]); })) {
+    if (Array.isArray(q) && q.length === 4 && q.every(function (c) { return Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number' && isFinite(c[0] + c[1]); })) {
       layer.transform = { quad: q.map(function (c) { return [clamp(c[0], -1e5, 1e5), clamp(c[1], -1e5, 1e5)]; }) };
     }
     if (rt && typeof rt.asset === 'string' && /^[\w:.-]{1,80}$/.test(rt.asset)) layer.retouch = { asset: rt.asset, version: Math.max(0, Math.round(num(rt.version, 1))) };
@@ -434,7 +426,7 @@
     if (raw) layer.raw = raw;
     return layer;
   }
-  /* Asset ids the expert fields point at (masks, retouch overlay, maps, LUTs), so projects keep them. */
+  /* Asset ids the expert fields point at (masks, retouch, maps, LUTs), so projects keep them. */
   function expertAssets(l) { return JSON.stringify([l.fx, l.fxMask, l.retouch, l.maps]).match(/[a-f0-9]{64}/g) || []; }
 
   /* Print meta (doc.print): the physical page this page is meant for, in mm, and the pixels per inch it was laid out at.
@@ -570,7 +562,7 @@
       layer.color = src.color || '#17131F';
       layer.mode = src.mode === 'marker' || src.mode === 'highlighter' ? src.mode : 'pen';
     } else if (type === 'adjust') {
-      /* Adjustment layer: its fx stack applies to what is beneath it. Covers the page unless a box is given. */
+      /* Adjustment layer: its fx stack applies to what is beneath. Covers the page unless a box is given. */
       layer.clip = src.clip === true;
       if (src.w == null && src.h == null) { layer.x = 0; layer.y = 0; layer.w = scene._doc.width; layer.h = scene._doc.height; }
     }
@@ -1809,7 +1801,7 @@
     var rec = this._assets[layer.src];
     var self = this;
     if (!rec) return Promise.resolve(null);
-    /* Expert data: LE.fx makes the bitmap (it calls back here with _fxRaw for the legacy part). Everything below is unchanged. */
+    /* Expert data: LE.fx makes the bitmap, calling back here with _fxRaw for the legacy part. */
     if (!layer._fxRaw && LE.fxBoot && LE.fxBoot.needs(layer)) return LE.fxBoot.layer(this, layer, targetMax, preview);
     var cut = layer.cutout && layer.cutout.enabled !== false ? layer.cutout : null;
     var mrec = cut ? this._assets[cut.asset] : null;
@@ -1826,7 +1818,7 @@
         } else base = LE.fit(src, targetMax);
       }
       var rt = layer._fxRaw && layer.retouch ? assetCanvas(self._assets[layer.retouch.asset]) : null;
-      if (rt) { if (base === src) base = cloneCanvas(base); base.getContext('2d').drawImage(rt, 0, 0, base.width, base.height); }   /* retouch overlay, at source geometry */
+      if (rt) { if (base === src) base = cloneCanvas(base); base.getContext('2d').drawImage(rt, 0, 0, base.width, base.height); }   /* retouch overlay */
       /* Cut-out first, so crop, adjust, filters and the outline all see the subject on transparency. */
       if (cut && mrec) base = cutoutApply(base, mrec, cut.feather * base.width * ((layer.crop && layer.crop.w) || 1) / Math.max(1, layer.w));
       function finish(c) { return cut && cut.outline && c ? cutoutOutline(c, cut.outline.width * c.width / Math.max(1, layer.w), cut.outline.color) : c; }
@@ -2143,7 +2135,7 @@
     this._doc.layers.forEach(function (layer) {
       if (opts.preview && self._bgEdit && self._bgEdit.peek) return;
       if (opts.preview && self._crop && self._crop.id === layer.id) self._drawCropGhost(ctx, layer);
-      if (LE.fxBoot && LE.fxBoot.draw(self, ctx, layer, opts)) return;   /* adjustment layers, groups and non-photo layers with effects */
+      if (LE.fxBoot && LE.fxBoot.draw(self, ctx, layer, opts)) return;   /* expert layers drawn by LE.fx */
       self._drawLayer(ctx, layer, opts);
     });
     ctx.restore();

@@ -395,7 +395,7 @@
     else if (type === 'shape') readShape(src, path, l, rep);
     else if (type === 'svg' || type === 'icon') readSvg(src, path, l, d, rep, type);
     else if (type === 'path') readPath(src, path, l, rep);
-    readExpert(src, path, l, d, rep, st, page, type);
+    readExpert(src, l, d, page, type);
     return d;
   }
 
@@ -961,10 +961,9 @@
     pages.forEach(function (p) {
       if (p.bgImg) imgs.push(p.bgImg);
       p.drafts.forEach(function (d) { if (d.img) imgs.push(d.img); if (d.fxImg && d.fxImg.kind !== 'remote') imgs.push(d.fxImg); });
-      p.drafts.forEach(function (d) { (d.xrefs || []).forEach(function (x) { imgs.push(x); }); });
     });
 
-    return resolveImages(imgs, opts, rep, st, out).then(function () { return expertStage(pages, rep); }).then(function () {
+    return expertStage(pages, imgs, rep, st).then(function (after) { return resolveImages(imgs, opts, rep, st, out).then(after); }).then(function () {
       return Promise.all(pages.map(function (p) { return collageStage(p, rep); }));
     }).then(function () {
       var all = [];
@@ -1210,131 +1209,51 @@
     return o;
   }
 
-  /* ---------- Expert fields (docs/EXPERT-MODE.md, docs/FX-AUTHORING.md, "Expert fields" in docs/FORMAT-DESIGN.md) ----------
-     fx as a list (the older baked-effect object keeps its meaning; next to a list it is written as fxBaked), fxMask (a layer "mask"
-     given as an object is the same thing), transform, retouch, maps, raw, and the adjustment layer type. LE.Scene.expertOf checks
-     the shape; every effect entry is checked against the effect registry, which is loaded only when a file carries expert data. */
+  /* ---------- Expert fields (docs/FX-AUTHORING.md; "Expert fields" in docs/FORMAT-DESIGN.md) ----------
+     fx as a list, fxMask (a "mask" object means the same), transform, retouch, maps, raw and the adjustment layer type.
+     They are read and checked by LE.fx.design, which loads only when a file carries them. */
   TYPES.push('adjust');
   COMMON.push('fx', 'fxMask', 'transform', 'retouch', 'maps', 'raw');
   BY_TYPE.adjust = ['clip'];
   BY_TYPE.image.push('fxBaked');
-  var XREF = /^x:ref:(\d+)$/;
-  function readExpert(src, path, l, d, rep, st, page, type) {
-    if (type === 'adjust') {
-      l.clip = src.clip === true;
-      if (d.w == null && d.h == null) { d.w = page.width; d.h = page.height; }
-    }
-    if (type === 'image' && isObj(src.fxBaked) && !d.fx) { d.fx = clone(src.fxBaked); d.fxImg = readSrc(src.fxBaked.src, path + '/fxBaked/src', rep, st, { page: page.index, layer: l.id }); }
-    if (src.fx != null && !Array.isArray(src.fx) && type !== 'image') rep.err(path + '/fx', 'fx is a list of effect entries: [{ "type": "exposure", "p": { "ev": 0.5 } }].');
-    ['fxMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { if (src[k] != null && !isObj(src[k])) rep.err(path + '/' + k, k + ' must be an object.'); });
-    var raw = { fx: Array.isArray(src.fx) ? src.fx : null, fxMask: isObj(src.fxMask) ? src.fxMask : isObj(src.mask) ? src.mask : null, transform: src.transform, retouch: src.retouch, maps: src.maps, raw: src.raw };
-    if (!(LE.Scene && LE.Scene.expertOf) || !Object.keys(raw).some(function (k) { return isObj(raw[k]) || Array.isArray(raw[k]); })) return;
-    /* Every "asset" is an image source like src. It is swapped for a marker while the shape is checked, and resolved with the other images. */
-    var refs = [];
-    try { raw = clone(raw); } catch (e) { rep.err(path, 'The expert fields of this layer could not be read.'); return; }
-    (function walk(o, at, depth) {
-      if (!o || typeof o !== 'object' || depth > 6) return;
-      Object.keys(o).slice(0, 600).forEach(function (k) {
-        if (k === 'asset' && typeof o[k] === 'string') {
-          var img = readSrc(o[k], at + '/asset', rep, st, { page: page.index, layer: l.id });
-          if (img && img.kind === 'remote') { rep.warn(at + '/asset', 'remote-asset', 'Masks and maps cannot be remote images; this one was left out.', l.id); img = null; }
-          o[k] = 'x:ref:' + refs.length;
-          refs.push(img);
-        } else if (o[k] && typeof o[k] === 'object') walk(o[k], at + '/' + k, depth + 1);
-      });
-    })(raw, path, 0);
-    var x = LE.Scene.expertOf(raw, {});
-    if (raw.fx && (!x.fx || x.fx.length !== raw.fx.length)) rep.warn(path + '/fx', 'bad-effect', 'An effect entry needs a "type" such as "exposure"; entries without one were left out.', l.id);
-    if (raw.fx && raw.fx.length > 32) rep.warn(path + '/fx', 'too-many', 'A layer can have up to 32 effects; the rest were left out.', l.id);
-    if (isObj(raw.transform) && !x.transform) rep.err(path + '/transform/quad', 'transform.quad is four [x, y] corners in page units: top-left, top-right, bottom-right, bottom-left.');
-    d.expert = x;
-    d.xrefs = refs.filter(Boolean);
-    d.xrefAll = refs;
+  function readExpert(src, l, d, page, type) {
+    if (type === 'adjust') { l.clip = src.clip === true; if (d.w == null && d.h == null) { d.w = page.width; d.h = page.height; } }
+    var raw = { fx: type === 'image' && !Array.isArray(src.fx) ? null : src.fx, fxBaked: src.fxBaked, fxMask: src.fxMask != null ? src.fxMask : isObj(src.mask) ? src.mask : null, transform: src.transform, retouch: src.retouch, maps: src.maps, raw: src.raw };
+    if (Object.keys(raw).some(function (k) { return raw[k] != null; })) d.expert = { raw: raw, type: type, page: page.index };
   }
-  /* After the images are in: put asset ids in place of the markers, then check entries against the registry. */
-  function expertStage(pages, rep) {
+  /* Before the images resolve: asset references join them. Returns what to run once they have. */
+  function expertStage(pages, imgs, rep, st) {
     var drafts = [];
     pages.forEach(function (p) { p.drafts.forEach(function (d) { if (d.expert) drafts.push(d); }); });
-    if (!drafts.length) return null;
-    drafts.forEach(function (d) {
-      (function fix(o) {
-        if (!o || typeof o !== 'object') return;
-        if (Array.isArray(o)) {
-          for (var i = o.length - 1; i >= 0; i--) { fix(o[i]); if (o[i] && o[i].asset === null) o.splice(i, 1); }
-          return;
-        }
-        Object.keys(o).forEach(function (k) {
-          var m = typeof o[k] === 'string' ? XREF.exec(o[k]) : null;
-          if (k === 'asset' && m) { var img = d.xrefAll[Number(m[1])]; o[k] = img && img.id ? img.id : null; }
-          else if (m) delete o[k];
-          else { fix(o[k]); if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k]) && o[k].asset === null) delete o[k]; }
-        });
-      })(d.expert);
-      Object.keys(d.expert).forEach(function (k) { d.l[k] = d.expert[k]; });
-      if (d.l.fxMask && !d.l.fxMask.parts.length) delete d.l.fxMask;
-      if (d.l.maps && !Object.keys(d.l.maps).length) delete d.l.maps;
-    });
-    if (!(LE.fxBoot && LE.fxBoot.load)) return null;
-    return LE.fxBoot.load().then(function (fx) {
-      drafts.forEach(function (d) {
-        function say(m) { rep.warn(m.path, m.code, m.message, d.l.id); }
-        (d.l.fx || []).forEach(function (e, i) {
-          var r = fx.validate(e, d.path + '/fx/' + i);
-          r.errors.forEach(function (m) { rep.warn(m.path, m.code, m.message + ' It is kept in the file but not drawn.', d.l.id); });
-          r.warnings.forEach(say);
-          if (r.ok) d.l.fx[i] = r.entry;
-        });
-        if (d.l.fxMask) {
-          var cm = fx.cleanMask(d.l.fxMask);
-          cm.warnings.forEach(function (m) { rep.warn(d.path + m.path.replace(/^\/mask/, '/fxMask'), m.code, m.message, d.l.id); });
-          if (cm.mask) d.l.fxMask = cm.mask; else delete d.l.fxMask;
-        }
-      });
+    if (!drafts.length) return Promise.resolve(null);
+    return (LE.fxBoot ? LE.fxBoot.load() : Promise.reject()).then(function (fx) {
+      return fx.design.read(drafts, { rep: rep, imgs: imgs, src: function (v, path, ref) { return readSrc(v, path, rep, st, ref); } });
     }, function () {
-      rep.warn('', 'effects-unchecked', 'The effect renderer could not be loaded, so effect parameters in this file were not checked. They are checked again before they are drawn.');
+      rep.warn('', 'effects-unchecked', 'The effect renderer could not be loaded, so effects in this file were not checked; they are checked again before they are drawn.');
+      drafts.forEach(function (d) { if (LE.Scene && LE.Scene.expertOf) LE.Scene.expertOf(d.expert.raw, d.l); });
+      return null;
     });
   }
   function expertOut(l, o, ctx) {
     if (l.type === 'adjust' && l.clip) o.clip = true;
     var lost = false;
-    function ref(id, hint) { if (ctx.images === 'none') { lost = true; return null; } return ctx.ref(id, hint) || id; }
-    function maskOut(m, hint) {
-      if (!m || !Array.isArray(m.parts)) return null;
-      var parts = m.parts.map(function (q, i) {
-        q = sortKeys(clone(q));
-        if (q.kind === 'asset') { q.asset = ref(q.asset, hint + '-mask-' + (i + 1)); if (!q.asset) return null; }
-        return q;
-      }).filter(Boolean);
-      return parts.length ? { parts: parts } : null;
-    }
-    if (Array.isArray(l.fx) && l.fx.length) {
-      if (isObj(o.fx)) o.fxBaked = o.fx;
-      o.fx = l.fx.map(function (e, i) {
-        var c = { id: e.id, type: e.type };
-        if (e.on === false) c.on = false;
-        if (e.amount != null && e.amount !== 1) c.amount = r4(e.amount);
-        if (e.blend && e.blend !== 'normal') c.blend = e.blend;
-        var m = maskOut(e.mask, l.id + '-fx-' + (i + 1));
-        if (m) c.mask = m;
-        c.p = sortKeys(clone(e.p || {}));
-        return c;
+    /* Keys sorted; every "asset" inside is written the way an image src is. */
+    function out(v) {
+      if (Array.isArray(v)) return v.map(out).filter(function (x) { return x !== undefined; });
+      if (!isObj(v)) return v;
+      var r = {}, gone = false;
+      Object.keys(v).sort().forEach(function (k) {
+        if (k !== 'asset' || typeof v[k] !== 'string') r[k] = out(v[k]);
+        else if (ctx.images === 'none') lost = gone = true;
+        else r[k] = ctx.ref(v[k], l.id + '-asset') || v[k];
       });
+      return gone ? undefined : r;
     }
-    var fm = maskOut(l.fxMask, l.id);
-    if (fm) o.fxMask = fm;
-    if (l.transform && Array.isArray(l.transform.quad)) o.transform = { quad: l.transform.quad.map(function (c) { return [r2(c[0]), r2(c[1])]; }) };
-    if (l.retouch && l.retouch.asset) { var ra = ref(l.retouch.asset, l.id + '-retouch'); if (ra) o.retouch = { asset: ra, version: l.retouch.version || 1 }; }
-    if (isObj(l.maps)) {
-      var maps = clone(l.maps);
-      (function walk(v, hint) {
-        Object.keys(v).forEach(function (k) {
-          if (k === 'asset' && typeof v[k] === 'string') { v[k] = ref(v[k], hint); if (!v[k]) delete v[k]; }
-          else if (isObj(v[k])) walk(v[k], hint + '-' + k);
-        });
-      })(maps, l.id + '-map');
-      if (ctx.images !== 'none') o.maps = sortKeys(maps);
-    }
-    if (isObj(l.raw)) o.raw = sortKeys(clone(l.raw));
+    if (Array.isArray(l.fx) && l.fx.length) { if (isObj(o.fx)) o.fxBaked = o.fx; o.fx = out(l.fx); }
+    ['fxMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) {
+      var v = l[k] == null ? undefined : out(l[k]);
+      if (v !== undefined && !(k === 'fxMask' && !v.parts.length)) o[k] = v;
+    });
     if (lost) ctx.dropped.push({ kind: 'effect', layer: l.id, name: l.name });
   }
 
