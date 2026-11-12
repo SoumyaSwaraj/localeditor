@@ -1,6 +1,6 @@
 # LocalEditor
 
-> LocalEditor is a private image studio plus 32 browser tools for images, PDFs, text, and everyday tasks. Editing runs on the device. Files are not uploaded, no account is required, and the site can be installed for offline use.
+> LocalEditor is a private image studio plus 33 browser tools for images, PDFs, text, and everyday tasks. Editing runs on the device. Files are not uploaded, no account is required, and the site can be installed for offline use.
 
 Key facts:
 - Price: free, unlimited, no watermarks, no sign-up.
@@ -32,6 +32,7 @@ Key facts:
 - [Organize PDF](https://localeditor.net/organize-pdf/): Reorder, delete, duplicate and insert PDF pages.
 - [Add Page Numbers](https://localeditor.net/add-page-numbers/): Number PDF pages with custom position and format.
 - [Watermark PDF](https://localeditor.net/watermark-pdf/): Add a text watermark such as CONFIDENTIAL to every page.
+- [Verify a File](https://localeditor.net/verify/): Check a file against its fingerprint receipt. Nothing is uploaded.
 
 ## Text tools
 
