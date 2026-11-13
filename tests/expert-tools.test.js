@@ -112,4 +112,39 @@ cases['red-eye: a tap and a box fill one entry, sizes follow the options, undo p
   h.assert.noErrors(page);
 };
 
+/* ---------- Liquify freeze overlay ---------- */
+cases['liquify: the freeze overlay follows the mesh, clears with thaw and is gone when off'] = async ({ browser, base, h }) => {
+  const page = await studio(browser, base);
+  await expert(page);
+  await page.evaluate(() => { localStorage.removeItem('le-expert-liquify'); window.LE.expert.tools.activate('liquify'); });
+  await page.waitForTimeout(300);
+  const ov = () => page.evaluate(() => { const c = document.querySelector('.xp-freeze-ov'); return c ? { n: Number(c.getAttribute('data-frozen')), w: c.getBoundingClientRect().width } : null; });
+  h.assert.equal(await ov(), null, 'no overlay element with the warp tool and the toggle off');
+  const sel = page.locator('#sx-tool .xp-opts .xp-choice select');
+  await sel.selectOption({ label: 'Freeze mask' });
+  await page.waitForTimeout(100);
+  let o = await ov();
+  h.assert(o && o.n === 0 && o.w > 100, 'the overlay appears with the freeze tool, empty and over the photo: ' + JSON.stringify(o));
+  let mid = null;
+  await drag(page, [[0.4, 0.4], [0.5, 0.4], [0.6, 0.4]], { hold: async () => { await page.waitForTimeout(150); mid = await ov(); } });
+  h.assert(mid && mid.n > 0, 'the frozen area shows while the stroke is still down: ' + JSON.stringify(mid));
+  const frozen = (await ov()).n;
+  const px = await page.evaluate(() => { const c = document.querySelector('.xp-freeze-ov'), d = c.getContext('2d').getImageData(Math.round(c.width * 0.5), Math.round(c.height * 0.4), 1, 1).data, e = c.getContext('2d').getImageData(Math.round(c.width * 0.5), Math.round(c.height * 0.8), 1, 1).data; return { on: [d[0], d[3]], off: e[3] }; });
+  h.assert(px.on[0] > 200 && px.on[1] > 40 && px.off === 0, 'red where the stroke went, clear elsewhere: ' + JSON.stringify(px));
+  await sel.selectOption({ label: 'Thaw mask' });
+  await drag(page, [[0.4, 0.4], [0.5, 0.4], [0.6, 0.4]], { hold: async () => { await page.waitForTimeout(700); } });
+  o = await ov();
+  h.assert(o && o.n < frozen, 'thaw clears it: ' + frozen + ' → ' + (o && o.n));
+  await sel.selectOption({ label: 'Forward warp' });
+  await page.waitForTimeout(80);
+  h.assert.equal(await ov(), null, 'gone with a warp tool');
+  await page.locator('#sx-tool [data-liq-mask]').click();
+  await page.waitForTimeout(80);
+  h.assert(await ov(), '"Show mask" brings it back with any tool');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(80);
+  h.assert.equal(await ov(), null, 'gone when the tool is left');
+  h.assert.noErrors(page);
+};
+
 module.exports = cases;
