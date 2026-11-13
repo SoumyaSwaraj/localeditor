@@ -12,16 +12,18 @@ gzip (level 9) of what the page's HTML loads before it is interactive: `<script 
 
 | Page | JS | CSS | Total | Budget (JS / CSS / total) | Before (12 Nov) |
 |---|---|---|---|---|---|
-| `/studio/` | 208 KB | 42 KB | **250 KB** | 214 / 45 / 256 KB | 551 + 72 = 623 KB |
+| `/studio/` | 198 KB | 41 KB | **240 KB** | 201 / 44 / 242 KB | 551 + 72 = 623 KB |
 | `/pdf-studio/` | 242 KB | 41 KB | **283 KB** | 248 / 44 / 290 KB | 490 + 59 = 549 KB |
 | `/` (home) | 14 KB | 30 KB | **44 KB** | 20 / 34 / 90 KB | 13 + 30 KB, plus 83 KB of install/support/download code before the load event |
 
-The studio's target is 250 KB; it sits right at it, so the next module that grows the core must give something back.
+The studio's target is 240 KB (it was 250 until 13 November); it sits right at it, so the next module that grows the core must
+give something back. The PDF studio and home rows are the 12 November measurements; their budgets are in "Budget changes".
 
 ## The core
 
 **Photo studio** (`studio/index.html`, in order): `app.js`, `le-engine.js`, `le-load.js`, `le-objects.js`, `le-project.js`,
-`le-fx-boot.js`, `le-studio-panels.js`, `le-studio-lazy.js` (the loader map), `le-studio.js`, `raw/le-raw-studio.js`; styles
+`le-fx-boot.js`, `le-studio-panels.js` (the everyday panels: Design's frame, Elements, Text, Uploads, Draw, Adjust, Filters,
+Effects, Edit, the Apps list), `le-studio-lazy.js` (the loader map), `le-studio.js`, `raw/le-raw-studio.js`; styles
 `app.css` (all five themes' tokens stay here), `le-objects.css`, `studio.css`. That is enough to open or drop a photo, see it,
 pan and zoom, adjust, filter, crop, add shapes, undo, autosave and restore.
 
@@ -32,7 +34,13 @@ panels (Pages, Edit, Sign, Forms, Tools, Convert, Export). pdf.js, pdf-lib and f
 as before.
 
 **Every page** (`app.js`): `le-pwa.js`, `le-support.js`, `le-downloads.js` and their CSS now load **after the load event**, when
-the main thread is idle (`window.__leLate`). They load at once for `?install=`, `?storage=1`, `#storage`, `?share-target=`,
+the main thread is idle (`window.__leLate`). `le-pwa.js` is the always part (15 KB; it was 32): install state, the install
+prompt, notices, worker registration, updates and update safety, limits, launch files. The storage manager, the storage report
+and clearing, backup, erase and the install chooser are `le-pwa-more.js` (20 KB), which `le-pwa.js` loads on first use: Install
+app, Storage, `?storage=1`, `#storage`, a low-space notice's buttons, or a call to `LEPwa.openStorage`, `openChooser`, `report`,
+`plan`, `freeUpSpace`, `clearCategory`, `trimVersions`, `enforceLimits`, `backup`, `eraseEverything`, `repairAppFiles` (each
+answers with the same promise as before; `install()` now answers once the chooser is open). The housekeeping pass (limits, at
+most every 6 hours, when idle) also loads it. The code was moved, not rewritten; the update functions are untouched. They load at once for `?install=`, `?storage=1`, `#storage`, `?share-target=`,
 `?shared=`, or when Install app / Storage is tapped before they arrived (the tap is then carried out). The install prompt is still
 caught early by `app.js`; the worker registers a moment later than before; update safety is untouched.
 
@@ -94,6 +102,7 @@ Sizes are gzip, script + CSS.
 | `export` | `le-studio-export.js` + css | 23+3 | Download panel; `ctx.exportImage`; a carousel document | 0 |
 | `tools` | `le-studio-tools.js` + css (moved from studio.css) | 15+2 | first selection; Pages; format painter, QR, rulers commands; shortcuts (replayed); rulers left on; a document with frames | 1 |
 | `fonts` | `le-studio-fonts.js` + css | 9+2 | Fonts panel | 1 |
+| `panels2` | `le-studio-panels-more.js` + css (moved from studio.css) | 15+2 | Design's tabs (text layouts, Resize, Size history: a skeleton under the tab bar until it arrives); Position (arrange, layers); Your designs; Version history; Performance; Apps → Watermark, Meme, Palette, Metadata, Before / after, Upscale, Contact sheet | 1 |
 | `color` | `le-studio-color.js` + css (moved) | 23+2 | colour picker (`_colorPop`); Replace, Brand kit; dep of tools, icons, background | 2 |
 | `privacy` | `le-studio-privacy.js` + css | 7+1 | first selection; Elements; Redact; Apps → Metadata; redaction commands; a document with redactions | 3 |
 | `background` | `le-studio-background.js` + css | 14+2 | first selection; Background panel; its commands; a document with an image background | 4 |
@@ -108,7 +117,9 @@ Sizes are gzip, script + CSS.
 
 Stubs kept in the core (each is replaced when its module arrives): `LE.design` (`isDesignFile` is synchronous; the rest forward),
 `window.LEAgent` (every method forwards and returns its promise; `on()` returns a working `off`), `LEStudioCollage.openReplace`,
-`LEStudioBackground.fromLayer`, `P._colorPop`, the Elements views `P._grids`, `P._stylesTab`, `P._withIcons`, `P._withIconsSearch`,
+`LEStudioBackground.fromLayer`, `P._colorPop`, the Elements views `P._grids`, `P._stylesTab`, `P._withIcons`, `P._withIconsSearch`, the Design views `P._templates`,
+`P._sizes`, `P._sizeHistory`, one-line panel specs (title and eyebrow) for panels a module draws (`fonts`, `background`, `layers`,
+`recipes`, `projects`, `history`, `export`, `settings`),
 the command stubs above, and the Apps → Thumbnail entry (registration data stays in the core).
 
 ## The PDF studio's map (`assets/js/le-pdf-studio-lazy.js`)
@@ -154,13 +165,13 @@ go in `cmds`; hooks it needs to see from the start become triggers (`on`) or `re
 
 | File | KB | Why it is core |
 |---|---|---|
-| `le-studio.js`, `le-studio-panels.js` | 54, 37 | The editor and every core panel. Splitting the panel renderers out of `le-studio-panels.js` is the next large saving (follow-ups). |
+| `le-studio.js`, `le-studio-panels.js` | 53, 20 | The editor and the everyday panels. Elements, Effects and Uploads stay: other modules wrap them (`wrap`, `P._u`), so they cannot become placeholders without changing those modules. |
 | `le-objects.js`, `le-engine.js` | 45, 29 | The scene and the adjust/filter pipeline draw the first photo. `le-engine.js` also carries the recipe catalogue and helpers for the tool pages. |
 | `le-project.js` | 17 | Autosave, restore and the start screen's "Your designs"; `le-studio.js` will not start without it. |
 | `app.js`, `app.css` | 14, 24 | The shell and the five themes on every page. |
 | `studio.css` | 18 | The shell and core panels; rules for deferred modules' own elements moved out. |
 | `raw/le-raw-studio.js`, `le-fx-boot.js` | 3, 1 | Capture RAW drops and Expert documents before the studio sees them. |
-| PDF: `le-pdf.js`, `le-pdf-studio*.js`, `le-assets.js`, `le-fonts.js` | 31, 77, 19, 19 | The viewer, its panels, the sign panel's inks and text editing. |
+| PDF: `le-pdf.js`, `le-pdf-studio*.js`, `le-assets.js`, `le-fonts.js` | 31, 77, 19, 19 | The viewer, its panels, the sign panel's inks and text editing. `le-assets.js` and `le-fonts*.js` cannot be deferred from the map alone (see "Not done" below). |
 
 ## Measurements (12 November 2026, this machine, shared with other test runs)
 
@@ -185,3 +196,21 @@ The PDF studio's layout shift is the same before and after this work; it was not
 
 - 13 Nov 2026: studio JS 214 → 217 KB and PDF studio JS 248 → 250 KB. `le-objects.js` grew 1.6 KB gzip for template fields (the detector that loads `le-variables.js` and the seam that draws a filled copy of a layer). The studio now blocks on about 257 KB against the 250 KB target; splitting `le-studio-panels.js` (20 to 25 KB) is the way back under.
 - Template fields (`le-studio-variables.js` + `studio-variables.css`) are in the studio's loader map: first selection, the Fields and Create many panels, or a document with fields or values.
+- 13 Nov 2026 (later): studio JS 217 → 201 KB, CSS 45 → 44 KB, total 259 → 242 KB; the target is now 240 KB. Measured 198.3 + 41.4 =
+  239.7 KB (it was 215.6 + 42.8 = 258.4). `le-studio-panels.js` went from 36.9 to 19.2 KB: Design's tabs, Position, Your designs,
+  Version history, Performance and seven small Apps moved to `le-studio-panels-more.js` (module `panels2`, 14.7 KB + 2.2 KB of
+  styles moved out of `studio.css`); and the core's own Fonts, Recipes, Download, Background and Batch renderers were removed:
+  their modules have replaced them since the loader map arrived, so they were never drawn. `le-pwa.js` (after the load event,
+  not in this budget) went from 32.4 to 15.2 KB; see "Every page".
+
+## Not done, and why
+
+- **PDF studio: `le-assets.js`, `le-fonts.js`, `le-fonts-originals.js` stay blocking (38 KB).** The core calls them at boot
+  (`le-pdf-studio-panels.js` preloads the default text font in its wiring) and about forty call sites assume they are there:
+  some unguarded (`LE.assets.svg` in the Edit and Add panels), some guarded in a way that would fail quietly if the library
+  were late (`le-pdf.js` embeds a built-in font when `LE.fonts` is missing; `PS.ensureSets` skips graphics on export; the bulk
+  and Office kit modules read `LE.fonts`). Deferring them safely needs awaits in `le-pdf.js`, `le-pdf-studio.js`, `-panels`,
+  `-graphics`, `-color`, `le-pdf-bulk.js` and `le-pdf-office.js`, not only map entries.
+- **The start screen's makers row still loads the makers when idle.** Its thumbnails are drawn at runtime: each card runs its
+  maker with sample values and paints the result (`thumb()` in `le-studio-makers.js`). A static list needs shipped thumbnail
+  images first (25 small files from `scripts/`), then the row can be data in the map and a maker loads on tap.
