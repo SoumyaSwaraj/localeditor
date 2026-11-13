@@ -119,7 +119,8 @@
     var d = schema.decimals != null ? schema.decimals : C.decimals(schema.step);
     var s = Number(v).toFixed(Math.min(4, d));
     if (schema.min < 0 && v > 0 && schema.signed !== false) s = '+' + s;
-    return s + (schema.unit ? (schema.unit === '%' || schema.unit === '°' ? '' : ' ') + schema.unit : '');
+    var u = schema.unit === 'deg' ? '°' : schema.unit === 'ev' ? 'EV' : schema.unit;   /* packs spell degrees and stops both ways; the value column shows one */
+    return s + (u ? (u === '%' || u === '°' ? '' : ' ') + u : '');
   };
 
   /* A row: label on the left, the control, and a reset button that shows only when the value is not the default. */
