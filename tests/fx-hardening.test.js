@@ -491,4 +491,24 @@ cases['workspace: the Shadows and reflections section opens with the five stagin
   h.assert.noErrors(page);
 };
 
+cases['deep link: ?mode=expert opens Expert for this visit and does not change the remembered workspace; the switch does'] = async ({ browser, base, h }) => {
+  const page = await h.open(browser, base, '/studio/?mode=expert', 'desktop');
+  await page.waitForFunction(() => window.LEStudio && window.LEStudio.scene);
+  await page.evaluate(() => { ['webgl2', 'pointer-fine', 'device-memory-4gb'].forEach((cap) => window.LE.support && window.LE.support.override(cap, true)); });
+  await page.waitForFunction(() => document.querySelector('.is-expert') || (window.LE.expert && window.LE.expert.active && window.LE.expert.active()), null, { timeout: 20000 }).catch(() => {});
+  const r = await page.evaluate(async () => {
+    const c = window.LEStudio, out = {};
+    out.expert = !!document.querySelector('.is-expert');
+    out.query = location.search;
+    out.stored = c.lsGet('le-studio-mode', null);
+    await c.mode('simple'); out.afterSimple = c.lsGet('le-studio-mode', null);
+    await c.mode('expert'); out.afterExpert = c.lsGet('le-studio-mode', null);
+    return out;
+  });
+  h.assert(r.expert, 'the link opened Expert: ' + JSON.stringify(r));
+  h.assert(r.stored === null, 'the link did not change what is remembered: ' + r.stored);
+  h.assert(r.afterSimple === 'simple' && r.afterExpert === 'expert', 'the switch is remembered: ' + r.afterSimple + ', ' + r.afterExpert);
+  h.assert(!/mode=/.test(r.query), 'the query is cleared from the address');
+};
+
 module.exports = cases;

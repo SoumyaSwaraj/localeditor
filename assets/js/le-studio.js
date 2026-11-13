@@ -3022,7 +3022,8 @@
   (HOOKS.ready = HOOKS.ready || []).push(function () {
     var u = new URL(location.href), q = u.searchParams.get('mode');
     if (q) { u.searchParams.delete('mode'); history.replaceState(null, '', u.pathname + u.search); }
-    if ((q || lsGet('le-studio-mode', 'simple')) === 'expert') setMode('expert', !q);
+    /* A link (?mode=expert) opens Expert for this visit; only the person's own switch is remembered. */
+    if ((q || lsGet('le-studio-mode', 'simple')) === 'expert') setMode('expert', true);
     else if (S.project && scene.layers().some(xpData)) toast('This design has Expert edits.', { action: { label: 'Open in Expert', fn: function () { setMode('expert'); } }, ms: 6000 });
   });
 
