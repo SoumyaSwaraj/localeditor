@@ -585,11 +585,13 @@
   /* ---------- Packs ---------- */
   var manifest = null;
   var packState = {};
+  var manifestFailed = false;
   var ready = loadManifest();
   function loadManifest() {
+    manifestFailed = false;
     return fetch(abs('assets/data/packs.json'), { credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
       .then(function (j) { manifest = j; emit('packs', packs()); refreshPacks(); return j; })
-      .catch(function () { return null; });
+      .catch(function () { manifestFailed = true; emit('packs', []); return null; });
   }
   function packDef(id) { return manifest ? manifest.packs.filter(function (p) { return p.id === id; })[0] || null : null; }
   function filesOf(id) {
@@ -948,7 +950,14 @@
     return '<li class="ld-pack ld-part" data-ld-part="' + esc(p.id) + '" data-state="' + state + '"><div><b>' + esc(p.name) + ' <span class="ld-mb">' + mbWhole(p.bytes) + '</span></b>' +
       '<small class="ld-state">' + (state === 'done' ? '<i class="ld-ok" aria-hidden="true"></i>' : '') + esc(label) + '</small></div>' + btn + '</li>';
   }
+  /* Until packs.json is read: the rows' shape. If it cannot be read: one plain sentence and Try again. */
+  var WAIT = '<li class="ld-wait" role="status" aria-busy="true" aria-label="Loading sizes"><span class="skel skel-row"></span><span class="skel skel-row"></span><span class="skel skel-row"></span></li>';
+  function packsHTML() {
+    if (manifest) return packs().map(packRowHTML).join('');
+    return manifestFailed ? '<li class="ld-empty ld-fail" role="alert"><span>The list of downloads could not be read. Check your connection and try again.</span><button type="button" class="lp-btn lp-btn-sm" data-ld-retry>Try again</button></li>' : WAIT;
+  }
   function partsHTML() {
+    if (!manifest && !manifestFailed) return '<h4>Kept offline</h4><ul class="ld-packs ld-parts">' + WAIT + '</ul>';
     if (!manifest || !manifest.parts) return '';
     return '<h4>Kept offline</h4><p class="ld-keep" data-ld-keep>' + esc(keepSummary()) + '</p><ul class="ld-packs ld-parts">' + parts().map(partRowHTML).join('') + '</ul>' +
       (keep().all ? '' : '<div class="lp-row-btns"><button type="button" class="lp-btn lp-btn-sm" data-ld-part-all>Keep everything offline</button></div>');
@@ -994,7 +1003,7 @@
         '<label class="ld-mode"><input type="radio" name="ld-mode" value="ask"' + (m === 'ask' ? ' checked' : '') + '><span><b>Always ask first</b><small>One short question the first time each feature needs a download.</small></span></label>' +
       '</div>' +
       '<div data-ld-parts>' + partsHTML() + '</div>' +
-      '<h4>Download now</h4><ul class="ld-packs">' + (manifest ? packs().map(packRowHTML).join('') : '<li class="ld-empty">Sizes are not available right now.</li>') + '</ul>' +
+      '<h4>Download now</h4><ul class="ld-packs">' + packsHTML() + '</ul>' +
       '<div data-ld-pending>' + pendingHTML() + '</div>' +
       '<h4>What downloaded and why</h4><div data-ld-log>' + logHTML() + '</div>' +
       '<div class="lp-row-btns"><button type="button" class="lp-btn lp-btn-sm" data-ld-forget>Forget what I use</button></div>' +
@@ -1019,6 +1028,7 @@
           if (!b.classList.contains('is-sure')) { b.classList.add('is-sure'); b.textContent = 'Tap again to remove'; return; }
           b.disabled = true; removePart(b.getAttribute('data-ld-part-rm'));
         } else if (b.hasAttribute('data-ld-part-all')) { b.disabled = true; keepEverything(); }
+        else if (b.hasAttribute('data-ld-retry')) { ready = loadManifest(); repaintPacks(el); }
         else if (b.hasAttribute('data-ld-forget')) { var keepMode = mode(); forget(); save({ mode: keepMode }); renderSettings(el); }
       });
       var offs = [on('packs', function () { if (!el.isConnected) return offs.forEach(function (f) { f(); }); repaintPacks(el); }), on('log', function () { if (el.isConnected) el.querySelector('[data-ld-log]').innerHTML = logHTML(); }),
@@ -1029,9 +1039,10 @@
   }
   function repaintPacks(el) {
     var pt = el.querySelector('[data-ld-parts]');
-    if (pt && manifest && manifest.parts && !pt.querySelector('.is-sure')) pt.innerHTML = partsHTML();
+    if (pt && !pt.querySelector('.is-sure')) pt.innerHTML = partsHTML();
     var ul = el.querySelector('.ld-packs:not(.ld-parts)');
-    if (!ul || !manifest) return;
+    if (!ul) return;
+    if (!manifest) { ul.innerHTML = packsHTML(); return; }
     var focus = document.activeElement && ul.contains(document.activeElement) ? document.activeElement.closest('[data-ld-pack]') : null;
     var fid = focus && focus.getAttribute('data-ld-pack');
     ul.innerHTML = packs().map(packRowHTML).join('');

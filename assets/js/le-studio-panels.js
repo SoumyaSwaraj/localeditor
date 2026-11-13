@@ -1658,7 +1658,7 @@
         cur.appendChild(btn(c, 'Export this design', 'share', 'btn btn-ghost btn-sm', function () { c.exportProject(); }));
         body.appendChild(cur);
       }
-      var g = c.h('<div class="sx-proj-grid"><div class="sx-loading">Loading…</div></div>');
+      var g = c.h('<div class="sx-proj-grid" aria-busy="true"><span class="skel skel-cards"></span><span class="skel skel-cards"></span></div>');
       body.appendChild(g);
       var drop = c.h('<div class="sx-dropzone">' + c.ic('file') + '<span>' + (c.coarse && c.coarse() ? 'Open a <b>.leproject</b> file to import it' : 'Drop a <b>.leproject</b> file here to import it') + '</span></div>');
       drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('is-over'); });
@@ -1670,7 +1670,8 @@
       body.appendChild(store);
       LE.project.list().then(function (list) {
         g.innerHTML = '';
-        if (!list.length) g.appendChild(note(c, 'No saved designs yet. Everything you make is saved here automatically.'));
+        g.removeAttribute('aria-busy');
+        if (!list.length) g.appendChild(c.ui.empty('No designs yet', 'Everything you make is saved here as you work, on this device only.', [{ label: 'Start from a template', fn: function () { c.openPanel('design', { tab: 'templates' }); } }]));
         list.forEach(function (p) { g.appendChild(projectCard(c, p)); });
       });
       storage(c, sb);

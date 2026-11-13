@@ -431,4 +431,26 @@ cases['the storage manager shows the downloads section; erase and "Forget what I
   h.assert(left.every((x) => x == null), 'erase clears answers, signals and session choices: ' + left);
 };
 
+cases['downloads list: skeleton rows while packs.json loads, a plain sentence and Try again when it cannot be read'] = async ({ browser, base, h }) => {
+  const page = await h.open(browser, base, '/studio/', 'phone');
+  let hold = null;
+  await page.route('**/assets/data/packs.json', (r) => { hold = r; });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.LEStudio && window.LE && LE.downloads && LE.downloads.__real && LE.downloads.open);
+  await page.evaluate(() => { LE.downloads.open(); });
+  await page.waitForSelector('.ld-settings-sheet .ld-wait .skel');
+  h.assert(await page.locator('.ld-settings-sheet .ld-wait[aria-busy="true"]').count() >= 1, 'skeleton rows while sizes load');
+  for (let i = 0; i < 40 && !hold; i++) await page.waitForTimeout(50);
+  await hold.abort();
+  await page.waitForSelector('.ld-settings-sheet .ld-fail [data-ld-retry]');
+  h.assert(/could not be read/.test(await page.textContent('.ld-settings-sheet .ld-fail')), 'plain words');
+  h.assert.equal(await page.locator('.ld-settings-sheet .ld-wait').count(), 0, 'no skeleton left behind');
+  const bb = await page.locator('.ld-settings-sheet [data-ld-retry]').boundingBox();
+  h.assert(bb.height >= 44, 'Try again is a 44px target: ' + bb.height);
+  await page.unroute('**/assets/data/packs.json');
+  await page.locator('.ld-settings-sheet [data-ld-retry]').click();
+  await page.waitForSelector('.ld-settings-sheet .ld-pack');
+  h.assert.equal(await page.locator('.ld-settings-sheet .ld-fail').count(), 0, 'the message goes once the list loads');
+};
+
 module.exports = cases;

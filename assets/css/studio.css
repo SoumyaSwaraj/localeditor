@@ -436,6 +436,9 @@ select.sx-input { padding-right: 28px; }
 .sx-empty strong { font-size: 15.5px; font-weight: 750; }
 .sx-empty p { margin: 0; font-size: 13px; color: var(--muted); max-width: 260px; line-height: 1.5; }
 .sx-empty-act { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+/* A stand-in that failed (docs/LOADING.md): its Try again sits centred under the message. */
+.le-load-error { display: grid; justify-items: center; }
+.le-load-error .sx-empty { padding-bottom: 8px; }
 
 /* swatches & colors */
 .sx-swatches { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -634,6 +637,8 @@ select.sx-input { padding-right: 28px; }
 .sx-proj-meta small { font-size: 11.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sx-proj-more { position: absolute; right: -6px; bottom: -2px; width: 34px; height: 34px; }
 .sx-proj-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 10px; }
+.sx-proj-grid > .sx-empty { grid-column: 1 / -1; }
+.sx-proj-grid > .skel-cards { margin-top: 0; }
 .sx-dropzone { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px; border-radius: 14px; border: 1.5px dashed var(--border-hover); color: var(--muted); font-size: 12.5px; text-align: center; }
 .sx-dropzone.is-over { border-color: var(--gold); background: var(--brand-soft); }
 .sx-dropzone .sx-ic { width: 18px; height: 18px; }
@@ -1298,6 +1303,10 @@ select.sx-input { padding-right: 28px; }
   .sx-download { min-height: 44px !important; height: 44px; padding: 0 14px !important; gap: 6px; margin-left: 2px; font-size: 14px; }
   .sx-download span { display: inline; }
   .is-start .sx-head-act { display: none; }
+  /* The design name keeps room for a few words: the spacer gives way first, and on the narrowest phones the Expert switch
+     (also in the File menu) and the Download glyph leave the bar. Undo, redo and the Download label stay. */
+  .sx-name { min-width: 72px; }
+  .sx-grow { min-width: 0; }
   .is-start .sx-tabs { display: none; }
   .is-start { grid-template-rows: var(--head-h) minmax(0, 1fr) 0; }
 
@@ -1362,4 +1371,8 @@ select.sx-input { padding-right: 28px; }
   .sx-mode { display: none; }
   .sx-mode-t { display: inline-grid; width: 36px !important; }
   .sx-head .sx-mode-t[aria-pressed="true"] { background: rgba(63, 103, 217, 0.28); color: var(--side-accent); }
+}
+@media (max-width: 400px) {
+  .sx-mode-t { display: none; }
+  .sx-download .sx-ic { display: none; }
 }

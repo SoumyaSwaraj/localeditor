@@ -514,4 +514,37 @@ cases['asset thumbnails from many photos stay within the thumbnail cache limit']
   h.assert(r.n >= 1 && r.n <= r.max, 'thumbnail cache ' + JSON.stringify(r));
 };
 
+/* ---------- Polish: the design name keeps room on the narrowest phone; Download commits a text edit ---------- */
+cases['360px header: a long design name keeps at least 72px beside undo, redo and Download, and nothing scrolls sideways'] = async ({ browser, base, h }) => {
+  const page = await h.newDesign(browser, base, 'small', 'Instagram post');
+  await quiet(page);
+  await page.evaluate(() => { const i = document.getElementById('sx-name'); i.value = 'Autumn market poster for the bakery'; i.dispatchEvent(new Event('change', { bubbles: true })); });
+  const n = await box(page, '#sx-head .sx-name');
+  h.assert(n.width >= 72, 'name is ' + Math.round(n.width) + 'px wide');
+  for (const sel of ['#sx-head [data-cmd=undo]', '#sx-head [data-cmd=redo]', '#sx-head .sx-download']) {
+    const b = await box(page, sel);
+    h.assert(b && b.width >= 44 && b.height >= 44 && b.right <= 360 && b.left >= n.right, sel + ' ' + JSON.stringify(b));
+  }
+  h.assert(await page.locator('#sx-head .sx-download span').isVisible(), 'the Download label still shows');
+  h.assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 360, 'no sideways scroll');
+  await page.locator('#sx-head [data-cmd=fileMenu]').tap();
+  await page.waitForTimeout(300);
+  h.assert(await page.locator('[data-cmd="mode:expert"]:visible').count() >= 1, 'Expert mode is still offered in the File menu');
+};
+cases['phone: opening Download commits the text being edited'] = async ({ browser, base, h }) => {
+  const page = await h.newDesign(browser, base, 'phone', 'Instagram post');
+  await quiet(page);
+  const [t] = await h.addLayers(page, [{ type: 'text', text: 'Hello', x: 60, y: 60, w: 300, h: 90, size: 60 }]);
+  await page.evaluate((id) => { const sc = window.LEStudio.scene; sc._startEdit(sc._find(id)); }, t);
+  await page.waitForTimeout(250);
+  h.assert(await page.evaluate(() => !!window.LEStudio.scene._editing), 'the text is being edited');
+  await page.evaluate(() => { const ed = window.LEStudio.scene._editor; if ('value' in ed) ed.value = 'Hello there'; else ed.textContent = 'Hello there'; ed.dispatchEvent(new Event('input', { bubbles: true })); });
+  /* Opened without a blur, as on a phone whose keyboard keeps the editor focused while the sheet rises. */
+  await page.evaluate(() => { window.LEStudio.scene._editor.focus(); window.LEStudio.openPanel('export'); });
+  h.assert(await page.evaluate(() => !window.LEStudio.scene._editing), 'text edit mode ends as the Download panel opens');
+  await page.waitForTimeout(400);
+  h.assert.equal(await page.evaluate(() => window.LEStudio.S.panel), 'export', 'the Download panel is open');
+  h.assert.equal(await page.evaluate((id) => window.LEStudio.scene._find(id).text, t), 'Hello there', 'the typed text was kept');
+};
+
 module.exports = cases;

@@ -1573,7 +1573,7 @@
     if (openSheet && openSheet.open) { if (opts.free) openSheet._free(); return Promise.resolve(openSheet); }
     var d = sheet('lp-storage', 'Storage on this device');
     openSheet = d;
-    d.firstChild.innerHTML = headHTML('Storage on this device', 'Everything LocalEditor keeps here, and how to tidy it.') + '<div class="lp-body" data-lp-body><div class="lp-loading">Measuring…</div></div>';
+    d.firstChild.innerHTML = headHTML('Storage on this device', 'Everything LocalEditor keeps here, and how to tidy it.') + '<div class="lp-body" data-lp-body>' + LOADING + '</div>';
     bindClose(d);
     d.addEventListener('close', function () {
       if (openSheet === d) openSheet = null;
@@ -1587,13 +1587,16 @@
     function paint() {
       return report().then(function (r) { d._report = r; renderStorage(d, body, r); return d; }).catch(function (err) {
         console.warn(err);
-        body.innerHTML = '<p class="lp-note">Storage details are not available in this browser.</p>';
+        body.innerHTML = '<div class="lp-fail" role="alert"><p class="lp-note">The storage on this device could not be measured. Your designs are safe.</p><button type="button" class="lp-btn" data-lp-retry>Try again</button></div>';
+        body.querySelector('[data-lp-retry]').onclick = function () { body.innerHTML = LOADING; paint(); };
         return d;
       });
     }
     d._paint = paint;
     return paint().then(function () { if (opts.free) freeFlow(d, body); return d; });
   }
+  /* While sizes are measured: the sheet's own shape (total, bar, the list rows), not a blank sheet. */
+  var LOADING = '<div class="lp-loading" role="status" aria-busy="true"><span class="skel skel-row"></span><span class="skel skel-line"></span><span class="skel skel-row"></span><span class="skel skel-row"></span><span class="skel skel-row"></span><span class="skel skel-row"></span><p class="lp-note">Measuring what is stored…</p></div>';
   function renderStorage(d, body, r) {
     var cats = r.categories;
     var used = r.usage;

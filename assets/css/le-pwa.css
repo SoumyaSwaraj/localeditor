@@ -169,7 +169,13 @@ dialog.lp-sheet::backdrop { background: rgba(13, 13, 13, 0.48); animation: lp-fa
 .lp-type input { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--lp-line); background: var(--lp-soft); color: var(--lp-ink); font: 16px var(--lp-font); }
 
 /* ---------- Storage manager ---------- */
-.lp-loading { padding: 40px 0; text-align: center; color: var(--lp-muted); }
+/* Loading and failure: skeleton rows in the shape of the sheet; a plain sentence and one button. */
+.lp-loading { display: grid; gap: 10px; padding: 4px 0 8px; }
+.lp-loading .skel-row:first-child { width: 46%; }
+.lp-loading .skel-line { margin: 2px 0 14px; }
+.lp-loading .skel-row { height: var(--target, 44px); }
+.lp-loading .lp-note, .lp-fail .lp-note { margin: 0; }
+.lp-fail { display: grid; gap: 12px; justify-items: start; padding: 8px 0; }
 .lp-summary { padding: 4px 0 8px; }
 .lp-total { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .lp-total b { font-size: 32px; line-height: 1.1; letter-spacing: -0.02em; font-weight: 750; }

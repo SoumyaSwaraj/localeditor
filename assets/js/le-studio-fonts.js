@@ -245,13 +245,20 @@
     if (!FX || !FX.ready) { body.appendChild(c.ui.empty('Fonts are not available', 'Reload the page to try again.')); return; }
     var root = c.h('<div class="sf"></div>');
     body.appendChild(root);
-    var loading = c.h('<p class="sf-note">Loading fonts…</p>');
+    /* The same stand-in as a deferred panel (docs/LOADING.md): the list's shape while it loads, plain words and Try again if it cannot. */
+    var loading = c.h('<div class="le-load-wait" role="status" aria-busy="true"><span class="skel skel-row"></span><span class="skel skel-cards"></span><p class="sx-note le-load-msg">Loading fonts…</p></div>');
     root.appendChild(loading);
     FX.ready().then(function () {
       loading.remove();
       build(c, root, body);
     }, function () {
-      loading.textContent = 'The font list could not be loaded. Check your connection and open Fonts again.';
+      loading.remove();
+      var box = c.h('<div class="le-load-error" role="alert"></div>');
+      box.appendChild(c.ui.empty('The font list could not open', navigator.onLine === false ? 'You are offline and the font list is not on this device yet. Connect and try again. Fonts already in your design still work.' : 'It did not download. Check your connection and try again.'));
+      var b = c.h('<button type="button" class="btn btn-ghost btn-sm le-load-retry">Try again</button>');
+      b.onclick = function () { root.remove(); render(c, body); };
+      box.appendChild(b);
+      root.appendChild(box);
     });
   }
 
