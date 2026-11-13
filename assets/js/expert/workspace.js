@@ -56,6 +56,7 @@
   var viewFns = [];
   function onView(fn) { viewFns.push(fn); return function () { var i = viewFns.indexOf(fn); if (i >= 0) viewFns.splice(i, 1); }; }
   var viewChanged = X.rafThrottle(function () { viewFns.slice().forEach(function (f) { try { f(); } catch (e) { console.error(e); } }); });
+  W.onView = onView;   /* tools redraw their own overlays when the canvas scrolls, zooms or resizes */
   function toDoc(cx, cy) { var r = c.E.sceneEl.getBoundingClientRect(); return c.scene._cssToDoc(cx - r.left, cy - r.top); }
   function target() {
     var d = comp.develop || (panelComp && panelComp.develop);
