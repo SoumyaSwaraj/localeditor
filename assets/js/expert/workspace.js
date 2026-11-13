@@ -281,6 +281,22 @@
     markTabs();
   }
 
+  /* Brings a panel forward (deep links, assets/js/expert/links.js): 'develop' | 'mask' | 'layers' | 'scopes'. On desktop the pane
+     is expanded, scrolled into view and its heading focused; elsewhere the tab opens. False for a name it does not know. */
+  W.show = function (tab) {
+    var t = { develop: 'adjust', mask: 'mask', layers: 'layers', scopes: 'scopes' }[tab];
+    if (!on || !t) return false;
+    if (size !== 'desktop') { openPanelTab(t); return true; }
+    var key = t === 'layers' ? 'lay' : t === 'scopes' ? 'scopes' : 'dev';
+    var p = E.right && E.right.querySelector('.xp-pane-' + key), tog = p && p.querySelector('.xp-pane-tog');
+    if (!p) return false;
+    if (layout[key] === false) tog.click();
+    if (t === 'mask' && comp.develop) { comp.develop.open('Mask', true); var s = p.querySelector('[data-sec="Mask"]'); if (s) s.scrollIntoView({ block: 'nearest' }); }
+    else p.scrollIntoView({ block: 'nearest' });
+    tog.focus({ preventScroll: true });
+    return true;
+  };
+
   /* ---------- The studio panel (tablet and phone) ---------- */
   function destroyPanelComp() {
     if (!panelComp) return;

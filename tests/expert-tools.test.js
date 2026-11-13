@@ -7,7 +7,7 @@ async function studio(browser, base, o) {
   o = o || {};
   const w = o.w || 1440, hh = o.h || 900;
   const ctx = await browser.newContext({ viewport: { width: w, height: hh }, isMobile: w < 768, hasTouch: w < 768, deviceScaleFactor: 1, serviceWorkers: 'block' });
-  await ctx.addInitScript(() => { try { localStorage.setItem('le-studio-coach', '"done"'); localStorage.setItem('le-expert-phone-note', '1'); } catch (e) {} });
+  await ctx.addInitScript((ls) => { try { localStorage.setItem('le-studio-coach', '"done"'); localStorage.setItem('le-expert-phone-note', '1'); Object.keys(ls).forEach((k) => { if (localStorage.getItem(k) == null) localStorage.setItem(k, ls[k]); }); } catch (e) {} }, o.ls || {});
   const page = await ctx.newPage();
   page.errors = [];
   page.on('console', (m) => { if (m.type() === 'error') page.errors.push(m.text()); });
@@ -289,6 +289,133 @@ cases['handles: angle arm, direction line, shadow tip and mesh; touch targets; f
   await page.locator('#xp-right .xp-fxpanel[data-fx="vignette"] [data-param="amount"] .xp-slider-track, #xp-right .xp-fxpanel[data-fx="vignette"] [data-param="amount"]').first().click();
   await page.waitForTimeout(150);
   h.assert.equal(await page.locator('.xp-handles .xp-h-pt[data-id="p:center"]').count(), 1, 'touching the effect in the develop panel shows its handles');
+  h.assert.noErrors(page);
+};
+
+/* ---------- Add-effect list ---------- */
+cases['add-effect list: Common first, sections with headings, ranked search, ui.order inside a section'] = async ({ browser, base, h }) => {
+  const page = await studio(browser, base);
+  await expert(page);
+  await page.locator('#xp-right .xp-lay-foot [data-act="fx"]').click();
+  await page.waitForSelector('#sx-pop .xp-fxmenu [role="option"]');
+  const groups = await page.evaluate(() => [].map.call(document.querySelectorAll('#sx-pop .xp-fxmenu-grp'), (g) => g.textContent));
+  h.assert.equal(groups[0], 'Common', 'the curated group comes first');
+  const want = await page.evaluate(() => window.LE.expert.sections());
+  h.assert.equal(JSON.stringify(groups.slice(1)), JSON.stringify(want), 'then every section under its heading, in the develop panel order');
+  const common = await page.evaluate(() => { const out = []; let n = document.querySelector('#sx-pop .xp-fxmenu-grp').nextElementSibling; while (n && n.getAttribute('role') === 'option') { out.push(n.getAttribute('data-id')); n = n.nextElementSibling; } return out; });
+  h.assert(common.length >= 8 && common.length <= 16 && common[0] === 'exposure' && common.includes('curves') && common.includes('vignette'), 'a short curated list: ' + common.join(', '));
+  const total = await page.locator('#sx-pop .xp-fxmenu [role="option"]').count();
+  h.assert(total > 100 + common.length, 'the whole library is listed: ' + total);
+  /* Search: rank is explicit (name before id, keywords, section, summary), ties keep the panel order. */
+  const first = async (q) => { await page.locator('#sx-pop .xp-fxmenu input').fill(q); await page.waitForTimeout(60); return page.evaluate(() => [].map.call(document.querySelectorAll('#sx-pop .xp-fxmenu [role="option"]'), (b) => b.getAttribute('data-id'))); };
+  let r = await first('curv');
+  h.assert(r[0] === 'curves' && r.indexOf('tone-curve') > 0 && r.indexOf('hue-curves') > 0, '"curv" finds Curves first, then the other curve effects: ' + r.slice(0, 5).join(', '));
+  h.assert.equal(await page.locator('#sx-pop .xp-fxmenu [aria-selected="true"]').getAttribute('data-id'), 'curves', 'and Enter would take it');
+  r = await first('blur');
+  h.assert(r.slice(0, 3).every((id) => /blur/.test(id)) && r.includes('soft-focus'), '"blur": effects named so first, then those that mention it: ' + r.slice(0, 6).join(', '));
+  const optics = await page.evaluate(() => window.LE.expert.sectionTypes('Optics'));
+  r = await first('optics');
+  h.assert(optics.every((id) => r.includes(id)), 'a section name finds its effects');
+  r = await first('shadow cast');
+  h.assert.equal(r[0], 'cast-shadow', 'every word must match; word order does not matter');
+  r = await first('surface blur filter');
+  h.assert.equal(r[0], 'surface-blur', 'keywords (agent.like) are searched: ' + r.slice(0, 3).join(', '));
+  r = await first('zzzz');
+  h.assert(r.length === 0 && await page.locator('#sx-pop .xp-fxmenu .xp-note').count() === 1, 'no match says so');
+  const same = await page.evaluate(() => { const X = window.LE.expert, a = X.fxSearch('glow').map((d) => d.id), b = X.fxSearch('glow', X.defs().slice().reverse()).map((d) => d.id); return [a[0], b[0], a.length === b.length]; });
+  h.assert(same[0] === 'glow' && same[1] === 'glow' && same[2], 'the best match does not depend on registration order: ' + same.join(', '));
+  /* ui.order inside each section. */
+  const bad = await page.evaluate(() => { const X = window.LE.expert, out = []; X.sections().forEach((s) => { const o = X.defs().filter((d) => d.section === s).map((d) => (d.ui && typeof d.ui.order === 'number') ? d.ui.order : 1e9); for (let i = 1; i < o.length; i++) if (o[i] < o[i - 1]) out.push(s); }); return out; });
+  h.assert.equal(bad.length, 0, 'registrations are in ui.order inside every section: ' + bad.join(', '));
+  /* Picking adds it, opens it and selects it. */
+  await first('iris');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(200);
+  const e = await fx(page);
+  h.assert(e.length === 1 && e[0].type === 'iris-blur', 'Enter adds the best match');
+  h.assert(await page.locator('.xp-handles .xp-h-pt').count() >= 3, 'and its handles are on the canvas');
+  h.assert.noErrors(page);
+};
+
+/* ---------- Deep links ---------- */
+const xpOn = (page) => page.waitForFunction(() => window.LE.expert && window.LE.expert.active() && window.LE.expert.links);
+cases['deep links: tab opens the pane on desktop and the tab on a phone; the saved mode is untouched'] = async ({ browser, base, h }) => {
+  let page = await studio(browser, base, { query: '?mode=expert&tab=layers', ls: { 'le-expert-layout': JSON.stringify({ rightW: 340, split: 0.6, scopes: true, dev: true, lay: false }) } });
+  await xpOn(page);
+  await page.waitForTimeout(300);
+  let r = await page.evaluate(() => ({ collapsed: document.querySelector('.xp-pane-lay').classList.contains('is-collapsed'), focus: !!document.activeElement.closest('.xp-pane-lay'), url: location.search, mode: localStorage.getItem('le-studio-mode') }));
+  h.assert(!r.collapsed && r.focus, 'desktop: the Layers pane is expanded and focused: ' + JSON.stringify(r));
+  h.assert.equal(r.url, '', 'the link is read once and removed from the address');
+  h.assert(r.mode !== '"expert"' && r.mode !== 'expert', 'a link does not change the saved workspace: ' + r.mode);
+  h.assert(await page.evaluate(() => window.LE.expert.workspace.show('mask') && window.LE.expert.workspace.components().develop.isOpen('Mask')), 'tab=mask opens the layer mask section');
+  h.assert.noErrors(page);
+  await page.context().close();
+  for (const [tab, want] of [['scopes', { tab: 'scopes', mask: false }], ['mask', { tab: 'adjust', mask: true }], ['layers', { tab: 'layers', mask: false }], ['develop', { tab: 'adjust', mask: false }]]) {
+    page = await studio(browser, base, { w: 390, h: 844, query: '?mode=expert&tab=' + tab });
+    await xpOn(page);
+    await page.waitForTimeout(300);
+    r = await page.evaluate(() => ({ panel: window.LEStudio.S.panel, tab: window.LEStudio.S.panelOpts.tab, mask: !!window.LEStudio.S.panelOpts.mask }));
+    h.assert(r.panel === 'expert' && r.tab === want.tab && r.mask === want.mask, 'phone: tab=' + tab + ' opens it: ' + JSON.stringify(r));
+    h.assert.noErrors(page);
+    await page.context().close();
+  }
+};
+
+cases['deep links: tool and add wait for the first photo; unknown values are ignored'] = async ({ browser, base, h }) => {
+  let page = await studio(browser, base, { query: '?mode=expert&tool=patch&add=iris-blur', photo: false });
+  await xpOn(page);
+  await page.waitForTimeout(400);
+  const toast = await page.evaluate(() => { const t = document.querySelector('#sx-toast, .sx-toast'); return t ? t.textContent : ''; });
+  h.assert(/Iris blur/.test(toast) && /Open a photo/.test(toast), 'without a photo a one-line hint says what will happen: ' + toast);
+  h.assert.equal(await page.evaluate(() => window.LE.expert.tools.active()), 'move', 'nothing is activated yet');
+  const u0 = await undoCount(page);
+  await photo(page);
+  await page.waitForFunction(() => { const l = window.LEStudio.targetImage(); return l && (l.fx || []).length === 1; });
+  await page.waitForTimeout(200);
+  const e = await fx(page);
+  h.assert(e[0].type === 'iris-blur', 'the effect is added when the first photo opens');
+  h.assert.equal(await page.evaluate(() => window.LE.expert.tools.active()), 'patch', 'and the tool is active');
+  h.assert(await page.evaluate(() => window.LE.expert.workspace.components().develop.isOpen('Optics')), 'its section is open in the develop panel');
+  void u0;
+  /* Every tool name, and an effect with a photo already open. */
+  for (const t of ['heal', 'clone', 'patch', 'redeye', 'dodge', 'liquify', 'light', 'brush', 'gradient']) {
+    await page.evaluate((tool) => { window.LE.expert.tools.activate('move'); return window.LE.expert.links({ tool }); }, t);
+    await page.waitForTimeout(120);
+    h.assert.equal(await page.evaluate(() => window.LE.expert.tools.active()), t, 'tool=' + t);
+  }
+  await page.evaluate(() => { window.LE.expert.tools.activate('move'); return window.LE.expert.links({ add: 'vignette' }); });
+  await page.waitForTimeout(150);
+  const u1 = await undoCount(page);
+  h.assert((await fx(page)).map((x) => x.type).join() === 'iris-blur,vignette', 'add with a photo open adds at once');
+  await page.evaluate(() => window.LEStudio.scene.undo());
+  h.assert((await fx(page)).length === 1 && u1 - (await undoCount(page)) === 1, 'in one undo step');
+  h.assert.noErrors(page);
+  await page.context().close();
+  page = await studio(browser, base, { query: '?mode=expert&tab=zzz&tool=nope&add=not-an-effect' });
+  await xpOn(page);
+  await page.waitForTimeout(500);
+  const r = await page.evaluate(() => ({ tool: window.LE.expert.tools.active(), fx: (window.LEStudio.targetImage().fx || []).length, url: location.search }));
+  h.assert(r.tool === 'move' && r.fx === 0 && r.url === '', 'unknown values change nothing: ' + JSON.stringify(r));
+  h.assert.noErrors(page);
+};
+
+cases['deep links: ?open=raw and ?open=hdr offer the file chooser after boot, in either workspace'] = async ({ browser, base, h }) => {
+  for (const [q, label, mode] of [['?open=raw', 'Choose a photo', 'add'], ['?open=hdr', 'Choose photos', 'hdr'], ['?mode=expert&open=raw', 'Choose a photo', 'add']]) {
+    const page = await studio(browser, base, { query: q, photo: false });
+    await page.waitForTimeout(400);
+    const btn = page.locator('.sx-toast-act', { hasText: label });
+    h.assert(await btn.count(), q + ': a toast offers "' + label + '"');
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser'), btn.click()]);
+    h.assert(chooser, q + ': the action opens the file chooser');
+    h.assert.equal(await page.evaluate(() => document.getElementById('sx-file').dataset.mode), mode, q + ': through the existing command');
+    h.assert.equal(await page.evaluate(() => location.search), '', q + ': removed from the address');
+    h.assert.equal(await page.evaluate(() => !!(window.LE.expert && window.LE.expert.active())), /mode=expert/.test(q), q + ': the workspace is the one the link asked for');
+    h.assert.noErrors(page);
+    await page.context().close();
+  }
+  const page = await studio(browser, base, { query: '?open=zzz', photo: false });
+  await page.waitForTimeout(300);
+  h.assert.equal(await page.locator('.sx-toast-act').count(), 0, 'an unknown ?open value is ignored');
   h.assert.noErrors(page);
 };
 
