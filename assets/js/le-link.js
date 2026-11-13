@@ -1048,6 +1048,9 @@
     this.el = el;
   };
   Client.prototype.show = function (state, msg) {
+    /* Once the server has said goodbye nothing may write over that message (an update still being applied finishes after it). */
+    if (this.dead && this.byeShown) return;
+    if (this.dead) this.byeShown = true;
     this.state = state;
     if (!this.el) return;
     this.el.setAttribute('data-s', state);

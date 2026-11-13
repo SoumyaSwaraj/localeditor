@@ -83,7 +83,7 @@ cases['every live feature, tool page and hub is registered: llms.txt, header sea
   soon.forEach((e) => h.assert(!llms.includes(e.title) && !(e.url && llms.includes(e.url)) && !(e.url && index.includes('"' + e.url + '"')), 'a soon entry leaked into llms.txt or search: ' + e.title));
   const bad = [];
   for (const m of llms.matchAll(/\(https:\/\/localeditor\.net\/([^)]*)\)/g)) {
-    const p = m[1] || '';
+    const p = (m[1] || '').split(/[?#]/)[0];   /* a link may carry a query (studio/?mode=expert): the page is what must exist */
     if (!p || p === 'sitemap.xml') continue;
     if (!fs.existsSync(path.join(ROOT, p.endsWith('/') ? p + 'index.html' : p))) bad.push(p);
   }

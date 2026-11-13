@@ -3043,7 +3043,7 @@
     stickers: ['elements', { tab: 'stickers' }], emoji: ['elements', { tab: 'emoji' }], text: 'text', fonts: 'fonts', meme: ['apps', { app: 'meme' }],
     watermark: ['apps', { app: 'watermark' }], collage: ['apps', { app: 'collage' }], contact: ['apps', { app: 'contact' }], palette: ['apps', { app: 'palette' }],
     metadata: ['apps', { app: 'metadata' }], compare: ['apps', { app: 'compare' }], batch: ['apps', { app: 'batch' }], upscale: ['apps', { app: 'upscale' }],
-    background: 'background', draw: 'draw', layers: 'layers', position: ['layers', { tab: 'arrange' }], recipes: 'recipes', export: 'export', download: 'export',
+    background: 'background', draw: 'draw', layers: 'layers', position: ['layers', { tab: 'arrange' }], recipes: 'recipes', export: 'export', download: 'export', fields: 'fields', bulk: 'bulk',
     resize: ['design', { tab: 'sizes' }], social: ['design', { tab: 'sizes' }], design: 'design', templates: ['design', { tab: 'templates' }], history: 'history',
     uploads: 'uploads', projects: 'projects', apps: 'apps', settings: 'settings', edit: 'edit',
     brand: 'brand', cutout: 'cutout', 'remove-background': 'cutout', redact: 'redact', thumbnail: ['apps', { app: 'thumbnail' }],
