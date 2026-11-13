@@ -477,4 +477,31 @@ cases['maths 3/3: bloom energy, depth blur, field blurs and the stylise effects 
   h.assert.noErrors(page);
 };
 
+cases['far effects: sun rays and anamorphic streaks are built over the whole layer (g.far), need no reach, and match in 64 px tiles'] = async ({ browser, base, h }) => {
+  const page = await fx.page(browser, base);
+  const r = await page.evaluate(() => {
+    const FX = window.LE.fx, c = fxT.card(320, 192), out = {};
+    const stacks = { rays: [{ type: 'sun-rays', p: { amount: 70, position: { x: 0.75, y: 0.75 }, threshold: 0.6, length: 100 } }], streaks: [{ type: 'anamorphic-streaks', p: { amount: 60, threshold: 0.7, length: 3000 } }] };
+    Object.keys(stacks).forEach((k) => {
+      const e = FX.validate(stacks[k][0]).entry, def = FX.get(e.type);
+      out[k] = { one: fxT.png(FX.apply(c, { fx: stacks[k] })), many: fxT.png(FX.apply(c, { fx: stacks[k], tile: 64 })), none: fxT.png(FX.apply(c, { fx: [] })), reach: def.radius(e.p, 2, { w: 320, h: 192 }), tiles: FX.status().stats.tiles };
+    });
+    /* g.far hands a builder over the whole box: its size follows maxSide, its source is the whole picture in the effect's space */
+    let seen = null;
+    FX.register({ id: 't-far', space: 'linear', passes: function (g) { const got = g.far({ maxSide: 80 }, (w) => { seen = [w.width, w.height, w.source.space, Math.round(w.scale * 1000) / 1000, w.far() === null]; return w.pass('vec4 fx(){ return vec4(boxUV(), 0.0, 1.0); }'); }); seen.push(got.w, got.h); } });
+    FX.apply(c, { fx: [{ type: 't-far', p: {} }], tile: 64 });
+    out.seen = seen;
+    return out;
+  });
+  const buf = (u) => Buffer.from(u.split(',')[1], 'base64');
+  for (const k of ['rays', 'streaks']) {
+    h.assert.equal(r[k].reach, 0, k + ' declares no reach');
+    await fx.same(page, buf(r[k].one), buf(r[k].many), k + ': one rectangle against 64-pixel tiles', { max: 2, over: 0.0005 });
+    const d = await fx.diff(page, buf(r[k].one), buf(r[k].none));
+    h.assert(d.max > 25, k + ' is visible: ' + JSON.stringify(d));
+  }
+  h.assert.equal(JSON.stringify(r.seen), JSON.stringify([80, 48, 'linear', 0.25, true, 80, 48]), 'the far builder works over the whole box');
+  h.assert.noErrors(page);
+};
+
 module.exports = cases;

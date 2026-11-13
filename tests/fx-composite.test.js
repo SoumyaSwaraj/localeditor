@@ -417,4 +417,23 @@ cases['hardened core: a long cast shadow is whole in every tile (g.whole), nothi
   h.assert.noErrors(pg);
 };
 
+cases['studio: a cast shadow on a shape layer at draw time reads the layer through the whole-box copy, also when the layer is not at the page origin'] = async ({ browser, base, h }) => {
+  const pg = await studio(h, browser, base);
+  const r = await pg.evaluate(async () => {
+    const s = window.LEStudio.scene;
+    const p = { opacity: 1, direction: 90, elevation: 45, ground: 0.5, perspective: 0, blurNear: 0, blurFar: 0, fade: 0, anchor: { x: 0.5, y: 1 }, receive: 'normal', color: '#000000' };
+    s.load({ v: 1, width: 300, height: 300, background: { type: 'color', color: '#ffffff' }, layers: [
+      { id: 'pole', type: 'shape', shape: 'rect', x: 180, y: 60, w: 20, h: 100, fill: { type: 'solid', color: '#d02020' }, fx: [{ type: 'cast-shadow', p }] }
+    ] });
+    await window.LE.fxBoot.load();
+    const c = await s.render(1), at = (x, y) => Array.from(c.getContext('2d').getImageData(x, y, 1, 1).data).slice(0, 3);
+    /* toward the camera, ground 0.5: a stripe as wide as the pole from y = 160 to 160 + 0.5 × 100 = 210 */
+    return { pole: at(190, 100), shadow: [at(190, 170), at(190, 200)], beyond: at(190, 225), beside: [at(170, 185), at(212, 185)] };
+  });
+  h.assert(r.pole[0] > 180 && r.pole[1] < 60, 'the pole is drawn: ' + r.pole);
+  h.assert(r.shadow[0][0] < 40 && r.shadow[1][0] < 40, 'its shadow lies below it: ' + JSON.stringify(r.shadow));
+  h.assert(r.beyond[0] > 230 && r.beside[0][0] > 230 && r.beside[1][0] > 230, 'and nowhere else: ' + JSON.stringify([r.beyond, r.beside]));
+  h.assert.noErrors(pg);
+};
+
 module.exports = cases;

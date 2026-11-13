@@ -706,6 +706,13 @@
     face: 'vec4 fx(){ float v = texture(u_map, srcUV()).a * in01(warpUV()); return vec4(v, v, v, 1.0); }',
     segments: 'uniform sampler2D u_map2; uniform float u_has2;\nvec4 fx(){ vec2 u = srcUV(); float k = in01(warpUV()); vec3 m = texture(u_map, u).rgb; return vec4(m * k, (u_has2 > 0.5 ? texture(u_map2, u).r : 0.0) * k); }'
   };
+  /* An env whose working rectangle is the whole layer box at w × h: there v_uv and boxUV() are the same thing. */
+  function wholeEnv(env, w, h) {
+    var e = {};
+    Object.keys(env).forEach(function (q) { e[q] = env[q]; });
+    e.rw = w; e.rh = h; e.sx = w / env.box[0]; e.sy = h / env.box[1]; e.dm = [env.box[0] / w, 0, 0, env.box[1] / h]; e.dt = [0, 0]; e.abs = [0, 0]; e.img = [0, 0, 1, 1];
+    return e;
+  }
   RP.mapHandle = function (kind, o) {
     if (!Object.prototype.hasOwnProperty.call(MAP_BODY, kind)) return null;
     o = o || {};
@@ -715,10 +722,7 @@
     var whole = null;
     if (o.whole) {
       var side = Math.max(16, Math.min(2048, o.maxSide || 512)), wk = side / Math.max(1, env.box[0], env.box[1]);
-      var ww = Math.max(1, Math.round(env.box[0] * wk)), wh = Math.max(1, Math.round(env.box[1] * wk));
-      whole = {};
-      Object.keys(env).forEach(function (q) { whole[q] = env[q]; });
-      whole.rw = ww; whole.rh = wh; whole.sx = ww / env.box[0]; whole.sy = wh / env.box[1]; whole.dm = [env.box[0] / ww, 0, 0, env.box[1] / wh]; whole.dt = [0, 0]; whole.abs = [0, 0]; whole.img = [0, 0, 1, 1];
+      whole = wholeEnv(env, Math.max(1, Math.round(env.box[0] * wk)), Math.max(1, Math.round(env.box[1] * wk)));
     }
     var key = kind + ':' + part + (whole ? '|whole' + whole.rw + 'x' + whole.rh : ''), hit = this.shared('map', this, key);
     if (hit) { hit.users = (hit.users || 0) + 1; return hit; }
@@ -826,6 +830,24 @@
          opts: { maxSide (default 512) } or { scale }. Returns a handle (8-bit, display-referred, premultiplied) to sample with
          boxUV(), or null for float sources. In the silhouette stage it is the layer as it enters that stage, alpha included. */
       whole: function (opts) { return env.whole ? env.whole(entry, opts || {}) : null; },
+      /* g.far({ maxSide: 512 }, function (w) { … return handle; }): builds passes over the whole layer box instead of the
+         working rectangle. w is a builder like g (w.pass, w.blur, w.downsample, w.scale, w.width …) whose target is the box
+         reduced to maxSide and whose w.source is g.whole() at that size, in the effect's space. What it returns is the same
+         for every tile: sample it with boxUV(). For rays, streaks and anything else that reads far across the picture, so the
+         effect's radius() need not cover that distance. Null when there is no whole picture to read. */
+      far: function (opts, fn) {
+        var W = g.whole(opts || {});
+        if (!W || typeof fn !== 'function') return null;
+        var keep = run.env;
+        run.env = wholeEnv(keep, W.w, W.h);
+        try {
+          var gw = builder(run, entry), src = W;
+          if (def.space !== 'display') { src = run.handle(1, 'linear'); run.pass('vec4 fx(){ vec4 s = texture(u_src, v_uv); return vec4(toLinear(unpremul(s)) * s.a, s.a); }', { u_src: W }, src, 'whole:linear'); }
+          Object.defineProperty(gw, 'source', { enumerable: true, configurable: true, value: src });
+          gw.far = function () { return null; };
+          return fn(gw) || null;
+        } finally { run.env = keep; }
+      },
       pass: function (frag, uniforms, opts) {
         opts = opts || {};
         var values = {}, k;
@@ -868,7 +890,7 @@
       subject: function () { return env.subject ? env.subject(def.space === 'display' ? 'display' : 'linear') : null; },
       release: function (h) { run.free(h); }
     };
-    Object.defineProperty(g, 'source', { enumerable: true, get: function () {
+    Object.defineProperty(g, 'source', { enumerable: true, configurable: true, get: function () {
       if (ops.length) throw new Error('LE.fx: "' + def.id + '" mixes g.color with passes; an effect does one or the other.');
       usedSource = true;
       var srcH = run.flush(def.space === 'oklab' ? 'linear' : def.space);
@@ -1249,12 +1271,19 @@
       var idx = list.indexOf(entry), inB = idx < 0 && !!listB && listB.indexOf(entry) >= 0;
       if (inB) idx = list.length;
       if (idx < 0) return null;
-      var W = source.naturalWidth || source.width, H = source.naturalHeight || source.height;
+      var W = source.naturalWidth || source.width, H = source.naturalHeight || source.height, jm = job.matrix || null;
+      /* Draw time: the source is a region of device pixels; the whole picture is the layer box, as far as the region shows it. */
+      if (jm) { W = Math.max(1, Math.round(job.box.w * job.scale)); H = Math.max(1, Math.round(job.box.h * job.scale)); }
       var k = o.scale > 0 ? Math.min(1, Math.max(1 / 64, o.scale)) : Math.min(1, Math.max(16, Math.min(2048, o.maxSide || 512)) / Math.max(W, H));
       var w = Math.max(1, Math.round(W * k)), h = Math.max(1, Math.round(H * k)), key = idx + '|' + w + 'x' + h;
       if (memo[key]) return memo[key];
       var small;
-      if (isData(source)) small = dataCanvas(source, w, h);
+      if (jm) {
+        small = makeCanvas(w, h); var mx = small.getContext('2d'), kx = w / job.box.w, ky = h / job.box.h;
+        mx.imageSmoothingQuality = 'high';
+        mx.setTransform(jm[0] * kx, jm[1] * ky, jm[2] * kx, jm[3] * ky, jm[4] * kx, jm[5] * ky);
+        mx.drawImage(source, 0, 0);
+      } else if (isData(source)) small = dataCanvas(source, w, h);
       else { small = makeCanvas(w, h); var sx = small.getContext('2d'); sx.imageSmoothingQuality = 'high'; sx.drawImage(source, 0, 0, w, h); }
       var before = list.slice(0, idx).map(function (e) { return { id: e.id, type: e.type, p: e.p, amount: e.amount, blend: e.blend, mask: e.mask }; });
       var gate = inB && alphaOn && (job.mask || job.cut || job.clip);
@@ -1405,7 +1434,7 @@
     }
     var out = makeCanvas(W, H), octx = out.getContext('2d');
     var needScene = !!o.scene && res.entries.some(function (e) { return e.def.needs.indexOf('scene') >= 0; });
-    var f8 = S.caps.float ? 'f16' : '8', wholes = [], whole2 = wholeFn(o.source, listA, { box: { w: o.box[0], h: o.box[1] }, assets: o.assets, layer: o.layer }, wholes, listB, false);
+    var f8 = S.caps.float ? 'f16' : '8', wholes = [], whole2 = wholeFn(o.source, listA, { box: { w: o.box[0], h: o.box[1] }, assets: o.assets, layer: o.layer, matrix: m, scale: sc }, wholes, listB, false);
     if (S.prof) S.profAt = performance.now();
     S.stats.renders++;
     S.runTick = ++S.tick;

@@ -685,22 +685,10 @@
      technique of Reinhard et al. 2001 ("Color transfer between images") in a modern perceptual space. Parameters are the source and
      target statistics, so LE.fx.composite.match() can fill them; luminance and colour transfer have separate weights.
      ===================================================================================================================== */
-  var OKLAB = [
-    'vec3 $lab(vec3 c){ c = max(c, 0.0); vec3 l = vec3(0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b, 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b, 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b);',
-    '  l = sign(l) * pow(abs(l), vec3(1.0 / 3.0)); return vec3(0.2104542553 * l.x + 0.7936177850 * l.y - 0.0040720468 * l.z, 1.9779984951 * l.x - 2.4285922050 * l.y + 0.4505937099 * l.z, 0.0259040371 * l.x + 0.7827717662 * l.y - 0.8086757660 * l.z); }',
-    'vec3 $rgb(vec3 o){ vec3 l = vec3(o.x + 0.3963377774 * o.y + 0.2158037573 * o.z, o.x - 0.1055613458 * o.y - 0.0638541728 * o.z, o.x - 0.0894841775 * o.y - 1.2914855480 * o.z); l = l * l * l;',
-    '  return vec3(4.0767416621 * l.x - 3.3077115913 * l.y + 0.2309699292 * l.z, -1.2684380046 * l.x + 2.6097574011 * l.y - 0.3413193965 * l.z, -0.0041960863 * l.x - 0.7034186147 * l.y + 1.7076147010 * l.z); }'
-  ].join('\n');
-  C.oklab = function (r, g, b) {
-    var l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b, m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b, s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
-    l = Math.cbrt(l); m = Math.cbrt(m); s = Math.cbrt(s);
-    return [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s, 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s];
-  };
-  C.oklabToRgb = function (L, a, b) {
-    var l = L + 0.3963377774 * a + 0.2158037573 * b, m = L - 0.1055613458 * a - 0.0638541728 * b, s = L - 0.0894841775 * a - 1.2914855480 * b;
-    l = l * l * l; m = m * m * m; s = s * s * s;
-    return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s];
-  };
+  /* Oklab comes from the core (fx_oklab / fx_oklab_inv in shaders, LE.fx.math.oklab / oklabInv here). */
+  var OKLAB = 'vec3 $lab(vec3 c){ return fx_oklab(max(c, 0.0)); } vec3 $rgb(vec3 o){ return fx_oklab_inv(o); }';
+  C.oklab = function (r, g, b) { return M.oklab([r, g, b]); };
+  C.oklabToRgb = function (L, a, b) { return M.oklabInv([L, a, b]); };
   /* The transfer, on one linear RGB triple (the CPU reference the tests compare the shader with). */
   C.transfer = function (rgb, p) {
     var o = C.oklab(rgb[0], rgb[1], rgb[2]), k = p.strength / 100, wl = p.luminance / 100 * k, wc = p.color / 100 * k;
