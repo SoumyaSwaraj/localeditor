@@ -873,6 +873,8 @@
     closePop();
     var was = S.panel;
     if (was === 'draw' && id !== 'draw') stopDraw();
+    /* Download exports what is on the canvas: a text edit in progress is committed first (on a phone the editor would stay open under the sheet). */
+    if (id === 'export' && scene && scene._commitEdit) scene._commitEdit(true);
     if (was) fire('panel-close', was);
     S.panel = id;
     S.panelOpts = opts || {};

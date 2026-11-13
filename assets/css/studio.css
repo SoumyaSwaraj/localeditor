@@ -1298,6 +1298,10 @@ select.sx-input { padding-right: 28px; }
   .sx-download { min-height: 44px !important; height: 44px; padding: 0 14px !important; gap: 6px; margin-left: 2px; font-size: 14px; }
   .sx-download span { display: inline; }
   .is-start .sx-head-act { display: none; }
+  /* The design name keeps room for a few words: the spacer gives way first, and on the narrowest phones the Expert switch
+     (also in the File menu) and the Download glyph leave the bar. Undo, redo and the Download label stay. */
+  .sx-name { min-width: 72px; }
+  .sx-grow { min-width: 0; }
   .is-start .sx-tabs { display: none; }
   .is-start { grid-template-rows: var(--head-h) minmax(0, 1fr) 0; }
 
@@ -1362,4 +1366,8 @@ select.sx-input { padding-right: 28px; }
   .sx-mode { display: none; }
   .sx-mode-t { display: inline-grid; width: 36px !important; }
   .sx-head .sx-mode-t[aria-pressed="true"] { background: rgba(63, 103, 217, 0.28); color: var(--side-accent); }
+}
+@media (max-width: 400px) {
+  .sx-mode-t { display: none; }
+  .sx-download .sx-ic { display: none; }
 }
