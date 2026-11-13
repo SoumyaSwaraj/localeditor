@@ -17,8 +17,9 @@
      Common: a short list of everyday effects (those the registry has), plus any registration with ui.common.
      Search: every word of the query must match the effect somewhere. Where it matches decides the rank, best first:
      0 it is the name, 1 the name starts with it, 2 a word of the name starts with it, 3 inside the name, 4 the id, 5 a keyword
-     (def.keywords, ui.keywords, agent.keywords, agent.like), 6 the section, 7 the summary. Ties keep the develop panel's
-     order (section, then ui.order), so a result never depends on registration order. */
+     (def.keywords, ui.keywords, agent.keywords, agent.like), 6 the section, 7 the summary. Ties go by section, then by
+     registration (not ui.order): giving a pack's effects a ui.order re-sorts the panel and the list, never what a search
+     finds first. */
   var COMMON = ['exposure', 'contrast', 'highlights-shadows', 'white-balance', 'saturation', 'curves', 'color-grading', 'sharpen', 'clarity', 'noise-reduction', 'gaussian-blur', 'vignette', 'film-grain', 'lut'];
   X.fxCommon = function (defs) {
     defs = defs || X.defs();
@@ -43,7 +44,7 @@
       for (var k = 0; k < toks.length; k++) { var sc = fxScore(d, toks[k]); if (sc < 0) return; total += sc; }
       out.push({ d: d, s: total, i: i });
     });
-    return out.sort(function (a, b) { return a.s - b.s || a.i - b.i; }).map(function (o) { return o.d; });
+    return out.sort(function (a, b) { return a.s - b.s || (a.d.rank - b.d.rank) || (a.d.order - b.d.order) || a.i - b.i; }).map(function (o) { return o.d; });
   };
 
   /* An effect chosen from the add-effect list: appended in one undo step and selected, so its on-canvas handles show. */

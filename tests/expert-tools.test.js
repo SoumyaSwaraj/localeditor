@@ -323,7 +323,10 @@ cases['add-effect list: Common first, sections with headings, ranked search, ui.
   r = await first('zzzz');
   h.assert(r.length === 0 && await page.locator('#sx-pop .xp-fxmenu .xp-note').count() === 1, 'no match says so');
   const same = await page.evaluate(() => { const X = window.LE.expert, a = X.fxSearch('glow').map((d) => d.id), b = X.fxSearch('glow', X.defs().slice().reverse()).map((d) => d.id); return [a[0], b[0], a.length === b.length]; });
-  h.assert(same[0] === 'glow' && same[1] === 'glow' && same[2], 'the best match does not depend on registration order: ' + same.join(', '));
+  h.assert(same[0] === 'glow' && same[1] === 'glow' && same[2], 'the best match does not depend on the order of the list it is given: ' + same.join(', '));
+  /* Two effects with the same name: the earlier registration wins a tie, whatever their ui.order (the list order differs). */
+  const tie = await page.evaluate(() => { const X = window.LE.expert, mk = (id, order, reg) => ({ id, name: 'Curves', section: 'Curves', rank: 2, order: reg, ui: { order } }); return X.fxSearch('curv', [mk('late', 1, 9), mk('early', 50, 3)]).map((d) => d.id).join(); });
+  h.assert.equal(tie, 'early,late', 'ties go by registration, not by ui.order');
   /* ui.order inside each section. */
   const bad = await page.evaluate(() => { const X = window.LE.expert, out = []; X.sections().forEach((s) => { const o = X.defs().filter((d) => d.section === s).map((d) => (d.ui && typeof d.ui.order === 'number') ? d.ui.order : 1e9); for (let i = 1; i < o.length; i++) if (o[i] < o[i - 1]) out.push(s); }); return out; });
   h.assert.equal(bad.length, 0, 'registrations are in ui.order inside every section: ' + bad.join(', '));

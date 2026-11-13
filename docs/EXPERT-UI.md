@@ -163,8 +163,9 @@ Opened from the layers panel (effect, adjustment layer). Without a query: a **Co
 Inside a section registrations are ordered by `ui.order`, then by registration. A query shows one ranked list
 (`LE.expert.fxSearch(query)`): every word must match; the rank is where it matches, best first: the name itself, the start
 of the name, the start of a word in the name, inside the name, the id, a keyword (`keywords`, `ui.keywords`,
-`agent.keywords`, `agent.like`), the section, the summary. Ties keep the panel order, so the first result never depends on
-registration order. Enter takes the first result; the effect is added, selected and its handles shown.
+`agent.keywords`, `agent.like`), the section, the summary. Ties go by section, then by registration (not `ui.order`), so
+giving effects a `ui.order` re-sorts the panel and the list but never changes what a search finds first. Enter takes the
+first result; the effect is added, selected and its handles shown.
 
 ## Links
 
