@@ -443,6 +443,76 @@
     var paper = typeof p.paper === 'string' ? p.paper.replace(/[^\w.:-]/g, '').slice(0, 24) : '';
     return { v: 1, paper: paper, w: Math.round(clamp(w, 10, 2000) * 100) / 100, h: Math.round(clamp(h, 10, 2000) * 100) / 100, dpi: Math.round(clamp(isFinite(dpi) && dpi > 0 ? dpi : 300, 72, 1200)) };
   }
+  /* Template fields (docs/VARIABLES.md). layer.bind { content, color, show, fit } and text overflow / minSize on layers;
+     doc.values (the page's filled-in values) on pages; the document's variable list (meta.studio.variables). Plain data. */
+  var VAR_KEY = /^[A-Za-z_][\w.-]{0,39}$/;
+  var VAR_TYPES = { text: 1, number: 1, date: 1, image: 1, colour: 1, url: 1, boolean: 1 };
+  function varText(v, n) { return String(v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').slice(0, n); }
+  function bindOf(src, layer) {
+    delete layer.bind; delete layer.overflow; delete layer.minSize;
+    var b = src && src.bind;
+    if (typeof b === 'string') b = { content: b };
+    if (b && typeof b === 'object' && !Array.isArray(b)) {
+      var o = {};
+      ['content', 'color'].forEach(function (k) { if (typeof b[k] === 'string' && VAR_KEY.test(b[k])) o[k] = b[k]; });
+      if (typeof b.show === 'string' && VAR_KEY.test(b.show.replace(/^!/, ''))) o.show = b.show;
+      if (b.fit === 'contain' || b.fit === 'cover') o.fit = b.fit;
+      if (o.content || o.color || o.show) layer.bind = o;
+    }
+    if (layer.type === 'text' && src) {
+      if (src.overflow === 'shrink' || src.overflow === 'wrap' || src.overflow === 'ellipsis') layer.overflow = src.overflow;
+      var ms = Number(src.minSize);
+      if (src.minSize != null && isFinite(ms) && ms > 0) layer.minSize = Math.round(clamp(ms, 1, 5000) * 100) / 100;
+    }
+    return layer;
+  }
+  function valuesOf(v) {
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+    var out = {}, n = 0;
+    Object.keys(v).slice(0, 80).forEach(function (k) {
+      if (n >= 60 || !(VAR_KEY.test(k) || k === '#' || k === '#total') || k === 'constructor' || k === 'prototype' || k === '__proto__') return;
+      var x = v[k];
+      if (typeof x === 'string') x = varText(x, 2000);
+      else if (typeof x === 'number') { if (!isFinite(x)) return; }
+      else if (typeof x !== 'boolean') return;
+      out[k] = x; n++;
+    });
+    return n ? out : null;
+  }
+  function variablesOf(list) {
+    if (!Array.isArray(list)) return null;
+    var seen = {};
+    return list.slice(0, 50).map(function (v) {
+      if (!v || typeof v !== 'object') return null;
+      var key = typeof v.key === 'string' ? v.key : v.name;
+      if (typeof key !== 'string' || !VAR_KEY.test(key) || seen[key] || key === 'constructor' || key === 'prototype') return null;
+      seen[key] = 1;
+      var t = v.type === 'color' ? 'colour' : v.type;
+      var o = { key: key, label: varText(v.label == null ? key : v.label, 80).replace(/[<>]/g, ''), type: VAR_TYPES[t] ? t : 'text' };
+      ['default', 'sample'].forEach(function (k) {
+        if (typeof v[k] === 'string') o[k] = varText(v[k], 2000);
+        else if ((typeof v[k] === 'number' && isFinite(v[k])) || typeof v[k] === 'boolean') o[k] = v[k];
+      });
+      if (v.required === true) o.required = true;
+      return o;
+    }).filter(Boolean);
+  }
+  /* Loads le-variables.js the first time a page with values is drawn or rendered (like LE.fxBoot). */
+  var VAR_SRC = (function () { try { return document.currentScript.src.replace(/le-objects\.js.*$/, '') + 'le-variables.js'; } catch (e) { return '../assets/js/le-variables.js'; } })();
+  var varJob = null, varScenes = [];
+  function varTouch(l) { return !!l && (!!l.bind || (l.type === 'text' && String(l.text || '').indexOf('{{') >= 0)); }
+  LE.varBoot = LE.varBoot || {
+    src: VAR_SRC, touches: varTouch,
+    needs: function (d) { return !!(d && d.values && (d.layers || []).some(varTouch)); },
+    ready: function (scene) {
+      if (scene && varScenes.indexOf(scene) < 0) varScenes.push(scene);
+      if (!varJob) {
+        varJob = LE.lazy(VAR_SRC).then(function () { varScenes.splice(0).forEach(function (s) { if (!s._dead && s._mark) s._mark(); }); return LE.variables; });
+        varJob.catch(function () { varJob = null; });
+      } else if (LE.variables) varScenes = [];
+      return varJob;
+    }
+  };
   /* Keeps a crop's centre and zoom when the photo moves into a frame of another shape. */
   function refitCrop(crop, iw, ih, W, H) {
     crop = crop || { x: 0, y: 0, w: 1, h: 1 };
@@ -571,7 +641,7 @@
       layer.clip = src.clip === true;
       if (src.w == null && src.h == null) { layer.x = 0; layer.y = 0; layer.w = scene._doc.width; layer.h = scene._doc.height; }
     }
-    return expertOf(src, layer);
+    return bindOf(src, expertOf(src, layer));
   }
 
   function blank(w, h) {
@@ -1122,7 +1192,8 @@
       collage: this._doc.collage || undefined,
       carousel: this._doc.carousel || undefined,
       maker: this._doc.maker || undefined,
-      print: this._doc.print || undefined
+      print: this._doc.print || undefined,
+      values: this._doc.values || undefined
     });
   };
   P._histInfo = function () {
@@ -1173,6 +1244,7 @@
     if (carouselOf(data.carousel)) this._doc.carousel = carouselOf(data.carousel); else delete this._doc.carousel;
     if (makerOf(data.maker)) this._doc.maker = makerOf(data.maker); else delete this._doc.maker;
     if (printOf(data.print)) this._doc.print = printOf(data.print); else delete this._doc.print;
+    if (valuesOf(data.values)) this._doc.values = valuesOf(data.values); else delete this._doc.values;
     this._clearBitmaps();
     this._jobs = {};
     var self = this;
@@ -1241,6 +1313,7 @@
     if (carouselOf(doc.carousel)) this._doc.carousel = carouselOf(doc.carousel);
     if (makerOf(doc.maker)) this._doc.maker = makerOf(doc.maker);
     if (printOf(doc.print)) this._doc.print = printOf(doc.print);
+    if (valuesOf(doc.values)) this._doc.values = valuesOf(doc.values);
     this._sel = [];
     this._hist = { undo: [], redo: [], key: null, base: null, pushed: false };
     this._clearBitmaps();
@@ -1780,7 +1853,7 @@
   };
   P._pumpImage = function (id) {
     var job = this._jobs[id];
-    var layer = this._find(id);
+    var layer = this._filled(this._find(id));
     if (!job || !layer || layer.type !== 'image') return;
     if (!job.again || job.busy) return;
     job.again = false;
@@ -1947,7 +2020,7 @@
     var token = job.token;
     requestAnimationFrame(function () {
       if (job.token !== token || self._dead) return;
-      var layer = self._find(id);
+      var layer = self._filled(self._find(id));
       if (!layer) return;
       self._rasterSvg(layer, 2).then(function (img) {
         if (job.token !== token || self._dead) return;
@@ -1992,6 +2065,8 @@
     var self = this;
     var bitmaps = {};
     var jobs = this._doc.layers.map(function (layer) {
+      layer = self._filled(layer);   /* template fields: the filled-in copy (le-variables.js) */
+      if (!layer) return null;
       if (layer.type === 'image') {
         var rec = self._assets[layer.src];
         return Promise.resolve(rec && rec.ready).then(function () {
@@ -2012,6 +2087,14 @@
     return Promise.all(jobs).then(function () { return bitmaps; });
   };
 
+  /* The layer as drawn: with the page's values filled in when it has template fields (docs/VARIABLES.md). */
+  P._filled = function (layer) {
+    var vals = this._varPreview || this._doc.values;
+    if (!layer || !vals || !varTouch(layer)) return layer;
+    if (LE.variables && LE.variables.fillLayer) return LE.variables.fillLayer(this, layer, vals);
+    LE.varBoot.ready(this);
+    return null;   /* drawn as soon as the filler arrives, so a {{field}} never flashes */
+  };
   P.render = function (scale, opts) {
     opts = opts || {};
     scale = num(scale, 1);
@@ -2028,7 +2111,8 @@
       scale *= fit;
     }
     var self = this;
-    return this._prepareFonts().then(function () {
+    var fill = LE.varBoot.needs(this._doc) ? LE.varBoot.ready(this).then(function (V) { return V && V.prepare ? V.prepare(self) : null; }, function () {}) : null;
+    return Promise.resolve(fill).then(function () { return self._prepareFonts(); }).then(function () {
       return self._prepareBitmaps(scale);
     }).then(function (bitmaps) {
       var c = document.createElement('canvas');
@@ -2145,6 +2229,8 @@
     this._doc.layers.forEach(function (layer) {
       if (opts.preview && self._bgEdit && self._bgEdit.peek) return;
       if (opts.preview && self._crop && self._crop.id === layer.id) self._drawCropGhost(ctx, layer);
+      layer = self._filled(layer);   /* template fields: the filled-in copy, or null while hidden (le-variables.js) */
+      if (!layer) return;
       if (LE.fxBoot && LE.fxBoot.draw(self, ctx, layer, opts)) return;   /* expert layers drawn by LE.fx */
       self._drawLayer(ctx, layer, opts);
     });
@@ -4381,6 +4467,12 @@
   LE.Scene.expertAssets = expertAssets;
   LE.Scene._fx = { cutoutAlpha: cutoutAlpha, cutoutApply: cutoutApply, cutoutOutline: cutoutOutline };
   LE.Scene.printOf = printOf;
+  LE.Scene.bindOf = bindOf;
+  LE.Scene.valuesOf = valuesOf;
+  LE.Scene.variablesOf = variablesOf;
+  LE.Scene.wrapText = wrapText;
+  LE.Scene.textWidth = measureText;
+  LE.Scene.fontFamily = fontFamily;
   LE.Scene.refitCrop = refitCrop;
   LE.Scene.backgroundSpec = bgSpec;
   LE.Scene.backgroundPlacement = function (bg, W, H, sw, sh) { return bgPlace(bgSpec(bg), W, H, sw, sh); };

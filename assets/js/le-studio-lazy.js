@@ -39,6 +39,9 @@
     doc: function (pages) { return anyPage(pages, function (p) { return p.collage; }) || anyLayer(pages, function (l) { return l.slot; }); }, idle: 5, features: ['studio.design', 'studio.collage'] });
   M.defer({ id: 'background', src: JS + 'le-studio-background.js', css: CSS + 'studio-background.css', label: 'background tools', deps: ['color'], panels: { background: 'Background' }, cmds: ['bgDetach', 'bgEdit', 'bgPanel'], on: ['select'], retool: true,
     doc: function (pages) { return anyPage(pages, function (p) { return p.background && (p.background.spec || p.background.type === 'image'); }); }, idle: 4 });
+  /* Template fields and Create many (docs/VARIABLES.md). The model, le-variables.js, loads on its own through LE.varBoot when a page with values is drawn. */
+  M.defer({ id: 'variables', src: JS + 'le-studio-variables.js', css: CSS + 'studio-variables.css', label: 'template fields', panels: { fields: 'Fields', bulk: 'Create many' }, cmds: ['fields'], on: ['select'], rerender: ['design'],
+    doc: function (pages) { return anyPage(pages, function (p) { return p.values || p.variables; }) || anyLayer(pages, function (l) { return typeof l.text === 'string' && l.text.indexOf('{{') >= 0; }); }, idle: 9 });
   M.defer({ id: 'recipes', src: JS + 'le-studio-recipes.js', css: CSS + 'studio-recipes.css', label: 'recipes', panels: { recipes: 'Recipes' }, wrap: { apps: function (o) { return o.app === 'batch'; } }, queue: 'onRecipeFile',
     doc: function (pages) { return anyLayer(pages, function (l) { return l.adjust && l.adjust.recipe; }); }, idle: 7 });
   M.defer({ id: 'export', src: JS + 'le-studio-export.js', css: CSS + 'studio-export.css', label: 'download options', panels: { export: 'Download' },

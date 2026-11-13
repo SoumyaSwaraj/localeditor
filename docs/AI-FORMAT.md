@@ -176,9 +176,31 @@ The open format itself is now implemented: see `docs/FORMAT-DESIGN.md`, `schema/
 | `maker` | page | `{ v: 1, id, style, size, values: {…}, sig }`; an agent can write only this block and the page is generated | `le-makers.js` |
 | `redact` | shape layer | `{ mode: "solid" \| "pixelate" \| "blur", amount: 0–500 (0 = automatic), color }`; affects everything drawn beneath it | `le-studio-privacy.js` |
 | `cutout` | image layer | `{ asset, enabled, model, feather: 0–50, refine, version: 1, outline: { color, width } \| null }`; `asset` is a mask image (alpha, or white = keep) | `le-studio-cutout.js` |
-| `variables` | document (`meta.studio.variables`) | `[{ key, label, type: "text" \| "image", default }]`; `{{key}}` in text | `le-design.js` (bulk create not built yet) |
+| `variables` | document (`meta.studio.variables`) | `[{ key, label, type: text \| number \| date \| image \| colour \| url \| boolean, sample, default, required }]`; `{{key\|pipe:arg}}` in text | `le-variables.js` (docs/VARIABLES.md) |
+| `values` | page (document-level `values` in the file fills every page) | `{ key: text \| number \| boolean }`, image fields by asset id; `#` / `#total` row counter | `le-variables.js` |
+| `bind`, `overflow`, `minSize` | layer | `bind: { content, color, show: "key" \| "!key", fit }`; text `overflow: shrink \| wrap \| ellipsis` | `le-variables.js` |
+| `print` | page | `{ paper, w, h, dpi }` in mm (was studio-only; now read and written by the format) | `le-objects.js` |
 | `notes` | document (`meta.studio.notes`) | `[{ id, page, layer?, x, y, text, status: "open" \| "done", reply?, at }]`; in the file a top-level `notes` list, `page` by id or index | `le-agent.js` |
 | `remix` | document (`meta.studio.remix`) | `{ name, by }` plain text credit that travels with a template link | `le-design.js` |
 | `id` | page | Stable page id stored on the page; follows the page through delete, reorder and duplicate (the copy has none). `meta.studio.pageIds` (by position) is only read for older projects | `le-design.js`, `le-project.js` |
 
 All of `carousel`, `maker`, `redact` and `cutout` are in the open format, `schema/design-1.json` and `docs/FORMAT-DESIGN.md` (integration, 12 November 2026). In the file a cut-out's mask is `cutout.src` (an image source like any photo); a page with only `maker` is generated on read. Template links are `/studio/#d=<tag><base64url>`; quick makers open with `/studio/?make=<id>&style=&size=&v=<base64url>`.
+
+## Template fields (roadmap 2.6)
+
+A design becomes a template by putting `{{key}}` in any text, or `bind` on a layer. Values are data on the page, never baked
+into the layers, so one file is both the template and its filled-in copy. An agent fills a template in one write:
+
+```json
+{ "format": "localeditor-design", "version": 1,
+  "variables": [{ "key": "name", "required": true }, { "key": "price", "type": "number" }],
+  "values": { "name": "Ana", "price": 899 },
+  "pages": [{ "width": 1080, "height": 1080, "layers": [
+    { "id": "title", "type": "text", "text": "{{name|title}} · {{price|currency:INR}}", "x": 80, "y": 80, "w": 920, "h": 200, "size": 96, "overflow": "shrink" },
+    { "id": "photo", "type": "image", "slot": true, "bind": "photo", "x": 80, "y": 320, "w": 920, "h": 680 }
+  ] }] }
+```
+
+Pipes: `upper lower title number[:decimals] currency:CODE date:long|medium|short|iso|year|month|day|weekday default:text`.
+Unknown pipes are drawn literally and reported by lint (`unknown-pipe`). Agent operations `variables.set`, `values.set` and
+`bulk.create` (rows in, files or pages out, problems per row) are in `docs/VARIABLES.md`.

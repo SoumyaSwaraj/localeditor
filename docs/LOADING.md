@@ -180,3 +180,8 @@ report (requests until interactive, gzip sizes as served by CloudFront).
 "JS before interactive" counts what had arrived when the page became interactive: on the studio it includes `le-pwa.js`,
 `le-support.js` and `le-downloads.js`, which now start after the load event but still land during the studio's async boot.
 The PDF studio's layout shift is the same before and after this work; it was not investigated here.
+
+## Budget changes
+
+- 13 Nov 2026: studio JS 214 → 217 KB and PDF studio JS 248 → 250 KB. `le-objects.js` grew 1.6 KB gzip for template fields (the detector that loads `le-variables.js` and the seam that draws a filled copy of a layer). The studio now blocks on about 257 KB against the 250 KB target; splitting `le-studio-panels.js` (20 to 25 KB) is the way back under.
+- Template fields (`le-studio-variables.js` + `studio-variables.css`) are in the studio's loader map: first selection, the Fields and Create many panels, or a document with fields or values.

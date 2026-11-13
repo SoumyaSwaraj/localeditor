@@ -1,0 +1,129 @@
+/* LocalEditor: Fields and Create many (le-studio-variables.js). Phone first (360 px), 44 px targets, tokens only. */
+.vx-body { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.vx-body code { font: 600 0.92em/1 var(--font-mono, ui-monospace, monospace); padding: 1px 5px; border-radius: var(--r-xs); background: var(--fill); color: var(--ink); }
+.vx-empty h3 { margin: 0 0 6px; font: 700 var(--text-lg, 17px)/1.25 var(--font); color: var(--ink); }
+.vx-empty p, .vx-lead { margin: 0; font-size: var(--text-sm, 14px); line-height: 1.5; color: var(--muted); }
+.vx-tip { margin: 0; }
+.vx-count { font-size: var(--text-xs, 12px); color: var(--muted); }
+.vx-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.vx-row .btn { min-height: var(--target, 44px); }
+
+/* Fields */
+.vx-field { padding: 2px 0; }
+.vx-field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
+.vx-field-head label { font-size: var(--text-sm, 14px); font-weight: 640; color: var(--ink); }
+.vx-field-head label small { font-weight: 500; color: var(--faint); }
+.vx-edit { min-height: var(--target, 44px); min-width: var(--target, 44px); margin: -8px -6px -8px 0; padding: 0 8px; border: 0; background: none; color: var(--primary); font: 600 var(--text-sm, 14px)/1 var(--font); cursor: pointer; border-radius: var(--r-sm); }
+.vx-edit:focus-visible { outline: var(--focus-w, 2px) solid var(--focus-ring); }
+.vx-text { resize: none; overflow: hidden; line-height: 1.35; padding-top: 11px; padding-bottom: 11px; }
+.vx-hint { color: var(--faint); }
+.vx-hint.is-err { color: var(--err); }
+.vx-switch { margin: 0; }
+.vx-colour { display: flex; gap: 8px; align-items: center; }
+.vx-colour input[type=color] { width: var(--target, 44px); height: var(--target, 44px); padding: 2px; border: var(--hair-w, 1px) solid var(--field-border, var(--border)); border-radius: var(--field-radius, 10px); background: var(--field-bg, var(--surface)); flex: none; }
+.vx-photo { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.vx-photo-img { width: 56px; height: 56px; border-radius: var(--r-sm); background: var(--surface-2); overflow: hidden; flex: none; }
+.vx-photo-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vx-photo .btn { min-height: var(--target, 44px); }
+.vx-editor { display: grid; gap: 10px; padding: 12px; border-radius: var(--card-radius, 14px); background: var(--surface-2); border: var(--hair-w, 1px) solid var(--line); }
+.vx-mini { display: grid; gap: 4px; font-size: var(--text-xs, 12px); font-weight: 640; color: var(--muted); min-width: 0; }
+.vx-mini .sx-input, .vx-mini select { width: 100%; min-height: var(--target, 44px); font-size: 16px; box-sizing: border-box; }
+.vx-mini-label { display: block; font-size: var(--text-xs, 12px); font-weight: 640; color: var(--muted); margin-top: 4px; }
+.vx-err { margin: 0; color: var(--err); font-size: var(--text-sm, 14px); }
+.vx-editor-act { display: flex; justify-content: flex-end; gap: 8px; }
+.vx-editor-act .btn { min-height: var(--target, 44px); }
+.vx-make { width: 100%; justify-content: center; min-height: var(--target, 44px); }
+.vx-bind { margin-top: 4px; }
+.vx-seg { width: 100%; }
+.vx-seg button { min-height: var(--target, 44px); }
+.vx-warn { padding: 10px 12px; border-radius: var(--r-md); background: var(--warn-soft); color: var(--ink); font-size: var(--text-sm, 14px); }
+.vx-warn p { margin: 0; }
+.vx-warn p + p { margin-top: 6px; }
+.vx-go { width: 100%; justify-content: center; }
+
+/* Ready templates */
+.vx-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.vx-tpl { display: grid; grid-template-rows: auto 1fr; gap: 6px; padding: 0 0 10px; min-width: 0; text-align: left; border: var(--hair-w, 1px) solid var(--card-border, var(--border)); border-radius: var(--card-radius, 14px); background: var(--surface); color: var(--ink); overflow: hidden; cursor: pointer; }
+.vx-tpl:hover { border-color: var(--border-hover); }
+.vx-tpl:focus-visible { outline: var(--focus-w, 2px) solid var(--focus-ring); outline-offset: 2px; }
+.vx-tpl-img { display: block; aspect-ratio: 4 / 3; background: var(--surface-2) center / contain no-repeat; }
+.vx-tpl-txt { display: grid; gap: 2px; padding: 0 10px; }
+.vx-tpl-txt b { font: 700 var(--text-sm, 14px)/1.25 var(--font); }
+.vx-tpl-txt small { font-size: var(--text-xs, 12px); line-height: 1.35; color: var(--muted); }
+
+/* Create many: steps */
+.vx-steps { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; overflow-x: auto; scrollbar-width: none; }
+.vx-steps::-webkit-scrollbar { display: none; }
+.vx-steps li { flex: 1 0 auto; }
+.vx-steps button { display: flex; align-items: center; gap: 6px; width: 100%; min-height: var(--target, 44px); padding: 0 10px; border: 0; border-radius: var(--chip-radius, 999px); background: var(--chip-bg, var(--fill)); color: var(--muted); font: 600 var(--text-xs, 12px)/1 var(--font); cursor: pointer; white-space: nowrap; }
+.vx-steps button[aria-current] { background: var(--selected-bg); color: var(--ink); box-shadow: inset 0 0 0 1px var(--selected-edge); }
+.vx-steps button:disabled { opacity: 0.45; cursor: default; }
+.vx-step-n { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); color: var(--ink); font-size: 11px; }
+.vx-view { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.vx-step-t { display: none; }
+.vx-steps button[aria-current] .vx-step-t { display: inline; }
+.vx-steps li { flex: 0 0 auto; }
+.vx-steps li:has(button[aria-current]) { flex: 1 0 auto; }
+
+.vx-drop { display: grid; gap: 8px; padding: 12px; border-radius: var(--card-radius, 14px); border: 1.5px dashed var(--border-strong, var(--border)); background: var(--surface); }
+.vx-drop.is-over { border-color: var(--primary); background: var(--selected-bg); }
+.vx-paste { width: 100%; min-height: 120px; font: 500 14px/1.45 var(--font-mono, ui-monospace, monospace); box-sizing: border-box; resize: vertical; }
+.vx-pick .btn { flex: 1 1 auto; justify-content: center; }
+.vx-status { margin: 0; font-size: var(--text-sm, 14px); line-height: 1.45; color: var(--ink); }
+.vx-status p { margin: 0 0 4px; }
+.vx-miss { color: var(--err); }
+
+/* Typed grid: a table on wide screens, cards on a phone */
+.vx-grid { display: grid; gap: 8px; }
+.vx-grid-body { overflow-x: auto; max-width: 100%; }
+.vx-table { border-collapse: collapse; width: 100%; min-width: 100%; font-size: var(--text-sm, 14px); }
+.vx-table th { text-align: left; padding: 4px 6px; font-size: var(--text-xs, 12px); color: var(--muted); font-weight: 640; white-space: nowrap; }
+.vx-table td { padding: 2px; }
+.vx-table .sx-input { width: 100%; min-width: 96px; min-height: var(--target, 44px); font-size: 15px; box-sizing: border-box; }
+.vx-card { display: grid; gap: 8px; margin: 0 0 8px; padding: 10px 12px 12px; border: var(--hair-w, 1px) solid var(--line); border-radius: var(--card-radius, 14px); background: var(--surface); min-width: 0; }
+.vx-card legend { padding: 0 4px; font-size: var(--text-xs, 12px); font-weight: 700; color: var(--muted); }
+.vx-card .btn, .vx-grid > .btn { min-height: var(--target, 44px); justify-self: start; }
+
+/* Match */
+.vx-map { display: grid; gap: 10px; }
+.vx-map-row { display: grid; gap: 6px; padding: 10px 12px; border-radius: var(--card-radius, 14px); background: var(--surface); border: var(--hair-w, 1px) solid var(--line); min-width: 0; }
+.vx-map-f { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.vx-map-f b { font-size: var(--text-sm, 14px); color: var(--ink); }
+.vx-map-f small { font-size: var(--text-xs, 12px); color: var(--muted); }
+.vx-map-row .sx-input { width: 100%; min-height: var(--target, 44px); font-size: 16px; box-sizing: border-box; }
+@media (min-width: 900px) { .vx-map-row { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: center; } .vx-map-row .vx-fixed { grid-column: 2; } }
+
+/* Check */
+.vx-problems { display: grid; gap: 8px; }
+.vx-prob { padding: 10px 12px; border-radius: var(--card-radius, 14px); background: var(--surface); border: var(--hair-w, 1px) solid var(--line); }
+.vx-prob-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.vx-prob-head b { font-size: var(--text-sm, 14px); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vx-prob-head .btn { min-height: var(--target, 44px); flex: none; }
+.vx-prob ul { margin: 4px 0 0; padding-left: 18px; font-size: var(--text-sm, 14px); color: var(--muted); }
+.vx-prob li.is-missing, .vx-prob li.is-type, .vx-prob li.is-photo { color: var(--err); }
+.vx-fix { display: grid; gap: 8px; margin-top: 8px; }
+.vx-fix .btn { min-height: var(--target, 44px); justify-self: start; }
+
+/* Preview */
+.vx-stepper { display: grid; grid-template-columns: var(--target, 44px) minmax(0, 1fr) var(--target, 44px); align-items: center; gap: 6px; padding: 4px; border-radius: var(--chip-radius, 999px); background: var(--fill); }
+.vx-stepper .sx-iconbtn { min-width: var(--target, 44px); min-height: var(--target, 44px); }
+.vx-stepper output { text-align: center; font-size: var(--text-sm, 14px); font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vx-sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.vx-thumb { position: relative; padding: 0; border: var(--hair-w, 1px) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); overflow: hidden; cursor: pointer; min-height: var(--target, 44px); }
+.vx-thumb[aria-current="true"] { box-shadow: 0 0 0 2px var(--primary); border-color: transparent; }
+.vx-thumb-img { display: block; aspect-ratio: 1; background: center / contain no-repeat; }
+.vx-thumb-n { position: absolute; left: 4px; bottom: 4px; padding: 1px 5px; border-radius: var(--r-xs); background: var(--surface); color: var(--ink); font-size: 11px; font-weight: 700; }
+.vx-flag { position: absolute; right: 4px; top: 4px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--err); color: var(--on-primary); font-size: 12px; font-weight: 800; }
+
+/* Create */
+.vx-opts { display: grid; gap: 8px; }
+.vx-kinds button span { white-space: nowrap; }
+.vx-names { word-break: break-all; }
+.vx-progress { display: grid; gap: 8px; }
+.vx-bar { height: 8px; border-radius: 999px; background: var(--fill); overflow: hidden; }
+.vx-bar i { display: block; height: 100%; width: 0; background: var(--primary); transition: width var(--dur-2, 200ms) var(--ease-out, ease-out); }
+.vx-prog-t { margin: 0; font-size: var(--text-sm, 14px); color: var(--ink); font-variant-numeric: tabular-nums; }
+.vx-done { padding: 10px 12px; border-radius: var(--r-md); background: var(--ok-fill); color: var(--ink); font-size: var(--text-sm, 14px); }
+.vx-done p { margin: 0 0 6px; }
+.vx-done .btn { min-height: var(--target, 44px); }
+@media (prefers-reduced-motion: reduce) { .vx-bar i { transition: none; } }
