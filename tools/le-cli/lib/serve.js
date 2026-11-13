@@ -35,10 +35,11 @@ function safeEqual(a, b) {
   const x = Buffer.from(String(a)), y = Buffer.from(String(b));
   return x.length === y.length && crypto.timingSafeEqual(x, y);
 }
-const STATUS = { invalid: 422, conflict: 409, 'not-found': 404, sandbox: 403, 'too-large': 413, exists: 409, unsupported: 501, 'no-session': 404 };
+const STATUS = { invalid: 422, conflict: 409, 'not-found': 404, sandbox: 403, 'too-large': 413, exists: 409, unsupported: 501, 'no-session': 404,
+  'consent-refused': 403, 'consent-cancelled': 403, 'consent-timeout': 504, 'consent-tab-closed': 409, 'consent-no-tab': 409 };
 function fail(res, e) {
   const code = e.code || 'error';
-  json(res, STATUS[code] || (code === 'no-browser' ? 503 : 500), { ok: false, code, message: e.message, errors: e.errors || [{ path: '', message: e.message }], results: e.results });
+  json(res, STATUS[code] || (code === 'no-browser' ? 503 : 500), { ok: false, code, message: e.message, errors: e.errors || [{ path: '', message: e.message }], results: e.results, url: e.url });
 }
 function sse(res) {
   res.writeHead(200, staticServer.securityHeaders({ 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' }));
@@ -269,7 +270,78 @@ class Hub {
     this.links = new Map(); /* id → Link */
     this.byFile = new Map(); /* abs → Link */
     this.watchers = new Map();
+    this.attaches = new Map(); /* request id → a tool waiting for a person's answer in an open tab */
     this.closed = false;
+  }
+
+  /* ---------- consent: driving a tab that is already open ----------
+     A tab the command opened itself carries the token in its address (#lt=…): opening it is the person's own act.
+     A tab that is already open on another design of this server is different: before it switches to a file a tool
+     names, the person is asked in that tab (Allow once / Allow for this session / Refuse). The tool waits here.
+     attach(file, { tool, timeout }) → Promise<{ ok, consent: 'once' | 'session' | 'linked', link, file, tab }>, or an
+     LEError: consent-refused, consent-cancelled, consent-timeout, consent-tab-closed, consent-no-tab. Nothing is
+     remembered on this side; "for this session" is kept by the tab, in memory, until it closes or reloads. */
+  connected(cid) { for (const l of this.links.values()) if (l.clients.has(cid)) return l.clients.get(cid); return null; }
+  attach(file, opts) {
+    opts = opts || {};
+    let rid = null;
+    const p = (async () => {
+      const abs = this.svc.sandbox.file(file, 'the design');
+      const l = await this.link(abs);
+      const info = { link: l.id, file: path.relative(this.root, abs), url: this.urlFor(l) };
+      if (l.clients.size) return Object.assign({ ok: true, consent: 'linked', tabs: l.clients.size }, info);
+      const targets = new Map();
+      for (const o of this.links.values()) for (const [cid, send] of o.clients) targets.set(cid, send);
+      if (!targets.size) throw new LEError('consent-no-tab', 'No open tab is connected to this server. Ask the person to open the address in "url".', { url: info.url });
+      const seconds = Math.max(1, Math.min(600, Number(opts.timeout) || 120));
+      rid = crypto.randomBytes(9).toString('base64url');
+      const tool = String(opts.tool || '').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, 60) || 'A program on this computer';
+      return new Promise((resolve, reject) => {
+        const req = { rid, tool, folder: this.root, file: info.file, link: l.id, targets, refused: new Set() };
+        req.done = (err, val) => {
+          if (this.attaches.get(rid) !== req) return;
+          clearTimeout(req.timer);
+          this.attaches.delete(rid);
+          for (const cid of targets.keys()) { const send = this.connected(cid); if (send) send('attach-done', { rid, reason: err ? err.code : 'allowed', by: val ? val.tab : null }); }
+          if (err) reject(err); else resolve(Object.assign({ ok: true }, val, info));
+        };
+        req.timer = setTimeout(() => req.done(new LEError('consent-timeout', 'Nobody answered in the open tab within ' + seconds + ' s. The request was withdrawn; ask the person before trying again.')), seconds * 1000);
+        this.attaches.set(rid, req);
+        for (const send of targets.values()) send('attach', this.attachInfo(req));
+      });
+    })();
+    p.withdraw = () => { const req = rid && this.attaches.get(rid); if (req) req.done(new LEError('consent-cancelled', 'The tool stopped waiting.')); };
+    return p;
+  }
+  attachInfo(req) { return { rid: req.rid, tool: req.tool, folder: req.folder, file: req.file, link: req.link }; }
+  /* A tab's answer: { rid, answer: 'once' | 'session' | 'refuse' | 'cancel' }. */
+  answer(cid, body) {
+    const req = this.attaches.get(String((body && body.rid) || ''));
+    if (!req || !req.targets.has(cid)) throw new LEError('not-found', 'This request is no longer waiting for an answer.');
+    const a = body.answer;
+    if (a === 'once' || a === 'session') { req.done(null, { consent: a, tab: cid }); return { ok: true, link: req.link }; }
+    if (a === 'cancel') { req.done(new LEError('consent-cancelled', 'The person cancelled the request in the tab.')); return { ok: true }; }
+    if (a !== 'refuse') throw new LEError('invalid', 'answer is "once", "session", "refuse" or "cancel".');
+    req.refused.add(cid);
+    this.settle(req);
+    return { ok: true };
+  }
+  /* Refused when every tab that was asked said no; "tab closed" when the tabs went away without an answer. */
+  settle(req) {
+    const open = [...req.targets.keys()].filter((cid) => !req.refused.has(cid));
+    if (open.length) return;
+    if (req.refused.size) req.done(new LEError('consent-refused', 'The person refused in the open tab. Do not ask again unless they ask you to.'));
+    else req.done(new LEError('consent-tab-closed', 'The tab was closed before anyone answered.'));
+  }
+  tabOpened(cid, send) { for (const req of this.attaches.values()) if (!req.targets.has(cid)) { req.targets.set(cid, send); send('attach', this.attachInfo(req)); } }
+  /* A dropped connection may be a reconnect, so wait a moment before calling the tab closed. */
+  tabClosed(cid) {
+    if (!this.attaches.size) return;
+    const t = setTimeout(() => {
+      if (this.connected(cid)) return;
+      for (const req of [...this.attaches.values()]) if (req.targets.delete(cid)) this.settle(req);
+    }, 2500);
+    t.unref();
   }
   async start() {
     this.server = await staticServer.start({ root: staticServer.siteRoot(), prefix: '', swNoop: true, port: Number(this.opts.port) || 0, handler: (req, res, url) => this.route(req, res, url) });
@@ -303,7 +375,7 @@ class Hub {
 
   async api_(req, res, sub, u) {
     const m = req.method;
-    const lm = /^link\/([\w-]{4,64})\/(doc|file|events|edit|note|status)$/.exec(sub);
+    const lm = /^link\/([\w-]{4,64})\/(doc|file|events|edit|note|status|consent)$/.exec(sub);
     if (lm) {
       const l = this.links.get(lm[1]);
       if (!l) { json(res, 404, { ok: false, code: 'not-found', message: 'This link is not active (the server may have restarted). Run localeditor link again.' }); return; }
@@ -317,9 +389,11 @@ class Hub {
         l.clients.set(cid, send);
         send('hello', { rev: l.rev, file: l.name });
         l.writeStatus();
-        res.on('close', () => { if (l.clients.get(cid) === send) l.clients.delete(cid); l.writeStatus(); });
+        this.tabOpened(cid, send);
+        res.on('close', () => { if (l.clients.get(cid) === send) l.clients.delete(cid); l.writeStatus(); this.tabClosed(cid); });
         return;
       }
+      if (what === 'consent' && m === 'POST') { const b = await readBody(req); json(res, 200, this.answer(u.searchParams.get('client') || '', b)); return; }
       if (what === 'edit' && m === 'POST') { const b = await readBody(req); json(res, 200, await l.edit(b, u.searchParams.get('client'))); return; }
       if (what === 'note' && m === 'POST') { const b = await readBody(req); json(res, 200, await l.note(b)); return; }
       if (what === 'status' && m === 'POST') { await readBody(req); json(res, 200, { ok: true }); return; }
@@ -348,6 +422,13 @@ class Hub {
       return;
     }
     if (sub === 'new' && m === 'POST') { const b = await readBody(req); json(res, 200, await this.svc.newDesign(this.file(u, b), { size: b.size, preset: b.preset, from: b.from, name: b.name, force: !!b.force })); return; }
+    if (sub === 'attach' && m === 'POST') {
+      const b = await readBody(req);
+      const p = this.attach(this.file(u, b), { tool: b.tool, timeout: b.timeout });
+      res.on('close', () => { if (!res.writableEnded) p.withdraw(); });
+      json(res, 200, await p);
+      return;
+    }
     if (sub === 'link' && m === 'POST') { const b = await readBody(req); const l = await this.link(this.file(u, b)); json(res, 200, { ok: true, id: l.id, url: this.urlFor(l), file: l.name }); return; }
     if (sub === 'links' && m === 'GET') { json(res, 200, { ok: true, links: [...this.links.values()].map((l) => ({ id: l.id, file: path.relative(this.root, l.abs), rev: l.rev, tabs: l.clients.size })) }); return; }
     if (sub === 'events' && m === 'GET') {
@@ -411,10 +492,30 @@ async function serve(args, linkFile) {
   process.stdin.on('end', () => { if (args['exit-on-stdin-end']) stop(); });
   return null;
 }
+/* Asks a running `localeditor serve` / `link` (its API base, with the token) to show a design in a tab that is already
+   open, and waits for the person's answer there. → the server's answer, or an LEError with its code. */
+async function attachVia(api, file, opts) {
+  opts = opts || {};
+  const m = /^(http:\/\/(?:127\.0\.0\.1|localhost|\[::1\]):\d{1,5}\/api\/[\w-]{16,64})\/?$/.exec(String(api || '').trim());
+  if (!m) throw new LEError('invalid', 'Give the API address that "localeditor serve" printed: http://127.0.0.1:<port>/api/<token>/');
+  let r;
+  try {
+    r = await fetch(m[1] + '/attach', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file: path.resolve(file), tool: opts.tool, timeout: opts.timeout }) });
+  } catch (e) { throw new LEError('not-found', 'No LocalEditor server answers at that address. Is "localeditor serve" still running?'); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.ok) throw new LEError(j.code || 'error', j.message || ('The server answered ' + r.status + '.'), { url: j.url });
+  return j;
+}
 async function link(args) {
   const file = args._[0];
   if (!file) { const e = new Error('localeditor link <file>'); e.code = 'usage'; throw e; }
+  if (args.attach) {
+    const r = await attachVia(args.attach, file, { tool: args.tool || 'localeditor (command line)', timeout: args.timeout });
+    if (args.json) process.stdout.write(JSON.stringify(r, null, 2) + '\n');
+    else process.stdout.write(r.consent === 'linked' ? r.file + ' is already open in a tab.\n' : 'Allowed (' + (r.consent === 'session' ? 'for this session' : 'once') + '): ' + r.file + ' is now open in the tab.\n');
+    return 0;
+  }
   return serve(args, file);
 }
 
-module.exports = { serve, link, Hub, Link, Watcher };
+module.exports = { serve, link, attachVia, Hub, Link, Watcher };

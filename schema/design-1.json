@@ -10,6 +10,13 @@
     "format": { "const": "localeditor-design" },
     "version": { "const": 1 },
     "name": { "type": "string", "maxLength": 160 },
+    "brand": {
+      "description": "The brand this design follows (docs/FORMAT-BRAND.md): a relative path to a brand file next to the design, or the brand inline. Lint then reports colours, fonts, contrast and logo spacing that leave the brand.",
+      "oneOf": [
+        { "type": "string", "maxLength": 200, "pattern": "^(?![/\\\\])(?!.*\\.\\.)[^<>:\\\\]+\\.json$" },
+        { "$ref": "https://localeditor.net/schema/brand-1.json" }
+      ]
+    },
     "remix": {
       "description": "Credit for a template shared as a link. Plain text.",
       "type": "object",

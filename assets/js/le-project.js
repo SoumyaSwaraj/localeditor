@@ -708,6 +708,25 @@
     r = r || {};
     return { x: clamp(num(r.x, 0), 0, 1), y: clamp(num(r.y, 0), 0, 1), w: clamp(num(r.w, 1), 0.001, 1), h: clamp(num(r.h, 1), 0.001, 1) };
   }
+  /* Brand (docs/FORMAT-BRAND.md): a path to a brand file, or the brand inline. Plain data only: le-brand.js checks the
+     shape when it is loaded; without it strings lose markup and control characters and every size is capped. */
+  function brandMeta(b) {
+    if (!b || typeof b !== 'object') return null;
+    if (typeof b.ref === 'string') return /^(?![\/\\])(?!.*\.\.)[^\u0000-\u001f<>:\\]{1,200}$/.test(b.ref) ? { ref: b.ref } : null;
+    if (!b.data || typeof b.data !== 'object') return null;
+    if (LE.brand && LE.brand.read) { var r = LE.brand.read(b.data, '/brand'); return r.ok ? { data: r.brand } : null; }
+    var left = 800;
+    var walk = function (v, d) {
+      if (--left < 0 || d > 5) return null;
+      if (typeof v === 'string') return /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(v) ? (v.length <= 350000 ? v : '') : v.replace(/[\u0000-\u001f<>]/g, '').slice(0, 300);
+      if (typeof v === 'number') return isFinite(v) ? v : 0;
+      if (typeof v === 'boolean') return v;
+      if (Array.isArray(v)) return v.slice(0, 40).map(function (x) { return walk(x, d + 1); });
+      if (v && typeof v === 'object') { var o = {}; Object.keys(v).slice(0, 40).forEach(function (k) { if (!/^(__proto__|constructor|prototype)$/.test(k)) o[k] = walk(v[k], d + 1); }); return o; }
+      return null;
+    };
+    return { data: walk(b.data, 0) };
+  }
   function studioMeta(m, errors) {
     m = m && typeof m === 'object' ? m : {};
     var out = {
@@ -742,6 +761,8 @@
       var rn = str(m.remix.name, 160).replace(/[<>]/g, '').trim(), rb = str(m.remix.by, 80).replace(/[<>]/g, '').trim();
       if (rn || rb) out.remix = { name: rn, by: rb };
     }
+    var br = brandMeta(m.brand);
+    if (br) out.brand = br;
     if (Array.isArray(m.pageIds)) out.pageIds = m.pageIds.slice(0, LIMITS.pages).map(function (p) { return idOk(p, 48) ? p : ''; });
     /* Agent mode (le-agent.js): notes the person pins for an assistant. Plain text, shown with textContent. */
     if (Array.isArray(m.notes)) {

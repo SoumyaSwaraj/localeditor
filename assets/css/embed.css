@@ -1,0 +1,29 @@
+/* LocalEditor: the embed viewer (embed/index.html, docs/EMBED.md). The only blocking style of that page, so it is small.
+   Colours are the theme tokens from app.css, which le-embed.js loads after the first paint; until it arrives the
+   system colours stand in. No colour is written here. */
+:root { color-scheme: light dark; }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg, Canvas); color: var(--text, CanvasText); font: 15px/1.4 var(--font, system-ui, sans-serif); overflow: hidden; }
+.em { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; min-width: 0; }
+.em-stage { flex: 1 1 0; min-height: 0; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 8px; overflow: hidden; background: var(--stage, var(--bg, Canvas)); }
+.em-stage:focus { outline: none; }
+.em-stage:focus-visible { outline: var(--focus-w, 2px) solid var(--primary, Highlight); outline-offset: -3px; }
+.em-page { display: block; max-width: 100%; max-height: 100%; border-radius: 4px; box-shadow: 0 0 0 var(--hair-w, 1px) var(--line, GrayText); }
+.em-msg { margin: 0; padding: 16px; max-width: 42ch; text-align: center; color: var(--muted, GrayText); }
+.em-msg.is-error { color: var(--text, CanvasText); }
+.em-bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 6px 8px; border-top: var(--hair-w, 1px) solid var(--line, GrayText); background: var(--surface, Canvas); visibility: hidden; }
+.em.is-styled .em-bar { visibility: visible; }
+.em-nav { display: flex; align-items: center; gap: 2px; }
+.em-nav[hidden], .em-open[hidden], .em-copy[hidden] { display: none; }
+.em-step { min-width: var(--target, 44px); min-height: var(--target, 44px); padding: 0; border: 0; border-radius: var(--r-sm, 10px); background: transparent; color: inherit; font: inherit; font-size: 24px; line-height: 1; cursor: pointer; }
+.em-step:hover:not(:disabled) { background: var(--btn-hover-bg, transparent); }
+.em-step:disabled { opacity: 0.35; cursor: default; }
+.em-step:focus-visible, .em-link:focus-visible { outline: var(--focus-w, 2px) solid var(--primary, Highlight); outline-offset: 1px; }
+.em-status { margin: 0; min-width: 9ch; text-align: center; font-variant-numeric: tabular-nums; color: var(--muted, GrayText); font-size: 13px; }
+.em-title { flex: 1 1 8ch; min-width: 0; margin: 0; padding: 0 4px; font-size: 14px; font-weight: 600; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.em-open { flex: 0 1 auto; min-height: var(--target, 44px); white-space: normal; text-align: center; }
+.em-copy { flex: none; margin: 0; padding: 8px; display: grid; gap: 6px; border-top: var(--hair-w, 1px) solid var(--line, GrayText); background: var(--surface, Canvas); font-size: 13px; }
+.em-link { box-sizing: border-box; width: 100%; min-height: var(--target, 44px); padding: 0 10px; border: var(--hair-w, 1px) solid var(--border, GrayText); border-radius: var(--field-radius, 10px); background: var(--bg, Field); color: inherit; font: inherit; }
+@media (prefers-reduced-motion: no-preference) { .em-page { transition: opacity 0.15s; } .em-page.is-stale { opacity: 0.6; } }

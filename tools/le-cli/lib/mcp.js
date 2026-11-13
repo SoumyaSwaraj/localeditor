@@ -65,8 +65,19 @@ const TOOLS = [
   {
     name: 'design_check', title: 'Check a design for problems',
     description: 'List problems in a design: text overflowing its box, text running past the page edge, layers off the page, low text contrast, missing or remote images, unknown fonts, icons or shapes. Each has a kind, the layer id and a JSON pointer. Fix them with design_apply and check again.',
-    inputSchema: { type: 'object', properties: { path: PATH }, required: ['path'], additionalProperties: false },
+    inputSchema: { type: 'object', properties: { path: PATH, brand: { type: 'string', description: 'Optional brand file (brand.lebrand.json) to check against; without it the design\'s own "brand" is used when it has one.' } }, required: ['path'], additionalProperties: false },
     annotations: { readOnlyHint: true }
+  },
+  {
+    name: 'brand_read', title: 'Read a brand file',
+    description: 'Read and check a brand file (brand.lebrand.json): colours with roles, fonts by role, logos, spacing, tone words and do / don\'t lines. Read it before designing so the first draft already follows the brand.',
+    inputSchema: { type: 'object', properties: { path: { type: 'string', description: 'The brand file, relative to the working folder.' } }, required: ['path'], additionalProperties: false },
+    annotations: { readOnlyHint: true }
+  },
+  {
+    name: 'brand_check', title: 'Check a design against a brand',
+    description: 'List where a design leaves its brand: colours outside the palette (brand-color), fonts outside the brand (brand-font), text that is hard to read on a brand colour (brand-contrast), logos too small or without clear space (brand-logo-size, brand-logo-space). Each problem has the layer id and usually a "fix" operation; "fixes" is the whole list, ready for design_apply. With fix: true the fixes are applied and the design is checked again.',
+    inputSchema: { type: 'object', properties: { path: PATH, brand: { type: 'string', description: 'The brand file. Optional when the design names one ("brand": "brand.lebrand.json") or carries it inline.' }, fix: { type: 'boolean', description: 'Apply every suggested fix, then check again.' } }, required: ['path'], additionalProperties: false }
   },
   {
     name: 'design_render', title: 'Look at a design',
@@ -117,6 +128,11 @@ const TOOLS = [
     annotations: { readOnlyHint: true }
   },
   {
+    name: 'design_link_attach', title: 'Show a design in the person\'s open tab',
+    description: 'Ask a running "localeditor serve" to show a design in a studio tab the person already has open, so they can watch and co-edit. The person is asked in that tab (Allow once, Allow for this session, Refuse) and this call waits. Errors: consent-refused (do not ask again unless they ask you to), consent-cancelled, consent-timeout (nobody answered), consent-tab-closed, consent-no-tab (no tab is open: give the person the "url" to open). Changes you make to the file while waiting are not lost; the tab shows the latest file once allowed.',
+    inputSchema: { type: 'object', properties: { path: PATH, api: { type: 'string', description: 'The API address "localeditor serve" printed: http://127.0.0.1:<port>/api/<token>/' }, timeout_s: { type: 'integer', minimum: 1, maximum: 600, description: 'How long to wait for the person, in seconds (default 120).' } }, required: ['path', 'api'], additionalProperties: false }
+  },
+  {
     name: 'notes_read', title: 'Read notes from the person',
     description: 'Notes the person pinned in the studio ("make this warmer"), each with an id, text, the layer it points at and status open|done. Read them, make the change with design_apply, then notes_resolve.',
     inputSchema: { type: 'object', properties: { path: PATH, status: { type: 'string', enum: ['open', 'done', 'all'], default: 'open' } }, required: ['path'], additionalProperties: false },
@@ -147,7 +163,9 @@ function resources() {
   const list = [
     { uri: 'localeditor://docs/format', name: 'format', title: 'The open design format (.ledesign.json)', mimeType: 'text/markdown', file: 'docs/FORMAT-DESIGN.md' },
     { uri: 'localeditor://docs/agent-cli', name: 'agent-cli', title: 'Working fast: CLI, MCP and the write → check → render loop', mimeType: 'text/markdown', file: 'docs/AGENT-CLI.md' },
-    { uri: 'localeditor://schema/design-1.json', name: 'schema', title: 'JSON Schema, format 1', mimeType: 'application/schema+json', file: 'schema/design-1.json' }
+    { uri: 'localeditor://schema/design-1.json', name: 'schema', title: 'JSON Schema, format 1', mimeType: 'application/schema+json', file: 'schema/design-1.json' },
+    { uri: 'localeditor://docs/brand', name: 'brand-format', title: 'The brand file (brand.lebrand.json)', mimeType: 'text/markdown', file: 'docs/FORMAT-BRAND.md' },
+    { uri: 'localeditor://schema/brand-1.json', name: 'brand-schema', title: 'JSON Schema, brand file 1', mimeType: 'application/schema+json', file: 'schema/brand-1.json' }
   ];
   try {
     fs.readdirSync(siteFile('examples/designs')).filter((f) => f.endsWith('.ledesign.json')).sort().forEach((f) => {
@@ -305,7 +323,17 @@ class McpServer {
           return this.ok(r, [{ type: 'image', data: p.data, mimeType: p.mime }]);
         }
         case 'design_check': {
-          const r = await svc.check(a.path);
+          const r = await svc.check(a.path, { brand: a.brand });
+          if (r.brand && r.brand.source !== 'inline') r.brand.source = this.rel(r.brand.source);
+          return this.ok(Object.assign(r, { file: this.rel(r.file) }));
+        }
+        case 'brand_read': {
+          const r = await svc.brandRead(a.path);
+          return this.ok(Object.assign(r, { file: this.rel(r.file) }));
+        }
+        case 'brand_check': {
+          const r = await svc.brandCheck(a.path, { brand: a.brand, fix: a.fix });
+          if (r.brand && r.brand.source !== 'inline') r.brand.source = this.rel(r.brand.source);
           return this.ok(Object.assign(r, { file: this.rel(r.file) }));
         }
         case 'design_render': {
@@ -353,6 +381,11 @@ class McpServer {
           let previews = [];
           try { previews = fs.readdirSync(dir).filter((f) => /^preview-\d+\.png$/.test(f)).map((f) => this.rel(path.join(dir, f))); } catch (e) { /* none */ }
           return this.ok({ ok: true, linked: !!(status && status.linked), status, openNotes: notes, previews, statusFile: this.rel(path.join(dir, 'status.json')) });
+        }
+        case 'design_link_attach': {
+          const abs = svc.sandbox.file(a.path, 'the design');
+          const r = await require('./serve').attachVia(a.api, abs, { tool: ((this.client && this.client.name) || 'An assistant') + ' (MCP)', timeout: a.timeout_s });
+          return this.ok(r);
         }
         case 'notes_read': {
           const abs = svc.sandbox.file(a.path, 'the design');

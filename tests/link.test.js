@@ -166,4 +166,145 @@ cases['notes, two tabs, tab closing, file deleted and replaced, server stopping'
   } finally { await s.stop(); }
 };
 
+cases['a brand the agent names in the file reaches the tab and is not taken out again by the tab'] = async ({ browser, h }) => {
+  const s = await start('brandref');
+  try {
+    fs.writeFileSync(path.join(s.dir, 'brand.lebrand.json'), JSON.stringify({ format: 'localeditor-brand', version: 1, name: 'B', colors: { primary: '#14213D', text: '#17131F' } }));
+    const page = await tab(browser, s.info.url);
+    agentEdit(s, (d) => { d.brand = 'brand.lebrand.json'; L(d, 'a').x = 44; });
+    await until(async () => (await layer(page, 'a')).x === 44, 15000, 'the change reaches the tab');
+    await until(() => page.evaluate(() => LE.link.client.applying === 0 && ((LEStudio.S.project.meta.studio.brand || {}).ref === 'brand.lebrand.json')), 15000, 'the tab holds the brand reference');
+    await page.evaluate(() => window.LEStudio.patch('b', { text: 'Edited in the tab' }));
+    await until(() => L(readFile(s), 'b').text === 'Edited in the tab', 15000, 'the tab edit is written');
+    h.assert.equal(readFile(s).brand, 'brand.lebrand.json', 'the brand reference is still in the file');
+    agentEdit(s, (d) => { delete d.brand; });
+    await until(() => page.evaluate(() => LE.link.client.applying === 0 && !LEStudio.S.project.meta.studio.brand), 15000, 'removing it reaches the tab too');
+  } finally { await s.stop(); }
+};
+
+/* ---------- consent: a tool asks to show another design in a tab that is already open ---------- */
+const OTHER = () => { const d = DESIGN(); d.name = 'Other'; d.pages[0].layers[1].text = 'Other file'; return d; };
+/* The tool's side: POST <api>attach and wait for the person's answer. → { status, body } */
+const attach = (s, file, extra) => fetch(s.info.api + 'attach', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ file, tool: 'Test tool' }, extra || {})) })
+  .then(async (r) => ({ status: r.status, body: await r.json() }));
+/* The server sees the tab (its event stream is connected) on the link for this file. */
+const seen = (s, file) => until(async () => (await (await fetch(s.info.api + 'links')).json()).links.some((l) => l.file === file && l.tabs > 0), 15000, 'the tab is connected on ' + file);
+const sheet = (page) => page.waitForSelector('#sx-modal .sxa-ask [data-a="once"]', { timeout: 15000 });
+const noSheet = (page) => page.waitForFunction(() => !document.querySelector('#sx-modal .sxa-ask [data-a]'), null, { timeout: 15000 });
+
+cases['consent: an open tab is asked before a tool switches it; allow once asks again, allow for this session does not; changes made while waiting are kept'] = async ({ browser, h }) => {
+  const s = await start('consent');
+  try {
+    const other = path.join(s.dir, 'e.ledesign.json');
+    fs.writeFileSync(other, JSON.stringify(OTHER(), null, 2));
+    const page = await tab(browser, s.info.url);
+    await seen(s, 'd.ledesign.json');
+    const waiting = attach(s, 'e.ledesign.json');
+    await sheet(page);
+    const text = await page.textContent('#sx-modal');
+    h.assert(/Test tool/.test(text) && /e\.ledesign\.json/.test(text) && text.includes(fs.realpathSync(s.dir)), 'the sheet names the tool, the file and the folder: ' + text.slice(0, 300));
+    h.assert.equal((await page.$$eval('#sx-modal [data-a]', (b) => b.map((x) => x.textContent))).join('|'), 'Refuse|Allow for this session|Allow once');
+    await page.waitForSelector('.sxa-bar [data-rid]');
+    h.assert(/Test tool is asking to use this tab/.test(await page.textContent('.sxa-bar')), 'the request shows in the banner');
+    /* The tool keeps working while it waits: its change to the file is held, not dropped. */
+    const d = OTHER(); d.pages[0].layers[1].text = 'Written while waiting';
+    fs.writeFileSync(other, JSON.stringify(d, null, 2));
+    await sleep(800);
+    h.assert.equal((await layer(page, 'b')).text, 'Hello', 'nothing changes in the tab before the person answers');
+    await page.click('#sx-modal [data-a="once"]');
+    const r = await waiting;
+    h.assert(r.status === 200 && r.body.ok && r.body.consent === 'once' && r.body.file === 'e.ledesign.json', JSON.stringify(r.body));
+    await until(async () => (await layer(page, 'b')).text === 'Written while waiting', 20000, 'the tab shows the other file with the change made while waiting');
+    await page.waitForFunction(() => !document.querySelector('.sxa-bar [data-rid]'));
+    h.assert(new URL(page.url()).searchParams.get('link') === r.body.link && !/lt=/.test(page.url()), 'the address names the new link, without the token');
+    h.assert(await page.evaluate(() => Object.keys(sessionStorage).concat(Object.keys(localStorage)).every((k) => !/consent|allow/i.test(k))), 'no allowance is stored');
+    /* The new link is live both ways. */
+    await until(() => page.evaluate(() => !!(LE.link.client && LE.link.client.ready)), 15000, 'new link ready');
+    const d2 = JSON.parse(fs.readFileSync(other, 'utf8')); d2.pages[0].layers[0].x = 66; fs.writeFileSync(other, JSON.stringify(d2, null, 2));
+    await until(async () => (await layer(page, 'a')).x === 66, 15000, 'file → tab on the new link');
+    await until(() => page.evaluate(() => LE.link.client.applying === 0 && /Updated|Up to date|Linked/.test(document.getElementById('le-link-chip').textContent)), 15000, 'the file change has settled');
+    await page.evaluate(() => window.LEStudio.patch('b', { text: 'From the tab' }));
+    await until(() => JSON.parse(fs.readFileSync(other, 'utf8')).pages[0].layers[1].text === 'From the tab', 15000, 'tab → file on the new link');
+    h.assert.equal(L(readFile(s), 'b').text, 'Hello', 'the first file was not touched');
+
+    /* "Once" was once: the next request asks again. "For this session" then covers the one after. */
+    await seen(s, 'e.ledesign.json');
+    const back = attach(s, 'd.ledesign.json');
+    await sheet(page);
+    await page.click('#sx-modal [data-a="session"]');
+    const r2 = await back;
+    h.assert(r2.body.ok && r2.body.consent === 'session', JSON.stringify(r2.body));
+    await until(async () => (await layer(page, 'b')).text === 'Hello', 20000, 'back on the first file');
+    await seen(s, 'd.ledesign.json');
+    const r3 = await attach(s, 'e.ledesign.json');
+    h.assert(r3.body.ok && r3.body.consent === 'session', 'allowed for the session: no sheet. ' + JSON.stringify(r3.body));
+    await until(async () => (await layer(page, 'b')).text === 'From the tab', 20000, 'switched without asking');
+    h.assert(!(await page.$('#sx-modal .sxa-ask [data-a]')), 'no sheet was shown');
+    await seen(s, 'e.ledesign.json');
+    const again = await attach(s, 'e.ledesign.json');
+    h.assert(again.body.ok && again.body.consent === 'linked', 'a design that is already open needs no question: ' + JSON.stringify(again.body));
+    /* A reload forgets the session allowance. */
+    await page.reload({ waitUntil: 'load' });
+    await until(() => page.evaluate(() => !!(window.LE && LE.link && LE.link.client && LE.link.client.ready)), 30000, 'reloaded tab linked again');
+    await seen(s, 'e.ledesign.json');
+    const after = attach(s, 'd.ledesign.json', { timeout: 20 });
+    await sheet(page);
+    await page.click('#sx-modal [data-a="refuse"]');
+    h.assert.equal((await after).body.code, 'consent-refused', 'after a reload the person is asked again');
+    h.assert(!page.errors.length, page.errors.join(' | '));
+  } finally { await s.stop(); }
+};
+
+cases['consent: refuse, time out, cancel from the banner, tab closed while waiting, no tab at all: each has its own code'] = async ({ browser, h }) => {
+  const s = await start('refuse');
+  try {
+    fs.writeFileSync(path.join(s.dir, 'e.ledesign.json'), JSON.stringify(OTHER(), null, 2));
+    const none = await attach(s, 'e.ledesign.json');
+    h.assert(none.status === 409 && none.body.code === 'consent-no-tab' && /\/studio\/\?link=/.test(none.body.url), 'no tab: ' + JSON.stringify(none.body));
+    const page = await tab(browser, s.info.url);
+    await seen(s, 'd.ledesign.json');
+
+    const refused = attach(s, 'e.ledesign.json');
+    await sheet(page);
+    await page.click('#sx-modal [data-a="refuse"]');
+    const r1 = await refused;
+    h.assert(r1.status === 403 && r1.body.ok === false && r1.body.code === 'consent-refused', JSON.stringify(r1.body));
+    h.assert.equal((await layer(page, 'b')).text, 'Hello', 'a refused request changes nothing');
+    await noSheet(page);
+
+    const slow = attach(s, 'e.ledesign.json', { timeout: 2 });
+    await sheet(page);
+    const r2 = await slow;
+    h.assert(r2.status === 504 && r2.body.code === 'consent-timeout', JSON.stringify(r2.body));
+    await noSheet(page);
+    await page.waitForFunction(() => !document.querySelector('.sxa-bar [data-rid]'));
+
+    const cancelled = attach(s, 'e.ledesign.json');
+    await sheet(page);
+    await page.keyboard.press('Escape');
+    await noSheet(page);
+    await page.waitForSelector('.sxa-bar [data-rid]');
+    h.assert(/Cancel request/.test(await page.textContent('.sxa-bar')), 'closing the sheet leaves the request in the banner');
+    await page.click('.sxa-bar [data-act="link-review"]');
+    await sheet(page);
+    await page.keyboard.press('Escape');
+    await page.click('.sxa-bar [data-act="link-cancel"]');
+    const r3 = await cancelled;
+    h.assert(r3.status === 403 && r3.body.code === 'consent-cancelled', JSON.stringify(r3.body));
+    await page.waitForFunction(() => !document.querySelector('.sxa-bar [data-rid]'));
+    h.assert(!page.errors.length, page.errors.join(' | '));
+
+    /* The command line waits the same way; closing the tab while it waits ends it with its own code. */
+    const cli = spawn(process.execPath, [BIN, 'link', 'e.ledesign.json', '--attach', s.info.api, '--timeout', '40', '--json'], { cwd: s.dir, env: Object.assign({}, process.env, { TMPDIR: path.join(s.dir, 'tmp') }), stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    cli.stdout.on('data', (d) => { out += d; });
+    const exited = new Promise((r) => cli.on('close', r));
+    await sheet(page);
+    await page.context().close();
+    const code = await exited;
+    h.assert(code === 1 && JSON.parse(out).code === 'consent-tab-closed', 'exit ' + code + ': ' + out);
+    h.assert.equal(L(readFile(s), 'b').text, 'Hello', 'the file was not touched');
+  } finally { await s.stop(); }
+};
+
 module.exports = cases;

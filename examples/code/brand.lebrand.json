@@ -1,0 +1,14 @@
+{
+  "$schema": "https://localeditor.net/schema/brand-1.json",
+  "format": "localeditor-brand",
+  "version": 1,
+  "name": "Harbour Bakery",
+  "colors": [
+    { "role": "primary", "value": "#14213D", "name": "Harbour navy" },
+    { "role": "accent", "value": "#E0B354", "name": "Crust" },
+    { "role": "background", "value": "#FFF8EC", "name": "Flour" },
+    { "role": "text", "value": "#17131F", "name": "Ink" }
+  ],
+  "fonts": { "heading": { "family": "Anton", "weight": 400 }, "body": { "family": "Inter", "weight": 400 } },
+  "tone": ["warm", "plain", "local"]
+}

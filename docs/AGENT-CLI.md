@@ -30,8 +30,13 @@ le apply poster.ledesign.json fix.json           # fix what check or your eyes f
 2. **Small batches.** One `apply` per idea (layout, then type, then colour). A batch is atomic: if one operation is wrong nothing is written and the error names it (`/ops/2/layer/x`).
 3. **Read the problems.** `apply` prints *new* problems; `check` prints all of them with JSON pointers:
    `overflow` (text taller or wider than its box), `clipped` (text past the page edge), `off-page`, `low-contrast`, `missing-image`, `remote-image`, `unknown-font`, `unknown-icon`, `unknown-shape`, `shrink-needs-height`, `refused-path`.
+   When the design names a brand (`"brand": "brand.lebrand.json"`) or you pass `--brand <file>`: `brand-color`, `brand-font`, `brand-contrast`, `brand-logo-size`, `brand-logo-space`, each with a `fix` operation. `le brand check file --fix` applies them; `le brand show brand.lebrand.json` prints what the brand asks for (`docs/FORMAT-BRAND.md`). `le lint` is another name for `le check`; both take several files.
 4. **Look.** `le render` (MCP `design_render` returns the picture to you directly). Check hierarchy, spacing and alignment — lint does not see taste.
 5. **Use only what exists.** `le catalog fonts|icons|shapes|recipes|makers|layouts|sizes|fx [query]`. `le catalog fx` lists the expert effects, `le catalog fx <id>` prints one in full (parameters, ranges, an example entry), `le catalog fx schema` the blends, mask kinds and limits.
+
+## Design as code
+
+`le build poster.design.js -o out/` runs a script that exports designs made with the builder (`require('localeditor/dsl')`), writes each as `.ledesign.json` and draws every page; `le diff a b [--pixels diff.png]` lists what changed by layer id; `le check a b c` fails with exit 1 for CI. A GitHub Action does all three on pull requests. See `docs/DESIGN-AS-CODE.md`.
 
 ## Operations
 
@@ -66,7 +71,7 @@ A batch is a JSON list. Pages are counted from 0 or named by page id; without `p
 | `fx.call` | `layer`, `name`, `args` | A helper that answers with effect operations (`composite.stage`, `grade.preset`, `creative.look`, `retouch.*`, `relight.portrait` …): `le catalog fx actions`. It sees the design as it was before this batch. Helpers that measure the open picture (`composite.match`, `relight.estimate`, `grade.auto`) need agent mode. |
 | `map.generate`, `raw.open`, `hdr.merge`, `raw.settings`, `raw.autoTone` | | Not on files: they need a model, a decoder or the picture's pixels. They answer `unsupported`; use agent mode (`window.LEAgent`) in the studio. |
 | `note.add` / `note.resolve` | `text`, `layer` / `id`, `reply`, `status` | Notes live in the file under `notes`. |
-| `doc.update` | `set` | `name variables remix notes`. |
+| `doc.update` | `set` | `name variables remix notes brand`. |
 
 Example batches:
 
@@ -109,13 +114,14 @@ Example batches:
 | `sandbox` | The path is outside the allowed folder (MCP `--root`, serve folder) or escapes through a symlink. | Use files under the root. |
 | `exists` | `new` / `make` / `convert` would overwrite. | `--force` / `overwrite: true`. |
 | `unsupported` | Not available here. | — |
+| `consent-refused`, `consent-cancelled`, `consent-timeout`, `consent-tab-closed`, `consent-no-tab` | Live link: the person's answer (or silence) when you asked to use a tab that is already open (`attach`). | Respect it. After a refusal, ask the person, not the tab. `consent-no-tab` carries the `url` to open. |
 | `interrupted`, `paused`, `no-session`, `consent` | Agent-mode codes from the browser path (`LEAgent`); the fast path reports them unchanged when the engine runs on `LEAgent`. | See agent mode's help. |
 
 Exit codes: `0` ok · `1` invalid input, problems found (`check`) or refused operations · `2` usage · `3` no browser or the engine failed.
 
 ## MCP (`localeditor mcp`)
 
-Tools: `design_new`, `design_read` (outline or full), `design_apply` (optionally with `render: true` to get a picture back), `design_check`, `design_render` (returns an image block, downscaled to `max_edge`, default 1024), `design_find`, `catalog_search`, `design_make`, `design_validate`, `design_link_status`, `notes_read`, `notes_resolve`. Resources: the format guide, this page, the JSON Schema and the ten examples. Prompts: `design_from_brief`, `fix_problems`.
+Tools: `design_new`, `design_read` (outline or full), `design_apply` (optionally with `render: true` to get a picture back), `design_check` (optionally with `brand`), `brand_read`, `brand_check` (optionally with `fix: true`), `design_render` (returns an image block, downscaled to `max_edge`, default 1024), `design_find`, `catalog_search`, `design_make`, `design_validate`, `design_link_status`, `design_link_attach` (ask to show a design in the person's open tab; waits for their answer), `notes_read`, `notes_resolve`. Resources: the format guide, this page, the JSON Schema and the ten examples. Prompts: `design_from_brief`, `fix_problems`.
 
 Only files under the folder the server was started in (or `--root`) can be read or written. Setup snippets for each client: `agent-kit/mcp/README.md`.
 
@@ -131,6 +137,7 @@ GET  /api/<token>/render?file=…&page=0&scale=1&format=png      → image bytes
 GET  /api/<token>/find?file=…&q=…   ·   GET /api/<token>/catalog?kind=fonts&q=…
 GET  /api/<token>/events?file=…      → Server-Sent Events: change, invalid, gone
 POST /api/<token>/link       { "file": … } → { url } to open for the person
+POST /api/<token>/attach     { "file": …, "tool": "<your name>", "timeout": 120 } → waits for the person's answer in a tab that is already open
 ```
 
 Requests must come from this computer with the server's own `Host` (and `Origin`, if any); bodies are `application/json`.
@@ -143,6 +150,7 @@ Requests must come from this computer with the server's own `Host` (and `Origin`
 - **Their edits → the file**, a moment after they stop, in the normalised form. Read the file again before your next change, or pass `--if-rev`.
 - **Feedback without tools.** After every sync the bridge writes `poster.le/status.json` (`{ ok, rev, errors, warnings, conflicts, notes }`) and `poster.le/preview-<page>.png`. An agent that can only edit files can still write, read the status, look at the preview and fix.
 - **Conflicts.** Different layers merge. If you both changed the same layer, the person's version is kept and yours is listed in `status.json` → `conflicts[].agent`. Re-apply it only if it still makes sense.
+- **A tab that is already open.** The tab `localeditor link` opens is paired by the token in its address; opening it is the person's own act. To show another design in a tab the person already has open on the same server, ask: `POST /api/<token>/attach { "file": "other.ledesign.json", "tool": "<your name>", "timeout": 120 }`, `localeditor link other.ledesign.json --attach <api address>`, or MCP `design_link_attach`. The tab shows a sheet naming you and the folder, with **Allow once**, **Allow for this session** and **Refuse**; the request also sits in the banner, where the person can review or cancel it. The call waits and answers `{ ok, consent: "once" | "session" | "linked" }` (`linked`: that design is already open in a tab), or one of `consent-refused` (do not ask again unless they ask you to), `consent-cancelled`, `consent-timeout`, `consent-tab-closed`, `consent-no-tab` (with the `url` to give the person). Keep working on the file while you wait: nothing is dropped, the tab shows the latest file once allowed. "For this session" lives in that tab's memory only; a reload or a new tab asks again.
 - **Notes.** The person can pin a note to a layer ("make this warmer"). Notes appear in the file under `notes`; read them with `notes_read` (or the file), act, then `note.resolve` with a short reply.
 
 ## Choosing the path

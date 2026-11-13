@@ -116,13 +116,84 @@ class Service {
     return { ok: out.every((x) => x.ok), files: out };
   }
 
-  async check(file) {
+  /* The brand a design follows: an explicit brand file, else the design's own "brand" (a path next to it, or inline).
+     → null | { source, text } (text: null for an inline brand, which the engine already holds). */
+  resolveBrand(abs, text, brandFile) {
+    if (brandFile) { const b = this.sandbox.file(brandFile, 'the brand file'); return { source: b, text: F.readDesign(b) }; }
+    let doc = null;
+    try { doc = JSON.parse(text); } catch (e) { return null; }
+    if (doc && typeof doc.brand === 'string') {
+      const r = this.sandbox.image(abs, doc.brand);
+      if (r.error) throw new LEError(r.missing ? 'not-found' : 'sandbox', r.missing ? 'The brand file "' + doc.brand + '" named by the design was not found next to it.' : 'The brand file "' + doc.brand + '" must be in the design\'s folder (or pass --brand).');
+      return { source: r.abs, text: F.readDesign(r.abs) };
+    }
+    return doc && doc.brand && typeof doc.brand === 'object' ? { source: 'inline', text: null } : null;
+  }
+  /* check(file, { brand?, brandOnly? }): lint problems, plus brand problems (each with a "fix" operation) when the design
+     names a brand or one is given. */
+  async check(file, opt) {
+    opt = opt || {};
     const abs = this.sandbox.file(file, 'the design');
     return this.exclusive(abs, async () => {
       const o = await this.open(abs);
-      const problems = o.state.problems || [];
-      return { ok: problems.length === 0, file: abs, rev: o.rev, problems, warnings: (o.state.warnings || []).filter((w) => PROBLEM_KINDS.indexOf(w.kind) < 0), remote: o.state.remote || [] };
+      let problems = opt.brandOnly ? [] : (o.state.problems || []);
+      const out = { ok: true, file: abs, rev: o.rev, problems, warnings: (o.state.warnings || []).filter((w) => PROBLEM_KINDS.indexOf(w.kind) < 0 && !/^brand-/.test(w.kind)), remote: o.state.remote || [] };
+      const b = this.resolveBrand(abs, o.text, opt.brand);
+      if (opt.brandOnly && !b) throw new LEError('not-found', 'This design names no brand. Pass --brand <brand.lebrand.json>, or add "brand": "brand.lebrand.json" to the design.');
+      if (b) {
+        const r = await this.engine.call(abs, 'brand', { brand: b.text });
+        if (!r.ok) fail(r);
+        out.problems = problems = problems.concat(r.problems || []);
+        out.brand = { source: b.source, name: r.brand ? r.brand.name : null, summary: r.summary || '' };
+        out.fixes = r.fixes || [];
+        if (r.notes && r.notes.length) out.warnings = out.warnings.concat(r.notes);
+      }
+      out.ok = problems.length === 0;
+      return out;
     });
+  }
+  /* diff(a, b, { pixels?, page? }) → what changed from design a to design b, by page and layer id; with pixels, also a
+     picture per page that marks the pixels that differ. Both files are compared in their normalised form. */
+  async diff(a, b, o) {
+    o = o || {};
+    const B = require('./build');
+    const A = await this.show(a, { full: true }), Z = await this.show(b, { full: true });
+    const da = JSON.parse(A.text), db = JSON.parse(Z.text);
+    const ops = linkCore.diff(da, db);
+    const out = Object.assign({ ok: true, a: A.file, b: Z.file }, B.describe(da, db, ops), { ops });
+    if (o.pixels) {
+      const n = Math.min(da.pages.length, db.pages.length);
+      out.pixels = [];
+      for (let i = 0; i < n; i++) {
+        if (o.page != null && Number(o.page) !== i) continue;
+        const edge = (d) => 1024 / Math.max(d.pages[i].width, d.pages[i].height, 1024);
+        const ra = await this.render(a, { page: i, format: 'png', scale: edge(da) }), rb = await this.render(b, { page: i, format: 'png', scale: edge(db) });
+        const r = await this.engine.call('validate', 'pixelDiff', { a: ra.pages[0].data, b: rb.pages[0].data }, 120000);
+        if (!r.ok) fail(r);
+        out.pixels.push({ page: i, changed: r.changed, total: r.total, share: r.share, sameSize: r.sameSize, width: r.width, height: r.height, data: r.data });
+      }
+      if (out.pixels.some((p) => p.changed > 0)) out.same = false;
+    }
+    return out;
+  }
+  /* Reads and checks a brand file on its own: the normalised brand and a short summary for an agent. */
+  async brandRead(file) {
+    const abs = this.sandbox.file(file, 'the brand file');
+    const r = await this.engine.call('validate', 'brand', { brand: F.readDesign(abs), only: true });
+    if (!r.ok) fail(r);
+    return { ok: true, file: abs, brand: r.brand, summary: r.summary, warnings: r.notes || [] };
+  }
+  /* Brand problems only; { fix: true } applies every suggested fix in one batch and checks again. */
+  async brandCheck(file, opt) {
+    opt = opt || {};
+    let r = await this.check(file, { brand: opt.brand, brandOnly: true });
+    if (opt.fix && r.fixes && r.fixes.length) {
+      const fixes = r.fixes;
+      const ap = await this.apply(file, fixes, { label: 'Brand fixes', partial: true });
+      r = await this.check(file, { brand: opt.brand, brandOnly: true });
+      r.fixed = ap.applied; r.written = ap.written;
+    }
+    return r;
   }
 
   async show(file, o) {

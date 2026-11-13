@@ -993,6 +993,24 @@
 
   /* Notes (agent mode): [{ id, page (index or page id), layer?, x, y, text, status: open | done, reply?, at }]. Plain text.
      Stored in meta.studio.notes; the studio shows them as pins for an assistant to answer. */
+  /* "brand": a relative path to a brand file (brand.lebrand.json) or the brand inline (docs/FORMAT-BRAND.md). The
+     path is only recorded (the command line and the live link read the file); an inline block is checked by le-brand.js. */
+  function brandReady() { return LE.brand ? Promise.resolve(LE.brand) : Promise.resolve(LE.lazy(rootPath() + 'assets/js/le-brand.js')).then(function () { return LE.brand; }); }
+  function brandStage(v, rep, set) {
+    if (v == null) return Promise.resolve();
+    if (typeof v === 'string') {
+      if (/^(?![\/\\])(?!.*\.\.)[^\u0000-\u001f<>:\\]{1,200}\.json$/i.test(v)) set({ ref: v });
+      else rep.err('/brand', '"brand" is a path to a brand file next to the design (for example "brand.lebrand.json") or the brand itself as an object.');
+      return Promise.resolve();
+    }
+    if (!isObj(v)) { rep.err('/brand', '"brand" is a path to a brand file or the brand itself as an object.'); return Promise.resolve(); }
+    return brandReady().then(function (B) {
+      var r = B.read(v, '/brand');
+      r.errors.forEach(function (e) { rep.err(e.path, e.message); });
+      r.warnings.forEach(function (w) { rep.warn(w.path, w.kind, w.message); });
+      if (r.ok) set({ data: r.brand });
+    }, function () { rep.warn('/brand', 'brand-unavailable', 'The brand checks could not be loaded, so the brand in this file was left out.'); });
+  }
   function readNotes(v, rep, pageIds, nPages) {
     if (v == null) return null;
     if (!Array.isArray(v)) { rep.err('/notes', 'notes is a list of { "id", "page", "x", "y", "text" }.'); return null; }
@@ -1096,7 +1114,7 @@
     if (raw.version == null) rep.err('/version', 'Add "version": 1.');
     else if (Number(raw.version) > VERSION) { rep.err('/version', 'This design needs a newer LocalEditor (version ' + plain(raw.version, 8) + ').'); return Promise.resolve(done()); }
     else if (Number(raw.version) !== VERSION) rep.err('/version', '"version" must be 1.');
-    var TOP = ['$schema', 'format', 'version', 'name', 'pages', 'variables', 'values', 'remix', 'notes'];
+    var TOP = ['$schema', 'format', 'version', 'name', 'pages', 'variables', 'values', 'remix', 'notes', 'brand'];
     Object.keys(raw).forEach(function (k) { if (TOP.indexOf(k) < 0) rep.warn(ptr('', k), 'unknown-key', 'The key "' + plain(k, 40) + '" is not part of the format and was ignored.'); });
     if (raw.name != null && typeof raw.name !== 'string') rep.err('/name', 'name must be text.');
     if (!Array.isArray(raw.pages) || !raw.pages.length) { rep.err('/pages', 'A design needs "pages": [ { "width", "height", "layers": [ … ] } ].'); return Promise.resolve(done()); }
@@ -1173,7 +1191,8 @@
       Object.keys(p.values || {}).forEach(function (k) { var x = p.values[k]; if (isObj(x) && x.img && imgs.indexOf(x.img) < 0 && x.img.kind !== 'remote') imgs.push(x.img); });
     });
 
-    return expertStage(pages, imgs, rep, st).then(function (after) { return resolveImages(imgs, opts, rep, st, out).then(after); }).then(function () {
+    var brand = null;
+    return brandStage(raw.brand, rep, function (b) { brand = b; }).then(function () { return expertStage(pages, imgs, rep, st); }).then(function (after) { return resolveImages(imgs, opts, rep, st, out).then(after); }).then(function () {
       return Promise.all(pages.map(function (p) { return collageStage(p, rep); }));
     }).then(function () {
       return Promise.all(pages.map(function (p) { return makerStage(p, rep, st); }));
@@ -1294,6 +1313,7 @@
       if (Object.keys(fx).length) studio.fx = fx;
       if (variables && variables.length) studio.variables = variables;
       if (remix) studio.remix = remix;
+      if (brand) studio.brand = brand;
       /* Page ids live on the pages themselves (page.id), so they follow a page when it is moved or deleted. */
       var notes = readNotes(notesIn, rep, pageIds, outPages.length);
       if (notes && notes.length) studio.notes = notes;
@@ -1388,6 +1408,8 @@
       });
     });
     if (LE.variables && LE.variables.lint) LE.variables.lint(project, rep);   /* unknown pipes, unknown fields, filled-in overflow */
+    var brand = opts.brand || (project.meta && project.meta.studio && project.meta.studio.brand);   /* docs/FORMAT-BRAND.md */
+    if (brand && LE.brand && LE.brand.lint) LE.brand.lint(project, brand, { report: rep });
     return rep.warnings.slice(start);
   }
   /* lint with sampled contrast over photos and gradients: renders each page once at low resolution with its text
@@ -1777,6 +1799,8 @@
     var doc = { $schema: SCHEMA_URL, format: FORMAT, version: VERSION, name: String(project.name || 'Untitled design') };
     var remix = opts.remix !== undefined ? opts.remix : st.remix;
     if (remix && (remix.name || remix.by)) { doc.remix = {}; if (remix.name) doc.remix.name = remix.name; if (remix.by) doc.remix.by = remix.by; }
+    if (st.brand && (st.brand.ref || st.brand.data)) doc.brand = st.brand.ref || clone(st.brand.data);
+    if (images === 'none' && isObj(doc.brand) && doc.brand.logos) doc.brand.logos = doc.brand.logos.filter(function (g) { return !/^data:/.test(g.src); });   /* links carry no bitmaps */
     if (Array.isArray(st.notes) && st.notes.length) {
       doc.notes = st.notes.map(function (n) {
         var pg = (project.pages || [])[n.page];
@@ -2244,6 +2268,7 @@
       '<div class="sxd-linkrow"><input class="sx-input" readonly aria-label="Template link" value="Making the link…"><button type="button" class="btn btn-gold btn-sm" data-copy disabled>' + c.ic('copy') + '<span>Copy link</span></button></div>' +
       '<div class="sxd-qr" aria-live="polite"></div>' +
       '<div class="sxd-actions sxd-actions-split"><button type="button" class="btn btn-ghost btn-sm" data-share hidden>' + c.ic('share') + '<span>Share…</span></button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-embed disabled>' + c.ic('copy') + '<span>Copy embed code</span></button>' +
       '<button type="button" class="btn btn-sm" data-file>' + c.ic('download') + '<span>Download design file</span></button></div>' +
       (limited && limited.status === 'limited' ? '<p class="sx-note is-muted">This browser cannot compress links, so they are longer.</p>' : '') +
       '</div>');
@@ -2257,6 +2282,14 @@
     var qr = box.querySelector('.sxd-qr');
     var current = null;
     fileBtn.onclick = function () { c.closeModal(); saveDialog(c); };
+    /* The read-only viewer for a blog or a docs page (docs/EMBED.md): the same link, on /embed/ instead of /studio/. */
+    var embed = box.querySelector('[data-embed]');
+    embed.onclick = function () {
+      if (!current || !current.fits) return;
+      var pg = p.pages[0], high = Math.round(464 * pg.height / pg.width) + 76;
+      var code = '<iframe src="' + esc(current.url.replace('/studio/#d=', '/embed/#d=')) + '" title="' + esc(p.name) + '" width="480" height="' + high + '" style="border:0;max-width:100%" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>';
+      copyText(code).then(function () { c.toast('Embed code copied'); }, function () { c.toast('Could not copy the embed code'); });
+    };
     var sh = support('design.share');
     var canShare = sh ? (sh.status === 'ok') : !!navigator.share;
     if (canShare && navigator.share) {
@@ -2283,6 +2316,7 @@
         dropped.hidden = !link.dropped.length;
         dropped.textContent = link.dropped.length ? 'Left out: ' + link.dropped.join(', ') + '.' : '';
         copy.disabled = !link.fits;
+        embed.disabled = !link.fits;
         copy.classList.toggle('btn-gold', link.fits);
         fileBtn.classList.toggle('btn-gold', !link.fits);
         share.disabled = !link.fits;

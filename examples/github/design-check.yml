@@ -1,0 +1,30 @@
+# Copy to .github/workflows/design-check.yml in a repository that keeps LocalEditor designs.
+# On every pull request it builds the designs the pull request changed, checks them (lint and brand),
+# uploads the pictures as an artifact and writes a job summary. It needs no secrets and no extra permissions.
+name: Design check
+
+on:
+  pull_request:          # keep this trigger: the job reads pull request files and must never run with secrets
+    paths:
+      - '**/*.ledesign.json'
+      - '**/*.lebrand.json'
+      - '**/*.design.js'
+
+permissions:
+  contents: read
+
+jobs:
+  designs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # the base commit is needed to see what changed
+
+      - uses: SoumyaSwaraj/localeditor/agent-kit/github-action@main
+        with:
+          files: '**/*.ledesign.json'
+          # scripts: '**/*.design.js'      # also run design scripts (Node runs them; leave out for pull requests you do not trust)
+          # brand: brand.lebrand.json      # check every design against this brand
+          # max-warnings: '0'
+          # fail-on-problems: 'true'
