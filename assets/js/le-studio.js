@@ -3029,10 +3029,21 @@
   (PANELS._cmds = PANELS._cmds || {}).mode = function (c, arg) { closePop(); setMode(arg === 'toggle' ? (xpOn() ? 'simple' : 'expert') : arg); };
   (HOOKS['toolbar-add'] = HOOKS['toolbar-add'] || []).push(function (c, kind, l) { if (!xpOn() && xpData(l)) return '<button type="button" class="sx-tb sx-tb-chip sx-xp-mark" data-cmd="mode:expert" data-pri="2" title="Open in Expert">Edited in Expert</button>'; });
   (HOOKS.ready = HOOKS.ready || []).push(function () {
-    var u = new URL(location.href), q = u.searchParams.get('mode');
-    if (q) { u.searchParams.delete('mode'); history.replaceState(null, '', u.pathname + u.search); }
+    var u = new URL(location.href), q = u.searchParams.get('mode'), dl = {}, had = !!q;
+    /* Deep links (docs/EXPERT-UI.md "Links"): &tab, &tool, &add belong to ?mode=expert; ?open=raw|hdr works in both workspaces. Read once. */
+    ['tab', 'tool', 'add', 'open'].forEach(function (k) {
+      var v = u.searchParams.get(k);
+      if (v && (k === 'open' ? /^(raw|hdr)$/.test(v) : q === 'expert' && !(k === 'tool' && TOOL_MAP[v]))) { dl[k] = v; u.searchParams.delete(k); had = true; }
+    });
+    if (had) { u.searchParams.delete('mode'); history.replaceState(null, '', u.pathname + u.search); }
+    if (dl.open && rawCmd(dl.open === 'raw' ? 'rawOpen' : 'hdrMerge')) {
+      /* A file chooser needs a click: one is offered when the page was opened by a link, without one. */
+      var oc = function () { PANELS._cmds[dl.open === 'raw' ? 'rawOpen' : 'hdrMerge'](ctx); };
+      if (navigator.userActivation && navigator.userActivation.isActive) oc();
+      else toast(dl.open === 'raw' ? 'Open a camera RAW photo.' : 'Merge 2 to 9 bracketed photos into one HDR picture.', { action: { label: dl.open === 'raw' ? 'Choose a photo' : 'Choose photos', fn: oc }, ms: 15000 });
+    }
     /* A link (?mode=expert) opens Expert for this visit; only the person's own switch is remembered. */
-    if ((q || lsGet('le-studio-mode', 'simple')) === 'expert') setMode('expert', true);
+    if ((q || lsGet('le-studio-mode', 'simple')) === 'expert') Promise.resolve(setMode('expert', true)).then(function () { if ((dl.tab || dl.tool || dl.add) && LE.expert && LE.expert.links) LE.expert.links(dl); });
     else if (S.project && scene.layers().some(xpData)) toast('This design has Expert edits.', { action: { label: 'Open in Expert', fn: function () { setMode('expert'); } }, ms: 6000 });
   });
 

@@ -13,23 +13,72 @@
   function c() { return global.LEStudio; }
 
   /* ---------- Searchable effect menu, grouped like the registry ---------- */
+  /* ---------- Add-effect list: the curated group and the search ----------
+     Common: a short list of everyday effects (those the registry has), plus any registration with ui.common.
+     Search: every word of the query must match the effect somewhere. Where it matches decides the rank, best first:
+     0 it is the name, 1 the name starts with it, 2 a word of the name starts with it, 3 inside the name, 4 the id, 5 a keyword
+     (def.keywords, ui.keywords, agent.keywords, agent.like), 6 the section, 7 the summary. Ties go by section, then by
+     registration (not ui.order): giving a pack's effects a ui.order re-sorts the panel and the list, never what a search
+     finds first. */
+  var COMMON = ['exposure', 'contrast', 'highlights-shadows', 'white-balance', 'saturation', 'curves', 'color-grading', 'sharpen', 'clarity', 'noise-reduction', 'gaussian-blur', 'vignette', 'film-grain', 'lut'];
+  X.fxCommon = function (defs) {
+    defs = defs || X.defs();
+    var by = {}; defs.forEach(function (d) { by[d.id] = d; });
+    return COMMON.map(function (id) { return by[id]; }).filter(Boolean).concat(defs.filter(function (d) { return d.ui && d.ui.common && COMMON.indexOf(d.id) < 0; }));
+  };
+  function words(v) { return (Array.isArray(v) ? v.join(' ') : String(v || '')).toLowerCase(); }
+  function fxScore(d, tok) {
+    var name = words(d.name || d.id), at = name.indexOf(tok);
+    if (at === 0) return name === tok ? 0 : 1;
+    if (at > 0) return /[^a-z0-9]/.test(name.charAt(at - 1)) ? 2 : 3;
+    if (words(d.id).replace(/[-.]/g, ' ').indexOf(tok) >= 0) return 4;
+    var a = d.agent || {};
+    if (words([words(d.keywords), words(d.ui && d.ui.keywords), words(a.keywords), words(a.like)]).indexOf(tok) >= 0) return 5;
+    if (words(d.section).indexOf(tok) >= 0) return 6;
+    return words(a.summary).indexOf(tok) >= 0 ? 7 : -1;
+  }
+  X.fxSearch = function (q, defs) {
+    var toks = words(q).split(/\s+/).filter(Boolean), out = [];
+    (defs || X.defs()).forEach(function (d, i) {
+      var total = 0;
+      for (var k = 0; k < toks.length; k++) { var sc = fxScore(d, toks[k]); if (sc < 0) return; total += sc; }
+      out.push({ d: d, s: total, i: i });
+    });
+    return out.sort(function (a, b) { return a.s - b.s || (a.d.rank - b.d.rank) || (a.d.order - b.d.order) || a.i - b.i; }).map(function (o) { return o.d; });
+  };
+
+  /* An effect chosen from the add-effect list: appended in one undo step and selected, so its on-canvas handles show. */
+  function addPicked(layerId, type) {
+    var fxId = X.doc.addFx(layerId, type, { append: true }, X.gesture());
+    X.emit('fx-select', { layerId: layerId, type: type, fxId: fxId });
+    return fxId;
+  }
   function fxMenu(anchor, title, pick) {
     var defs = X.defs();
     var node = h('<div class="xp-fxmenu"><label class="xp-search">' + X.ic('search') + '<input type="search" placeholder="Search effects" aria-label="Search effects" autocomplete="off"></label><div class="xp-fxmenu-list" role="listbox" aria-label="' + esc(title) + '"></div></div>');
     var list = node.querySelector('.xp-fxmenu-list'), input = node.querySelector('input');
+    function item(d, tag) {
+      return '<button type="button" role="option" data-id="' + esc(d.id) + '" tabindex="-1"><span>' + esc(d.name || d.id) + (tag ? '<em>' + esc(d.section) + '</em>' : '') + '</span>' + (d.agent && d.agent.summary ? '<small>' + esc(d.agent.summary) + '</small>' : '') + '</button>';
+    }
+    function grp(t) { return '<div class="xp-fxmenu-grp" role="presentation">' + esc(t) + '</div>'; }
+    /* No query: a short "Common" group, then every section under its heading, in the develop panel's order.
+       A query: one list, best match first (X.fxSearch), each row tagged with its section. */
     function draw(q) {
-      q = (q || '').trim().toLowerCase();
-      var html = '', last = null, n = 0;
-      defs.forEach(function (d) {
-        var hay = (d.name + ' ' + d.id + ' ' + d.section + ' ' + ((d.agent && d.agent.summary) || '')).toLowerCase();
-        if (q && hay.indexOf(q) < 0) return;
-        if (d.section !== last) { html += '<div class="xp-fxmenu-grp" role="presentation">' + esc(d.section) + '</div>'; last = d.section; }
-        html += '<button type="button" role="option" data-id="' + esc(d.id) + '" tabindex="-1"><span>' + esc(d.name || d.id) + '</span>' + (d.agent && d.agent.summary ? '<small>' + esc(d.agent.summary) + '</small>' : '') + '</button>';
-        n++;
-      });
+      q = (q || '').trim();
+      var html = '', last = null, found = q ? X.fxSearch(q, defs) : defs;
+      if (q) { if (found.length) html = grp(found.length === 1 ? '1 match' : found.length + ' matches') + found.map(function (d) { return item(d, true); }).join(''); }
+      else {
+        var common = X.fxCommon(defs);
+        if (common.length) html += grp('Common') + common.map(function (d) { return item(d, false); }).join('');
+        defs.forEach(function (d) {
+          if (d.section !== last) { html += grp(d.section); last = d.section; }
+          html += item(d, false);
+        });
+      }
       list.innerHTML = html || '<p class="xp-note">No effect matches “' + esc(q) + '”.</p>';
+      list.scrollTop = 0;
       var f = list.querySelector('[role="option"]'); if (f) f.setAttribute('aria-selected', 'true');
-      return n;
+      return found.length;
     }
     function opts() { return [].slice.call(list.querySelectorAll('[role="option"]')); }
     function move(d) {
@@ -208,7 +257,7 @@
       var add = ul.querySelector('.xp-fx-add');
       if (!add) {
         add = h('<li class="xp-fx-add"><button type="button" class="xp-linkbtn" aria-haspopup="dialog">' + X.ic('plus') + '<span>Add effect</span></button></li>');
-        add.querySelector('button').addEventListener('click', function (e) { var b = e.currentTarget; fxMenu(b, 'Add effect', function (id) { X.doc.addFx(l.id, id, { append: true }, X.gesture()); openFx[l.id] = true; }); });
+        add.querySelector('button').addEventListener('click', function (e) { var b = e.currentTarget; fxMenu(b, 'Add effect', function (id) { addPicked(l.id, id); openFx[l.id] = true; }); });
       }
       ul.appendChild(add);
     }
@@ -274,11 +323,13 @@
       li.classList.add('is-open');
       li.querySelector('.xp-fx-name').setAttribute('aria-expanded', 'true');
       openEntry[fxId] = { panel: p, maskCtl: mk, blend: bs };
+      X.emit('fx-select', { layerId: layerId, type: en.type, fxId: fxId });
     }
     function closeEntry(fxId) {
       var oe = openEntry[fxId]; if (!oe) return;
       oe.panel.destroy(); if (oe.maskCtl) oe.maskCtl.destroy();
       delete openEntry[fxId];
+      var hs = X.handles && X.handles.selected(); if (hs && hs.fxId === fxId) X.emit('fx-select', null);
       var li = list.querySelector('[data-fx="' + fxId + '"]');
       if (li) { li.classList.remove('is-open'); li.querySelector('.xp-fx-body').hidden = true; li.querySelector('.xp-fx-body').innerHTML = ''; li.querySelector('.xp-fx-name').setAttribute('aria-expanded', 'false'); }
     }
@@ -394,7 +445,7 @@
         { label: l.visible === false ? 'Show' : 'Hide', icon: l.visible === false ? 'eye' : 'eyeOff', fn: function () { X.doc.patchLayer(id, { visible: l.visible === false }, X.gesture()); } },
         { label: l.locked ? 'Unlock' : 'Lock', icon: l.locked ? 'unlock' : 'lock', fn: function () { scene().lock(id, !l.locked); } },
         { sep: true },
-        { label: 'Add effect…', icon: 'fx', disabled: l.type !== 'image' && l.type !== 'group' && l.type !== 'adjust', fn: function () { fxMenu(anchor, 'Add effect', function (t) { X.doc.addFx(id, t, { append: true }, X.gesture()); openFx[id] = true; }); } },
+        { label: 'Add effect…', icon: 'fx', disabled: l.type !== 'image' && l.type !== 'group' && l.type !== 'adjust', fn: function () { fxMenu(anchor, 'Add effect', function (t) { addPicked(id, t); openFx[id] = true; }); } },
         { label: 'New adjustment layer above…', icon: 'adjust', fn: function () { addAdjustMenu(anchor, id); } },
         l.type === 'adjust' ? { label: l.clip ? 'Release clipping' : 'Clip to layer below', icon: 'clip', fn: function () { X.doc.patchLayer(id, { clip: !l.clip }, X.gesture()); } } : null,
         { label: m ? 'Paste mask (replace)' : 'Paste mask', icon: 'paste', disabled: !X.clip.has(), fn: function () { X.doc.setMask(id, null, X.clip.paste(), X.gesture()); } },
@@ -413,7 +464,7 @@
     el.querySelector('[data-act="fx"]').addEventListener('click', function (e) {
       var id = selected()[0] || (c().targetImage() || {}).id;
       if (!id) { c().toast('Select a photo, a group or an adjustment layer first.'); return; }
-      fxMenu(e.currentTarget, 'Add effect', function (t) { X.doc.addFx(id, t, { append: true }, X.gesture()); openFx[id] = true; X.lsSet('le-expert-fxopen', openFx); });
+      fxMenu(e.currentTarget, 'Add effect', function (t) { addPicked(id, t); openFx[id] = true; X.lsSet('le-expert-fxopen', openFx); });
     });
     el.querySelector('[data-act="mask"]').addEventListener('click', function () {
       var id = selected()[0]; if (!id) { c().toast('Select a layer first.'); return; }

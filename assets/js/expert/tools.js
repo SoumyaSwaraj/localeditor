@@ -448,7 +448,7 @@
   /* Keys the expert workspace takes from the simple studio, with what they did there. */
   T.conflicts = [
     ['C', 'added an ellipse', 'Crop'], ['[ ]', 'moved the layer down / up', 'Brush size (layer order is Ctrl [ ])'],
-    ['\\', 'compare while held', 'Before / after toggle (Y for split)'], ['R, L, P', 'added a rectangle, a line, opened Draw', 'Nothing (no accidental shapes)'],
+    ['\\', 'compare while held', 'Before / after toggle (Y for split)'], ['R, P', 'added a rectangle, opened Draw', 'Red-eye, Patch'], ['L', 'added a line', 'Nothing (no accidental shapes)'],
     ['Ctrl 1', 'the browser switched to tab 1', '100% (Ctrl Alt 0 where the browser keeps Ctrl 1)']
   ];
 
@@ -484,10 +484,9 @@
     if (lk === 'x' && !e.shiftKey) { if (brush) brush.swap(); else BRUSH.mode = BRUSH.mode === 'erase' ? 'paint' : 'erase'; X.lsSet('le-expert-brush', BRUSH); return true; }
     if (k === '?' || (k === '/' && e.shiftKey)) { X.shortcutSheet(); return true; }
     if (e.shiftKey) return false;
-    if (lk === 'r' || lk === 'l' || lk === 'p') return true;
     var hit = T.list().filter(function (x) { return x.key && x.key.toLowerCase() === lk; })[0];
     if (hit) { T.activate(hit.id); return true; }
-    return false;
+    return lk === 'r' || lk === 'l' || lk === 'p';   /* the simple studio's shape keys never add a shape here */
   };
 
   /* ---------- Shortcut sheet (searchable) ---------- */

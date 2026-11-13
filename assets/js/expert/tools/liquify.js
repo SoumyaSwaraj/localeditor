@@ -23,6 +23,44 @@
     var R = global.LE.fx.retouch;
     X.rtWrite(st.id, 'liquify', R.liquify.add(st.p0, rec(st.stroke.slice(0, 1024))), st.key);
   });
+  /* ---------- Freeze overlay ----------
+     The frozen area as a translucent red wash, while the freeze or thaw tool is active or "Show mask" is on. It is drawn from
+     the same mesh the renderer builds (R.liquify.mesh, freeze and thaw records only, so warp strokes cost it nothing) and is
+     repainted only when those records change. Off, nothing is subscribed and nothing is in the page. */
+  var fzo = { el: null, key: '', un: null };
+  function fzPaint() {
+    var FX = global.LE.fx, R = FX && FX.retouch, l = st && X.doc.layer(st.id), host = X.canvas._host && X.canvas._host(), b = l && X.canvas._box(st.id);
+    if (!R || !l || !host || !b) return;
+    if (!fzo.el || !fzo.el.isConnected) { fzo.el = h('<canvas class="xp-mask-ov xp-freeze-ov" aria-hidden="true"></canvas>'); host.appendChild(fzo.el); fzo.key = ''; }
+    var e = X.doc.firstOfType(st.id, 'liquify');
+    var recs = e ? R.liquify.read(Object.assign(FX.defaults('liquify'), e.p)).filter(function (r) { return r.tool === 'freeze' || r.tool === 'thaw'; }) : [];
+    var key = l.w + 'x' + l.h + '|' + JSON.stringify(recs);
+    if (key !== fzo.key) {
+      fzo.key = key;
+      var m = R.liquify.mesh(recs, l.w, l.h), s = 256 / Math.max(l.w, l.h), cv = fzo.el, n = 0;
+      cv.width = Math.max(1, Math.round(l.w * s)); cv.height = Math.max(1, Math.round(l.h * s));
+      var t = document.createElement('canvas'); t.width = m.nx; t.height = m.ny;
+      var tx = t.getContext('2d'), img = tx.createImageData(m.nx, m.ny), d = img.data;
+      for (var i = 0; i < m.fz.length; i++) { var v = m.fz[i]; if (v > 0.05) n++; d[i * 4] = 229; d[i * 4 + 1] = 52; d[i * 4 + 2] = 62; d[i * 4 + 3] = Math.round(Math.min(1, v) * 128); }
+      tx.putImageData(img, 0, 0);
+      /* Node i sits at i × spacing: pixel centres land on the nodes. */
+      var cx = cv.getContext('2d'); cx.clearRect(0, 0, cv.width, cv.height);
+      cx.drawImage(t, -0.5 * m.sp * s, -0.5 * m.sp * s, m.nx * m.sp * s, m.ny * m.sp * s);
+      cv.setAttribute('data-frozen', String(n));
+    }
+    var hr = host.getBoundingClientRect(), o = fzo.el.style;
+    o.left = (b.x - hr.left) + 'px'; o.top = (b.y - hr.top) + 'px'; o.width = b.w + 'px'; o.height = b.h + 'px';
+    o.transform = (b.rotation ? 'rotate(' + b.rotation + 'deg)' : '') + (l.flipX ? ' scaleX(-1)' : '') + (l.flipY ? ' scaleY(-1)' : '');
+  }
+  function fzSync() {
+    if (!st || !(OPT.show || OPT.tool === 'freeze' || OPT.tool === 'thaw')) {
+      if (fzo.un) { fzo.un(); fzo.un = null; }
+      if (fzo.el) { fzo.el.remove(); fzo.el = null; }
+      return;
+    }
+    if (!fzo.un && X.workspace && X.workspace.onView) fzo.un = X.workspace.onView(fzPaint);
+    fzPaint();
+  }
   T.register({ id: 'liquify', key: null, label: 'Liquify', icon: 'liquify', group: 'retouch', order: 43, replace: true, cursor: 'none',
     activate: function (a) {
       var l = X.rtTarget(a, 'liquify'); if (!l) { setTimeout(function () { T.activate('move'); }, 0); return; }
@@ -45,9 +83,10 @@
         b.on('end', function (s) { end(s, false); });
         b.on('cancel', function () { end(null, true); });
         b.on('options', function (o) { OPT.size = o.size; X.lsSet('le-expert-liquify', OPT); });
+        fzSync();
       });
     },
-    deactivate: function (a) { if (st) { clearInterval(st.hold); if (st.brush) st.brush.detach(); } st = null; a.capture(false); },
+    deactivate: function (a) { if (st) { clearInterval(st.hold); if (st.brush) st.brush.detach(); } st = null; fzSync(); a.capture(false); },
     onKey: function (e) {
       if (!st || !st.brush) return false;
       var k = e.key;
@@ -56,12 +95,15 @@
     },
     options: function () {
       var w = h('<span class="xp-opts"></span>'), C = X.controls;
-      function save(o) { Object.assign(OPT, o); X.lsSet('le-expert-liquify', OPT); if (st && st.brush) st.brush.set({ size: OPT.size }); }
+      function save(o) { Object.assign(OPT, o); X.lsSet('le-expert-liquify', OPT); if (st && st.brush) st.brush.set({ size: OPT.size }); if ('tool' in o || 'show' in o) fzSync(); }
       var sel = C.create('choice', { label: 'Tool', schema: { options: TOOLS.map(function (t) { return { value: t[0], label: t[1] }; }) }, value: OPT.tool, onCommit: function (v) { save({ tool: v }); } });
       w.appendChild(sel.el);
       w.appendChild(T.opt('Size', OPT.size, { min: 4, max: 3000, step: 1, unit: 'px' }, function (v) { save({ size: v }); }));
       w.appendChild(T.opt('Pressure', Math.round(OPT.pressure * 100), { min: 1, max: 100, step: 1, unit: '%' }, function (v) { save({ pressure: v / 100 }); }));
       w.appendChild(T.opt('Density', Math.round(OPT.density * 100), { min: 0, max: 100, step: 1, unit: '%' }, function (v) { save({ density: v / 100 }); }));
+      var show = h('<button type="button" class="sx-tb xp-tb-tog" data-liq-mask aria-pressed="' + !!OPT.show + '" title="Show the frozen area in red">Show mask</button>');
+      show.addEventListener('click', function () { var on = show.getAttribute('aria-pressed') !== 'true'; show.setAttribute('aria-pressed', String(on)); save({ show: on }); });
+      w.appendChild(show);
       var all = h('<button type="button" class="sx-tb" title="Remove every liquify stroke on this photo">Restore all</button>');
       all.addEventListener('click', function () { if (!st) return; var e = X.doc.firstOfType(st.id, 'liquify'); if (e) X.doc.removeFx(st.id, e.id, X.gesture()); });
       w.appendChild(all);

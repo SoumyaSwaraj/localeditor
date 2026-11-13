@@ -174,12 +174,13 @@
       o.order = i;
       byId[o.id] = o;
       return o;
-    }).sort(function (a, b) { return a.rank - b.rank || a.order - b.order; });
+    }).sort(function (a, b) { return a.rank - b.rank || uiOrder(a) - uiOrder(b) || a.order - b.order; });   /* section, then ui.order, then registration */
     var bySec = {};
     list.forEach(function (d) { (bySec[d.section] = bySec[d.section] || []).push(d.id); });
     defCache = { src: R, n: raw.length, ver: ver, list: list, byId: byId, bySec: bySec, t: now };
     return list;
   }
+  function uiOrder(d) { return d.ui && typeof d.ui.order === 'number' ? d.ui.order : 1e9; }
   function def(id) { defs(); return defCache.byId[id] || null; }
   function sectionTypes(sec) { defs(); return defCache.bySec[sec] || []; }
   function sections() {
@@ -378,7 +379,7 @@
   var FIRST = ['../fx/curves.js', 'controls/base.js'];   /* the spline lives with the renderer (assets/js/fx/curves.js): one definition for both */
   var FILES = ['controls/slider.js', 'controls/curve.js', 'controls/color.js', 'controls/bands.js',
     'controls/pickers.js', 'controls/mask.js', 'brush.js', 'scopes.js', 'panel.js', 'layers.js', 'tools.js', 'workspace.js'];
-  var LATER = ['tools/spot.js', 'tools/dodge-burn.js', 'tools/liquify.js', 'tools/light.js'];   /* retouch tools: replace tools.js placeholders, so after it */
+  var LATER = ['tools/spot.js', 'tools/patch.js', 'tools/dodge-burn.js', 'tools/liquify.js', 'tools/light.js', 'handles.js', 'links.js'];   /* retouch tools: replace tools.js placeholders, so after it */
   var loading = null;
   function lazy(src) {
     if (LE.lazy) return LE.lazy(src);

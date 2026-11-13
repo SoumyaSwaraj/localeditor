@@ -56,6 +56,7 @@
   var viewFns = [];
   function onView(fn) { viewFns.push(fn); return function () { var i = viewFns.indexOf(fn); if (i >= 0) viewFns.splice(i, 1); }; }
   var viewChanged = X.rafThrottle(function () { viewFns.slice().forEach(function (f) { try { f(); } catch (e) { console.error(e); } }); });
+  W.onView = onView;   /* tools redraw their own overlays when the canvas scrolls, zooms or resizes */
   function toDoc(cx, cy) { var r = c.E.sceneEl.getBoundingClientRect(); return c.scene._cssToDoc(cx - r.left, cy - r.top); }
   function target() {
     var d = comp.develop || (panelComp && panelComp.develop);
@@ -280,6 +281,22 @@
     markTabs();
   }
 
+  /* Brings a panel forward (deep links, assets/js/expert/links.js): 'develop' | 'mask' | 'layers' | 'scopes'. On desktop the pane
+     is expanded, scrolled into view and its heading focused; elsewhere the tab opens. False for a name it does not know. */
+  W.show = function (tab) {
+    var t = { develop: 'adjust', mask: 'mask', layers: 'layers', scopes: 'scopes' }[tab];
+    if (!on || !t) return false;
+    if (size !== 'desktop') { openPanelTab(t); return true; }
+    var key = t === 'layers' ? 'lay' : t === 'scopes' ? 'scopes' : 'dev';
+    var p = E.right && E.right.querySelector('.xp-pane-' + key), tog = p && p.querySelector('.xp-pane-tog');
+    if (!p) return false;
+    if (layout[key] === false) tog.click();
+    if (t === 'mask' && comp.develop) { comp.develop.open('Mask', true); var s = p.querySelector('[data-sec="Mask"]'); if (s) s.scrollIntoView({ block: 'nearest' }); }
+    else p.scrollIntoView({ block: 'nearest' });
+    tog.focus({ preventScroll: true });
+    return true;
+  };
+
   /* ---------- The studio panel (tablet and phone) ---------- */
   function destroyPanelComp() {
     if (!panelComp) return;
@@ -353,6 +370,7 @@
     if (panelComp && panelComp.layers && !X.scopes.interactive) panelComp.layers.render();
     X.scopes.request();
     viewChanged();
+    if (X.handles) X.handles.sync();
     if (cmp.mode !== 'off') cmpRenderLater();
     if (maskView) { var m = X.doc.getMask(maskView.layerId, maskView.fxId); if (m) { maskView.mask = m; paintMask(); } }
   });

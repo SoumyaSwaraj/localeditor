@@ -4,7 +4,7 @@
  * X.canvas.attach(host, map) — the workspace (or the gallery) says where the picture is:
  *   map = { box(layerId) -> { x, y, w, h, rotation } in client pixels, onChange(fn) -> unsubscribe }
  * X.canvas.handles(spec) — one set of handles at a time:
- *   spec = { layerId, points: [{ id, x, y, label, ring }], lines: [[idA, idB]], ellipses: [{ c, rx, ry, rot }],
+ *   spec = { layerId, points: [{ id, x, y, label, ring }], lines: [[idA, idB]], ellipses: [{ c | x, y, rx, ry, rot }], segs: [[x1, y1, x2, y2, style]],
  *            onDrag(id, x, y, phase, event) }   x, y are fractions of the layer box (0–1)
  *   returns { update(spec), destroy() } */
 (function (global) {
@@ -53,8 +53,13 @@
     var P = {}, out = '';
     (cur.points || []).forEach(function (p) { P[p.id] = toClient(f, p.x, p.y); });
     (cur.ellipses || []).forEach(function (e) {
-      var c = P[e.c] || toClient(f, 0.5, 0.5);
+      var c = P[e.c] || toClient(f, e.x == null ? 0.5 : e.x, e.y == null ? 0.5 : e.y);
       out += '<ellipse class="xp-h-shape" cx="' + c.x + '" cy="' + c.y + '" rx="' + Math.abs(e.rx * f.b.w) + '" ry="' + Math.abs(e.ry * f.b.h) + '" transform="rotate(' + ((e.rot || 0) + (f.b.rotation || 0)) + ' ' + c.x + ' ' + c.y + ')"/>';
+    });
+    /* Free segments in box fractions: [x1, y1, x2, y2, 'line' | 'guide'] (bands, arms; assets/js/expert/handles.js). */
+    (cur.segs || []).forEach(function (s) {
+      var a = toClient(f, s[0], s[1]), b = toClient(f, s[2], s[3]);
+      out += '<line class="' + (s[4] === 'guide' ? 'xp-h-guide' : 'xp-h-line') + '" x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '"/>';
     });
     (cur.lines || []).forEach(function (l) {
       var a = P[l[0]], b = P[l[1]];
