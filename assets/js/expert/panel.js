@@ -60,7 +60,7 @@
     function action(it) {
       var R = global.LE.fx, info = R && R.actions && R.actions.get(it.action);
       if (!info) { console.warn('LE.expert: ' + def.id + ' ui names an unknown action "' + it.action + '"'); return; }
-      var btn = h('<button type="button" class="btn btn-sm xp-action" data-action="' + esc(info.id) + '">' + esc(it.label || info.label) + '</button>');
+      var btn = h('<button type="button" class="btn btn-sm xp-action" data-action="' + esc(info.id) + '"' + (it.args && it.args.preset ? ' data-preset="' + esc(String(it.args.preset)) + '"' : '') + '>' + esc(it.label || info.label) + '</button>');
       function finish(res) {
         var c = global.LEStudio, id = B.layerId(), doc, i, l;
         btn.disabled = false;
@@ -69,7 +69,11 @@
           doc = c.scene.toJSON();
           for (i = 0; i < res.ops.length; i++) { var r = R.ops.apply(doc, res.ops[i]); if (r.ok) doc = r.doc; else if (c.toast) c.toast(r.errors[0].message); }
           l = doc.layers.filter(function (x) { return x.id === id; })[0];
-          if (l) { c.scene.update(id, { fx: l.fx || null }, { coalesce: X.gesture() }); X.emit('fx', id); }
+          if (l) {
+            var patch = { fx: l.fx || null }, was = c.scene.layer(id);
+            if (JSON.stringify(l.transform || null) !== JSON.stringify((was && was.transform) || null)) { patch.transform = l.transform || null; patch.x = l.x; patch.y = l.y; patch.w = l.w; patch.h = l.h; }
+            c.scene.update(id, patch, { coalesce: X.gesture() }); X.emit('fx', id);
+          }
         }
         if (res.download && global.URL && URL.createObjectURL) {
           var a = document.createElement('a'), url = URL.createObjectURL(new Blob([res.download.text], { type: res.download.type }));
@@ -81,6 +85,10 @@
       function go(extra) {
         var c = global.LEStudio, id = B.layerId(), layer = id && c ? c.scene.layer(id) : null, ctx = Object.assign({ layer: layer, entry: entry() }, extra || {});
         if (!layer) return;
+        if (it.args) ctx.args = it.args;
+        ctx.doc = c.scene.toJSON();
+        if (info.needs.indexOf('scene') >= 0) ctx.scene = c.scene;
+        if (info.needs.indexOf('image') >= 0) { var rec = c.scene._assets && c.scene._assets[layer.src]; ctx.image = rec ? rec.canvas || rec.image || null : null; }
         btn.disabled = true;
         var ready = info.needs.indexOf('stats') >= 0 ? R.analyze({ scene: c.scene, layer: id }).catch(function () { return null; }) : Promise.resolve(null);
         ready.then(function (stats) { ctx.stats = stats; return R.actions.run(info.id, ctx); }).then(finish, function () { btn.disabled = false; });

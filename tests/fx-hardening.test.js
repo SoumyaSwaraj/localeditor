@@ -465,4 +465,30 @@ cases['silhouette stage: g.subject is the layer as it entered the stage, g.whole
   h.assert.noErrors(page);
 };
 
+cases['workspace: the Shadows and reflections section opens with the five staging presets; one tap stages the product in one undo step'] = async ({ browser, base, h }) => {
+  const page = await h.studioWithSample(browser, base, 'desktop');
+  const r = await page.evaluate(async () => {
+    const LE = window.LE, c = window.LEStudio, s = c.scene;
+    const FX = await LE.fxBoot.load();
+    const id = s.layers()[0].id;
+    s.select([id]);
+    ['webgl2', 'pointer-fine', 'device-memory-4gb'].forEach((cap) => LE.support && LE.support.override(cap, true));
+    c.mode('expert');
+    for (let i = 0; i < 100 && !(LE.expert && LE.expert.active && LE.expert.active()); i++) await new Promise((res) => setTimeout(res, 50));
+    await new Promise((res) => setTimeout(res, 300));
+    LE.expert.workspace.components().develop.open('Shadows & reflections', true);
+    await new Promise((res) => setTimeout(res, 300));
+    const btns = Array.from(document.querySelectorAll('#xp-right .xp-action[data-action="composite.stage"]'));
+    const d0 = s._hist.undo.length;
+    const hit = btns.find((b) => b.dataset.preset === 'soft-table-reflection');
+    if (hit) hit.click();
+    await new Promise((res) => setTimeout(res, 600));
+    return { presets: btns.map((b) => b.dataset.preset), labels: btns.map((b) => b.textContent.trim()), known: Object.keys(FX.composite.presets), names: Object.keys(FX.composite.presets).map((k) => FX.composite.presets[k].name), fx: (s.layer(id).fx || []).map((e) => e.type), steps: s._hist.undo.length - d0 };
+  });
+  h.assert.equal(r.presets.join(), r.known.join(), 'one button per staging preset');
+  h.assert.equal(r.labels.join(), r.names.join(), 'labelled with the preset names');
+  h.assert(r.fx.length >= 2 && r.steps === 1, 'one tap applies the preset as one undo step: ' + JSON.stringify(r.fx) + ', steps ' + r.steps);
+  h.assert.noErrors(page);
+};
+
 module.exports = cases;

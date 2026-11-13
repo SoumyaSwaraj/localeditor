@@ -129,18 +129,6 @@
     var parts = (AREA[area] || AREA.skin).map(function (q, i) { var o = { kind: q.kind, part: q.part, mode: q.mode || 'add', blur: i === 0 ? Math.max(0, blur || 0) : 0 }; return o; });
     return g.mask({ on: true, invert: false, parts: parts });
   }
-  /* layer.maps.face parts are named underEyes by LE.maps but 'under-eyes' by the renderer's face mask kind, so that part
-     draws nothing. SEAM (reported as a renderer bug): alias the name in LE.maps.faceMask once LE.maps is there. */
-  R.installFaceAlias = function () {
-    var mp = LE.maps;
-    if (!mp || typeof mp.faceMask !== 'function' || mp.faceMask._rtAlias) return !!(mp && mp.faceMask && mp.faceMask._rtAlias);
-    var orig = mp.faceMask;
-    var wrapped = function (face, part, w, h, o) { return orig.call(mp, face, part === 'under-eyes' ? 'underEyes' : part, w, h, o); };
-    wrapped._rtAlias = true;
-    mp.faceMask = wrapped;
-    return true;
-  };
-  R.installFaceAlias();
   if (FX.declareControl) FX.declareControl('face-rig');   /* this pack's own control (assets/js/expert/tools/liquify.js) */
 
   var AREA_OPTIONS = [{ value: 'all', label: 'Everywhere' }, { value: 'skin', label: 'Skin' }, { value: 'face', label: 'Face skin (map)' }];

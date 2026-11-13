@@ -217,7 +217,11 @@
       return g.pass(CONTACT_COMP, Object.assign({ u_sh: soft, u_op: p.opacity, u_only: p.only ? 1 : 0 }, shadeU(g, p)));
     },
     support: GPU,
-    ui: { section: 'Shadows & reflections', order: 15, controls: ['opacity', 'distance', 'softness', 'squash', 'anchor', { heading: 'Colour' }, 'color', 'receive', 'only'] },
+    /* The section opens with the staging presets (C.presets; the composite.stage action): one tap, one undo step. */
+    ui: { section: 'Shadows & reflections', order: 15, controls: [{ heading: 'Stage product' },
+      { action: 'composite.stage', label: 'Studio white sweep', args: { preset: 'studio-white-sweep' } }, { action: 'composite.stage', label: 'Soft table reflection', args: { preset: 'soft-table-reflection' } },
+      { action: 'composite.stage', label: 'Hard sun', args: { preset: 'hard-sun' } }, { action: 'composite.stage', label: 'Floating', args: { preset: 'floating' } }, { action: 'composite.stage', label: 'Dark glossy', args: { preset: 'dark-glossy' } },
+      { heading: 'Contact shadow' }, 'opacity', 'distance', 'softness', 'squash', 'anchor', { heading: 'Colour' }, 'color', 'receive', 'only'] },
     agent: {
       summary: 'A tight, dark, soft occlusion where the subject touches the ground; the single most important cue that an object sits on a surface.',
       tips: ['Typical: opacity 0.8–0.9, distance 0.06–0.08 × subject height, softness 0.01 × height, squash 0.25–0.3 (the occlusion lies about distance × squash deep on the ground).', 'Always pair with a cast or floating shadow for a product shot; alone it reads as a studio sweep with overhead light.', 'Needs a correct anchor (LE.fx.composite.contact()).'],

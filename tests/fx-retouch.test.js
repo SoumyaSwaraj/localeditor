@@ -11,8 +11,7 @@ const cases = {};
 
 async function open(browser, base) {
   const page = await fx.page(browser, base);
-  await page.addScriptTag({ url: base + '/labs/maps/maps.js' });
-  await page.evaluate(() => window.LE.fx.retouch.installFaceAlias());
+  await page.addScriptTag({ url: base + '/assets/js/le-maps.js' });
   return page;
 }
 /* A portrait crop through LE.fx.apply with the layer's face map. job: { photo, crop, size, fx | prep (source of (layer, R) => fx), tile } */

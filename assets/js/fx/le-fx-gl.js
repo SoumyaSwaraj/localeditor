@@ -671,7 +671,7 @@
     try { canvas._fxDepth = src; canvas._fxDepthAt = canvas._fxStamp || 0; } catch (e) { /* frozen source */ }
     return src;
   }
-  /* layer.maps.face: one packed face, a list of them, or { faces: [...] }. Drawn by LE.maps.faceMask (labs/maps/maps.js until it is promoted). */
+  /* layer.maps.face: one packed face, a list of them, or { faces: [...] }. Drawn by LE.maps.faceMask (assets/js/le-maps.js). */
   function faceSource(layer, part, env) {
     var mp = global.LE && LE.maps, f = layer.maps && layer.maps.face;
     if (!f || !mp || typeof mp.faceMask !== 'function') return null;

@@ -74,9 +74,8 @@
   /* ---------- "face-rig": finds faces on this device and stores the anchors the face sliders read ---------- */
   function loadMaps() {
     if (global.LE.maps && global.LE.maps.face) return Promise.resolve(global.LE.maps);
-    var src = new URL('../../../labs/maps/maps.js', X.base).href;
+    var src = new URL('../le-maps.js', X.base).href;   /* the product maps module */
     return (global.LE.lazy ? global.LE.lazy(src) : new Promise(function (res, rej) { var s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); })).then(function () {
-      if (global.LE.fx && global.LE.fx.retouch) global.LE.fx.retouch.installFaceAlias();
       return global.LE.maps;
     });
   }
