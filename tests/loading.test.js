@@ -157,6 +157,26 @@ cases['home: no late stylesheet shifts the layout; install and storage code load
   h.assert.noErrors(page);
 };
 
+/* le-pwa.js keeps install state, the worker and update safety; the storage manager and the install chooser (le-pwa-more.js)
+   arrive on first use. The housekeeping pass (every 6 hours, when idle) is the only other thing that asks for them. */
+cases['home: the storage manager and the install chooser are not requested before use; Storage and Install app load them'] = async ({ browser, base, h }) => {
+  const page = await openPage(browser, base, h, '/', { waitUntil: 'load', route: (p) => p.addInitScript(() => { try { localStorage.setItem('le-pwa', JSON.stringify({ enforcedAt: Date.now() })); } catch (e) {} }) });
+  await page.waitForFunction(() => window.LEPwa && LEPwa.openStorage && LEPwa.updateReady, null, { timeout: 15000 });
+  await page.waitForTimeout(1200);
+  h.assert(page.reqs.indexOf('assets/js/le-pwa-more.js') < 0, 'le-pwa-more.js was requested before anyone asked for storage or install');
+  h.assert.equal(await page.evaluate(() => typeof LEPwa.update + ' ' + typeof LEPwa.registerEditor + ' ' + LEPwa.updateReady()), 'function function false', 'updates and editors are in the always part');
+  await page.evaluate(() => LEPwa.openStorage());
+  h.assert(await page.$('dialog.lp-storage[open]'), 'Storage opened once its code arrived');
+  h.assert(page.reqs.indexOf('assets/js/le-pwa-more.js') >= 0, 'and it came from le-pwa-more.js');
+  await page.evaluate(() => LEPwa.closeStorage());
+  const r = await page.evaluate(() => LEPwa.report());
+  h.assert(r && Array.isArray(r.categories), 'LEPwa.report() answers as before');
+  const how = await page.evaluate(() => LEPwa.install());
+  h.assert(how === 'chooser' && (await page.$('dialog.lp-choose[open]')), 'Install app opens the chooser: ' + how);
+  h.assert.equal(await page.$$eval('script[src$="le-pwa-more.js"]', (n) => n.length), 1, 'loaded once');
+  h.assert.noErrors(page);
+};
+
 /* ---------- Triggers: each loads its module (and deps) and nothing else ---------- */
 cases['studio triggers: a panel, a command, the first selection and Download each load exactly their modules'] = async ({ browser, base, h }) => {
   const page = await openPage(browser, base, h, '/studio/');
