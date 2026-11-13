@@ -832,6 +832,8 @@
       if (j.ok === false) self.show('error', 'The file has errors; the last good version stays. ' + ((j.errors && j.errors[0] && ((j.errors[0].path ? j.errors[0].path + ': ' : '') + j.errors[0].message)) || ''));
     });
     es.addEventListener('gone', function () { self.show('error', 'The file was deleted. Your design stays here.'); });
+    es.addEventListener('attach', function (ev) { var j; try { j = JSON.parse(ev.data); } catch (e) { return; } self.onAttach(j); });
+    es.addEventListener('attach-done', function (ev) { var j; try { j = JSON.parse(ev.data); } catch (e) { return; } self.attachDone(j); });
     es.addEventListener('bye', function () { self.dead = true; es.close(); self.show('off', 'The local server stopped. Your edits stay in this tab.'); });
     var fails = 0;
     es.onerror = function () {
@@ -841,6 +843,75 @@
       else if (self.state !== 'error') self.show('off', 'Reconnecting…');
     };
     es.onopen = function () { fails = 0; if (self.state === 'off') self.show('ok', 'Linked'); };
+  };
+  /* ---------- consent: a local tool asks to show another design in this tab (tools/le-cli/lib/serve.js, "attach") ----------
+     The tab the command opened is paired by the token in its address. Switching an open tab to another file is asked
+     first: Allow once, Allow for this session, or Refuse. Until the person answers nothing changes here; what the tool
+     writes meanwhile stays in the file and is shown once allowed. */
+  core.pending = [];   /* requests waiting for an answer: { rid, tool, folder, file, link } */
+  var allowed = {};    /* server run (its token) → true after "Allow for this session". Memory only: never stored, gone with the tab or a reload. */
+  function tidy(s, max) { return String(s == null ? '' : s).replace(/[<>\u0000-\u001f]/g, ' ').trim().slice(0, max); }
+  function linkUi(win) { return (win.LE && win.LE.linkUi) || null; }
+  function unpend(win, req) {
+    var i = core.pending.indexOf(req);
+    if (i >= 0) core.pending.splice(i, 1);
+    var ui = linkUi(win);
+    if (ui && ui.changed) ui.changed();
+  }
+  Client.prototype.onAttach = function (j) {
+    if (this.dead || !j || !j.rid || !/^[\w-]{4,64}$/.test(String(j.link || '')) || core.pending.some(function (p) { return p.rid === j.rid; })) return;
+    var req = { rid: String(j.rid), tool: tidy(j.tool, 60) || 'A program on this computer', folder: tidy(j.folder, 300), file: tidy(j.file, 200), link: String(j.link) };
+    /* Already on that design (the request crossed a switch that was under way), or allowed for the session: no question. */
+    if (req.link === this.id) { this.answer(req, allowed[this.tok] ? 'session' : 'once'); return; }
+    if (allowed[this.tok]) { this.answer(req, 'session'); return; }
+    core.pending.push(req);
+    var ui = linkUi(this.win);
+    if (ui && ui.changed) ui.changed();
+    this.review(req);
+  };
+  /* Shows the sheet for one request (again, when the person closed it without answering). */
+  Client.prototype.review = function (req) {
+    var self = this, ui = linkUi(this.win);
+    if (!ui || !ui.askAttach || req.asking) return;
+    req.asking = true;
+    ui.askAttach(req).then(function (a) { req.asking = false; if (a && core.pending.indexOf(req) >= 0) self.answer(req, a); }, function () { req.asking = false; });
+  };
+  Client.prototype.answer = function (req, a) {
+    var self = this, c = this.c();
+    unpend(this.win, req);
+    if (a === 'session') allowed[this.tok] = true;
+    return this.req('POST', '/consent', { rid: req.rid, answer: a }).then(function () {
+      if (a === 'once' || a === 'session') return req.link === self.id ? null : self.handOver(req.link);
+      if (c && c.toast) c.toast(a === 'refuse' ? 'Refused. ' + req.tool + ' was told.' : 'Request cancelled. ' + req.tool + ' was told.');
+      return null;
+    }, function () { if (c && c.toast) c.toast('That request is no longer waiting.'); });
+  };
+  /* The server withdrew a request: answered in another tab, timed out, or the tool stopped waiting. */
+  Client.prototype.attachDone = function (j) {
+    var req = core.pending.filter(function (p) { return p.rid === (j && j.rid); })[0];
+    if (!req) return;
+    unpend(this.win, req);
+    var ui = linkUi(this.win), c = this.c();
+    if (ui && ui.closeAttach) ui.closeAttach(req);
+    if (c && c.toast) c.toast(j.reason === 'consent-timeout' ? 'The request from ' + req.tool + ' ran out of time.' : j.reason === 'allowed' ? 'Answered in another tab.' : 'The request from ' + req.tool + ' was withdrawn.');
+  };
+  /* For the banner: answer or reopen a waiting request by id. */
+  core.answerPending = function (rid, a) { var req = core.pending.filter(function (p) { return p.rid === rid; })[0]; if (req && core.client) core.client.answer(req, a); };
+  core.reviewPending = function (rid) { var req = core.pending.filter(function (p) { return p.rid === rid; })[0]; if (req && core.client) core.client.review(req); };
+  /* Hands this tab to another design of the same server: the person's last edits go to the old file first, then a new
+     client takes over under the same tab id. The design that was open stays in Your designs. */
+  Client.prototype.handOver = function (id) {
+    var self = this, win = this.win;
+    return this.serial(function () { clearTimeout(self.timer); self.timer = 0; return self.push(); }).then(function () {
+      self.dead = true; self.byeShown = true;
+      if (self.es) self.es.close();
+      ['le-link-chip', 'le-link-notes'].forEach(function (i) { var el = win.document.getElementById(i); if (el) el.remove(); });
+      try { win.sessionStorage.setItem('le-link-' + id, self.tok); win.history.replaceState(null, '', win.location.pathname + '?link=' + id); } catch (e) {}
+      var next = new Client(win, id, self.tok);
+      next.cid = self.cid;
+      core.client = next;
+      return next.boot();
+    });
   };
   /* The studio document as open-format JSON, with image references written the way the file writes them. */
   Client.prototype.current = function () {

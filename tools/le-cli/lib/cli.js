@@ -99,7 +99,13 @@ See the makers and their inputs: localeditor catalog makers`,
   link: `localeditor link <file> [--port n] [--no-open]
 Serves the app on 127.0.0.1 and opens your browser with the design. The tab follows the file; your edits in the tab
 are written to the file; after every sync <name>.le/status.json and <name>.le/preview-<page>.png are written.
-Stops with Ctrl+C.`,
+Stops with Ctrl+C.
+
+localeditor link <file> --attach <api address> [--tool <name>] [--timeout 120]
+Asks a server that is already running ("localeditor serve" printed its API address) to show the file in a tab that
+is already open. The person is asked in that tab: Allow once, Allow for this session, or Refuse. The command waits
+and exits 0 when allowed, else 1 with a code: consent-refused, consent-cancelled, consent-timeout (nobody answered),
+consent-tab-closed, consent-no-tab (no tab is open; the answer carries the address to open).`,
   serve: `localeditor serve [dir] [--port n] [--open <file>] [--token <t>]
 The app for people at http://127.0.0.1:<port>/ and a JSON API for agents under /api/<token>/ (printed once).
 Only files under dir (default: the current folder) can be used.`,

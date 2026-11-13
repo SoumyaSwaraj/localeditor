@@ -128,6 +128,11 @@ const TOOLS = [
     annotations: { readOnlyHint: true }
   },
   {
+    name: 'design_link_attach', title: 'Show a design in the person\'s open tab',
+    description: 'Ask a running "localeditor serve" to show a design in a studio tab the person already has open, so they can watch and co-edit. The person is asked in that tab (Allow once, Allow for this session, Refuse) and this call waits. Errors: consent-refused (do not ask again unless they ask you to), consent-cancelled, consent-timeout (nobody answered), consent-tab-closed, consent-no-tab (no tab is open: give the person the "url" to open). Changes you make to the file while waiting are not lost; the tab shows the latest file once allowed.',
+    inputSchema: { type: 'object', properties: { path: PATH, api: { type: 'string', description: 'The API address "localeditor serve" printed: http://127.0.0.1:<port>/api/<token>/' }, timeout_s: { type: 'integer', minimum: 1, maximum: 600, description: 'How long to wait for the person, in seconds (default 120).' } }, required: ['path', 'api'], additionalProperties: false }
+  },
+  {
     name: 'notes_read', title: 'Read notes from the person',
     description: 'Notes the person pinned in the studio ("make this warmer"), each with an id, text, the layer it points at and status open|done. Read them, make the change with design_apply, then notes_resolve.',
     inputSchema: { type: 'object', properties: { path: PATH, status: { type: 'string', enum: ['open', 'done', 'all'], default: 'open' } }, required: ['path'], additionalProperties: false },
@@ -376,6 +381,11 @@ class McpServer {
           let previews = [];
           try { previews = fs.readdirSync(dir).filter((f) => /^preview-\d+\.png$/.test(f)).map((f) => this.rel(path.join(dir, f))); } catch (e) { /* none */ }
           return this.ok({ ok: true, linked: !!(status && status.linked), status, openNotes: notes, previews, statusFile: this.rel(path.join(dir, 'status.json')) });
+        }
+        case 'design_link_attach': {
+          const abs = svc.sandbox.file(a.path, 'the design');
+          const r = await require('./serve').attachVia(a.api, abs, { tool: ((this.client && this.client.name) || 'An assistant') + ' (MCP)', timeout: a.timeout_s });
+          return this.ok(r);
         }
         case 'notes_read': {
           const abs = svc.sandbox.file(a.path, 'the design');

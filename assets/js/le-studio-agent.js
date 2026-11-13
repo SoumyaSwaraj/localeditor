@@ -98,11 +98,18 @@
   }
   function renderBar() {
     var s = sess(), a = A();
-    var on = modeOn();
+    /* A local tool waiting for an answer (live link, LE.link.pending) shows here until it is answered or cancelled. */
+    var pend = (window.LE && LE.link && LE.link.pending) || [];
+    var asks = pend.map(function (r) {
+      return '<div class="sxa-row" data-rid="' + esc(r.rid) + '"><span class="sxa-dot" aria-hidden="true"></span><div class="sxa-who"><strong>' + esc(r.tool) + ' is asking to use this tab</strong><small>' + esc(r.file) + ' · ' + esc(r.folder) + '</small></div>' +
+        '<div class="sxa-acts"><button type="button" class="sxa-btn is-primary" data-act="link-review"><span>Review</span></button><button type="button" class="sxa-btn" data-act="link-cancel"><span>Cancel request</span></button></div></div>';
+    }).join('');
+    var on = modeOn() || pend.length > 0;
     EL.bar.hidden = !on;
-    document.documentElement.classList.toggle('sxa-on', on);
-    if (on && window.LEStudio && typeof LEStudio.coach === 'function') LEStudio.coach('hide');   /* no first-run marks over agent mode */
+    document.documentElement.classList.toggle('sxa-on', modeOn());
+    if (modeOn() && window.LEStudio && typeof LEStudio.coach === 'function') LEStudio.coach('hide');   /* no first-run marks over agent mode */
     if (!on) { EL.bar.innerHTML = ''; reserve(); return; }
+    if (!modeOn()) { EL.bar.className = 'sxa-bar is-wait'; EL.bar.innerHTML = asks; reserve(); return; }
     var queued = a.queue.length + (a.running ? 1 : 0);
     var who, sub, tone = '';
     if (s && a.paused && a.pauseReason === 'person-editing') { who = 'You’re editing — ' + s.name + ' is waiting'; sub = queued ? queued + ' change' + (queued > 1 ? 's' : '') + ' queued. Resume when you’re done.' : 'Resume when you’re done.'; tone = 'is-wait'; }
@@ -114,7 +121,7 @@
     var color = s ? s.color : '#B3510B';
     EL.bar.className = 'sxa-bar ' + tone + (STATE.more ? ' is-more' : '');
     EL.bar.style.setProperty('--sxa-agent', color);
-    EL.bar.innerHTML =
+    EL.bar.innerHTML = asks +
       '<div class="sxa-row">' +
         '<span class="sxa-dot" aria-hidden="true"></span>' +
         '<div class="sxa-who"><strong>' + esc(who) + '</strong><small>' + esc(sub) + '</small></div>' +
@@ -156,6 +163,7 @@
     var b = e.target.closest('[data-act]');
     if (!b) return;
     var act = b.getAttribute('data-act');
+    if (act === 'link-review' || act === 'link-cancel') { var rid = b.closest('[data-rid]').getAttribute('data-rid'); if (act === 'link-cancel') LE.link.answerPending(rid, 'cancel'); else LE.link.reviewPending(rid); return; }
     if (act === 'pause') P.pause('person');
     else if (act === 'resume') P.resume();
     else if (act === 'stop') { var n = P.stop(); c.toast(n ? 'Stopped. ' + n + ' queued change' + (n > 1 ? 's were' : ' was') + ' cancelled.' : 'Stopped. The assistant will re-plan.'); }
@@ -500,6 +508,30 @@
       box.querySelector('[data-no]').onclick = function () { done = true; c.closeModal(); res(null); };
     });
   }
+  /* Live link: a program on this computer asks to show another design in this tab (le-link.js, onAttach).
+     → 'once' | 'session' | 'refuse', or null when the sheet was closed without an answer (the request stays in the banner). */
+  var attachOpen = null;
+  function askAttach(req) {
+    return whenUi().then(function () {
+      return new Promise(function (res) {
+        var decided = false;
+        var done = function (v) { if (decided) return; decided = true; attachOpen = null; res(v); };
+        var box = h('<div class="sxa-ask" data-sxa><p class="sxa-lead"><b data-tool></b> wants to open <b data-file></b> in this tab and change it while you watch.</p>' +
+          '<p class="sx-note">It is a program on this computer, working in the folder <code data-folder></code>. The design open now stays in Your designs. Nothing is uploaded. You can stop it at any time by closing this tab.</p>' +
+          '<div class="sxa-actions"><button type="button" class="btn" data-a="refuse">Refuse</button><button type="button" class="btn" data-a="session">Allow for this session</button><button type="button" class="btn btn-gold" data-a="once">Allow once</button></div>' +
+          '<p class="sx-note is-muted">“For this session” lasts until this tab is closed or reloaded. It is not saved.</p></div>');
+        box.querySelector('[data-tool]').textContent = req.tool;
+        box.querySelector('[data-file]').textContent = req.file;
+        box.querySelector('[data-folder]').textContent = req.folder;
+        c.openModal('Let a local tool use this tab?', box);
+        attachOpen = { rid: req.rid, done: done };
+        c.S.onModalClose = function () { done(null); };
+        Array.prototype.forEach.call(box.querySelectorAll('[data-a]'), function (b) { b.onclick = function () { done(b.getAttribute('data-a')); c.closeModal(); }; });
+      });
+    });
+  }
+  function closeAttach(req) { if (attachOpen && attachOpen.rid === req.rid) { attachOpen.done(null); c.closeModal(); } }
+  (window.LE = window.LE || {}).linkUi = { askAttach: askAttach, closeAttach: closeAttach, changed: function () { if (c && EL.bar) renderBar(); } };
   var uiReady = null, uiReadyRes = null;
   uiReady = new Promise(function (r) { uiReadyRes = r; });
   function whenUi() { return uiReady; }

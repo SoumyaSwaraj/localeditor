@@ -203,6 +203,10 @@ const { text, assets } = await LEAgent.save({ images: 'paths' });   // assets: [
 
 Results are plain JSON (images as data URLs), safe to pass across a process boundary.
 
+### Asking to use an open tab
+
+With the live link (`localeditor serve` / `link`, `docs/AGENT-CLI.md`) the tab the command opens is yours to drive. A tab the person already has open on another design is not: ask with `attach` (API, `localeditor link <file> --attach <api address>`, or MCP `design_link_attach`). They see a sheet with your name, the file and the folder and choose Allow once, Allow for this session or Refuse; you get `consent: "once" | "session"` or a precise code (`consent-refused`, `consent-cancelled`, `consent-timeout`, `consent-tab-closed`, `consent-no-tab`). A refusal is an answer: do not ask again unless the person asks you to.
+
 ## 11. Following a brand
 
 A brand file (`brand.lebrand.json`, `docs/FORMAT-BRAND.md`) holds the colours with their roles, the fonts by role, the logos, spacing, tone words and do / don't lines. The person keeps the same file in the studio's Brand kit (Brand kit → Brand file → Import / Export), so you both work from one source.
