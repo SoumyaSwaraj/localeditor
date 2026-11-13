@@ -49,7 +49,7 @@ async function runFile(browser, base, f, only) {
   const filter = process.argv[2] || '';
   const only = process.env.TEST_CASE || '';
   const jobs = Math.max(1, Number(process.env.TEST_JOBS || 1));
-  const files = fs.readdirSync(__dirname).filter((f) => f.endsWith('.test.js') && f.indexOf(filter) >= 0).sort();
+  const files = fs.readdirSync(__dirname).filter((f) => f.endsWith('.test.js') && (/\.test\.js$/.test(filter) ? f === filter : f.indexOf(filter) >= 0)).sort();
   const { server, base } = await h.serve();
   const total = { pass: 0, known: 0, fail: 0, fixed: [] };
   const add = (r) => { r.lines.forEach((l) => console.log(l)); total.pass += r.pass; total.known += r.known; total.fail += r.fail; total.fixed = total.fixed.concat(r.fixed); };

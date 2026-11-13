@@ -55,3 +55,7 @@ When the bug is fixed the case passes and the runner prints "known bug now passe
 Integration files: `wiring.test.js` (device-support gates, toolbar hooks, photo pickers), `format-wave2.test.js` (carousel, maker, redact, cutout, page ids), `shadow.test.js` (shadows at every scale).
 
 `tests/qa/*.js` are measurement scripts for `docs/QA-REPORT.md` (phone walk-through screenshots, load and long-task timings). They are not run by `run.js`.
+
+## Whole suite, crash-proof
+
+`tests/run-all.sh [parallel files] [output folder]` runs every test file in its own process (default two at a time) and runs a file once more if its browser dies, so a crash costs one file, not the run. `node tests/run.js name.test.js` runs exactly one file; any other argument is still a substring filter.
