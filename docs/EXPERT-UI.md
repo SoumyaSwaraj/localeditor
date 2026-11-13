@@ -129,6 +129,57 @@ hd.update({ points }); hd.destroy();
 ```
 One handle set at a time. Handles are focusable (arrow keys move them, Shift x10) and 44 px hit areas on touch.
 
+### Handles from a registration (`ui.handles`)
+
+An effect says where it sits on the photo with data; the workspace (`assets/js/expert/handles.js`) draws and drags the handles.
+They show for the **selected effect**: the one whose controls were last touched in the develop panel, opened in the layers
+panel, or just added. One drag is one undo step, rendered in draft quality (`LE.fx.interactive`); arrow keys nudge a focused
+handle; targets are 44 px; handles hide while any tool other than Move, Hand or Zoom is active. The Light tool keeps its own.
+
+```js
+ui: { handles: { kind: 'ellipse', center: 'center', rx: 'rx', ry: 'ry', angle: 'angle' } }      // one descriptor, or an array
+```
+
+| kind | fields (parameter names) | drags |
+|---|---|---|
+| `point` | `param` | the point |
+| `ring` | `center`, `radius`, `unit` | centre; the rim sets the radius |
+| `ellipse` | `center`, `rx`, `ry`, `angle`, `unit`, `cw` | centre; first axis handle sets `rx` and `angle`; second sets `ry` |
+| `band` | `center`, `angle`, `half`, `feather`, `unit`, `cw` | centre; arm = angle; edge = half width; dashed outer edge = feather. With only `center`: a level line through the point (a contact line) |
+| `angle` | `param`, `anchor` (a point parameter, else the box centre), `cw` | the arm |
+| `line` | `anchor`, `angle`, `length`, `unit`, `half` (the length parameter is a full width), `cw` | the tip: direction and length |
+| `line` (shadow tip) | `anchor`, `angle`, `elevation`, `height`, `squash`, `cw` | the tip: length = height / tan(elevation), y × squash |
+| `mesh` | `rows`, `cols`, `params` (point parameters, row by row) | each point; lines join rows and columns |
+
+`unit` says what a length is a fraction of: `box` (`rx` of the width, `ry` of the height; the ellipse default), `short` (ring and
+band default), `long`, `w`, `h`, or `px` (document pixels; the line default). Angles are degrees, counter-clockwise on screen
+unless `cw: true`. A point parameter named by several descriptors is one handle. `LE.expert.handles.select({ layerId, type, fxId })`
+selects from code; `X.emit('fx-select', …)` is the same thing as an event.
+
+## Add-effect list
+
+Opened from the layers panel (effect, adjustment layer). Without a query: a **Common** group (a short curated list in
+`layers.js`, plus registrations with `ui.common: true`), then every section under its heading in the develop panel's order.
+Inside a section registrations are ordered by `ui.order`, then by registration. A query shows one ranked list
+(`LE.expert.fxSearch(query)`): every word must match; the rank is where it matches, best first: the name itself, the start
+of the name, the start of a word in the name, inside the name, the id, a keyword (`keywords`, `ui.keywords`,
+`agent.keywords`, `agent.like`), the section, the summary. Ties keep the panel order, so the first result never depends on
+registration order. Enter takes the first result; the effect is added, selected and its handles shown.
+
+## Links
+
+Read once at boot, then removed from the address. `?mode=expert` opens Expert for the visit and never changes the saved choice.
+
+| Link | Does |
+|---|---|
+| `/studio/?mode=expert&tab=develop` · `mask` · `layers` · `scopes` | Desktop: expands that pane, scrolls it into view and focuses its heading (`mask` opens the layer mask section). Tablet and phone: opens that tab. |
+| `/studio/?mode=expert&tool=heal` · `clone` · `patch` · `redeye` · `dodge` · `liquify` · `light` · `brush` · `gradient` | Activates the tool once a photo is open. |
+| `/studio/?mode=expert&add=<effect id>` | Adds the effect to the photo (one undo step), opens its section and shows its handles. With no photo open a one-line hint says so and the effect is added when the first photo opens. |
+| `/studio/?open=raw` · `/studio/?open=hdr` (with or without `mode=expert`) | Runs the `rawOpen` / `hdrMerge` command. A browser shows a file chooser only after a click, so a page opened by a link offers it as a toast action (**Choose a photo** / **Choose photos**). |
+
+Parameters combine (`?mode=expert&tab=layers&add=vignette`). Unknown values are ignored without a message. From code:
+`LE.expert.links({ tab, tool, add })`, `LE.expert.workspace.show(tab)`.
+
 ## Masks
 
 `layer.mask` (and `fx[i].mask`) = `{ parts: [...], on?: false, invert?: true }`. `on` and `invert` are workspace additions for
@@ -167,6 +218,14 @@ api = { ctx, layer /* overlay over the canvas */, capture(on, cursor), toDoc(cli
 ```
 A key already taken is refused with a console warning (the tool gets no key). Tool keys are single letters without modifiers.
 
+**Retouch tools on the canvas** (`assets/js/expert/tools/`): Heal (J) and Clone (S) in `spot.js`; **Patch (P)** and **Red-eye (R)** in
+`patch.js`; Dodge and burn (O); Liquify. Patch: draw around the area (freehand, or click corner by corner and close on the
+first corner or with Enter), then drag the outline onto a clean area; the drag writes one polygon record (`heal-polygon`, or
+`clone-polygon` with Copy) into the last `spot-heal` entry with room, as one undo step. Red-eye: tap a pupil or drag a box over
+the eye; each eye fills a free eye of a `red-eye` entry with the same pupil size or adds an entry; Pupil size and Darken in the
+options bar follow the last eye placed. Liquify shows the frozen area as a red overlay while the Freeze or Thaw tool is
+active or **Show mask** is on (drawn from `LE.fx.retouch.liquify.mesh`, repainted only when freeze records change).
+
 ## Brush engine
 
 ```js
@@ -202,7 +261,7 @@ When `LE.fx.analyze` exists it is asked for `{ source, kinds: ['histogram'] }` a
 
 | Keys | Does |
 |---|---|
-| V · C · B · J · S · O · G · I · H · Z | Move · Crop and straighten · Brush and mask · Heal · Clone · Dodge and burn · Gradient mask · Colour sampler · Hand · Zoom (Alt zooms out) |
+| V · C · B · J · S · P · R · O · G · K · I · H · Z | Move · Crop and straighten · Brush and mask · Heal · Clone · Patch · Red-eye · Dodge and burn · Gradient mask · Light · Colour sampler · Hand · Zoom (Alt zooms out) |
 | `[` `]` · Shift `[` `]` · X | Brush size · hardness · paint/erase |
 | `\` · Y | Before/after · split, side by side, off |
 | Ctrl 0 · Ctrl 1 (Ctrl Alt 0) · Ctrl + / − · Space-drag | Fit · 100 % · zoom · pan |
@@ -212,7 +271,7 @@ When `LE.fx.analyze` exists it is asked for `{ source, kinds: ['histogram'] }` a
 | Esc · ? | Back to Move (or stop a targeted adjustment) · the searchable shortcut sheet |
 
 Keys taken from the simple studio in Expert: C (ellipse → Crop), `[` `]` (layer order → brush size; layer order is Ctrl `[` `]`),
-`\` (hold to compare → toggle), R, L, P (rectangle, line, Draw → nothing, so no shape appears by accident), Ctrl 1 (the
+`\` (hold to compare → toggle), R and P (rectangle, Draw → Red-eye, Patch), L (line → nothing, so no shape appears by accident), Ctrl 1 (the
 browser's first tab → 100 % where the browser lets a page have it; Ctrl Alt 0 always works). Ctrl+Z, Ctrl+D, Ctrl+0, arrows,
 Space and Delete behave as in Simple. Typing in a field never triggers a shortcut; keys used by a focused control
 (arrows, Backspace) stay with it.
