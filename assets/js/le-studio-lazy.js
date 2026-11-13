@@ -130,7 +130,7 @@
   if (!window.LEAgent) {
     var A = function () { return window.LEAgent; };
     var api = { __leStub: true, protocol: 1, headless: window.LE_AGENT_HEADLESS === true, paused: false, rev: 0 };
-    ['help', 'begin', 'end', 'state', 'apply', 'applyExternal', 'find', 'catalog', 'check', 'export', 'notes', 'resolveNote', 'result', 'load', 'save', 'toLink', 'command', 'configure']
+    ['help', 'begin', 'end', 'state', 'apply', 'applyExternal', 'find', 'catalog', 'check', 'export', 'notes', 'resolveNote', 'result', 'load', 'save', 'toLink', 'command', 'configure', 'analyze', 'bulk']
       .forEach(function (k) { api[k] = later('agentui', A, k); });
     api.on = function (name, fn) {
       var off = null, dead = false;

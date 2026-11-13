@@ -1998,18 +1998,30 @@
   };
   /* Files for raw.open and hdr.merge: a File or Blob, a data: URI, or a path the person (or the command line) resolves. */
   var HERE = (function () { var el = document.querySelector('script[src*="le-agent.js"]'); return el ? el.src.replace(/le-agent\.js.*$/, '') : '../assets/js/'; })();
+  /* Operations are plain data, so a File cannot ride in one: LEAgent.file(blob, name) keeps it and answers with a short reference
+     ("file:3") to put in the operation. The last 16 are kept. */
+  var FILES = {}, fileOrder = [], fileN = 0;
+  function fileRef(blob, name) {
+    if (!(typeof Blob !== 'undefined' && blob instanceof Blob)) return null;
+    var k = 'file:' + (++fileN);
+    FILES[k] = { blob: blob, name: String(name || blob.name || 'photo') };
+    fileOrder.push(k);
+    if (fileOrder.length > 16) delete FILES[fileOrder.shift()];
+    return k;
+  }
   function fileOf(v, name, path) {
     var named = function (b, n) { n = String(n || b.name || 'photo').replace(/[^\w .()-]/g, '_').slice(0, 100); try { return new File([b], n, { type: b.type || '' }); } catch (e) { b.name = n; return b; } };
     if (typeof Blob !== 'undefined' && v instanceof Blob) return Promise.resolve(named(v, name));
+    if (typeof v === 'string' && /^file:\d+$/.test(v)) return FILES[v] ? Promise.resolve(named(FILES[v].blob, name || FILES[v].name)) : Promise.reject(err('invalid', 'The file reference ' + v + ' is no longer kept. Pass the file to LEAgent.file() again.', path));
     if (isObj(v) && typeof v.data === 'string') return fileOf(v.data, v.name || name, path);
-    if (typeof v !== 'string' || !v) return Promise.reject(err('invalid', 'Give the file as a data: URI, a File, or a path next to the design.', path));
+    if (typeof v !== 'string' || !v) return Promise.reject(err('invalid', 'Give the file as a data: URI, a reference from LEAgent.file(blob, name), or a path next to the design.', path));
     if (/^data:/i.test(v)) { if (v.length > 140e6) return Promise.reject(err('too-large', 'This file is too large to pass as a data: URI.', path)); return fetch(v).then(function (r) { return r.blob(); }).then(function (b) { return named(b, name); }); }
     if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return Promise.reject(err('invalid', 'Files are not fetched from the network. Give a data: URI or a local path.', path));
     var rs = resolver();
     return Promise.resolve(rs ? rs(v) : null).then(function (b) { if (!b) throw err('invalid', 'The file ' + quote(v) + ' was not provided.', path); return named(b, name || v.split('/').pop()); });
   }
   function rawLib(path) {
-    return LE.lazy(HERE + 'raw/le-raw-layer.js').then(function () { return LE.rawLayer.ready(); }).then(function () { return LE.raw; }, function () { throw err('unsupported', 'RAW and HDR support could not be loaded.', path); });
+    return (LE.rawLayer ? Promise.resolve() : LE.lazy(HERE + 'raw/le-raw-layer.js')).then(function () { return LE.rawLayer.ready(); }).then(function () { return LE.raw; }, function () { throw err('unsupported', 'RAW and HDR support could not be loaded.', path); });
   }
   /* The result of LE.raw.open / LE.hdr.mergeFiles joins the batch: its assets, then a photo layer fitted to the page. */
   function rawPlace(W, op, res, path) {
@@ -2076,7 +2088,7 @@
   /* map.generate: depth, face landmarks or person segments for a photo layer, made on this device (LE.maps) and kept in layer.maps. */
   OPS['map.generate'] = function (W, op, path, B) {
     var hit = findLayer(W, String(op.layer), op.page, path + '/layer', B), c = C();
-    return LE.lazy(HERE + 'le-maps.js').then(function () { return LE.maps; }, function () { throw err('unsupported', 'The maps module could not be loaded.', path); }).then(function (mp) {
+    return (LE.maps && LE.maps.ops ? Promise.resolve() : LE.lazy(HERE + 'le-maps.js')).then(function () { return LE.maps; }, function () { throw err('unsupported', 'The maps module could not be loaded.', path); }).then(function (mp) {
       return mp.ops.run({ op: 'map.generate', kind: op.kind, model: op.model, force: op.force === true, maxSide: op.maxSide }, {
         layer: hit.layer, quiet: HEADLESS, confirmed: HEADLESS && op.download === true,
         image: function (layer) { var rec = c && c.scene._assets ? c.scene._assets[layer.src] : null; return Promise.resolve(rec && rec.ready ? rec.ready : rec).then(function (x) { x = x || rec; return x ? x.canvas || x.image || null : null; }, function () { return null; }); },
@@ -2132,6 +2144,18 @@
       return out;
     }, function (e) { return fail(e.code || 'unsupported', e.message); });
   };
+  /* Template fields (docs/VARIABLES.md): the operations live in the variables module, which loads on first use. */
+  function varOp(name) { return function (W, op, path) { if (!LE.varBoot) throw err('unsupported', 'Template fields are not available on this page.', path); return LE.varBoot.ready().then(function (V) { return V.agent.op(name, W, op, path, err); }); }; }
+  OPS['variables.set'] = varOp('variables.set');
+  OPS['values.set'] = varOp('values.set');
+  OPS['bulk.create'] = varOp('bulk.create');
+  OP_ALIASES.variables = 'variables.set'; OP_ALIASES.values = 'values.set'; OP_ALIASES.bulk = 'bulk.create';
+  function bulk(o) {
+    o = o || {};
+    if (!o.output || o.output === 'pages') return apply([Object.assign({}, o, { op: 'bulk.create' })], {});
+    if (!LE.varBoot) return Promise.resolve(fail('unsupported', 'Template fields are not available on this page.'));
+    return LE.varBoot.ready().then(function (V) { var c = C(); syncP(); return V.agent.bulk(o, project(), { asset: function (id) { return c && c.S.mem[id] ? c.S.mem[id].canvas : LE.project.assetRecord(id).then(function (r) { return r && r.blob; }); } }); }).then(function (r) { return wrap(r); }, function (e) { return fail(e && e.code || 'invalid', String(e && e.message || e).slice(0, 300)); });
+  }
   /* state(): the theme and light or dark choice the person sees, read-only. */
   var stateBase = state;
   state = function (o) {
@@ -2141,7 +2165,7 @@
     });
   };
   var commandBase = command;
-  command = function (o) { return isObj(o) && o.op === 'analyze' ? analyze(o.target != null ? o.target : o.layer, o) : commandBase(o); };
+  command = function (o) { return isObj(o) && o.op === 'analyze' ? analyze(o.target != null ? o.target : o.layer, o) : isObj(o) && (o.op === 'bulk' || o.op === 'bulk.create') && o.output && o.output !== 'pages' ? bulk(o) : commandBase(o); };
   var helpBase = help;
   help = function () {
     var r = helpBase();
@@ -2156,10 +2180,15 @@
       r.operations['fx.reorder'] = { example: { op: 'fx.reorder', layer: 'photo', id: 'grain', index: 0 }, fields: 'Moves an entry inside its stack; the first runs first.' };
       r.operations['mask.set'] = { example: { op: 'mask.set', layer: 'photo', fx: 'gaussian-blur', mask: { parts: [{ kind: 'radial', cx: 0.5, cy: 0.4, rx: 0.3, ry: 0.3, feather: 0.5, invert: true }] } }, fields: 'Without fx it sets the layer mask; mask: null clears.' };
       r.operations['adjust.add'] = { example: { op: 'adjust.add', fx: [{ type: 'contrast', p: { amount: 15 } }], name: 'Grade', above: 'photo' }, fields: 'An adjustment layer over the page (or x, y, w, h); clip: true limits it to the layer below.' };
+      r.methods['bulk({ rows | csv, output, name, photos, dryRun })'] = 'One design per row of a list: output "pages" adds pages (one undo step); "png", "jpg", "pdf" or "designs" answers with a zip.';
+      r.operations['variables.set'] = { example: { op: 'variables.set', variables: [{ key: 'name', label: 'Name', required: true }, { key: 'price', type: 'number' }] }, fields: 'Defines the template fields of the design. rename: { from, to } renames one everywhere. Layers use them through bind or {{key}} in text.' };
+      r.operations['values.set'] = { example: { op: 'values.set', values: { name: 'Ana', price: '12.50' }, page: 'all' }, fields: 'Fills the fields on one page or all (default).' };
+      r.operations['bulk.create'] = { example: { op: 'bulk.create', rows: [{ name: 'Ana' }, { name: 'Ben' }], page: 0 }, fields: 'One page per row after the template page, in this batch.' };
+      r.methods['file(blob, name)'] = 'Keeps a File or Blob and answers with a reference ("file:1") for raw.open and hdr.merge.';
       r.methods['catalog("raw")'] = 'RAW formats this copy opens and the develop presets.';
       r.operations['fx.call'] = { example: { op: 'fx.call', layer: 'product', name: 'composite.stage', args: { preset: 'soft-table-reflection' } }, fields: 'Runs a registered helper that answers with effect operations (presets, looks, staging, retouch strokes, relighting). catalog("fx", "actions") lists the names and their args.' };
       r.operations['map.generate'] = { example: { op: 'map.generate', layer: 'photo', kind: 'depth' }, fields: 'kind: depth, faces or segments. Made on this device and kept in layer.maps; depth and face masks and the relight effects need them. A model may have to download first (the person is asked).' };
-      r.operations['raw.open'] = { example: { op: 'raw.open', file: 'data:application/octet-stream;base64,…', name: 'IMG_0001.dng' }, fields: 'Adds a RAW photo as a developed layer. file: a data: URI, a File, or a local path; name gives the format. x, y, w, id, page optional.' };
+      r.operations['raw.open'] = { example: { op: 'raw.open', file: 'data:application/octet-stream;base64,…', name: 'IMG_0001.dng' }, fields: 'Adds a RAW photo as a developed layer. file: a data: URI, a reference from LEAgent.file(blob, name), or a local path; name gives the format. x, y, w, id, page optional.' };
       r.operations['hdr.merge'] = { example: { op: 'hdr.merge', files: ['a.jpg', 'b.jpg', 'c.jpg'], deghost: 'medium' }, fields: '2 to 9 bracketed photos of one scene, all RAW or all JPEG. deghost: off, low, medium, high.' };
       r.operations['raw.settings'] = { example: { op: 'raw.settings', layer: 'raw', preset: 'night-city' }, fields: 'Develop settings onto a RAW or HDR layer: preset (catalog("raw")), from (another layer) or settings. whiteBalance: false keeps the layer\'s own.' };
       r.operations['raw.autoTone'] = { example: { op: 'raw.autoTone', layer: 'raw' }, fields: 'Sets exposure, highlights, shadows, whites and blacks from the picture.' };
@@ -2172,7 +2201,7 @@
     version: VERSION, protocol: PROTOCOL, headless: HEADLESS, codes: Object.keys(CODES),
     help: help, begin: begin, end: end, state: state, apply: apply, applyExternal: applyExternal,
     find: function (q) { return Promise.resolve(findApi(q)); }, catalog: catalog, check: check, export: exportImage,
-    analyze: analyze, notes: notes, resolveNote: resolveNote, on: on, result: result, load: load, save: save, toLink: toLink, command: command,
+    analyze: analyze, bulk: bulk, file: fileRef, notes: notes, resolveNote: resolveNote, on: on, result: result, load: load, save: save, toLink: toLink, command: command,
     configure: function (o) { o = o || {}; if (typeof o.resolve === 'function') A.config.resolve = o.resolve; if (o.speed) person.setSpeed(o.speed); return { ok: true }; },
     get paused() { return A.paused; },
     get rev() { return A.rev; },

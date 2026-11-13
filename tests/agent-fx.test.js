@@ -6,6 +6,7 @@ const cases = {};
 async function ready(page) { await page.waitForFunction(() => window.LEAgent && window.LEStudio && LEAgent._internal.A.ready); }
 async function session(browser, base, h) {
   const page = await h.open(browser, base, '/studio/', 'desktop');
+  await h.need(page, ['agentui']);
   await ready(page);
   const p = page.evaluate(() => LEAgent.begin({ name: 'Test agent', task: 'Grading a photo' }));
   await page.click('.sxa-ask [data-yes]');
@@ -189,6 +190,103 @@ cases['headless: a design with effects loads, takes expert operations, and expor
   h.assert(out.pages[0].layers[0].fx.length === 2 && out.pages[0].layers[0].fx[0].type === 'exposure' && out.pages[0].layers[0].fx[0].p.ev === -1.5, 'the saved design carries the stack: ' + JSON.stringify(out.pages[0].layers[0].fx));
   h.assert(page.errors.length === 0, page.errors.join('\n'));
   await ctx.close();
+};
+
+cases['end to end: a photo is cut out, staged as a product with one helper call, graded with a preset and exported; undo walks back'] = async ({ browser, base, h }) => {
+  const page = await session(browser, base, h);
+  const png = await photo(page);
+  await page.evaluate((op) => LEAgent.apply([{ op: 'page.background', background: '#f2efe8' }, op]), HERO(png));
+  const mean = (url) => page.evaluate(async (u) => { const im = new Image(); im.src = u; await im.decode(); const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const x = cv.getContext('2d'); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, cv.width, cv.height).data; let n = 0, sum = 0; for (let i = 0; i < d.length; i += 4) { sum += d[i] + d[i + 1] + d[i + 2]; n++; } return sum / n / 3; }, url);
+  /* The cut-out model is stubbed: its result is a disc mask stored on the layer, as the background remover leaves it. */
+  await page.evaluate(() => { const m = document.createElement('canvas'); m.width = 96; m.height = 64; const x = m.getContext('2d'); x.fillStyle = '#fff'; x.beginPath(); x.ellipse(48, 30, 30, 24, 0, 0, 7); x.fill(); LEStudio.scene.addAsset('stub-cutout', m); LEStudio.scene.update('hero', { cutout: { asset: 'stub-cutout', feather: 1 } }); });
+  const d0 = await depth(page);
+  const before = await mean((await page.evaluate(() => LEAgent.export({ format: 'png', scale: 0.5 }))).dataUrl);
+  const staged = await page.evaluate(() => LEAgent.apply([{ op: 'fx.call', layer: 'Beach photo', name: 'composite.stage', args: { preset: 'soft-table-reflection' } }], { label: 'Stage the product' }));
+  h.assert(staged.ok && staged.results[0].applied >= 2, 'composite.stage answered with operations and they were applied: ' + JSON.stringify(staged).slice(0, 400));
+  const presetId = await page.evaluate(() => LE.fx.grade.presets[0].id);
+  const graded = await page.evaluate((id) => LEAgent.apply([{ op: 'fx.call', layer: 'hero', name: 'grade.preset', args: { id } }]), presetId);
+  h.assert(graded.ok && graded.results[0].applied >= 1, 'grade.preset: ' + JSON.stringify(graded).slice(0, 300));
+  const s2 = await stackOf(page, 'hero');
+  const types = s2.fx.map((e) => e.type);
+  h.assert(types.length >= 3 && types.some((t) => /shadow|reflection/.test(t)), 'the layer carries shadows or a reflection and the grade: ' + types.join());
+  const after = await mean((await page.evaluate(() => LEAgent.export({ format: 'png', scale: 0.5 }))).dataUrl);
+  h.assert(Math.abs(after - before) > 0.5, 'the export changed: ' + before.toFixed(2) + ' to ' + after.toFixed(2));
+  h.assert.equal(await depth(page) - d0, 2, 'two batches, two undo steps');
+  await page.evaluate(() => LEStudio.scene.undo());
+  const s1 = await stackOf(page, 'hero');
+  await page.evaluate(() => LEStudio.scene.undo());
+  const s0 = await stackOf(page, 'hero');
+  h.assert(s1.fx.length < s2.fx.length && s1.fx.length >= 2 && s0.fx.length === 0, 'undo walks back through the grade, then the staging: ' + [s2.fx.length, s1.fx.length, s0.fx.length]);
+  h.assert.noErrors(page);
+};
+
+cases['helpers, maps, RAW and template fields through the agent: fx.call is allow-listed; map.generate, raw.*, catalog("raw"), variables and appearance answer'] = async ({ browser, base, h }) => {
+  const page = await session(browser, base, h);
+  const png = await photo(page);
+  await page.evaluate((op) => LEAgent.apply([op, { op: 'add', layer: { id: 'label', type: 'text', text: 'Hello {{name}}', x: 100, y: 760, size: 80 } }]), HERO(png));
+  await page.addScriptTag({ url: base + '/tools/dng-synth/dng-synth.js' });
+  const r = await page.evaluate(async () => {
+    const one = (op) => Promise.race([LEAgent.apply([op]), new Promise((res) => setTimeout(() => res({ ok: false, timedOut: op.op + ' ' + (op.name || '') }), 20000))]);
+    const out = {};
+    const step = (label, pr) => Promise.race([pr, new Promise((res, rej) => setTimeout(() => rej(new Error('stuck at ' + label)), 20000))]);
+    out.unknown = await one({ op: 'fx.call', layer: 'hero', name: 'constructor' });
+    out.noName = await one({ op: 'fx.call', layer: 'hero' });
+    out.look = await one({ op: 'fx.call', layer: 'hero', name: 'creative.look', args: { id: Object.keys(LE.fx.creative.presets)[0] } });
+    out.badLook = await one({ op: 'fx.call', layer: 'hero', name: 'creative.look', args: { id: 'nope' } });
+    out.heal = await one({ op: 'fx.call', layer: 'hero', name: 'retouch.heal', args: { x: 0.4, y: 0.5, r: 0.03 } });
+    out.estimate = await one({ op: 'fx.call', layer: 'hero', name: 'relight.estimate' });
+    out.auto = await one({ op: 'fx.call', layer: 'hero', name: 'grade.auto' });
+    out.actions = (await step('catalog actions', LEAgent.catalog('fx', 'actions'))).actions.filter((a) => a.kind === 'call').map((a) => a.id);
+    /* map.generate with the model stubbed: the op stores what the maps module answers. */
+    if (!LE.maps) await step('maps module', LE.lazy(new URL('../assets/js/le-maps.js', location.href).href));
+    const run0 = LE.maps.ops.run;
+    LE.maps.ops.run = async (op, o) => { const c = document.createElement('canvas'); c.width = 32; c.height = 24; c.getContext('2d').fillRect(0, 0, 32, 24); const img = await o.image(o.layer); const id = await o.store(c, 'depth.png'); return { ok: true, kind: op.kind, layer: o.layer.id, asset: id, maps: { depth: { asset: id, width: 32, height: 24, model: 'stub', version: 1 } }, info: { image: !!img } }; };
+    out.map = await one({ op: 'map.generate', layer: 'Beach photo', kind: 'depth' });
+    LE.maps.ops.run = async () => ({ ok: false, code: 'unsupported', message: 'This device cannot make this map.', canForce: true });
+    out.mapNo = await one({ op: 'map.generate', layer: 'hero', kind: 'faces' });
+    LE.maps.ops.run = run0;
+    out.maps = LEStudio.scene.layer('hero').maps;
+    out.mapAsset = !!(out.maps && out.maps.depth && LEStudio.scene._assets[out.maps.depth.asset]);
+    /* RAW: a synthetic DNG in, a developed layer out; settings and auto tone are ordinary operations. */
+    const S = LEDngSynth, sc = S.scene(256, 192, 'natural', { sigma: 0.8 }), cam = S.cameraFor();
+    const mos = S.mosaic(sc, { bits: 14, black: 256, white: 16383, cam, headroom: 0.9 });
+    const bytes = S.writeDNG({ width: 256, height: 192, mosaic: mos, bits: 14, black: 256, white: 16383, cam, compression: 'lj92', tile: [128, 128] });
+    out.ref = LEAgent.file(new File([bytes], 'synthetic.dng', { type: 'image/x-adobe-dng' }));
+    out.raw = await one({ op: 'raw.open', file: out.ref, id: 'dng' });
+    const L = () => LEStudio.scene.layer('dng');
+    out.rawLayer = L() ? { raw: !!L().raw, fx: (L().fx || []).map((e) => e.type), w: L().w } : null;
+    out.cat = await step('catalog raw', LEAgent.catalog('raw'));
+    out.settings = await one({ op: 'raw.settings', layer: 'dng', preset: out.cat.ok && out.cat.presets[0] ? out.cat.presets[0].id : 'x' });
+    out.notRaw = await one({ op: 'raw.settings', layer: 'hero', preset: 'x' });
+    out.tone = await one({ op: 'raw.autoTone', layer: 'dng' });
+    out.hdrBad = await one({ op: 'hdr.merge', files: ['only-one.jpg'] });
+    /* Template fields and the appearance in state(). */
+    out.vars = await one({ op: 'variables.set', variables: [{ key: 'name', label: 'Name' }] });
+    out.vals = await one({ op: 'values.set', values: { name: 'Ana' } });
+    const st = await step('state', LEAgent.state());
+    out.appearance = 'appearance' in st; out.stateOk = st.ok !== false;
+    const help = LEAgent.help();
+    out.help = ['fx.call', 'map.generate', 'raw.open', 'hdr.merge', 'raw.settings', 'raw.autoTone', 'variables.set', 'values.set', 'bulk.create'].filter((k) => !help.operations[k]);
+    out.helpSize = JSON.stringify(help).length;
+    return out;
+  });
+  h.assert(r.unknown.ok === false && /No helper named/.test(r.unknown.errors[0].message) && r.noName.ok === false, 'only registered helpers can be called: ' + JSON.stringify(r.unknown.errors).slice(0, 200));
+  h.assert(r.look.ok && r.look.results[0].applied >= 1 && r.badLook.ok === false && /Known:/.test(r.badLook.errors[0].message), 'creative.look: ' + JSON.stringify([r.look.results, r.badLook.errors]).slice(0, 300));
+  h.assert(r.heal.ok && r.heal.results[0].applied === 1, 'retouch.heal: ' + JSON.stringify(r.heal).slice(0, 300));
+  h.assert(r.estimate.ok && r.estimate.results[0].applied === 0 && r.estimate.results[0].data && typeof r.estimate.results[0].data.azimuth === 'number', 'relight.estimate answers with data and changes nothing: ' + JSON.stringify(r.estimate).slice(0, 300));
+  h.assert(r.auto.ok, 'a button action is callable too (grade.auto): ' + JSON.stringify(r.auto).slice(0, 200));
+  ['grade.preset', 'creative.look', 'composite.stage', 'composite.match', 'retouch.heal', 'retouch.liquify', 'relight.portrait', 'relight.retime', 'relight.estimate'].forEach((id) => h.assert(r.actions.indexOf(id) >= 0, 'helper listed: ' + id));
+  h.assert(r.map.ok && r.maps && r.maps.depth.model === 'stub' && r.mapAsset && r.map.results[0].info.image === true, 'map.generate stores the map and its asset: ' + JSON.stringify(r.map).slice(0, 300));
+  h.assert(r.mapNo.ok === false && r.mapNo.code === 'unsupported', 'an unsupported device is reported: ' + JSON.stringify(r.mapNo).slice(0, 200));
+  h.assert(r.raw.ok && r.rawLayer && r.rawLayer.raw && r.rawLayer.fx.indexOf('develop.basic') >= 0, 'raw.open adds a developed layer: ' + JSON.stringify([r.raw, r.rawLayer]).slice(0, 400));
+  h.assert(r.cat.ok && r.cat.formats && r.cat.presets.length >= 1, 'catalog("raw"): ' + JSON.stringify(r.cat).slice(0, 200));
+  h.assert(r.settings.ok && r.notRaw.ok === false && /not a RAW/.test(r.notRaw.errors[0].message), 'raw.settings: ' + JSON.stringify([r.settings, r.notRaw.errors]).slice(0, 300));
+  h.assert(r.tone.ok && typeof r.tone.results[0].values.exposure === 'number', 'raw.autoTone: ' + JSON.stringify(r.tone).slice(0, 300));
+  h.assert(r.hdrBad.ok === false && /2 to 9/.test(r.hdrBad.errors[0].message), 'hdr.merge checks its files');
+  h.assert(r.vars.ok && r.vals.ok, 'variables.set and values.set: ' + JSON.stringify([r.vars, r.vals]).slice(0, 300));
+  h.assert(r.appearance && r.stateOk, 'state() carries appearance');
+  h.assert(r.help.length === 0 && r.helpSize < 48000, 'help lists the new operations: missing ' + r.help + ', size ' + r.helpSize);
+  h.assert.noErrors(page);
 };
 
 /* The command line takes the same operations (through LE.link.applyOps in a headless page) and renders the effects. */
