@@ -2268,6 +2268,7 @@
       '<div class="sxd-linkrow"><input class="sx-input" readonly aria-label="Template link" value="Making the link…"><button type="button" class="btn btn-gold btn-sm" data-copy disabled>' + c.ic('copy') + '<span>Copy link</span></button></div>' +
       '<div class="sxd-qr" aria-live="polite"></div>' +
       '<div class="sxd-actions sxd-actions-split"><button type="button" class="btn btn-ghost btn-sm" data-share hidden>' + c.ic('share') + '<span>Share…</span></button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-embed disabled>' + c.ic('copy') + '<span>Copy embed code</span></button>' +
       '<button type="button" class="btn btn-sm" data-file>' + c.ic('download') + '<span>Download design file</span></button></div>' +
       (limited && limited.status === 'limited' ? '<p class="sx-note is-muted">This browser cannot compress links, so they are longer.</p>' : '') +
       '</div>');
@@ -2281,6 +2282,14 @@
     var qr = box.querySelector('.sxd-qr');
     var current = null;
     fileBtn.onclick = function () { c.closeModal(); saveDialog(c); };
+    /* The read-only viewer for a blog or a docs page (docs/EMBED.md): the same link, on /embed/ instead of /studio/. */
+    var embed = box.querySelector('[data-embed]');
+    embed.onclick = function () {
+      if (!current || !current.fits) return;
+      var pg = p.pages[0], high = Math.round(464 * pg.height / pg.width) + 76;
+      var code = '<iframe src="' + esc(current.url.replace('/studio/#d=', '/embed/#d=')) + '" title="' + esc(p.name) + '" width="480" height="' + high + '" style="border:0;max-width:100%" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>';
+      copyText(code).then(function () { c.toast('Embed code copied'); }, function () { c.toast('Could not copy the embed code'); });
+    };
     var sh = support('design.share');
     var canShare = sh ? (sh.status === 'ok') : !!navigator.share;
     if (canShare && navigator.share) {
@@ -2307,6 +2316,7 @@
         dropped.hidden = !link.dropped.length;
         dropped.textContent = link.dropped.length ? 'Left out: ' + link.dropped.join(', ') + '.' : '';
         copy.disabled = !link.fits;
+        embed.disabled = !link.fits;
         copy.classList.toggle('btn-gold', link.fits);
         fileBtn.classList.toggle('btn-gold', !link.fits);
         share.disabled = !link.fits;

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design viewer · LocalEditor</title>
+<meta name="description" content="A small read-only viewer for a LocalEditor design. Page through it, then open it in the studio to edit. Nothing is uploaded.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://localeditor.net/embed/">
+<link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/css/embed.css">
+<script src="../assets/js/le-embed.js" defer></script>
+</head>
+<body class="le-built">
+<main class="em" id="em" aria-busy="true">
+  <div class="em-stage" id="em-stage" tabindex="0" role="group" aria-roledescription="design viewer" aria-labelledby="em-title" aria-describedby="em-status">
+    <p class="em-msg" id="em-msg" role="status">Loading the design…</p>
+  </div>
+  <div class="em-bar" id="em-bar">
+    <div class="em-nav" id="em-nav" hidden>
+      <button type="button" class="em-step" id="em-prev" aria-label="Previous page"><span aria-hidden="true">‹</span></button>
+      <p class="em-status" id="em-status" aria-live="polite"></p>
+      <button type="button" class="em-step" id="em-next" aria-label="Next page"><span aria-hidden="true">›</span></button>
+    </div>
+    <h1 class="em-title" id="em-title">Design viewer</h1>
+    <a class="btn btn-primary btn-sm em-open" id="em-open" href="../studio/" target="_blank" rel="noopener" hidden>Open in the studio to edit</a>
+  </div>
+  <p class="em-copy" id="em-copy" hidden>
+    <label for="em-link">This page cannot open a new tab. Copy this address and open it in your browser:</label>
+    <input id="em-link" class="em-link" type="text" readonly>
+  </p>
+</main>
+<noscript><p class="em-msg">This viewer needs JavaScript. Open the design in the studio instead.</p></noscript>
+</body>
+</html>

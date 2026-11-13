@@ -396,6 +396,8 @@ A design without its photos can travel in a link: `https://localeditor.net/studi
 - Opening a link shows a "Shared template" sheet (name, pages, preview with empty slots, "Originally by …") with **Use this template** / **Cancel**. Using it adds a new design; the open one stays in Your designs. A damaged or oversized link shows a message and changes nothing.
 - QR codes are offered for links up to 1,200 characters (denser codes do not scan reliably from a screen).
 
+- The same payload opens read-only at `/embed/#d=<payload>`: a small viewer for a blog or docs page with an "Open in the studio to edit" button (`docs/EMBED.md`). The Share sheet copies the embed code.
+
 Measured on the examples (link length, characters, Chromium deflate): hello-world 360, quote-card 686, collage 710, summer sale 810, YouTube thumbnail 820, sale banner 1,006, event invite 1,110, carousel (4 pages) 1,137, travel story 1,154, certificate 1,322.
 
 ## API
