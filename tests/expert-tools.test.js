@@ -237,7 +237,7 @@ cases['handles: point, ring, ellipse and band drag their parameters in one undo 
   h.assert.noErrors(page);
 };
 
-cases['handles: angle arm, direction line, shadow tip and mesh; touch targets; follow the develop panel'] = async ({ browser, base, h }) => {
+cases['handles: angle arm and direction line; touch targets; follow the develop panel'] = async ({ browser, base, h }) => {
   const page = await studio(browser, base);
   await expert(page);
   const box = await page.evaluate(() => window.LE.expert.canvas._box(window.LEStudio.targetImage().id));
@@ -253,30 +253,6 @@ cases['handles: angle arm, direction line, shadow tip and mesh; touch targets; f
   await pull(page, h, '0:t', { x: c.x + 60, y: c.y - 60 });
   p = await P(page);
   h.assert(near(p.angle, 45, 1.5) && near(p.distance, 2 * Math.hypot(60, 60) / zoom, 4), 'line: direction and length from the tip: ' + p.angle + ', ' + p.distance + ' (zoom ' + zoom + ')');
-  /* shadow tip */
-  await addFx(page, 'cast-shadow', { opacity: 0.5, direction: 0, elevation: 45, ground: 0.5, height: 200, anchor: { x: 0.5, y: 0.5 } });
-  await pull(page, h, '0:t', { x: c.x - 100, y: c.y + 50 });
-  p = await P(page);
-  const len = Math.hypot(100, 50 / 0.5) / zoom;
-  h.assert(near(p.direction, 135, 2) && near(p.elevation, Math.atan2(200, len) * 180 / Math.PI, 1.5), 'shadow tip: direction and light elevation: ' + p.direction + ', ' + p.elevation);
-  await pull(page, h, 'p:anchor', { dx: 30, dy: 0 });
-  h.assert(near((await P(page)).anchor.x, 0.5 + 30 / box.w, 0.01), 'the contact point moves too');
-  /* contact line and width */
-  await addFx(page, 'floating-shadow', { opacity: 0.5, width: 200, anchor: { x: 0.5, y: 0.6 } });
-  await pull(page, h, '0:t', { dx: 30, dy: 0 });
-  h.assert(near((await P(page)).width, 200 + 60 / zoom, 6), 'floating shadow: the end of the contact line sets the width: ' + (await P(page)).width);
-  await addFx(page, 'floor-reflection', { opacity: 0.4, anchor: { x: 0.5, y: 0.6 } });
-  h.assert(await page.locator('.xp-handles line').count() === 1 && await page.locator('.xp-handles .xp-h-pt').count() === 1, 'floor reflection: a contact line through its anchor');
-  await pull(page, h, 'p:anchor', { dx: 0, dy: 40 });
-  h.assert(near((await P(page)).anchor.y, 0.6 + 40 / box.h, 0.01), 'and the line moves with it');
-  /* mesh */
-  await addFx(page, 'mesh-warp', {});
-  h.assert.equal(await page.locator('.xp-handles .xp-h-pt').count(), 16, 'mesh: sixteen points');
-  h.assert.equal(await page.locator('.xp-handles line').count(), 24, 'joined along rows and columns');
-  const m0 = await page.evaluate(() => window.LE.fx.defaults('mesh-warp').p11), m12 = await page.evaluate(() => window.LE.fx.defaults('mesh-warp').p12);
-  await pull(page, h, 'p:p11', { dx: 25, dy: 15 });
-  p = await P(page);
-  h.assert(near(p.p11.x, m0.x + 25 / box.w, 0.01) && near(p.p11.y, m0.y + 15 / box.h, 0.01) && (p.p12 === undefined || (p.p12.x === m12.x && p.p12.y === m12.y)), 'mesh: one point moves, the others stay: ' + JSON.stringify(p.p11));
   /* 44 px targets */
   const hit = await page.evaluate(() => { const r = document.querySelector('.xp-handles .xp-h-pt .xp-h-hit').getBoundingClientRect(); return Math.min(r.width, r.height); });
   h.assert(hit >= 44, 'handles have 44 px targets: ' + hit);
@@ -289,6 +265,40 @@ cases['handles: angle arm, direction line, shadow tip and mesh; touch targets; f
   await page.locator('#xp-right .xp-fxpanel[data-fx="vignette"] [data-param="amount"] .xp-slider-track, #xp-right .xp-fxpanel[data-fx="vignette"] [data-param="amount"]').first().click();
   await page.waitForTimeout(150);
   h.assert.equal(await page.locator('.xp-handles .xp-h-pt[data-id="p:center"]').count(), 1, 'touching the effect in the develop panel shows its handles');
+  h.assert.noErrors(page);
+};
+
+cases['handles: shadow tip, contact line and mesh'] = async ({ browser, base, h }) => {
+  const page = await studio(browser, base);
+  await expert(page);
+  const box = await page.evaluate(() => window.LE.expert.canvas._box(window.LEStudio.targetImage().id));
+  const zoom = await page.evaluate(() => window.LEStudio.scene.zoom());
+  const c = { x: box.x + box.w / 2, y: box.y + box.h / 2 };
+  let p;
+  /* shadow tip */
+  await addFx(page, 'cast-shadow', { opacity: 0, direction: 0, elevation: 45, ground: 0.5, height: 200, anchor: { x: 0.5, y: 0.5 } });
+  await pull(page, h, '0:t', { x: c.x - 100, y: c.y + 50 });
+  p = await P(page);
+  const len = Math.hypot(100, 50 / 0.5) / zoom;
+  h.assert(near(p.direction, 135, 2) && near(p.elevation, Math.atan2(200, len) * 180 / Math.PI, 1.5), 'shadow tip: direction and light elevation: ' + p.direction + ', ' + p.elevation);
+  await pull(page, h, 'p:anchor', { dx: 30, dy: 0 });
+  h.assert(near((await P(page)).anchor.x, 0.5 + 30 / box.w, 0.01), 'the contact point moves too');
+  /* contact line and width */
+  await addFx(page, 'floating-shadow', { opacity: 0, width: 200, anchor: { x: 0.5, y: 0.6 } });
+  await pull(page, h, '0:t', { dx: 30, dy: 0 });
+  h.assert(near((await P(page)).width, 200 + 60 / zoom, 6), 'floating shadow: the end of the contact line sets the width: ' + (await P(page)).width);
+  await addFx(page, 'floor-reflection', { opacity: 0, anchor: { x: 0.5, y: 0.6 } });
+  h.assert(await page.locator('.xp-handles line').count() === 1 && await page.locator('.xp-handles .xp-h-pt').count() === 1, 'floor reflection: a contact line through its anchor');
+  await pull(page, h, 'p:anchor', { dx: 0, dy: 40 });
+  h.assert(near((await P(page)).anchor.y, 0.6 + 40 / box.h, 0.01), 'and the line moves with it');
+  /* mesh */
+  await addFx(page, 'mesh-warp', {});
+  h.assert.equal(await page.locator('.xp-handles .xp-h-pt').count(), 16, 'mesh: sixteen points');
+  h.assert.equal(await page.locator('.xp-handles line').count(), 24, 'joined along rows and columns');
+  const m0 = await page.evaluate(() => window.LE.fx.defaults('mesh-warp').p11), m12 = await page.evaluate(() => window.LE.fx.defaults('mesh-warp').p12);
+  await pull(page, h, 'p:p11', { dx: 25, dy: 15 });
+  p = await P(page);
+  h.assert(near(p.p11.x, m0.x + 25 / box.w, 0.01) && near(p.p11.y, m0.y + 15 / box.h, 0.01) && (p.p12 === undefined || (p.p12.x === m12.x && p.p12.y === m12.y)), 'mesh: one point moves, the others stay: ' + JSON.stringify(p.p11));
   h.assert.noErrors(page);
 };
 
