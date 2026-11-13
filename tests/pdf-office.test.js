@@ -11,6 +11,7 @@ const SHOTS = process.env.OFFICE_SHOTS || '';
 
 async function studio(h, browser, base, vp, opts) {
   const page = await h.open(browser, base, '/pdf-studio/', vp || 'desktop', opts);
+  await h.need(page, ['office', 'bulk', 'security']);
   page.logs = [];
   page.requests = [];
   page.on('console', (m) => page.logs.push(m.type() + ': ' + m.text()));
@@ -36,6 +37,7 @@ async function shot(page, name) { if (SHOTS) await page.screenshot({ path: path.
    Kalam lost most glyphs, and Sacramento, Space Grotesk, Bebas Neue, Dancing Script and IBM Plex Mono could not embed. */
 async function fontCase(h, browser, base, part, parts) {
   const page = await h.open(browser, base, '/pdf-studio/');
+  await h.need(page, ['office', 'bulk', 'security']);
   await page.waitForFunction(() => window.LE && LE.pdf && LE.fonts);
   const res = await page.evaluate(async ([part, parts]) => {
     await LE.pdf.ready();
@@ -671,6 +673,7 @@ module.exports = {
 
   'studio: ?panel=office&job=compare opens the compare workbench': async ({ browser, base, h }) => {
     const page = await h.open(browser, base, '/pdf-studio/?panel=office&job=compare');
+    await h.need(page, ['office', 'bulk', 'security']);
     await page.waitForFunction(() => document.body.getAttribute('data-panel') === 'office' && document.querySelector('.po-work') && !document.querySelector('.po-work').hidden);
     h.assert.equal(await page.textContent('#po-work-title'), 'Compare two versions', 'job opened');
     h.assert.noErrors(page);

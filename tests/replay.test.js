@@ -41,6 +41,7 @@ const cases = {};
 
 cases['recorded timeline plays back as a video of about the requested length; doc unchanged'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['export']);
   await edits(page);
   const st = await page.evaluate(() => LEStudioExport.replay.stats(window.LEStudio));
   h.assert(st.steps >= 4, 'edits were recorded: ' + st.steps);
@@ -58,6 +59,7 @@ cases['recorded timeline plays back as a video of about the requested length; do
 
 cases['designs without a timeline build layer by layer; WebM is offered too'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['export']);
   await page.evaluate(() => {
     const c = window.LEStudio;
     c.newDesign(1080, 1350, 'Poster');
@@ -80,6 +82,7 @@ cases['designs without a timeline build layer by layer; WebM is offered too'] = 
 
 cases['timeline is capped by count and bytes and thins old steps'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['export']);
   const r = await page.evaluate(() => {
     const c = window.LEStudio, L = LEStudioExport.replay.limits;
     const keep = [L.maxSteps, L.maxBytes, L.coalesceMs];
@@ -107,6 +110,7 @@ cases['timeline is capped by count and bytes and thins old steps'] = async ({ br
 
 cases['without a recorder the replay is a zip of frames; the panel previews and downloads the video'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'phone');
+  await h.need(page, ['export']);
   const z = await page.evaluate(async () => {
     const r = await LEStudioExport.replay.export(window.LEStudio, { length: 6, hold: 0.5, frames: true, fps: 4 });
     const buf = new Uint8Array(await r.blob.arrayBuffer());

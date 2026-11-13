@@ -7,6 +7,7 @@ const FX = path.join(__dirname, 'fixtures', 'pdf-docs');
 
 async function studio(h, browser, base, vp) {
   const page = await h.open(browser, base, '/pdf-studio/', vp || 'desktop');
+  await h.need(page, ['docs']);
   page.setDefaultTimeout(30000);
   page.foreign = [];
   page.on('request', (r) => { const u = r.url(); if (!u.startsWith(base) && !/^(data|blob):/.test(u)) page.foreign.push(u); });

@@ -1,0 +1,110 @@
+/* Moved from studio.css (docs/LOADING.md): styles for this module's own elements; they load with it. */
+.sx-cp { display: grid; gap: 10px; padding: 2px 6px 8px; }
+.sx-cp-tabs { display: flex; gap: 6px; align-items: center; }
+.sx-cp-tabs .sx-seg { flex: 1; }
+.sx-cp-body { display: grid; gap: 12px; }
+.sx-cp-solid { display: grid; gap: 10px; }
+.sx-cp-sv { position: relative; height: 150px; border-radius: 10px; cursor: crosshair; touch-action: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08); }
+.sx-cp-knob { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.3); pointer-events: none; }
+.sx-cp-row { display: flex; align-items: center; gap: 10px; }
+.sx-cp-bars { flex: 1; display: grid; gap: 8px; }
+.sx-cp-hue, .sx-cp-alpha { position: relative; height: 14px; border-radius: 99px; cursor: pointer; touch-action: none; }
+.sx-cp-hue { background: linear-gradient(90deg, #f00, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00); }
+.sx-cp-alpha { background: repeating-conic-gradient(#D8D8D8 0 25%, #fff 0 50%) 50% / 10px 10px; }
+.sx-cp-alpha b { position: absolute; inset: 0; border-radius: inherit; }
+.sx-cp-hue i, .sx-cp-alpha i { position: absolute; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 1px 4px rgba(0, 0, 0, 0.3); pointer-events: none; }
+.sx-cp-sv:focus-visible, .sx-cp-hue:focus-visible, .sx-cp-alpha:focus-visible { box-shadow: var(--ring); }
+.sx-cp-prev { width: 36px; height: 36px; border-radius: 10px; flex: none; background: repeating-conic-gradient(#D8D8D8 0 25%, #fff 0 50%) 50% / 10px 10px; position: relative; }
+.sx-cp-prev i { position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14); }
+.sx-cp-eye { width: 40px; height: 40px; border: 1px solid var(--hair); }
+.sx-cp-in { display: flex; gap: 6px; align-items: center; }
+.sx-cp-in select { width: 72px; flex: none; height: 36px; padding: 0 6px; font-size: 12px; font-weight: 700; }
+.sx-cp-fields { flex: 1; display: flex; gap: 4px; min-width: 0; }
+.sx-cp-fields input { flex: 1; min-width: 0; height: 36px; padding: 0 6px; text-align: center; font: 600 13px ui-monospace, "SF Mono", Menlo, monospace; }
+.sx-cp-a { display: flex; align-items: center; gap: 2px; flex: none; }
+.sx-cp-a input { width: 48px; height: 36px; padding: 0 4px; text-align: right; font: 600 13px ui-monospace, "SF Mono", Menlo, monospace; }
+.sx-cp-a span { font-size: 12px; color: var(--muted); }
+.sx-cp-sec { display: grid; gap: 6px; }
+.sx-cp-sec-h { display: flex; justify-content: space-between; font-size: 11px; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.sx-cp-none { width: 36px; height: 36px; border: 1px solid var(--hair); }
+.sx-cp-pals { display: grid; gap: 10px; }
+.sx-cp-pal-list { display: grid; gap: 12px; }
+.sx-cp-group { display: grid; gap: 6px; }
+.sx-cp-set { display: grid; gap: 4px; }
+.sx-cp-set-name { font-size: 12px; font-weight: 650; color: var(--ink); }
+.sx-pop.is-color .sx-cp-pal-list { max-height: 330px; overflow: auto; padding-right: 2px; }
+.sx-ge { display: grid; gap: 10px; }
+.sx-ge-preview { height: 64px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08); }
+.sx-ge-track { padding: 0 9px; }
+.sx-ge-bar { position: relative; height: 18px; border-radius: 99px; cursor: copy; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1); }
+.sx-ge-stop { position: absolute; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; padding: 0; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.25); cursor: grab; touch-action: none; }
+.sx-ge-stop i { position: absolute; inset: 4px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
+.sx-ge-stop[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--amethyst), 0 2px 8px rgba(0, 0, 0, 0.3); z-index: 1; }
+.sx-ge-stop:active { cursor: grabbing; }
+.sx-ge-tools { display: flex; gap: 6px; flex-wrap: wrap; }
+.sx-ge-tools .sx-chip { min-height: 30px; padding: 0 10px; }
+.sx-ge-tools .sx-ic { width: 14px; height: 14px; }
+.sx-ge-ctrl { display: grid; gap: 10px; }
+.sx-bg-card .sx-cp-sv { height: 168px; }
+.sx-bg-lib { margin-top: 6px; }
+.sx-pat-cols { gap: 8px; }
+.sx-used { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 8px 0; }
+.sx-used-c { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 8px; border-radius: 12px; border: 1px solid var(--hair); background: var(--surface); cursor: pointer; text-align: left; min-width: 0; transition: transform 0.15s var(--ease-tb), border-color 0.15s; }
+.sx-used-c:hover { transform: translateY(-1px); border-color: var(--border-hover); }
+.sx-used-c i { width: 28px; height: 28px; border-radius: 8px; flex: none; box-shadow: inset 0 0 0 1px rgba(16, 16, 16, 0.14); }
+.sx-used-c span { display: grid; min-width: 0; }
+.sx-used-c b { font: 700 12.5px ui-monospace, "SF Mono", Menlo, monospace; }
+.sx-used-c small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-used-c[aria-pressed="true"] { border-color: var(--amethyst); box-shadow: 0 0 0 3px rgba(63, 103, 217, 0.14); }
+.sx-rp-head { display: flex; align-items: center; gap: 10px; font: 700 13px ui-monospace, "SF Mono", Menlo, monospace; }
+.sx-rp-head > .sx-ic { width: 16px; height: 16px; color: var(--muted); }
+.sx-rp-from, .sx-rp-to { display: inline-flex; align-items: center; gap: 6px; }
+.sx-rp-from i, .sx-rp-to i { width: 24px; height: 24px; border-radius: 7px; box-shadow: inset 0 0 0 1px rgba(16, 16, 16, 0.14); }
+.sx-rp-font .sx-rp-fh { display: grid; gap: 2px; }
+.sx-rp-sample { font-size: 22px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-rp-fh small { font-size: 11.5px; color: var(--muted); }
+.sx-rp-fctl { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 6px; align-items: center; }
+.sx-rp-fctl .btn, .sx-rp-fctl .sx-mini-toggle { grid-column: 1 / -1; }
+.sx-rp-fctl .btn { justify-content: center; }
+.sx-kit-font { display: grid; grid-template-columns: 86px minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+.sx-kit-font .sx-eyebrow { text-transform: capitalize; }
+.sx-kit-logo { position: relative; }
+.sx-kit-logo .sx-thumb { width: 100%; }
+.sx-kit-x { position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); }
+.sx-kit-x .sx-ic { width: 14px; height: 14px; }
+.sx-thumb-add { display: grid; place-items: center; aspect-ratio: 1; border: 1px dashed var(--border-hover); background: var(--surface-2); color: var(--muted); border-radius: 12px; cursor: pointer; }
+@media (max-width: 767px) { .sx-cp-sv { height: 132px; } }
+@media (max-width: 767px) { .sx-used { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 767px) { .sx-ge-stop { width: 26px; height: 26px; margin: -13px 0 0 -13px; } }
+@media (max-width: 767px) { .sx-kit-font { grid-template-columns: minmax(0, 1fr) auto; } }
+@media (max-width: 767px) { .sx-kit-font .sx-eyebrow { grid-column: 1 / -1; } }
+
+/* Moved from studio.css (docs/LOADING.md): styles for this module's own elements; they load with it. */
+.sx-count { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--surface-2); border: 1px solid var(--hair); border-radius: 99px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+.sx-card { border: 1px solid var(--hair); border-radius: 12px; background: var(--surface); padding: 12px; display: grid; gap: 10px; margin: 8px 0; }
+.sx-card + .sx-card { margin-top: 10px; }
+.sx-card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.sx-card-h small { font-size: 11.5px; color: var(--muted); }
+.sx-sws { display: flex; flex-wrap: wrap; gap: 6px; }
+.sx-sws.is-tight { gap: 4px; }
+.sx-sws.is-lg .sx-sw { width: 40px; height: 40px; }
+.sx-sw { position: relative; width: 28px; height: 28px; flex: none; padding: 0; border: 0; border-radius: 8px; cursor: pointer; background: repeating-conic-gradient(#D8D8D8 0 25%, #fff 0 50%) 50% / 10px 10px; transition: transform 0.12s var(--ease-tb), box-shadow 0.12s; }
+.sx-sw i { position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(16, 16, 16, 0.14); }
+.sx-sw:hover { transform: translateY(-1px) scale(1.06); z-index: 1; }
+.sx-sw[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--amethyst); }
+.sx-sw[aria-pressed="true"]::after { content: ""; position: absolute; left: 50%; top: 45%; width: 9px; height: 5px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: translate(-50%, -50%) rotate(-45deg); filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6)); }
+.sx-sw.is-light[aria-pressed="true"]::after { border-color: #151515; filter: none; }
+.sx-sw.is-add { display: grid; place-items: center; background: var(--surface-2); border: 1px dashed var(--border-hover); color: var(--muted); }
+.sx-sw.is-add .sx-ic { width: 15px; height: 15px; }
+.sx-sws.is-grad .sx-sw { width: 40px; height: 28px; }
+.sx-grad-grid, .sx-pat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.sx-grad, .sx-pat { display: grid; gap: 5px; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; border-radius: 12px; transition: transform 0.15s var(--ease-tb), box-shadow 0.15s; }
+.sx-grad i, .sx-pat i { display: block; aspect-ratio: 4 / 3; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(16, 16, 16, 0.1); background-size: 28px 28px; }
+.sx-pat i { background-repeat: repeat; background-size: 30px 30px; }
+.sx-grad span, .sx-pat span { font-size: 11.5px; font-weight: 650; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px; }
+.sx-grad[aria-pressed="true"] i, .sx-pat[aria-pressed="true"] i { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--amethyst); }
+.sx-grad[aria-pressed="true"] span, .sx-pat[aria-pressed="true"] span { color: var(--ink); }
+.sx-card { grid-template-columns: minmax(0, 1fr); }
+.sx-grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 767px) { .sx-grad-grid, .sx-pat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 767px) { .sx-sw { width: 32px; height: 32px; } }

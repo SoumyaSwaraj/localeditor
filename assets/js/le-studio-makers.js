@@ -700,20 +700,26 @@
   (function wrapStart() {
     var orig = P._start;
     if (typeof orig !== 'function') return;
-    P._start = function (c, host) {
-      orig.apply(this, arguments);
+    var add = function (c, host) {
       var inner = host.querySelector('.sx-start-inner');
       if (!inner) return;
       var sec = el('<div class="sx-start-sec mk-start"><div class="sx-sec-head"><h2>Make something quick</h2><button type="button" class="sx-link">See all</button></div><div class="mk-row-cards"></div></div>');
       sec.querySelector('.sx-link').onclick = function () { c.openPanel('apps', { app: 'make' }); };
+      /* Loaded after the start screen was drawn (docs/LOADING.md): take the place of its skeleton row. */
+      var stub = inner.querySelector('.mk-start.le-load-stub');
+      if (!stub && inner.querySelector('.mk-start')) return;
       var hero = inner.querySelector('.sx-hero');
-      if (hero && hero.nextSibling) inner.insertBefore(sec, hero.nextSibling); else inner.appendChild(sec);
+      if (stub) stub.parentNode.replaceChild(sec, stub);
+      else if (hero && hero.nextSibling) inner.insertBefore(sec, hero.nextSibling); else inner.appendChild(sec);
       var row = sec.querySelector('.mk-row-cards');
       M.ready().then(function (list) {
         list.slice(0, 8).forEach(function (m) { row.appendChild(card(c, m, true)); });
         lazyThumbs(row);
       });
     };
+    P._start = function (c, host) { orig.apply(this, arguments); add(c, host); };
+    var cx = window.LEStudio;
+    if (cx && cx.E && cx.E.start && !cx.E.start.hidden) add(cx, cx.E.start);
   })();
   (H.ready = H.ready || []).push(function (c) {
     var q = new URLSearchParams(location.search);

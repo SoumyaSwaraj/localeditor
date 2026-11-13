@@ -27,6 +27,7 @@ function ovPage(page, total) {
 async function setup(browser, base, h, viewport, cfg) {
   cfg = cfg || {};
   const page = await h.studioWithSample(browser, base, viewport || 'desktop');
+  await h.need(page, ['stock', 'collage']);
   const img = await jpeg(page);
   const st = { calls: [], ov: Object.assign({ status: 200, total: 60 }, cfg.ov || {}), pexels: Object.assign({ status: 200 }, cfg.pexels || {}), abort: false };
   await page.route(/^https:\/\/(api\.openverse\.org|pixabay\.com|api\.pexels\.com|images\.pexels\.com|api\.unsplash\.com|images\.unsplash\.com)\//, (route) => {

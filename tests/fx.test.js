@@ -90,6 +90,7 @@ cases['validate: schema clamps, drops and reports; unknown types never run'] = a
 
 cases['sanitiser fuzz: hostile fx, masks and absurd parameters never crash, hang, pollute or allocate without bound'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);
   await page.evaluate(() => window.LE.fxBoot.load());
   const r = await page.evaluate(() => {
     const S = window.LE.Scene, FX = window.LE.fx, t0 = performance.now();
@@ -123,6 +124,7 @@ cases['sanitiser fuzz: hostile fx, masks and absurd parameters never crash, hang
 
 cases['absurd parameters: every control at its extreme still renders, bounded in size, memory and work'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);
   await page.evaluate(() => window.LE.fxBoot.load());
   const sizes = await page.evaluate(async () => {
     const FX = window.LE.fx, c = document.createElement('canvas'); c.width = 64; c.height = 48; c.getContext('2d').fillRect(10, 10, 30, 20);
@@ -425,6 +427,7 @@ cases['ops: fx.add, fx.update, fx.remove, fx.reorder, mask.set, adjust.add and t
   h.assert.equal(r.ops.join(), 'fx.add,fx.update,fx.remove,fx.reorder,mask.set,adjust.add,transform.set', 'operation list');
   /* The result of the operations loads into a real scene unchanged. */
   const st = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(st, ['design']);
   const back = await st.evaluate((doc) => { const s = window.LEStudio.scene; s.load(doc); return s.toJSON(); }, r.final);
   h.assert.equal(JSON.stringify(back.layers.map((l) => [l.type, l.fx || null, l.layerMask || null, l.transform || null])), JSON.stringify(r.final.layers.map((l) => [l.type, l.fx || null, l.layerMask || null, l.transform || null])), 'LE.Scene keeps what the operations wrote');
 };
@@ -439,6 +442,7 @@ cases['studio: nothing under assets/js/fx/ loads until a document needs it, and 
   if (build.EXPERT && build.packDecision) h.assert(build.EXPERT.test('assets/js/fx/le-fx.js') && inPrecache === !!build.packDecision().expertWithBasic, 'fx/ follows the expert pack decision');
   else h.assert(!inPrecache, 'fx/ is on demand');
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);
   const fetched = () => page.evaluate(() => performance.getEntriesByType('resource').map((e) => e.name).filter((n) => /\/assets\/js\/fx\//.test(n)).map((n) => n.split('/').pop()));
   await page.evaluate(() => window.LEStudio.scene.render(0.25));
   h.assert.equal((await fetched()).join(), '', 'the simple studio fetched renderer files');
@@ -460,6 +464,7 @@ cases['studio: nothing under assets/js/fx/ loads until a document needs it, and 
 cases['studio: documents without expert data draw exactly as before (sample scene and a collage)'] = async ({ browser, base, h }) => {
   for (const kind of ['sample', 'collage']) {
     const page = await h.studioWithSample(browser, base, 'desktop');
+    await h.need(page, ['design']);
     await fx.attach(page);
     const withBoot = await fx.legacy(page, kind);
     h.assert(await page.evaluate(() => !window.LE.fx), kind + ': the renderer must not load for a legacy document');
@@ -475,6 +480,7 @@ cases['studio: documents without expert data draw exactly as before (sample scen
 
 cases['studio: expert data draws on photos, text, groups and adjustment layers, in the preview and the export'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);
   const ids = await page.evaluate(() => {
     const s = window.LEStudio.scene, photo = s.layers()[0].id;
     s.update(photo, { fx: [{ type: 'white-balance', p: { temperature: 30 } }, { type: 'gaussian-blur', p: { radius: 6 }, mask: { parts: [{ kind: 'linear', x0: 0, y0: 0.5, x1: 1, y1: 0.5 }] } }] });
@@ -510,6 +516,7 @@ cases['studio: expert data draws on photos, text, groups and adjustment layers, 
 
 cases['studio: the preview canvas, a half-size export and a full-size export show the same picture'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);
   await page.evaluate(() => {
     const s = window.LEStudio.scene, photo = s.layers()[0].id;
     s.update(photo, { fx: [{ type: 'white-balance', p: { temperature: 30 } }, { type: 'gaussian-blur', p: { radius: 6 }, mask: { parts: [{ kind: 'linear', x0: 0, y0: 0.5, x1: 1, y1: 0.5 }] } }] });
@@ -541,6 +548,7 @@ cases['studio: the preview canvas, a half-size export and a full-size export sho
 
 cases['studio: undo, redo, project and open-format round trips keep expert data and refuse hostile data'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);
   const r = await page.evaluate(async () => {
     const LE = window.LE, s = window.LEStudio.scene, id = s.layers()[0].id, out = {};
     const fxv = [{ id: 'e1', type: 'exposure', p: { ev: 0.5 } }, { id: 'e2', type: 'future-effect', p: { strength: 3, list: [1, 2, 3] }, amount: 0.5 }];
@@ -607,6 +615,7 @@ cases['studio: undo, redo, project and open-format round trips keep expert data 
 
 cases['studio: retouch overlay and a subject mask come from assets; a quad keeps its shape when the box moves'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);
   const r = await page.evaluate(async () => {
     const s = window.LEStudio.scene, id = s.layers()[0].id, L = s.layer(id), src = s._assets[L.src];
     await src.ready;
@@ -645,6 +654,7 @@ cases['studio: retouch overlay and a subject mask come from assets; a quad keeps
 
 cases['draw time: an effect can read the scene behind its layer; a clipped adjustment touches only the layer below'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);
   await page.evaluate(() => window.LE.fxBoot.load());
   const r = await page.evaluate(async () => {
     const FX = window.LE.fx, s = window.LEStudio.scene;
@@ -693,6 +703,7 @@ cases['colour: Display-P3 output keeps colours sRGB would clip, where the browse
 
 cases['masks: the shader agrees with the workspace reference (LE.expert.evalMask), part by part and combined'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);
   await fx.attach(page);
   const r = await page.evaluate(async () => {
     const LE = window.LE, T = window.fxT;

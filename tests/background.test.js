@@ -4,6 +4,7 @@
 /* Studio with one text layer and a portrait photo as the background of the 1200 × 800 sample page. */
 async function setup(h, browser, base, viewport) {
   const page = await h.studioWithSample(browser, base, viewport);
+  await h.need(page, ['background']);
   await page.evaluate(async () => {
     const c = window.LEStudio;
     c.scene.remove(c.scene.layers().map((l) => l.id));
