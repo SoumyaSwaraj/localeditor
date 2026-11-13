@@ -149,3 +149,7 @@ First load:
 Tests:
 - `install` per-app precache lists fails in full parallel runs and passes alone (a file appears in a scanned folder mid-run).
 - Running more than two browsers at once on the shared machine crashes pages ("Page crashed", `ERR_INSUFFICIENT_RESOURCES`); use `TEST_JOBS=2`.
+
+## Full suite, 13 Nov, final branch state (49e30af)
+
+`tests/run-all.sh 2`: 1,125 passed, 1 known, 0 failed. The one known is QA-017. Run on software rendering in the build sandbox; nothing here measures real GPUs, phones, cameras or Safari.

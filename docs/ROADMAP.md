@@ -4,7 +4,7 @@ Written 12 November 2026 by the lead architect. This supersedes the "Plans after
 
 ## Status (lead architect, 13 November 2026)
 
-Integration branch: `evergrow/focused-pasteur-t84h3j`. Everything listed as merged is on that branch and pushed. The last full run and what is still open are in `docs/BACKLOG.md` (sections "Full suite…" and "Left after…").
+Integration branch: `evergrow/focused-pasteur-t84h3j`. Everything listed as merged is on that branch and pushed. Last full run (13 November, `tests/run-all.sh`): 1,125 passed, 1 known, 0 failed. What is still open is in `docs/BACKLOG.md`.
 
 **Merged**
 - Phase 1: landing and design system, photo backgrounds, collage, recipes, stock (Pixabay, Pexels, Openverse, Unsplash), install and storage manager, QA suite.
