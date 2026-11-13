@@ -32,7 +32,7 @@ while (i < md.length) {
       html += '<h3 id="libraw-source">Where to get the licence and the source</h3><ul>' +
         '<li>Licence text: <a href="../assets/vendor/licenses/libraw-LICENSE.LGPL.txt">GNU LGPL 2.1</a> (LibRaw is also offered under the <a href="../assets/vendor/licenses/libraw-LICENSE.CDDL.txt">CDDL 1.0</a>; LocalEditor uses it under the LGPL), and LibRaw\'s <a href="../assets/vendor/licenses/libraw-COPYRIGHT.txt">copyright notices</a>.</li>' +
         '<li>Source of the module: LibRaw 0.22.2, unmodified, <a href="https://github.com/LibRaw/LibRaw/tree/0.22.2" rel="noopener">https://github.com/LibRaw/LibRaw/tree/0.22.2</a>, plus LocalEditor\'s glue and build recipe in <code>tools/raw-decoder/</code> of the LocalEditor source. Every source file and its SHA-256 is listed in <code>tools/raw-decoder/sources.json</code>.</li>' +
-        '<li><b>Written offer.</b> The complete corresponding source of the Camera RAW support module is available to anyone who has received it, for at least three years from the day that version was last served. Ask at <b>[contact address, to be set by the owner]</b>.</li>' +
+        '<li><b>Written offer.</b> The complete corresponding source of the Camera RAW support module is available to anyone who has received it, for at least three years from the day that version was last served. Ask at <a href="mailto:hello@withevergrow.com">hello@withevergrow.com</a>.</li>' +
         '<li><b>Replacing it.</b> The editor talks to the module only through a small message interface, so you (or a host that embeds LocalEditor) can swap in your own build of LibRaw or another decoder. See <code>assets/vendor/raw-decoder/README.md</code>.</li></ul>\n';
     }
     i++; continue;
