@@ -2094,6 +2094,92 @@
       "keywords": ["zine", "mini zine", "one page zine", "pocket book", "class project", "fold booklet"]
     },
     {
+      "id": "bulk-create",
+      "kind": "feature",
+      "status": "live",
+      "url": "bulk-create/",
+      "title": "Fill-in templates and bulk create",
+      "icon": "stack",
+      "parents": [
+        "business",
+        "teachers",
+        "office",
+        "photo"
+      ],
+      "audiences": [
+        "teachers",
+        "business",
+        "office"
+      ],
+      "headline": "One design, {a whole list of them.}",
+      "metaTitle": "Bulk create certificates, badges and price tags from a list",
+      "description": "Put fields such as {{name}} in a design, bring a spreadsheet, and get a finished image or PDF page for every row. Your list and photos stay on your device.",
+      "tagline": "A spreadsheet in, finished designs out",
+      "summary": "Mark text, photos or a QR code as fields, then fill them once or from a list. Create many checks every row, lets you fix problems in place and saves a zip of images, one PDF or print sheets.",
+      "launch": "studio/?tool=bulk",
+      "panel": "bulk",
+      "launchLabel": "Create many",
+      "art": "edit",
+      "does": [
+        "Fields in any text, written as {{name}}, plus photos matched by file name, a QR code, a colour or a hidden layer per row",
+        "Paste from a spreadsheet, or open a CSV or Excel file; columns are matched to fields for you",
+        "Every row is checked with the real fonts; long text is shrunk, and rows with problems are listed with a way to fix them",
+        "Saves a zip of images, one PDF, print sheets with cut marks, or pages in the open design",
+        "Ten ready templates, from certificates and name badges to price tags and event tickets"
+      ],
+      "steps": [
+        "Open a ready template or your own design and mark the parts that change as fields.",
+        "Open Create many and paste your list, or choose a spreadsheet file. Add the photos if a photo is a field.",
+        "Check the rows, step through the preview, then create the zip, PDF or print sheets."
+      ],
+      "privacy": "Your list, your photos and the finished files are read and made by your browser on this device. Nothing is uploaded. Cells are treated as plain text: formulas in a spreadsheet are never run.",
+      "faq": [
+        [
+          "How many rows can it do?",
+          "Up to 5,000 in one run on a computer, 2,000 on a recent phone or tablet and 500 on older devices. It makes one at a time, so memory use stays level, and you can pause or cancel."
+        ],
+        [
+          "Which files can I bring?",
+          "Cells pasted from any spreadsheet, CSV and TSV files up to 50 MB, and Excel files up to 25 MB. The first row is read as the column names."
+        ],
+        [
+          "What if a name is too long for its box?",
+          "Each field can shrink to fit, wrap or be cut with an ellipsis. Rows that are still too long at the smallest size are listed before anything is created, so you can fix them."
+        ],
+        [
+          "Can I print labels or badges several to a sheet?",
+          "Yes. Print sheets places them on A4 or Letter at the size you give in millimetres, with cut marks, as one PDF."
+        ],
+        [
+          "Can an AI agent use it?",
+          "Yes. An agent can define the fields, fill them and run Create many live in the studio, and the fields and values are plain data in the design file it writes."
+        ]
+      ],
+      "related": [
+        "quick-makers",
+        "printables",
+        "qr-posters"
+      ],
+      "keywords": [
+        "bulk create",
+        "mail merge",
+        "certificates",
+        "name badges",
+        "name tags",
+        "price tags",
+        "place cards",
+        "spreadsheet",
+        "csv",
+        "excel",
+        "batch",
+        "labels",
+        "tickets",
+        "vouchers",
+        "many at once",
+        "class awards"
+      ]
+    },
+    {
       "id": "screenshot-beautifier",
       "kind": "feature",
       "status": "live",

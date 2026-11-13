@@ -67,7 +67,7 @@ A coding agent (Claude Code, Cursor, Codex, OpenCode, Antigravity and others) ca
 
 ## Expert mode and RAW
 
-The photo studio has a second workspace, Expert mode (https://localeditor.net/studio/?mode=expert): a develop panel, masks, scopes and over 110 effects stored as plain data on each layer (`layer.fx`). Agents add and change them with `fx.add`, `fx.update`, `mask.set` and `adjust.add`; `LEAgent.catalog('fx')` lists them. Camera RAW (DNG, and camera formats through an optional decoder) and HDR merge open in it. Depth and face maps are made on the device.
+The photo studio has a second workspace, Expert mode (https://localeditor.net/studio/?mode=expert): a develop panel, masks, scopes and over 110 effects stored as plain data on each layer (`layer.fx`). Agents add and change them with `fx.add`, `fx.update`, `mask.set` and `adjust.add`; `LEAgent.catalog('fx')` lists them. One-call helpers run through `fx.call` (`composite.stage`, `grade.preset`, `creative.look`, `retouch.heal`, `relight.portrait`; `LEAgent.catalog('fx', 'actions')` lists them). In the studio, `map.generate` makes depth, face and segment maps on the device, and `raw.open`, `hdr.merge`, `raw.settings` and `raw.autoTone` handle RAW and HDR. Template fields use `variables.set`, `values.set` and `bulk.create`. Camera RAW (DNG, and camera formats through an optional decoder) and HDR merge open in it. Depth and face maps are made on the device.
 
 - [Expert mode](https://localeditor.net/expert/): colour grading, RAW and HDR, retouching, relighting, shadows, compositing.
 - [Effect reference](https://localeditor.net/docs/FX-REFERENCE.md): every effect, parameter, range and a paste-ready `fx` entry.
@@ -135,6 +135,7 @@ The photo studio has a second workspace, Expert mode (https://localeditor.net/st
 - [Command line and MCP](https://localeditor.net/agent-cli/): Command line, MCP server and local API.
 - [Font library](https://localeditor.net/font-library/): 257 families and 20 originals, loaded only when used.
 - [Themes and appearance](https://localeditor.net/themes/): Five themes, light, dark or automatic.
+- [Fill-in templates and bulk create](https://localeditor.net/bulk-create/): A spreadsheet in, finished designs out.
 - [Screenshot beautifier](https://localeditor.net/screenshot-beautifier/): A framed screenshot or code image on a soft backdrop.
 - [Photobooth strip](https://localeditor.net/photobooth-strip/): A strip, grid or wide strip, from your camera or photos.
 - [Recap collage](https://localeditor.net/recap-collage/): Up to 30 photos, a title, dates and a line of stats.

@@ -96,7 +96,7 @@ COMMON=(--only-show-errors --no-progress)
 [ "$DRY" = 1 ] && COMMON=(--dryrun)
 
 # Never uploaded: tooling, tests, docs, repo files.
-NEVER=(--exclude ".git/*" --exclude ".claude/*" --exclude "node_modules/*" --exclude "scripts/*" --exclude "tests/*" --exclude "tools/*/*" --exclude "assets/js/expert/mock-fx.js"
+NEVER=(--exclude ".git/*" --exclude ".claude/*" --exclude "node_modules/*" --exclude "scripts/*" --exclude "tests/*" --exclude "tools/*/*" --exclude "labs/*" --exclude "assets/js/expert/mock-fx.js"
        --exclude "docs/*" --exclude "infra/*" --exclude "*.md" --exclude ".gitignore" --exclude ".nojekyll" --exclude "*.DS_Store"
        --exclude "assets/models/local/*")   # evaluation downloads and model sources (scripts/fetch-models.js), never shipped
 
@@ -134,7 +134,7 @@ pass "$CC_MONTH" "" "assets/vendor/*" "assets/icons/*" "assets/screenshots/*"
 # 3. Graphics data (icon packs, collage layouts): a day, then revalidate in the background.
 pass "$CC_DATA" "application/json" "assets/data/*.json" "assets/data/*/*.json"
 # 4. Code.
-pass "$CC_CODE" "" "assets/js/*" "assets/css/*" "labs/*.js" "labs/*.css"
+pass "$CC_CODE" "" "assets/js/*" "assets/css/*"
 # 5. Example files people can download.
 pass "$CC_CODE" "application/vnd.localeditor.workflow+json" "*.leworkflow"
 pass "$CC_CODE" "application/vnd.localeditor.project+zip" "*.leproject"

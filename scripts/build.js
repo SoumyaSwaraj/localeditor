@@ -455,7 +455,7 @@ A coding agent (Claude Code, Cursor, Codex, OpenCode, Antigravity and others) ca
 
 ## Expert mode and RAW
 
-The photo studio has a second workspace, Expert mode (${SITE}studio/?mode=expert): a develop panel, masks, scopes and over 110 effects stored as plain data on each layer (\`layer.fx\`). Agents add and change them with \`fx.add\`, \`fx.update\`, \`mask.set\` and \`adjust.add\`; \`LEAgent.catalog('fx')\` lists them. Camera RAW (DNG, and camera formats through an optional decoder) and HDR merge open in it. Depth and face maps are made on the device.
+The photo studio has a second workspace, Expert mode (${SITE}studio/?mode=expert): a develop panel, masks, scopes and over 110 effects stored as plain data on each layer (\`layer.fx\`). Agents add and change them with \`fx.add\`, \`fx.update\`, \`mask.set\` and \`adjust.add\`; \`LEAgent.catalog('fx')\` lists them. One-call helpers run through \`fx.call\` (\`composite.stage\`, \`grade.preset\`, \`creative.look\`, \`retouch.heal\`, \`relight.portrait\`; \`LEAgent.catalog('fx', 'actions')\` lists them). In the studio, \`map.generate\` makes depth, face and segment maps on the device, and \`raw.open\`, \`hdr.merge\`, \`raw.settings\` and \`raw.autoTone\` handle RAW and HDR. Template fields use \`variables.set\`, \`values.set\` and \`bulk.create\`. Camera RAW (DNG, and camera formats through an optional decoder) and HDR merge open in it. Depth and face maps are made on the device.
 
 - [Expert mode](${SITE}expert/): colour grading, RAW and HDR, retouching, relighting, shadows, compositing.
 - [Effect reference](${SITE}docs/FX-REFERENCE.md): every effect, parameter, range and a paste-ready \`fx\` entry.

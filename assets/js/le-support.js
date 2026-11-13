@@ -537,7 +537,7 @@
     { id: 'os.share-target', name: 'Receive photos from other apps', group: 'Offline and install', needs: ['share-target'], wants: ['standalone'], note: 'Works once LocalEditor is installed.' },
     { id: 'os.file-handlers', name: 'Open files from the file manager', group: 'Offline and install', needs: ['file-handling'], wants: ['standalone'], note: 'Works once LocalEditor is installed.' },
     /* On-device AI */
-    { id: 'labs.bg-remove', name: 'Background remover (lab)', group: 'On-device AI', url: 'labs/bg-remove/', needs: ['wasm', 'wasm-simd', 'worker', 'offscreen-canvas', 'createimagebitmap'], wants: ['cache-storage'], memoryMB: 400, downloadMB: 7.1, note: 'Prototype. Downloads the small model the first time.' },
+    { id: 'ai.background-remover', name: 'Background remover', group: 'On-device AI', url: 'studio/?tool=cutout', needs: ['wasm', 'wasm-simd', 'worker', 'offscreen-canvas', 'createimagebitmap'], wants: ['cache-storage'], memoryMB: 400, downloadMB: 5, note: 'Downloads a small model from this site the first time. Larger, sharper options are checked in the studio.' },
     /* Tools */
     { id: 'tool.image-compressor', name: 'Image compressor', group: 'Tools', url: 'image-compressor/', needs: ['canvas-2d'], wants: ['webp-encode'] },
     { id: 'tool.image-converter', name: 'Image converter', group: 'Tools', url: 'image-converter/', needs: ['canvas-2d'], wants: ['webp-encode'] },

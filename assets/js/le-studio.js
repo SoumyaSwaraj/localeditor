@@ -440,6 +440,13 @@
     if (f) setTimeout(function () { if (!m.hidden && !m.contains(document.activeElement)) f.focus(); }, 30);
     return body;
   }
+  /* While a dialog is open, Tab pressed with the focus still outside it (the dialog takes focus a moment after it opens) goes into the dialog, never around the page behind it. */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || E.modal.hidden || E.modal.contains(document.activeElement)) return;
+    var list = focusables(E.modal);
+    e.preventDefault();
+    if (list.length) list[e.shiftKey ? list.length - 1 : 0].focus();
+  }, true);
   E.modal.addEventListener('keydown', function (e) {
     if (e.key !== 'Tab' || E.modal.hidden) return;
     var list = focusables(E.modal);
