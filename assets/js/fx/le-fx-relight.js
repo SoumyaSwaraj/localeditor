@@ -32,10 +32,9 @@
  *     the height field, with a penumbra that widens with distance (soft-shadow height-field marching), reach given by "Shadow length"
  *     (declared in radius(), so tiles agree). AO: horizon-based (relative to the tangent plane), 6 directions x 2 radii.
  *
- * Renderer seam (see the report): the renderer has no handle for the raw depth map yet, so depthRaw() reads it through two depth
- * mask parts (near 1, far 1, soft 1 gives smoothstep(0, 1, farness); the inverted part keeps precision at the far end) and inverts
- * the smoothstep. When LE.fx grows g.map('depth') this file uses it instead with no other change. On 8-bit devices that path
- * quantises depth to 8 bits (soft but usable); half-float devices keep about 11 bits. */
+ * Depth comes from g.map('depth') (full precision, edge-extended). A shadow longer than 240 document pixels continues on
+ * g.map('depth', { whole: true }), the whole layer's depth reduced and the same for every tile, so the tile reach stays at 240
+ * however long the shadow is. */
 (function (global) {
   'use strict';
 
@@ -93,18 +92,8 @@
 
   /* ---------- Depth: read, decode, refine ---------- */
   var CLAMP_IMG = 'vec2 clampImg(vec2 uv){ return clamp(uv, u_img.xy + 0.5 * u_texel, u_img.zw - 0.5 * u_texel); }\n';
-  var DECODE = 'uniform sampler2D u_a, u_b;\n' + CLAMP_IMG +
-    'float invS(float y){ y = clamp(y, 0.0, 1.0); return 0.5 - sin(asin(1.0 - 2.0 * y) / 3.0); }\n' +
-    'vec4 fx(){ vec2 uv = clampImg(v_uv); float a = texture(u_a, uv).r, b = 1.0 - texture(u_b, uv).r; return vec4(1.0 - invS(a < 0.5 ? a : b), 0.0, 0.0, 1.0); }';
-  /* Depth (near = 1) at the working rectangle, edge-extended beyond the picture. 3 passes through the seam, 0 with g.map. */
-  function depthRaw(g) {
-    if (typeof g.map === 'function') { var h = g.map('depth'); if (h) return h; }
-    var a = g.mask({ on: true, parts: [{ kind: 'depth', near: 1, far: 1, soft: 1 }] });
-    var b = g.mask({ on: true, parts: [{ kind: 'depth', near: 1, far: 1, soft: 1, invert: true }] });
-    var d = g.pass(DECODE, { u_a: a, u_b: b });
-    g.release(a); g.release(b);
-    return d;
-  }
+  /* Depth (near = 1) at the working rectangle, edge-extended beyond the picture. */
+  function depthRaw(g) { return g.map('depth'); }
   /* Joint bilateral refinement: 3 x 3 taps 1.6 depth texels apart; range weights from the photo (display colour) and the cut-out. */
   var JBU = 'uniform sampler2D u_d, u_sub; uniform float u_step, u_sigR, u_useSub;\n' + CLAMP_IMG +
     'vec3 guideAt(vec2 uv){ return clamp(toDisplay(unpremul(texture(u_src, uv))), 0.0, 1.0); }\n' +
@@ -130,6 +119,7 @@
     g.release(d0); if (sub) g.release(sub);
     return d;
   }
+  var SH_NEAR = 240;   /* document pixels of a shadow ray marched in the tile's own depth; beyond it, in the whole-layer copy */
   function depthReach(scale) { return Math.ceil(2 * CAP.step * scale) + 2; }
 
   /* ---------- Shared GLSL: height, normals, light ---------- */
@@ -161,7 +151,7 @@
   ].join('\n');
 
   var RELIGHT = [
-    'uniform sampler2D u_b; uniform float u_type, u_lz, u_fall, u_wrap, u_spec, u_rough, u_sh, u_slen, u_steps, u_pen, u_exist, u_soft, u_lmean, u_ao, u_aor, u_sigB, u_pat;',
+    'uniform sampler2D u_b, u_dw; uniform float u_near, u_type, u_lz, u_fall, u_wrap, u_spec, u_rough, u_sh, u_slen, u_steps, u_pen, u_exist, u_soft, u_lmean, u_ao, u_aor, u_sigB, u_pat;',
     'uniform vec2 u_lpos, u_aim, u_center, u_cone; uniform vec3 u_col;',
     SURF,
     'float ign(){ vec2 p = floor(docPos() * u_scale); return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }',
@@ -209,7 +199,7 @@
     '    vec2 d2 = normalize(L.xy); float slope = L.z / length(L.xy); float tmax = min(u_slen, dist2); float stp = tmax / u_steps;',
     '    float t = stp * (0.5 + ign()); float bias = u_zs * 0.01 + stp * 0.15;',
     '    for (int i = 0; i < 96; i++) { if (float(i) >= u_steps || t > tmax) break;',
-    '      float zs = zAt(uv0 + docToUV(d2 * t)); float ray = zP + slope * t + bias; float pen = max(t * u_pen, 1.5);',
+    '      float zs = t <= u_near ? zAt(uv0 + docToUV(d2 * t)) : (texture(u_dw, clamp((P + d2 * t) / u_box, 0.0, 1.0)).r - 1.0) * u_zs; float ray = zP + slope * t + bias; float pen = max(t * u_pen, 1.5);',
     '      vis = min(vis, clamp((ray - zs) / pen * 0.5 + 0.5, 0.0, 1.0)); t += stp; }',
     '    vis = mix(1.0, vis, u_sh); }',
     '  vec3 add = u_col * att * vis * (A * diff + vec3(min(spec, 8.0)));',
@@ -240,7 +230,7 @@
       specular: { type: 'number', min: 0, max: 1, default: 0.2, step: 0.01, label: 'Shine' },
       roughness: { type: 'number', min: 0.05, max: 1, default: 0.45, step: 0.01, label: 'Roughness' },
       shadows: { type: 'number', min: 0, max: 1, default: 0.7, step: 0.01, label: 'Shadows' },
-      shadowLength: { type: 'number', min: 0, max: 240, default: 120, step: 1, unit: 'px', label: 'Shadow length' },
+      shadowLength: { type: 'number', min: 0, max: 2000, default: 120, step: 1, unit: 'px', label: 'Shadow length' },
       relief: { type: 'number', min: 0, max: 4, default: 1.2, step: 0.01, label: 'Depth', help: 'How deep the scene is taken to be; more makes forms rounder and shadows longer.' },
       existing: { type: 'number', min: 0, max: 2, default: 1, step: 0.01, label: 'Existing light' },
       soften: { type: 'number', min: 0, max: 1, default: 0, step: 0.01, label: 'Soften existing light' },
@@ -250,7 +240,7 @@
     },
     radius: function (p, s) {
       if (relightNeutral(p)) return 0;
-      return depthReach(s) + Math.ceil(s * (Math.max(p.shadowLength, CAP.ao, CAP.albedo * 1.6) + CAP.smooth * 2)) + blurReach(CAP.albedo * s) + 4;
+      return depthReach(s) + Math.ceil(s * (Math.max(Math.min(p.shadowLength, SH_NEAR), CAP.ao, CAP.albedo * 1.6) + CAP.smooth * 2)) + blurReach(CAP.albedo * s) + 4;
     },
     draft: function (p) { var q = Object.assign({}, p); q.quality = 'draft'; return q; },
     passes: function (g, p) {
@@ -261,8 +251,9 @@
       var bl = g.blur(sz.albedo, { source: g.source });
       var bw = g.box.w, cone = p.cone * Math.PI / 180, edge = clamp(p.softness, 0.02, 1) * 0.6;
       var steps = p.shadows > 0 ? STEPS[draft ? 'draft' : p.quality] || 32 : 0;
+      var far = steps && p.shadowLength > SH_NEAR ? g.map('depth', { whole: true, maxSide: 768 }) : null;
       var out = g.pass(RELIGHT, {
-        u_dr: dr, u_ds: ds, u_b: bl, u_zs: p.relief * 0.5 * bw, u_h: sz.smooth, u_cap: 1.6, u_md: 1,
+        u_dw: far || dr, u_near: far ? SH_NEAR : 1e9, u_dr: dr, u_ds: ds, u_b: bl, u_zs: p.relief * 0.5 * bw, u_h: sz.smooth, u_cap: 1.6, u_md: 1,
         u_type: p.type === 'directional' ? 0 : p.type === 'spot' ? 2 : 1,
         u_lpos: [p.position.x * g.box.w, p.position.y * g.box.h], u_lz: p.height * bw, u_aim: [p.aim.x * g.box.w, p.aim.y * g.box.h], u_center: [g.box.w / 2, g.box.h / 2],
         u_cone: [Math.cos(cone), Math.cos(cone * (1 - edge))], u_col: lightRGB(g, p, p.intensity * lmean),

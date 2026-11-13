@@ -710,8 +710,22 @@
     if (!Object.prototype.hasOwnProperty.call(MAP_BODY, kind)) return null;
     o = o || {};
     var env = this.env, layer = env.layer || {}, part = kind === 'face' ? String(o.part || 'skin').replace(/[A-Z]/g, function (c) { return '-' + c.toLowerCase(); }) : '';
-    var key = kind + ':' + part, hit = this.shared('map', this, key);
+    /* o.whole: the map over the whole layer box (sample it with boxUV()), reduced to o.maxSide (default 512) and the same for
+       every tile, for effects that follow the map further than a tile reaches. */
+    var whole = null;
+    if (o.whole) {
+      var side = Math.max(16, Math.min(2048, o.maxSide || 512)), wk = side / Math.max(1, env.box[0], env.box[1]);
+      var ww = Math.max(1, Math.round(env.box[0] * wk)), wh = Math.max(1, Math.round(env.box[1] * wk));
+      whole = {};
+      Object.keys(env).forEach(function (q) { whole[q] = env[q]; });
+      whole.rw = ww; whole.rh = wh; whole.sx = ww / env.box[0]; whole.sy = wh / env.box[1]; whole.dm = [env.box[0] / ww, 0, 0, env.box[1] / wh]; whole.dt = [0, 0]; whole.abs = [0, 0]; whole.img = [0, 0, 1, 1];
+    }
+    var key = kind + ':' + part + (whole ? '|whole' + whole.rw + 'x' + whole.rh : ''), hit = this.shared('map', this, key);
     if (hit) { hit.users = (hit.users || 0) + 1; return hit; }
+    if (whole) this.env = whole;
+    try { return this.mapMake(kind, part, key, env, layer); } finally { this.env = env; }
+  };
+  RP.mapMake = function (kind, part, key, env, layer) {
     var map = null, map2 = null, sg = layer.maps && layer.maps.segments;
     if (kind === 'segments') { map = sg && sg.asset && env.assets ? env.assets(sg.asset) : null; map2 = map && sg.clothes && sg.clothes.asset ? env.assets(sg.clothes.asset) : null; }
     else map = this.mapFor({ kind: kind, part: part });
@@ -719,6 +733,7 @@
     if (!map) { this.pass('uniform float u_v; vec4 fx(){ return vec4(u_v); }', { u_v: kind === 'depth' ? 0 : 1 }, out, 'map:none'); out.missing = true; }
     else this.pass(MASK_HEAD.replace('DISP(c)', 'c') + MAP_BODY[kind], { u_map: { t: upload(map) }, u_map2: map2 ? { t: upload(map2) } : null, u_has2: map2 ? 1 : 0, u_hinv: env.hinv || [1, 0, 0, 0, 1, 0, 0, 0, 1], u_crop: env.crop || [0, 0, 1, 1], m_p: new Float32Array(8) }, out, 'map:' + kind);
     out.users = 1;
+    if (this.env !== env) out.whole = true;
     return this.share('map', this, key, out);
   };
   RP.mapFor = function (part) {

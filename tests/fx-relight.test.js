@@ -428,4 +428,28 @@ cases['real model (RELIGHT_REAL=1): map.generate makes a depth map for a pool ph
   h.assert.noErrors(pg);
 };
 
+cases['relight: a shadow longer than 240 px follows the whole-layer depth (g.map whole), reaches further, and tiles agree'] = async ({ browser, base, h }) => {
+  const pg = await page(browser, base);
+  const r = await pg.evaluate(() => {
+    const W = 640, H = 128, s = RL.scene(W, H, { r: 28 }), FX = window.LE.fx;
+    const stack = (len) => [{ type: 'relight', p: { type: 'directional', position: { x: 1.4, y: 0.55 }, height: 0.3, intensity: 3, existing: 0.3, shadows: 1, shadowLength: len, softness: 0, specular: 0, relief: 1.2, subject: false, quality: 'high' } }];
+    const short = RL.apply(s, stack(150)), long = RL.apply(s, stack(600)), tiled = RL.apply(s, stack(600), { tile: 128 });
+    const g = (c, x) => RL.px(c, x, s.cy)[1], def = FX.get('relight'), v = (len) => FX.validate(stack(len)[0]).entry.p;
+    let whole = null;
+    FX.register({ id: 't-map', passes: function (gg) { const m = gg.map('depth', { whole: true, maxSide: 64 }); whole = [m.w, m.h, !!m.whole, !!m.missing]; } });
+    RL.apply(s, [{ type: 't-map', p: {} }], { tile: 128 });
+    return {
+      near: [g(short, s.cx - 120), g(long, s.cx - 120)], far: [g(short, s.cx - 300), g(long, s.cx - 300)], lit: g(long, s.cx + 200),
+      reach: [def.radius(v(150), 1, { w: W, h: H }), def.radius(v(240), 1, { w: W, h: H }), def.radius(v(600), 1, { w: W, h: H })], max: FX.describe('relight').params.shadowLength.max,
+      a: long.toDataURL(), b: tiled.toDataURL(), whole, fallback: /kind: 'depth', near: 1/.test(String(FX.get('relight').passes) + String(FX.get('depth-fog').passes))
+    };
+  });
+  h.assert(Math.abs(r.near[0] - r.near[1]) <= 3 && r.near[0] < r.lit - 20, 'within 150 px both lengths are in shadow: ' + r.near + ' (lit ' + r.lit + ')');
+  h.assert(r.far[1] < r.far[0] - 20 && Math.abs(r.far[0] - r.lit) <= 6, '300 px away only the long shadow reaches: short ' + r.far[0] + ', long ' + r.far[1]);
+  h.assert(r.max >= 2000 && r.reach[2] === r.reach[1] && r.reach[0] < r.reach[1], 'the tile reach stops growing at 240 px: ' + r.reach);
+  h.assert.equal(JSON.stringify(r.whole), JSON.stringify([64, 13, true, false]), 'g.map("depth", { whole }) covers the layer box at the asked size');
+  await fx.same(pg, png(r.a), png(r.b), 'a 600 px shadow, one rectangle against 128 px tiles', { max: 3, over: 0.002 });
+  h.assert.noErrors(pg);
+};
+
 module.exports = cases;
