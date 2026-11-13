@@ -167,6 +167,9 @@
       });
     }
     applyWhen(entry());
+    /* Touching an effect's controls selects it: its on-canvas handles (ui.handles) show for that entry. */
+    function pick() { var id = B.layerId(); if (id) X.emit('fx-select', { layerId: id, type: def.id, fxId: B.fxId || null }); }
+    if (def.ui && def.ui.handles) { el.addEventListener('pointerdown', pick, true); el.addEventListener('focusin', pick); }
     return {
       el: el, items: items,
       refresh: function () { var e = entry(); items.forEach(function (it) { it.ctl.set(it.read(e)); }); applyWhen(e); },
@@ -193,6 +196,7 @@
   /* A binding to one specific entry (the layers panel's effect rows). */
   function bindEntry(layerId, fxId) {
     var B = {
+      fxId: fxId,
       layerId: function () { return layerId; },
       entry: function () { return X.doc.entry(layerId, fxId); },
       write: function (k, v, key) { X.doc.setParam(layerId, fxId, k, v, key); },

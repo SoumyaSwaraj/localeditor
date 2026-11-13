@@ -338,7 +338,7 @@
       ].join('\n'), { p: [p.position.x * g.box.w / sh, p.position.y * g.box.h / sh, p.size, p.angle * Math.PI / 180], s: [st[0], st[1], seedOf(p), p.turbulence / 100], c1: a.slice(0, 3), c2: b.slice(0, 3), amt: p.amount / 100 * st[2] * 1.6 });
     },
     support: GPU,
-    ui: { section: 'Effects', order: 40, controls: ['amount', 'style', 'position', 'size', 'angle', 'color', 'color2', 'turbulence', 'seed'] },
+    ui: { section: 'Effects', order: 40, handles: [{ kind: 'ring', center: 'position', radius: 'size', unit: 'short' }, { kind: 'angle', param: 'angle', anchor: 'position', cw: true }], controls: ['amount', 'style', 'position', 'size', 'angle', 'color', 'color2', 'turbulence', 'seed'] },
     agent: {
       summary: 'A procedural light leak or film burn entering from a point near the frame edge: warm, turbulent, seeded, screen-blended in linear light.',
       like: 'light-leak overlays and film-burn transitions, generated instead of photographed',
@@ -551,7 +551,7 @@
       ].join('\n'), { a: [p.amount / 100, p.roundness / 100, 0.25 + p.midpoint / 100, 0.05 + 0.75 * p.feather / 100], b: [p.center.x, p.center.y, st, p.highlights / 100], col: c.slice(0, 3) });
     },
     support: GPU,
-    ui: { section: 'Optics', order: 40, controls: ['amount', 'style', 'midpoint', 'roundness', 'feather', { param: 'highlights', when: { style: 'highlight' } }, { param: 'color', when: { style: 'paint' } }, 'center'] },
+    ui: { section: 'Optics', order: 40, handles: { kind: 'point', param: 'center' }, controls: ['amount', 'style', 'midpoint', 'roundness', 'feather', { param: 'highlights', when: { style: 'highlight' } }, { param: 'color', when: { style: 'paint' } }, 'center'] },
     agent: {
       summary: 'Darkens (negative) or lightens (positive) the edges of the frame around a movable centre, in three styles: highlight priority (an exposure change that can protect highlights), colour priority (keeps hues) and paint overlay (blends to a colour).',
       like: 'the post-crop vignette of raw developers, with the same controls',
@@ -676,7 +676,7 @@
         l: [p.position.x * g.box.w / sh, p.position.y * g.box.h / sh, 0.5 * g.box.w / sh, 0.5 * g.box.h / sh], t: g.rgb(p.color).slice(0, 3), amt: p.amount / 100 * 1.5 });
     },
     support: GPU,
-    ui: { section: 'Optics', order: 70, controls: ['amount', 'position', 'size', { heading: 'Elements' }, 'ghosts', 'halo', 'starburst', 'streak', 'blades', 'dispersion', 'color', 'seed'] },
+    ui: { section: 'Optics', order: 70, handles: { kind: 'point', param: 'position' }, controls: ['amount', 'position', 'size', { heading: 'Elements' }, 'ghosts', 'halo', 'starburst', 'streak', 'blades', 'dispersion', 'color', 'seed'] },
     agent: {
       summary: 'A procedural lens flare from a positionable light: ghosts along the axis through the frame centre, a halo, a starburst, a streak and a glowing core. Seeded, so the same settings always give the same flare.',
       like: 'lens flare filters of photo editors and flare plug-ins of compositing tools',
@@ -820,7 +820,7 @@
       return fieldBlur(g, p, T_TILT, [p.center.x * g.box.w, p.center.y * g.box.h, p.angle * Math.PI / 180, Math.min(g.box.w, g.box.h)], [p.focus, p.transition, 0, 0]);
     },
     support: GPU_MID,
-    ui: { section: 'Optics', order: 84, controls: ['blur', 'center', 'angle', 'focus', 'transition', { heading: 'Highlights' }, 'highlights', 'threshold'] },
+    ui: { section: 'Optics', order: 84, handles: { kind: 'band', center: 'center', angle: 'angle', half: 'focus', feather: 'transition', unit: 'short' }, controls: ['blur', 'center', 'angle', 'focus', 'transition', { heading: 'Highlights' }, 'highlights', 'threshold'] },
     agent: {
       summary: 'A sharp band through a point with blur growing above and below it, as a tilted lens makes: the "miniature" look, or a way to lead the eye along a line.',
       like: 'the tilt-shift blur of photo editors\' blur galleries',
@@ -836,7 +836,7 @@
       return fieldBlur(g, p, T_IRIS, [p.center.x * g.box.w, p.center.y * g.box.h, p.angle * Math.PI / 180, 0], [p.rx * g.box.w, p.ry * g.box.h, p.transition, 0]);
     },
     support: GPU_MID,
-    ui: { section: 'Optics', order: 86, controls: ['blur', 'center', 'rx', 'ry', 'angle', 'transition', { heading: 'Highlights' }, 'highlights', 'threshold'] },
+    ui: { section: 'Optics', order: 86, handles: { kind: 'ellipse', center: 'center', rx: 'rx', ry: 'ry', angle: 'angle' }, controls: ['blur', 'center', 'rx', 'ry', 'angle', 'transition', { heading: 'Highlights' }, 'highlights', 'threshold'] },
     agent: {
       summary: 'An elliptical sharp area around a point with lens-like blur growing outside it: a shallow-depth-of-field portrait look without a depth map.',
       like: 'the iris (field) blur of photo editors\' blur galleries',
@@ -857,7 +857,7 @@
       return out === g.source ? undefined : out;
     },
     support: GPU,
-    ui: { section: 'Optics', order: 90, controls: ['angle', 'distance'] },
+    ui: { section: 'Optics', order: 90, handles: { kind: 'line', angle: 'angle', length: 'distance', unit: 'px', half: true }, controls: ['angle', 'distance'] },
     agent: {
       summary: 'Blurs along a straight line, as when the camera or the subject moved during the exposure. Distance is the length of the movement in document pixels.',
       like: 'the motion blur filter of photo editors',
@@ -914,7 +914,7 @@
       return cur === g.source ? undefined : cur;
     },
     support: GPU,
-    ui: { section: 'Optics', order: 94, controls: ['amount', 'mode', 'center'] },
+    ui: { section: 'Optics', order: 94, handles: { kind: 'point', param: 'center' }, controls: ['amount', 'mode', 'center'] },
     agent: {
       summary: 'Zoom blur (streaks towards a centre, like zooming during the exposure) or spin blur (arcs around it, like a spinning wheel).',
       like: 'the radial blur filter (zoom and spin) of photo editors',
@@ -1640,7 +1640,7 @@
       return res;
     },
     support: GPU_MID,
-    ui: { section: 'Effects', order: 220, controls: ['amount', 'position', 'threshold', 'length', 'color'] },
+    ui: { section: 'Effects', order: 220, handles: { kind: 'point', param: 'position' }, controls: ['amount', 'position', 'threshold', 'length', 'color'] },
     agent: {
       summary: 'God rays: light from a point streams through the bright gaps of the picture (trees, windows, clouds) as visible beams.',
       like: 'sun-ray and light-ray plug-ins of photo and compositing tools',
@@ -1739,7 +1739,7 @@
         { a: [p.position.x * g.box.w / sh, p.position.y * g.box.h / sh, p.size, p.amount / 100 * 1.2], c: g.rgb(p.color).slice(0, 3), v: p.veil / 100 * 0.5 });
     },
     support: GPU,
-    ui: { section: 'Effects', order: 250, controls: ['amount', 'position', 'size', 'color', 'veil'] },
+    ui: { section: 'Effects', order: 250, handles: { kind: 'ring', center: 'position', radius: 'size', unit: 'short' }, controls: ['amount', 'position', 'size', 'color', 'veil'] },
     agent: {
       summary: 'A warm glow around a point (the sun, a lamp) with veiling glare that softens contrast near it, added in linear light.',
       like: 'the sun-glow / light-source glow of photo and compositing tools',

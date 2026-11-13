@@ -147,4 +147,149 @@ cases['liquify: the freeze overlay follows the mesh, clears with thaw and is gon
   h.assert.noErrors(page);
 };
 
+/* ---------- Handles from ui.handles ---------- */
+/* Adds an effect to the photo and selects it, as the add-effect list does. */
+const addFx = (page, type, p) => page.evaluate(([t, pp]) => {
+  const X = window.LE.expert, id = window.LEStudio.targetImage().id;
+  X.doc.fx(id).forEach((e) => X.doc.removeFx(id, e.id, X.gesture()));
+  const fxId = X.doc.addFx(id, t, { p: pp, append: true }, X.gesture());
+  X.emit('fx-select', { layerId: id, type: t, fxId });
+  return fxId;
+}, [type, p || {}]);
+const P = async (page) => (await fx(page))[0].p;
+const hpos = (page, id) => page.evaluate((i) => { const g = document.querySelector('.xp-handles .xp-h-pt[data-id="' + i + '"] .xp-h-dot'); if (!g) return null; const r = g.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, id);
+/* Drags a handle to a client position (or by a delta) and reports the undo steps it took. */
+async function pull(page, h, id, to) {
+  const a = await hpos(page, id);
+  h.assert(a, 'handle ' + id + ' is on the canvas');
+  const b = to.dx != null ? { x: a.x + to.dx, y: a.y + to.dy } : to;
+  const u0 = await undoCount(page);
+  await page.mouse.move(a.x, a.y); await page.mouse.down();
+  await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 3 }); await page.waitForTimeout(40);
+  const draft = await page.evaluate(() => !!(window.LE.fx.interactive && window.LE.fx.interactive()));
+  await page.mouse.move(b.x, b.y, { steps: 3 }); await page.waitForTimeout(40);
+  await page.mouse.up(); await page.waitForTimeout(120);
+  h.assert.equal(await undoCount(page) - u0, 1, 'one undo step for the drag of ' + id);
+  return { from: a, to: b, draft };
+}
+const near = (a, b, tol) => Math.abs(a - b) <= tol;
+
+cases['handles: point, ring, ellipse and band drag their parameters in one undo step each'] = async ({ browser, base, h }) => {
+  const page = await studio(browser, base);
+  await expert(page);
+  const box = await page.evaluate(() => window.LE.expert.canvas._box(window.LEStudio.targetImage().id));
+  const short = Math.min(box.w, box.h);
+  h.assert.equal(await page.locator('.xp-handles .xp-h-pt').count(), 0, 'no handles before an effect is selected');
+  /* point */
+  await addFx(page, 'vignette', { amount: -40 });
+  h.assert.equal(await page.locator('.xp-handles .xp-h-pt').count(), 1, 'vignette: one centre handle');
+  let d = await pull(page, h, 'p:center', { dx: 60, dy: -30 });
+  let p = await P(page);
+  h.assert(near(p.center.x, 0.5 + 60 / box.w, 0.01) && near(p.center.y, 0.5 - 30 / box.h, 0.01), 'point: the centre follows the drag: ' + JSON.stringify(p.center));
+  await page.evaluate(() => window.LEStudio.scene.undo());
+  p = await P(page);
+  h.assert(near(p.center ? p.center.x : 0.5, 0.5, 1e-6), 'undo puts the centre back in one step');
+  /* ring */
+  await addFx(page, 'sun-glow', { amount: 50, position: { x: 0.5, y: 0.5 }, size: 0.3 });
+  d = await pull(page, h, '0:r', { dx: 40, dy: 0 });
+  p = await P(page);
+  h.assert(near(p.size, 0.3 + 40 / short, 0.02), 'ring: the rim sets the size: ' + p.size);
+  await pull(page, h, 'p:position', { dx: -50, dy: 20 });
+  p = await P(page);
+  h.assert(near(p.position.x, 0.5 - 50 / box.w, 0.01), 'ring: the centre moves the position');
+  h.assert(await page.locator('.xp-handles ellipse').count() === 1, 'the ring is drawn');
+  /* ellipse */
+  await addFx(page, 'iris-blur', { blur: 10, center: { x: 0.5, y: 0.5 }, rx: 0.2, ry: 0.2, angle: 0 });
+  const c = { x: box.x + box.w / 2, y: box.y + box.h / 2 };
+  d = await pull(page, h, '0:rx', { x: c.x, y: c.y - 90 });
+  p = await P(page);
+  h.assert(near(p.angle, 90, 1.5) && near(p.rx, 90 / box.w, 0.01), 'ellipse: the first axis handle turns and sizes it: ' + p.angle + ', ' + p.rx);
+  d = await pull(page, h, '0:ry', { dx: 40, dy: 0 });
+  p = await P(page);
+  h.assert(near(p.ry, 0.2 + 40 / box.h, 0.012) && near(p.angle, 90, 1.5), 'ellipse: the second handle sets the other radius only: ' + p.ry);
+  h.assert(d.draft, 'draft rendering is on while a handle is dragged');
+  h.assert(!(await page.evaluate(() => window.LE.fx.interactive())), 'and off afterwards');
+  /* band */
+  await addFx(page, 'tilt-shift', { blur: 10, center: { x: 0.5, y: 0.5 }, angle: 0, focus: 0.1, transition: 0.2 });
+  h.assert.equal(await page.locator('.xp-handles line').count(), 4, 'band: two focus lines and two transition lines');
+  await pull(page, h, '0:h', { dx: 0, dy: 30 });
+  p = await P(page);
+  h.assert(near(p.focus, 0.1 + 30 / short, 0.012), 'band: the focus handle sets the half width: ' + p.focus);
+  await pull(page, h, '0:f', { dx: 0, dy: -25 });
+  p = await P(page);
+  h.assert(near(p.transition, 0.2 + 25 / short, 0.012), 'band: the outer handle sets the transition: ' + p.transition);
+  d = await pull(page, h, '0:a', { x: c.x + 80, y: c.y - 80 });
+  p = await P(page);
+  h.assert(near(p.angle, 45, 1.5), 'band: the arm sets the angle (counter-clockwise): ' + p.angle);
+  /* Keyboard: arrows move a focused handle. */
+  await page.evaluate(() => document.querySelector('.xp-handles .xp-h-pt[data-id="p:center"]').focus());
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(80);
+  p = await P(page);
+  h.assert(near(p.center.x, 0.505, 0.001), 'arrow keys nudge a handle: ' + p.center.x);
+  /* Hidden while a painting tool is active, back with Move. */
+  await page.keyboard.press('b');
+  await page.waitForTimeout(150);
+  h.assert.equal(await page.locator('.xp-handles .xp-h-pt').count(), 0, 'handles hide while the brush is active');
+  await page.keyboard.press('v');
+  await page.waitForTimeout(150);
+  h.assert(await page.locator('.xp-handles .xp-h-pt').count() > 0, 'and come back with Move');
+  h.assert.noErrors(page);
+};
+
+cases['handles: angle arm, direction line, shadow tip and mesh; touch targets; follow the develop panel'] = async ({ browser, base, h }) => {
+  const page = await studio(browser, base);
+  await expert(page);
+  const box = await page.evaluate(() => window.LE.expert.canvas._box(window.LEStudio.targetImage().id));
+  const zoom = await page.evaluate(() => window.LEStudio.scene.zoom());
+  const c = { x: box.x + box.w / 2, y: box.y + box.h / 2 };
+  /* angle arm on a point parameter */
+  await addFx(page, 'light-leak', { amount: 40, position: { x: 0.5, y: 0.5 }, size: 0.4, angle: 0 });
+  await pull(page, h, '1:a', { x: c.x, y: c.y + 100 });
+  let p = await P(page);
+  h.assert(near(p.angle, 90, 1.5), 'angle: the arm turns the parameter (clockwise here): ' + p.angle);
+  /* direction + length */
+  await addFx(page, 'motion-blur', { angle: 0, distance: 100 });
+  await pull(page, h, '0:t', { x: c.x + 60, y: c.y - 60 });
+  p = await P(page);
+  h.assert(near(p.angle, 45, 1.5) && near(p.distance, 2 * Math.hypot(60, 60) / zoom, 4), 'line: direction and length from the tip: ' + p.angle + ', ' + p.distance + ' (zoom ' + zoom + ')');
+  /* shadow tip */
+  await addFx(page, 'cast-shadow', { opacity: 0.5, direction: 0, elevation: 45, ground: 0.5, height: 200, anchor: { x: 0.5, y: 0.5 } });
+  await pull(page, h, '0:t', { x: c.x - 100, y: c.y + 50 });
+  p = await P(page);
+  const len = Math.hypot(100, 50 / 0.5) / zoom;
+  h.assert(near(p.direction, 135, 2) && near(p.elevation, Math.atan2(200, len) * 180 / Math.PI, 1.5), 'shadow tip: direction and light elevation: ' + p.direction + ', ' + p.elevation);
+  await pull(page, h, 'p:anchor', { dx: 30, dy: 0 });
+  h.assert(near((await P(page)).anchor.x, 0.5 + 30 / box.w, 0.01), 'the contact point moves too');
+  /* contact line and width */
+  await addFx(page, 'floating-shadow', { opacity: 0.5, width: 200, anchor: { x: 0.5, y: 0.6 } });
+  await pull(page, h, '0:t', { dx: 30, dy: 0 });
+  h.assert(near((await P(page)).width, 200 + 60 / zoom, 6), 'floating shadow: the end of the contact line sets the width: ' + (await P(page)).width);
+  await addFx(page, 'floor-reflection', { opacity: 0.4, anchor: { x: 0.5, y: 0.6 } });
+  h.assert(await page.locator('.xp-handles line').count() === 1 && await page.locator('.xp-handles .xp-h-pt').count() === 1, 'floor reflection: a contact line through its anchor');
+  await pull(page, h, 'p:anchor', { dx: 0, dy: 40 });
+  h.assert(near((await P(page)).anchor.y, 0.6 + 40 / box.h, 0.01), 'and the line moves with it');
+  /* mesh */
+  await addFx(page, 'mesh-warp', {});
+  h.assert.equal(await page.locator('.xp-handles .xp-h-pt').count(), 16, 'mesh: sixteen points');
+  h.assert.equal(await page.locator('.xp-handles line').count(), 24, 'joined along rows and columns');
+  const m0 = await page.evaluate(() => window.LE.fx.defaults('mesh-warp').p11), m12 = await page.evaluate(() => window.LE.fx.defaults('mesh-warp').p12);
+  await pull(page, h, 'p:p11', { dx: 25, dy: 15 });
+  p = await P(page);
+  h.assert(near(p.p11.x, m0.x + 25 / box.w, 0.01) && near(p.p11.y, m0.y + 15 / box.h, 0.01) && (p.p12 === undefined || (p.p12.x === m12.x && p.p12.y === m12.y)), 'mesh: one point moves, the others stay: ' + JSON.stringify(p.p11));
+  /* 44 px targets */
+  const hit = await page.evaluate(() => { const r = document.querySelector('.xp-handles .xp-h-pt .xp-h-hit').getBoundingClientRect(); return Math.min(r.width, r.height); });
+  h.assert(hit >= 44, 'handles have 44 px targets: ' + hit);
+  /* The develop panel selects by touch of a control: handles follow, and leave with another layer's selection. */
+  await addFx(page, 'vignette', { amount: -30 });
+  await page.evaluate(() => window.LE.expert.emit('fx-select', null));
+  h.assert.equal(await page.locator('.xp-handles .xp-h-pt').count(), 0, 'nothing selected, nothing shown');
+  await page.evaluate(() => window.LE.expert.workspace.components().develop.open('Optics', true));
+  await page.waitForTimeout(150);
+  await page.locator('#xp-right .xp-fxpanel[data-fx="vignette"] [data-param="amount"] .xp-slider-track, #xp-right .xp-fxpanel[data-fx="vignette"] [data-param="amount"]').first().click();
+  await page.waitForTimeout(150);
+  h.assert.equal(await page.locator('.xp-handles .xp-h-pt[data-id="p:center"]').count(), 1, 'touching the effect in the develop panel shows its handles');
+  h.assert.noErrors(page);
+};
+
 module.exports = cases;

@@ -181,7 +181,7 @@
       return g.pass(CAST_COMP, u);
     },
     support: GPU_HEAVY,
-    ui: { section: 'Shadows & reflections', order: 20, controls: ['opacity', 'direction', 'elevation', 'ground', 'perspective', { heading: 'Softness' }, 'blurNear', 'blurFar', 'fade', { heading: 'Placement' }, 'anchor', 'height', 'clip', { param: 'clipY', when: { clip: true } }, { param: 'clipSoft', when: { clip: true } }, { heading: 'Colour' }, 'color', 'receive', 'only'] },
+    ui: { section: 'Shadows & reflections', order: 20, handles: { kind: 'line', anchor: 'anchor', angle: 'direction', cw: true, elevation: 'elevation', height: 'height', squash: 'ground' }, controls: ['opacity', 'direction', 'elevation', 'ground', 'perspective', { heading: 'Softness' }, 'blurNear', 'blurFar', 'fade', { heading: 'Placement' }, 'anchor', 'height', 'clip', { param: 'clipY', when: { clip: true } }, { param: 'clipSoft', when: { clip: true } }, { heading: 'Colour' }, 'color', 'receive', 'only'] },
     agent: {
       summary: 'A shadow cast by the cut-out onto the ground, from a light at a direction and elevation: hard at the contact, softer and fainter with distance. Composited under the subject in linear light.',
       tips: ['Set anchor and height from LE.fx.composite.contact() (or use stage()); a wrong contact point makes the shadow float, a too small height cuts off the far end.', 'Soft daylight: elevation 35–50, blurNear 1–2, blurFar 0.05–0.1 × subject height, opacity 0.5–0.7. Hard sun: elevation 25–40, blurFar 4–8, opacity 0.75.', 'direction 270 (away) hides most of the shadow behind the subject; 300–330 or 210–240 read best. Use shadowFromVanishing() so several subjects agree.', 'Put it after floor-reflection and refine-edge in the stack; pair with contact-shadow for a grounded look.', 'Each tile must read the whole shadow length: very long shadows (elevation under 15°) on large exports can exceed the tile reach and show seams.'],
@@ -274,7 +274,7 @@
       return g.pass(FLOAT_COMP, Object.assign({ u_c: gm.c, u_r: gm.r, u_sg: gm.sigma, u_op: gm.op, u_core: p.core, u_only: p.only ? 1 : 0 }, shadeU(g, p)));
     },
     support: GPU,
-    ui: { section: 'Shadows & reflections', order: 30, controls: ['opacity', 'height', 'width', 'aspect', 'softness', 'core', 'drop', 'anchor', { heading: 'Colour' }, 'color', 'receive', 'only'] },
+    ui: { section: 'Shadows & reflections', order: 30, handles: { kind: 'line', anchor: 'anchor', length: 'width', unit: 'px', half: true }, controls: ['opacity', 'height', 'width', 'aspect', 'softness', 'core', 'drop', 'anchor', { heading: 'Colour' }, 'color', 'receive', 'only'] },
     agent: {
       summary: 'An elliptical shadow on the ground under a hovering object: wider, softer and fainter as height grows. One pass, no neighbourhood.',
       tips: ['Typical floating product: opacity 0.5, height 0.1–0.2 × subject height, width 0.8 × subject width, flatness 0.12.', 'Set anchor to the bottom of the subject (contact()); the shadow sits height × drop below it.', 'For a resting object use contact-shadow instead.'],
@@ -549,7 +549,7 @@
     grow: function (p, s) { return p.opacity > 0 ? reflGrow(p, s) : 0; },
     passes: function (g, p) { return reflPasses(g, p, false); },
     support: GPU_HEAVY,
-    ui: { section: 'Shadows & reflections', order: 90, controls: ['opacity', 'distance', 'blur', 'roughness', 'fresnel', 'perspective', 'tint', 'anchor', { heading: 'Ripple' }, 'ripple', { param: 'waveSize', when: {} }, 'seed', 'only'] },
+    ui: { section: 'Shadows & reflections', order: 90, handles: { kind: 'band', center: 'anchor' }, controls: ['opacity', 'distance', 'blur', 'roughness', 'fresnel', 'perspective', 'tint', 'anchor', { heading: 'Ripple' }, 'ripple', { param: 'waveSize', when: {} }, 'seed', 'only'] },
     agent: {
       summary: 'A mirror image of the subject on a glossy floor: flipped about the contact line, fading and blurring with distance, stronger near the contact (fresnel), optionally rippled.',
       tips: ['Glossy acrylic: opacity 0.35, distance 0.5 × subject height, roughness 0.1, fresnel 0.6. Satin table: opacity 0.2, roughness 0.5, distance 0.35 × height.', 'Dark glossy surface: tint near the floor colour (e.g. #808080) and opacity 0.5.', 'Put it before the shadows in the stack, so shadows are not reflected; reflections are only drawn below the contact line.', 'perspective 0.8–0.95 when the camera looks down on the product.'],

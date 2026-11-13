@@ -13,6 +13,12 @@
   function c() { return global.LEStudio; }
 
   /* ---------- Searchable effect menu, grouped like the registry ---------- */
+  /* An effect chosen from the add-effect list: appended in one undo step and selected, so its on-canvas handles show. */
+  function addPicked(layerId, type) {
+    var fxId = X.doc.addFx(layerId, type, { append: true }, X.gesture());
+    X.emit('fx-select', { layerId: layerId, type: type, fxId: fxId });
+    return fxId;
+  }
   function fxMenu(anchor, title, pick) {
     var defs = X.defs();
     var node = h('<div class="xp-fxmenu"><label class="xp-search">' + X.ic('search') + '<input type="search" placeholder="Search effects" aria-label="Search effects" autocomplete="off"></label><div class="xp-fxmenu-list" role="listbox" aria-label="' + esc(title) + '"></div></div>');
@@ -208,7 +214,7 @@
       var add = ul.querySelector('.xp-fx-add');
       if (!add) {
         add = h('<li class="xp-fx-add"><button type="button" class="xp-linkbtn" aria-haspopup="dialog">' + X.ic('plus') + '<span>Add effect</span></button></li>');
-        add.querySelector('button').addEventListener('click', function (e) { var b = e.currentTarget; fxMenu(b, 'Add effect', function (id) { X.doc.addFx(l.id, id, { append: true }, X.gesture()); openFx[l.id] = true; }); });
+        add.querySelector('button').addEventListener('click', function (e) { var b = e.currentTarget; fxMenu(b, 'Add effect', function (id) { addPicked(l.id, id); openFx[l.id] = true; }); });
       }
       ul.appendChild(add);
     }
@@ -274,11 +280,13 @@
       li.classList.add('is-open');
       li.querySelector('.xp-fx-name').setAttribute('aria-expanded', 'true');
       openEntry[fxId] = { panel: p, maskCtl: mk, blend: bs };
+      X.emit('fx-select', { layerId: layerId, type: en.type, fxId: fxId });
     }
     function closeEntry(fxId) {
       var oe = openEntry[fxId]; if (!oe) return;
       oe.panel.destroy(); if (oe.maskCtl) oe.maskCtl.destroy();
       delete openEntry[fxId];
+      var hs = X.handles && X.handles.selected(); if (hs && hs.fxId === fxId) X.emit('fx-select', null);
       var li = list.querySelector('[data-fx="' + fxId + '"]');
       if (li) { li.classList.remove('is-open'); li.querySelector('.xp-fx-body').hidden = true; li.querySelector('.xp-fx-body').innerHTML = ''; li.querySelector('.xp-fx-name').setAttribute('aria-expanded', 'false'); }
     }
@@ -394,7 +402,7 @@
         { label: l.visible === false ? 'Show' : 'Hide', icon: l.visible === false ? 'eye' : 'eyeOff', fn: function () { X.doc.patchLayer(id, { visible: l.visible === false }, X.gesture()); } },
         { label: l.locked ? 'Unlock' : 'Lock', icon: l.locked ? 'unlock' : 'lock', fn: function () { scene().lock(id, !l.locked); } },
         { sep: true },
-        { label: 'Add effect…', icon: 'fx', disabled: l.type !== 'image' && l.type !== 'group' && l.type !== 'adjust', fn: function () { fxMenu(anchor, 'Add effect', function (t) { X.doc.addFx(id, t, { append: true }, X.gesture()); openFx[id] = true; }); } },
+        { label: 'Add effect…', icon: 'fx', disabled: l.type !== 'image' && l.type !== 'group' && l.type !== 'adjust', fn: function () { fxMenu(anchor, 'Add effect', function (t) { addPicked(id, t); openFx[id] = true; }); } },
         { label: 'New adjustment layer above…', icon: 'adjust', fn: function () { addAdjustMenu(anchor, id); } },
         l.type === 'adjust' ? { label: l.clip ? 'Release clipping' : 'Clip to layer below', icon: 'clip', fn: function () { X.doc.patchLayer(id, { clip: !l.clip }, X.gesture()); } } : null,
         { label: m ? 'Paste mask (replace)' : 'Paste mask', icon: 'paste', disabled: !X.clip.has(), fn: function () { X.doc.setMask(id, null, X.clip.paste(), X.gesture()); } },
@@ -413,7 +421,7 @@
     el.querySelector('[data-act="fx"]').addEventListener('click', function (e) {
       var id = selected()[0] || (c().targetImage() || {}).id;
       if (!id) { c().toast('Select a photo, a group or an adjustment layer first.'); return; }
-      fxMenu(e.currentTarget, 'Add effect', function (t) { X.doc.addFx(id, t, { append: true }, X.gesture()); openFx[id] = true; X.lsSet('le-expert-fxopen', openFx); });
+      fxMenu(e.currentTarget, 'Add effect', function (t) { addPicked(id, t); openFx[id] = true; X.lsSet('le-expert-fxopen', openFx); });
     });
     el.querySelector('[data-act="mask"]').addEventListener('click', function () {
       var id = selected()[0]; if (!id) { c().toast('Select a layer first.'); return; }

@@ -354,6 +354,7 @@
     if (panelComp && panelComp.layers && !X.scopes.interactive) panelComp.layers.render();
     X.scopes.request();
     viewChanged();
+    if (X.handles) X.handles.sync();
     if (cmp.mode !== 'off') cmpRenderLater();
     if (maskView) { var m = X.doc.getMask(maskView.layerId, maskView.fxId); if (m) { maskView.mask = m; paintMask(); } }
   });
