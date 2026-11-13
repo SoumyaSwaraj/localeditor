@@ -3,7 +3,9 @@
 'use strict';
 const fx = require('./lib/fx');
 
-const GRADE = ['tone-curve', 'hue-curves', 'hsl', 'bw-mix', 'selective-color', 'selective-color-tones', 'channel-mixer', 'color-grading', 'lift-gamma-gain', 'cdl', 'color-balance', 'gradient-map', 'photo-filter', 'vibrance', 'skin-tone', 'calibration', 'temperature', 'lut'];
+/* whites, neutrals and blacks: the sample of the former second effect, "selective-color-tones" */
+const TONES = { method: 'relative', whitesY: -30, whitesK: 10, neutralsC: 20, neutralsY: -15, blacksC: 40, blacksK: -30 };
+const GRADE = ['tone-curve', 'hue-curves', 'hsl', 'bw-mix', 'selective-color', 'channel-mixer', 'color-grading', 'lift-gamma-gain', 'cdl', 'color-balance', 'gradient-map', 'photo-filter', 'vibrance', 'skin-tone', 'calibration', 'temperature', 'lut'];
 const CARD = { card: [256, 192] };
 
 /* Representative, non-neutral settings for every effect: used for the CPU/GPU comparison and the goldens. */
@@ -12,8 +14,8 @@ const SAMPLES = {
   'hue-curves': [{ hueHue: { master: [[0, 0.5], [0.45, 0.5], [0.6, 0.38], [0.75, 0.5], [1, 0.5]] }, hueSat: { master: [[0, 0.6], [0.3, 0.3], [0.6, 0.7], [1, 0.6]] }, hueLum: { master: [[0, 0.5], [0.6, 0.3], [1, 0.5]] }, lumSat: { master: [[0, 0.2], [0.4, 0.5], [1, 0.5]] }, satSat: { master: [[0, 0.5], [0.6, 0.5], [1, 0.4]] } }],
   hsl: [{ mixer: [{ h: 30, s: -40, l: 10 }, { h: 0, s: 30, l: 20 }, { h: -40, s: -60, l: 0 }, { h: 50, s: -50, l: -40 }, { h: -30, s: 40, l: -10 }, { h: -60, s: 30, l: -50 }, { h: 20, s: -30, l: 30 }, { h: 0, s: 60, l: -20 }] }],
   'bw-mix': [{ convert: true, reds: 110, yellows: 90, greens: -20, cyans: 30, blues: -50, magentas: 150, tintHue: 35, tint: 30 }],
-  'selective-color': [{ redsC: -40, redsM: 20, redsY: 30, redsK: -20, yellowsC: 30, yellowsK: 25, greensM: 50, greensK: -30, cyansC: 40, cyansY: -40, bluesY: 30, bluesK: 40, magentasM: -50, magentasK: 10 }],
-  'selective-color-tones': [{ method: 'relative', whitesY: -30, whitesK: 10, neutralsC: 20, neutralsY: -15, blacksC: 40, blacksK: -30 }, { method: 'absolute', whitesY: -20, whitesC: 10, neutralsM: 15, blacksC: 30, blacksK: 20 }],
+  'selective-color': [{ redsC: -40, redsM: 20, redsY: 30, redsK: -20, yellowsC: 30, yellowsK: 25, greensM: 50, greensK: -30, cyansC: 40, cyansY: -40, bluesY: 30, bluesK: 40, magentasM: -50, magentasK: 10 },
+    TONES, { method: 'absolute', whitesY: -20, whitesC: 10, neutralsM: 15, blacksC: 30, blacksK: 20 }, { method: 'absolute', redsC: -40, yellowsK: 25, bluesY: 30, whitesY: -20, neutralsM: 15, blacksK: 20 }],
   'channel-mixer': [{ rr: 120, rg: -10, rb: 5, gr: 10, gg: 80, gb: 10, br: -20, bg: 30, bb: 110, rc: 2, gc: 0, bc: 4 }, { monochrome: true, rr: 40, rg: 50, rb: 10 }],
   'color-grading': [{ shadows: { h: 195, a: 0.6, l: -0.3 }, midtones: { h: 90, a: 0.2, l: 0.2 }, highlights: { h: 35, a: 0.5, l: 0.2 }, global: { h: 300, a: 0.1, l: -0.2 }, balance: 30, blending: 80 }],
   'lift-gamma-gain': [{ lift: { h: 210, a: 0.3, l: 0.1 }, gamma: { h: 90, a: 0.2, l: 0.2 }, gain: { h: 35, a: 0.3, l: -0.2 }, offset: { h: 0, a: 0.1, l: 0.02 } }],
@@ -192,9 +194,10 @@ cases['ops: grading entries round-trip through fx.add, fx.update, fx.reorder and
     ids.forEach((id) => { const s = O.apply(doc, { op: 'fx.add', layer: 'a', entry: FX.defs().find((d) => d.id === id).agent.example }); out.push([id, s.ok, s.warnings.length]); doc = s.doc; made.push(s.id); });
     let s = O.apply(doc, { op: 'fx.update', layer: 'a', id: made[0], p: { lights: 999 } });
     const clamped = s.doc.layers[0].fx[0].p.lights; doc = s.doc;
-    s = O.apply(doc, { op: 'fx.update', layer: 'a', id: made[7], p: { shadows: { h: 10, a: 5, l: 0 } } });
-    const wheel = s.doc.layers[0].fx[7].p.shadows; doc = s.doc;
-    s = O.apply(doc, { op: 'fx.reorder', layer: 'a', id: made[17], index: 0 }); doc = s.doc;
+    const cg = ids.indexOf('color-grading');
+    s = O.apply(doc, { op: 'fx.update', layer: 'a', id: made[cg], p: { shadows: { h: 10, a: 5, l: 0 } } });
+    const wheel = s.doc.layers[0].fx[cg].p.shadows; doc = s.doc;
+    s = O.apply(doc, { op: 'fx.reorder', layer: 'a', id: made[ids.indexOf('lut')], index: 0 }); doc = s.doc;
     const first = doc.layers[0].fx[0].type;
     made.forEach((id) => { doc = O.apply(doc, { op: 'fx.remove', layer: 'a', id }).doc; });
     const ops = FX.grade.presetOps('a', 'teal-orange');
@@ -411,6 +414,37 @@ cases['workspace: the develop panel builds every grading effect from its registr
   GRADE.forEach((id) => h.assert(r[id].controls > 0 && r[id].notes === 0, id + ' builds its controls: ' + JSON.stringify(r[id])));
   h.assert(r.written.some((s) => /^color-grading:.*"h":200/.test(s)), 'a wheel write creates the entry: ' + r.written);
   h.assert(!warns.length, 'no panel warnings: ' + warns.join(' | '));
+};
+
+cases['hardened core: selective colour is one effect (37 parameters); the old two-entry form still reads and draws the same; a LUT comes through g.asset'] = async ({ browser, base, h }) => {
+  const page = await fx.page(browser, base);
+  const fam = SAMPLES['selective-color'][0];
+  const old = await fx.render(page, Object.assign({ fx: [{ type: 'selective-color', p: fam }, { type: 'selective-color-tones', p: TONES }] }, CARD));
+  const one = await fx.render(page, Object.assign({ fx: [{ type: 'selective-color', p: Object.assign({}, fam, TONES) }] }, CARD));
+  await fx.same(page, old, one, 'two entries of the old form against one folded entry', { max: 0, over: 0 });
+  /* the golden of the former second effect, drawn from an entry that still carries its type */
+  await fx.golden(page, 'grade-selective-color-tones', await fx.render(page, Object.assign({ fx: [{ type: 'selective-color-tones', p: TONES }] }, CARD)));
+  const r = await page.evaluate(async (TONES) => {
+    const FX = window.LE.fx, v = FX.validate({ type: 'selective-color-tones', p: TONES });
+    const doc = { width: 100, height: 100, layers: [{ id: 'a', type: 'image', x: 0, y: 0, w: 100, h: 100, fx: [{ id: 'old', type: 'selective-color-tones', p: TONES }] }] };
+    const up = FX.ops.apply(doc, { op: 'fx.update', layer: 'a', id: 'old', p: { redsC: -10 } });
+    /* a LUT that only the core's data assets hold: an inverting 2-point cube */
+    const text = 'TITLE "invert"\nLUT_3D_SIZE 2\n1 1 1\n0 1 1\n1 0 1\n0 0 1\n1 1 0\n0 1 0\n1 0 0\n0 0 0\n', id = 'c'.repeat(64);
+    const c = document.createElement('canvas'); c.width = c.height = 8; const x = c.getContext('2d'); x.fillStyle = '#204080'; x.fillRect(0, 0, 8, 8);
+    const px = () => Array.from(FX.apply(c, { fx: [{ type: 'lut', p: { lut: id } }] }).getContext('2d').getImageData(4, 4, 1, 1).data).slice(0, 3);
+    const before = px();
+    FX.data.put(id, text);
+    const after = px();
+    return { params: Object.keys(FX.describe('selective-color').params).length, listed: FX.list().indexOf('selective-color-tones'), index: FX.describe().some((e) => e.id === 'selective-color-tones'), get: FX.get('selective-color-tones').id,
+      type: v.entry.type, ok: v.ok && v.warnings.length === 0, kept: v.entry.p.neutralsC, up: up.ok && up.doc.layers[0].fx[0].type, upP: up.ok && [up.doc.layers[0].fx[0].p.redsC, up.doc.layers[0].fx[0].p.blacksC],
+      problems: FX.problems(doc).length, before, after, uses: /g\.asset|getLut\(p\.lut, g\)/.test(String(FX.grade.getLut) + String(FX.get('lut').passes)), project: /getAsset/.test(String(FX.grade.getLut)) };
+  }, TONES);
+  h.assert(r.params === 37 && r.listed < 0 && !r.index && r.get === 'selective-color', 'one registration with 37 parameters; the old id is an alias, not a listed effect: ' + JSON.stringify([r.params, r.listed, r.index, r.get]));
+  h.assert(r.ok && r.type === 'selective-color' && r.kept === 20 && r.problems === 0, 'an old entry validates clean as the folded effect: ' + JSON.stringify([r.ok, r.type, r.kept, r.problems]));
+  h.assert(r.up === 'selective-color' && r.upP.join() === '-10,40', 'an operation on an old entry writes the new type and keeps its values: ' + JSON.stringify([r.up, r.upP]));
+  h.assert.equal(r.before.join(), '32,64,128', 'a LUT that has not arrived leaves the picture alone');
+  h.assert(Math.abs(r.after[0] - 223) <= 2 && Math.abs(r.after[1] - 191) <= 2 && Math.abs(r.after[2] - 127) <= 2 && !r.project, 'the LUT is read from the core\'s data assets and applied: ' + r.after);
+  h.assert.noErrors(page);
 };
 
 module.exports = cases;

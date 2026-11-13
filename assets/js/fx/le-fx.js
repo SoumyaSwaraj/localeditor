@@ -199,6 +199,7 @@
     d.silhouette = d.needs.indexOf('alpha') >= 0 || d.needs.indexOf('scene') >= 0;
     if (!defs[d.id]) order.push(d.id);
     defs[d.id] = d;
+    (Array.isArray(def.aliases) ? def.aliases : []).slice(0, 8).forEach(function (a) { if (typeof a === 'string' && /^[a-z][a-z0-9.-]{1,39}$/.test(a) && !own(defs, a)) aliases[a] = d.id; });
     resolveMemo = {};
     revision++; shared = null;
     /* E7: every effect says what a device needs. Works whether le-support.js has loaded or not. */
@@ -207,7 +208,10 @@
     return d;
   };
   FX.list = function () { return order.slice(); };
-  FX.get = function (id) { return own(defs, id) ? defs[id] : null; };
+  /* An effect may name earlier ids it replaces (`aliases`): an entry of such a type is read as this effect (same parameter
+     names) and written back under the new id by validation, so documents made before a fold keep working. */
+  var aliases = {};
+  FX.get = function (id) { return own(defs, id) ? defs[id] : own(aliases, id) && own(defs, aliases[id]) ? defs[aliases[id]] : null; };
   FX.defaults = function (id) {
     var d = FX.get(id);
     if (!d) return null;
