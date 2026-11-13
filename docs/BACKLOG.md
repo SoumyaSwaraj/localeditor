@@ -153,3 +153,12 @@ Tests:
 ## Full suite, 13 Nov, final branch state (49e30af)
 
 `tests/run-all.sh 2`: 1,125 passed, 1 known, 0 failed. The one known is QA-017. Run on software rendering in the build sandbox; nothing here measures real GPUs, phones, cameras or Safari.
+
+## Wrap-up builds started 13 Nov (owner un-paused the left-undone items)
+
+- Expert workspace: on-canvas Patch and Red-eye tools, liquify freeze overlay, generic `ui.handles`, grouped add-effect list with `ui.order`, Expert deep links.
+- Renderer core and packs: float after RAW develop and the RAW seam in the core, pack adoption of the hardened core, `clip`/`g.below`/fill, analysis per document, untested agent helpers.
+- Agent items: brand file, design as code with a GitHub Action, embed viewer, consent handshake between the command-line tool and an open tab.
+- First load: split `le-studio-panels.js` and `le-pwa.js`; Expert looks as recipes (workflow version 2.0).
+- After these merge: one cross-pack test pass (X7) and a full `tests/run-all.sh`.
+- Camera RAW source-request contact is set: hello@withevergrow.com.
