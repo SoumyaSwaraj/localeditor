@@ -205,7 +205,8 @@ button.xp-part-tog:hover { background: var(--surface-2); }
 .xp-fxmenu-list { max-height: min(56vh, 420px); overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 1px; }
 .xp-fxmenu-grp { padding: 10px 8px 4px; font-size: 10.5px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
 .xp-fxmenu-list [role="option"] { display: grid; gap: 1px; text-align: left; padding: 7px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); cursor: pointer; font: 650 13px var(--font, sans-serif); }
-.xp-fxmenu-list [role="option"] small { font-weight: 500; font-size: 11.5px; color: var(--faint); }
+.xp-fxmenu-list [role="option"] em { margin-left: 8px; font-style: normal; font-weight: 600; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+.xp-fxmenu-list [role="option"] small { font-weight: 500; font-size: 11.5px; color: var(--faint); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .xp-fxmenu-list [role="option"]:hover, .xp-fxmenu-list [aria-selected="true"] { background: var(--accent-soft); }
 
 /* ---------- Canvas overlays ---------- */

@@ -174,12 +174,13 @@
       o.order = i;
       byId[o.id] = o;
       return o;
-    }).sort(function (a, b) { return a.rank - b.rank || a.order - b.order; });
+    }).sort(function (a, b) { return a.rank - b.rank || uiOrder(a) - uiOrder(b) || a.order - b.order; });   /* section, then ui.order, then registration */
     var bySec = {};
     list.forEach(function (d) { (bySec[d.section] = bySec[d.section] || []).push(d.id); });
     defCache = { src: R, n: raw.length, ver: ver, list: list, byId: byId, bySec: bySec, t: now };
     return list;
   }
+  function uiOrder(d) { return d.ui && typeof d.ui.order === 'number' ? d.ui.order : 1e9; }
   function def(id) { defs(); return defCache.byId[id] || null; }
   function sectionTypes(sec) { defs(); return defCache.bySec[sec] || []; }
   function sections() {
