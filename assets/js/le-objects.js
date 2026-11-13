@@ -4465,7 +4465,7 @@
   LE.Scene.makerOf = makerOf;
   LE.Scene.expertOf = expertOf;
   LE.Scene.expertAssets = expertAssets;
-  LE.Scene._fx = { cutoutAlpha: cutoutAlpha, cutoutApply: cutoutApply, cutoutOutline: cutoutOutline };
+  LE.Scene._fx = { cutoutAlpha: cutoutAlpha, cutoutApply: cutoutApply, cutoutOutline: cutoutOutline, steps: imageSteps };
   LE.Scene.printOf = printOf;
   LE.Scene.bindOf = bindOf;
   LE.Scene.valuesOf = valuesOf;

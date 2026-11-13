@@ -130,24 +130,29 @@ rawLib().then(function () { return { formats: LE.raw.formats(), presets: LE.raw.
 | `tools/dng-synth/dng-synth.js` | `writeDNG({ shutter: [n, d] })` writes the exposure time (for bracket tests) |
 | `tests/fx.test.js` | the section list in the registry case now has every section of `docs/EXPERT-UI.md` (it lacked Detail) |
 
-Not changed: `le-project.js`, `le-fx-gl.js`, `le-studio*.js`. The float-source provider is a registry in the pack
-(`LE.fx.sources.register(kind, provider)`), and the pack wraps `LE.fx.layer`: for a RAW/HDR layer it develops the float data, then
-hands the developed picture to the unchanged `LE.fx.layer` as the layer's photo (crop, legacy adjust and filters, retouch, cut-out,
-the rest of the stack, masks). **Proposal (workspace)**: sort registrations inside a section by `ui.order`, as `docs/FX-AUTHORING.md`
+**Since the wrap-up (P6) the seam is in the core.** The float-source registry (`LE.fx.sources`: `register`, `lazy`, `split`,
+`inject`, `is`, `forget`) is in `le-fx.js` and the source stage in `LE.fx.layer` (`le-fx-gl.js`); the develop pack only declares
+its four effects as that stage (`source: { order, required }`, `inject(p, ctx)`) and says where this module is. A RAW/HDR layer is
+developed from its float data, the cut-out is applied, and the picture goes on **as float pixels** (cropped) through the rest of the
+stack, frame, masks and quad; see "Float sources" in `docs/FX-AUTHORING.md`. `LE.Scene._fx.steps` (one name added in
+`le-objects.js`) tells the core whether a layer has legacy 8-bit steps. **Proposal (workspace)**: sort registrations inside a section by `ui.order`, as `docs/FX-AUTHORING.md`
 says (`assets/js/expert/expert.js`, the `defs()` sort); today Develop is listed after the starter Light effects. Tried here; it changes
 which effect `tests/expert-ui.test.js` finds first in the add-effect search, so it belongs with the workspace owner. **Proposal**: move that wrapper into `FX.layer` itself (about 25 lines) so other float sources (depth,
 scans, a future HDR display path) use it without a pack.
 
 ## Limits, said plainly
 
-- Masks on develop entries are evaluated on the uncropped photo (the develop stage runs before crop).
-- The develop output is display-referred 8-bit-dithered before the rest of the stack (as any photo); scene-referred work belongs in
-  the develop entries.
+- Masks on develop entries use layer-box fractions like every other mask (also on a cropped layer); under a perspective quad
+  they are in the coordinates before the warp.
+- The develop output is display-referred and stays float through the rest of the stack. A layer that also has legacy adjustments,
+  a legacy filter, colour background removal or a baked retouch overlay is quantised to 8 bits after the develop stage, because
+  those steps are 8-bit CPU code. Scene-referred work still belongs in the develop entries.
 - Highlight reconstruction leaves faint mint or lilac casts at the edge of large clipped areas (better than clip-to-white on
   brightness, about equal on colour); see the test numbers.
 - No lens-profile database (lensfun data is CC-BY-SA, outside the licence rule); DNG `WarpRectilinear` is parsed, not applied.
 - Embedded DNG profiles (`ProfileHueSatMap`, look tables) are not applied; "Camera neutral" is our own curve on the camera matrix.
-- Output gamut sRGB; a P3 export would need the gamut compression to target P3 (one constant).
+- Output gamut: sRGB in the studio (its compositor is sRGB). `LE.fx.apply(source, { colorSpace: 'display-p3' })` makes
+  `develop.basic` aim its gamut compression and final clip at Display P3 (`g.gamut`).
 - HDR merge in JavaScript at ≤ 8 MP; the GPU port of the merge (planned in the research) is not done.
 
 ## Focus stacking (proposal only)

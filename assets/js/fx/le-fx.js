@@ -186,6 +186,11 @@
       grow: typeof def.grow === 'function' ? def.grow : null,
       draft: typeof def.draft === 'function' ? def.draft : null,
       passes: def.passes, inert: def.inert === true,   /* inert: described and validated, never drawn */
+      /* source: { order, required } puts the effect in the source stage of a layer drawn from float data (RAW, HDR): it runs on
+         the uncropped scene-referred picture, in that order, before everything else. inject(p, ctx) fills in what only the
+         layer's source knows (a camera matrix, the picture's extent); its result is never written to the document. */
+      source: isObj(def.source) || def.source === true ? { order: isNum(def.source.order) ? def.source.order : 50, required: def.source.required === true } : null,
+      inject: typeof def.inject === 'function' ? def.inject : null,
       cpu: typeof def.cpu === 'function' ? def.cpu : null,
       support: { needs: Array.isArray(sup.needs) ? sup.needs.slice() : ['webgl2'], wants: Array.isArray(sup.wants) ? sup.wants.slice() : [], memoryMB: isNum(sup.memoryMB) ? sup.memoryMB : 0 },
       ui: isObj(def.ui) ? clone(def.ui) : { section: 'Effects' },
@@ -795,6 +800,51 @@
           }
         });
       };
+    }
+  };
+
+  /* ---------- Float sources (the seam for RAW and HDR) ----------
+     LE.fx.sources.register(kind, provider)   kind: layer.raw.kind ('raw' when absent)
+       provider(layer, { targetMax, preview, draft, scene, entries }) → a promise of null or
+         { source: { data: Float32Array, width, height, channels: 3 | 4, space: 'linear' | 'display' }   upright, uncropped
+           box: { w, h }     the full-resolution size: the document pixels of the source stage, so radii mean the same in preview and export
+           key: string       identifies the pixels
+           ctx: { … }        handed to each source-stage effect's inject(p, ctx) }
+     LE.fx.sources.lazy(kind, load)   load() → a promise; called once when a layer of that kind is drawn and nothing is registered.
+     A layer is drawn from its float source when layer.raw.source.asset is set and a provider answers; otherwise from its 8-bit
+     picture, exactly as before. */
+  var providers = {}, lazies = {};
+  FX.sources = {
+    register: function (kind, fn) { if (typeof fn === 'function' && /^[a-z][\w-]{0,20}$/.test(kind)) providers[kind] = fn; },
+    lazy: function (kind, fn) { if (typeof fn === 'function' && /^[a-z][\w-]{0,20}$/.test(kind)) lazies[kind] = fn; },
+    get: function (kind) { return providers[kind] || null; },
+    provider: function (kind) {
+      if (providers[kind]) return Promise.resolve(providers[kind]);
+      return Promise.resolve(lazies[kind] ? lazies[kind](kind) : null).then(function () {
+        if (!providers[kind]) throw new Error('No source for "' + kind + '" layers.');
+        return providers[kind];
+      });
+    },
+    is: function (l) { return !!(l && l.type === 'image' && isObj(l.raw) && isObj(l.raw.source) && typeof l.raw.source.asset === 'string'); },
+    /* A stack split into the source stage (effects that declare `source`, in their fixed order, with a default entry for each
+       required one that is missing) and the rest. */
+    split: function (fx) {
+      var dev = [], rest = [];
+      (Array.isArray(fx) ? fx : []).forEach(function (e) { var d = e && defs[e.type]; if (d && d.source) dev.push(e); else if (e) rest.push(e); });
+      order.forEach(function (id) {
+        var d = defs[id];
+        if (d.source && d.source.required && !dev.some(function (e) { return e.type === id; })) dev.push({ id: 'src-' + id, type: id, on: true, amount: 1, blend: 'normal', p: {} });
+      });
+      dev = dev.map(function (e, i) { return [e, i]; }).sort(function (a, b) { return (defs[a[0].type].source.order - defs[b[0].type].source.order) || (a[1] - b[1]); }).map(function (q) { return q[0]; });
+      return { dev: dev, rest: rest };
+    },
+    inject: function (dev, ctx) {
+      return (dev || []).map(function (e) {
+        var o = clone(e), d = defs[o.type];
+        o.p = isObj(o.p) ? o.p : {};
+        if (d && d.inject) { var full = FX.defaults(o.type); Object.keys(o.p).forEach(function (k) { full[k] = o.p[k]; }); o.p = d.inject(full, ctx || {}) || full; }
+        return o;
+      });
     }
   };
 

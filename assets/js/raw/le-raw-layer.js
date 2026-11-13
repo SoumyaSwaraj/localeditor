@@ -301,7 +301,7 @@
       return y > 1e-6 ? m.map(function (v) { return v / y; }) : m;
     };
   }
-  /* The float-source provider registered with LE.fx.sources (see le-fx-develop.js). */
+  /* The float-source provider registered with LE.fx.sources (the registry and the source stage are in the core: le-fx.js, le-fx-gl.js). */
   function entry(list, type) { for (var i = 0; i < (list || []).length; i++) if (list[i].type === type && list[i].on !== false) return list[i]; return null; }
   function provide(layer, o) {
     var raw = layer.raw, kind = raw.kind || 'raw', basic = entry(o.entries, 'develop.basic'), detail = entry(o.entries, 'develop.detail'), lens = entry(o.entries, 'develop.lens');
