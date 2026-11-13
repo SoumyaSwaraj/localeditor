@@ -104,7 +104,7 @@ const h = await LE.hdr.mergeFiles(files, { deghost: 'medium' });
 LE.fx.ops.apply(doc, { op: 'fx.update', layer: id, id: entryId, p: { exposure: 0.5 } });   // develop settings are ordinary entries
 ```
 
-**Lines for `le-agent.js`** (owned by the agent-mode engineer; the same shape as the renderer's):
+**In agent mode** these are wired (`assets/js/le-agent.js`, the "Expert effects" block): operations `raw.open` (`file`: a reference from `LEAgent.file(blob, name)`, a `data:` URI or a local path), `hdr.merge` (`files`), `raw.settings` (`preset`, `from` or `settings`), `raw.autoTone`, and `LEAgent.catalog("raw")`. They run on the batch like every other operation (one undo step). The lines below are the calls they make:
 
 ```js
 // LEAgent.apply, ops 'raw.open' and 'hdr.merge' (files from the agent's file list), and 'raw.settings' / 'raw.autoTone':

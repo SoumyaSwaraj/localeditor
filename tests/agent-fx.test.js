@@ -331,6 +331,11 @@ cases['command line: fx operations are applied to the file, the render shows the
     if (ma != null) h.assert(mb > ma * 1.15, 'the render is brighter with the exposure effect: ' + ma + ' to ' + mb);
     r = await run(['apply', f, '-', '--json'], JSON.stringify([{ op: 'fx.add', layer: 'block', entry: { type: 'no-such-effect' } }]));
     h.assert(r.code === 1 && /Unknown effect type/.test(r.stdout + r.stderr), 'an unknown effect is refused: ' + (r.stdout + r.stderr).slice(0, 300));
+    r = await run(['apply', f, '-', '--json'], JSON.stringify([{ op: 'fx.call', layer: 'block', name: 'creative.look', args: { id: 'faded-summer' } }]));
+    h.assert(r.code === 0 && r.json.written, 'fx.call on the command line: ' + (r.stdout + r.stderr).slice(0, 400));
+    h.assert(JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).pages[0].layers.find((l) => l.id === 'block').fx.length > 2, 'the helper\'s entries are in the file');
+    r = await run(['apply', f, '-', '--json'], JSON.stringify([{ op: 'map.generate', layer: 'block', kind: 'depth' }]));
+    h.assert(r.code === 1 && /agent mode/.test(r.stdout + r.stderr), 'operations that need the open app say so: ' + (r.stdout + r.stderr).slice(0, 300));
     r = await run(['catalog', 'fx', '--json']);
     h.assert(r.code === 0 && r.json.items.length >= 20 && r.json.items.every((e) => e.id && e.summary), 'catalog fx lists the index: ' + r.stdout.slice(0, 200));
     r = await run(['catalog', 'fx', 'exposure', '--json']);
