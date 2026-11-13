@@ -378,4 +378,43 @@ cases['ops and agent helpers: round trip, contact, stage, match, noise, plane pl
   h.assert.noErrors(pg);
 };
 
+cases['hardened core: a long cast shadow is whole in every tile (g.whole), nothing is cut at the height; height, width and size default from the box'] = async ({ browser, base, h }) => {
+  const pg = await page(browser, base);
+  const r = await pg.evaluate(() => {
+    const T = window.cmpT, FX = window.LE.fx, png = (c) => c.toDataURL('image/png');
+    const pole = T.shape(100, 200, (x) => { x.fillStyle = '#000'; x.fillRect(44, 40, 12, 140); });
+    const at = (c, X, Y) => T.alphaAt(c, c._fx.padPx + X, c._fx.padPx + Y);
+    /* A low light toward the camera: the pole (140 high) throws a stripe 0.3 × 140 / tan(12°) = 198 long, far beyond a 64-pixel tile's own reach. */
+    const long = { opacity: 1, direction: 90, elevation: 12, ground: 0.3, perspective: 0, blurNear: 0, blurFar: 0, fade: 0, height: 140, anchor: { x: 0.5, y: 0.9 }, receive: 'normal' };
+    const one = FX.apply(pole, { fx: [{ type: 'cast-shadow', p: long }] }), many = FX.apply(pole, { fx: [{ type: 'cast-shadow', p: long }], tile: 64 });
+    const def = FX.get('cast-shadow');
+    /* a height far too small used to cut the shadow at 1.1 × height; now it only sets how blur and fade grow */
+    const low = FX.apply(pole, { fx: [{ type: 'cast-shadow', p: Object.assign({}, long, { elevation: 45, height: 40 }) }] });
+    /* 0 = from the box: the part above the contact point (0.9 × 200) */
+    const p45 = Object.assign({}, long, { elevation: 45, blurFar: 12, fade: 0.5 });
+    const auto = FX.apply(pole, { fx: [{ type: 'cast-shadow', p: Object.assign({}, p45, { height: 0 }) }] }), set = FX.apply(pole, { fx: [{ type: 'cast-shadow', p: Object.assign({}, p45, { height: 180 }) }] });
+    const fl = { opacity: 0.6, height: 10, anchor: { x: 0.5, y: 0.9 } };
+    const fAuto = FX.apply(pole, { fx: [{ type: 'floating-shadow', p: fl }] }), fSet = FX.apply(pole, { fx: [{ type: 'floating-shadow', p: Object.assign({ width: 80 }, fl) }] });
+    const mesh = Object.assign(window.LE.fx.composite.meshIdentity(), { p11: { x: 0.25, y: 0.3 }, p01: { x: 0.333, y: -0.1 } });
+    delete mesh.size;
+    const mAuto = FX.apply(pole, { fx: [{ type: 'mesh-warp', p: mesh }], tile: 64 }), mSet = FX.apply(pole, { fx: [{ type: 'mesh-warp', p: Object.assign({ size: 200 }, mesh) }] });
+    return {
+      one: png(one), many: png(many), far: [at(one, 50, 190), at(one, 50, 300), at(one, 50, 370), at(one, 50, 395)], tiles: FX.status().stats.tiles,
+      reach: [def.radius(FX.validate({ type: 'cast-shadow', p: long }).entry.p, 1, { w: 100, h: 200 }), def.grow(FX.validate({ type: 'cast-shadow', p: long }).entry.p, 1, { w: 100, h: 200 })],
+      low: [at(low, 50, 190), at(low, 50, 215)], auto: png(auto), set: png(set), fAuto: png(fAuto), fSet: png(fSet), mAuto: png(mAuto), mSet: png(mSet),
+      defaults: [FX.defaults('cast-shadow').height, FX.defaults('floating-shadow').width, FX.defaults('mesh-warp').size]
+    };
+  });
+  const buf = (u) => Buffer.from(u.split(',')[1], 'base64');
+  h.assert(r.far[0] > 240 && r.far[1] > 240 && r.far[2] > 240 && r.far[3] < 30, 'the stripe runs its whole length (to about y = 378): ' + r.far);
+  h.assert(r.reach[0] <= 8 && r.reach[1] >= 190, 'the tile reach is the blur alone (' + r.reach[0] + '), the growth is the projected box (' + r.reach[1] + ')');
+  await fx.same(pg, buf(r.one), buf(r.many), 'a 198-pixel shadow in one rectangle against 64-pixel tiles', { max: 2, over: 0.0005 });
+  h.assert(r.low[0] > 240 && r.low[1] > 240, 'a small height no longer cuts the far end: ' + r.low);
+  h.assert.equal(r.defaults.join(), '0,0,0', 'height, width and size default to "from the box"');
+  await fx.same(pg, buf(r.auto), buf(r.set), 'cast shadow: height 0 is the box above the contact point', { max: 0, over: 0 });
+  await fx.same(pg, buf(r.fAuto), buf(r.fSet), 'floating shadow: width 0 is 0.8 × the box', { max: 0, over: 0 });
+  await fx.same(pg, buf(r.mAuto), buf(r.mSet), 'mesh warp: no size, tiled, against the box\'s longer side in one rectangle', { max: 2, over: 0.0005 });
+  h.assert.noErrors(pg);
+};
+
 module.exports = cases;

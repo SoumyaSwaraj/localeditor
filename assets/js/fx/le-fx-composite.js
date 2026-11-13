@@ -106,40 +106,40 @@
     var L = 1 / Math.tan(clamp(p.elevation, 3, 89) * D2R), phi = p.direction * D2R;
     var ax = L * Math.cos(phi), ay = L * p.ground * Math.sin(phi);
     if (Math.abs(ay) < 0.04) ay = ay < 0 ? -0.04 : 0.04;   /* a shadow exactly along the ground line has no depth; keep a sliver */
-    var o = box ? [p.anchor.x * box.w, p.anchor.y * box.h] : [0, 0], H = Math.max(1, p.height);
+    /* height 0: from the layer box, the part of it above the contact line */
+    var o = box ? [p.anchor.x * box.w, p.anchor.y * box.h] : [0, 0], H = p.height > 0 ? p.height : box ? Math.max(1, p.anchor.y * box.h) : 300;
     var c = -p.perspective * 2 * ay / H;
     return { o: o, a: [ax, ay], c: c, H: H };
   }
-  /* Reach in target pixels. It depends on the subject height (a parameter, because radius/grow do not receive the layer box) and,
-     for the perspective term, on how far the silhouette spreads sideways from the anchor (bounded by the height). */
-  function castReach(p, scale) {
-    var gm = castGeo(p, null), H = gm.H * 1.1, r = 0;
+  /* The projection reads the whole silhouette from g.whole(), the same reduced copy for every tile, so the neighbourhood a tile
+     needs is the blur alone, however long the shadow is. */
+  function castReach(p, scale) { return reachOf(p.blurFar, scale) + 4; }
+  /* How far the shadow can lie outside the layer box: every subject pixel is inside the box, so the corners of the part of
+     the box above the contact line, projected, bound it. */
+  function castGrow(p, scale, box) {
+    box = box && box.w ? box : { w: 2 * Math.max(1, p.height), h: Math.max(1, p.height) };
+    var gm = castGeo(p, box), top = Math.max(1, gm.o[1]), gx = 0, gy = 0;
     [0, 0.25, 0.5, 0.75, 1].forEach(function (t) {
-      var h = t * H, w = Math.max(0.2, 1 + gm.c * h);
-      [-H, H].forEach(function (dx) {
-        var px = (dx + h * gm.a[0]) / w, py = h * gm.a[1] / w;
-        r = Math.max(r, Math.hypot(px - dx, py + h));
+      var h = t * top, w = Math.max(0.2, 1 + gm.c * h);
+      [-gm.o[0], box.w - gm.o[0]].forEach(function (dx) {
+        var x = gm.o[0] + (dx + h * gm.a[0]) / w, y = gm.o[1] + h * gm.a[1] / w;
+        gx = Math.max(gx, -x, x - box.w); gy = Math.max(gy, -y, y - box.h);
       });
     });
-    return Math.ceil(r * scale) + reachOf(p.blurFar, scale) + 4;
-  }
-  /* How far the shadow can lie outside the layer box, per axis: the subject is inside the box and above the contact line. */
-  function castGrow(p, scale) {
-    var gm = castGeo(p, null), H = gm.H * 1.1, wmin = Math.max(0.2, Math.min(1, 1 + gm.c * H));
-    var gx = (H * Math.abs(gm.a[0]) + H * Math.abs(1 / wmin - 1)) / wmin, gy = H * Math.abs(gm.a[1]) / wmin;
-    return Math.ceil(Math.max(gx, gy) * scale) + reachOf(p.blurFar, scale) + 4;
+    return Math.ceil(Math.max(gx, gy, 0) * scale) + reachOf(p.blurFar, scale) + 4;
   }
   var CAST_PROJ = [
-    'uniform vec2 u_o, u_a; uniform float u_c, u_hmax;',
+    'uniform vec2 u_o, u_a; uniform float u_c, u_far; uniform sampler2D u_w;',
+    /* The silhouette at a position in the layer box (document pixels): from the whole-layer copy, or (without one) from the tile. */
+    'float sil(vec2 q){ if (u_far > 0.5) { vec2 b = q / u_box; return texture(u_w, b).a * step(0.0, b.x) * step(b.x, 1.0) * step(0.0, b.y) * step(b.y, 1.0); } return texture(u_src, v_uv + docToUV(q - docPos())).a; }',
     'vec4 fx(){ vec2 u = docPos() - u_o; float den = u_a.y - u_c * u.y; if (den * u_a.y <= 0.0) return vec4(0.0);',
-    /* Heights above 1.1 × the subject height do not cast: the declared reach covers exactly that, so tiles always agree. */
     /* A pixel centred on the contact line has h = ±0 within rounding; accept up to three quarters of a pixel behind it so the row
        never flips between tiles. */
-    '  float h = u.y / den; if (h < -0.75 / u_scale.y * abs(1.0 / den) || h > u_hmax) return vec4(0.0); h = max(h, 0.0);',
+    '  float h = u.y / den; if (h < -0.75 / u_scale.y * abs(1.0 / den)) return vec4(0.0); h = max(h, 0.0);',
     /* Four taps across this pixel's footprint in height: a strongly foreshortened shadow minifies the subject vertically. */
     '  float dh = abs(1.0 / (u_scale.y * den)); float s = 0.0;',
     '  for (int i = 0; i < 4; i++) { float hh = max(h + dh * (float(i) - 1.5) * 0.25, 0.0); float w = max(1.0 + u_c * hh, 0.2);',
-    '    vec2 q = vec2(u_o.x + u.x * w - hh * u_a.x, u_o.y - hh); s += texture(u_src, v_uv + docToUV(q - docPos())).a * step(hh, u_hmax); }',
+    '    vec2 q = vec2(u_o.x + u.x * w - hh * u_a.x, u_o.y - hh); s += sil(q); }',
     '  return vec4(s * 0.25); }'
   ].join('\n');
   var CAST_COMP = SHADE + LEVELS + [
@@ -153,7 +153,7 @@
   ].join('\n');
 
   FX.register({
-    id: 'cast-shadow', name: 'Cast shadow', group: 'shadow', version: 1, space: 'linear', needs: ['alpha'],
+    id: 'cast-shadow', name: 'Cast shadow', group: 'shadow', version: 2, space: 'linear', needs: ['alpha'],
     params: withCommon({
       opacity: { type: 'number', min: 0, max: 1, default: 0, step: 0.01, label: 'Opacity' },
       direction: { type: 'angle', default: 300, label: 'Direction', help: 'Where the shadow falls on the ground: 0° right, 90° toward the camera, 180° left, 270° away.' },
@@ -163,18 +163,18 @@
       blurNear: { type: 'number', min: 0, max: 60, default: 1.5, step: 0.1, unit: 'px', label: 'Contact blur' },
       blurFar: { type: 'number', min: 0, max: 250, default: 28, step: 0.5, unit: 'px', label: 'Far blur' },
       fade: { type: 'number', min: 0, max: 1, default: 0.7, step: 0.01, label: 'Fade' },
-      height: { type: 'number', min: 1, max: 10000, default: 300, step: 1, unit: 'px', label: 'Subject height', help: 'Height of the subject above the contact point. Sets how the blur and fade grow and how far the shadow may reach; stage() and contact() fill it.' },
+      height: { type: 'number', min: 0, max: 10000, default: 0, step: 1, unit: 'px', label: 'Subject height', help: 'Height of the subject above the contact point: sets how the blur and fade grow along the shadow. 0 takes the part of the layer box above the contact point; stage() and contact() fill it.' },
       anchor: ANCHOR,
       clip: { type: 'bool', default: false, label: 'Clip at a line' },
       clipY: { type: 'number', min: -1, max: 2, default: 0.5, step: 0.005, label: 'Clip line', help: 'Fraction of the box height: the shadow is removed above it (a wall, a table edge).' },
       clipSoft: { type: 'number', min: 0, max: 100, default: 2, step: 0.5, unit: 'px', label: 'Clip softness' }
     }),
     radius: function (p, s) { return p.opacity > 0 ? castReach(p, s) : 0; },
-    grow: function (p, s) { return p.opacity > 0 ? castGrow(p, s) : 0; },
+    grow: function (p, s, box) { return p.opacity > 0 ? castGrow(p, s, box) : 0; },
     passes: function (g, p) {
       if (!(p.opacity > 0)) return;
-      var gm = castGeo(p, g.box);
-      var hard = g.pass(CAST_PROJ, { u_src: subj(g), u_o: gm.o, u_a: gm.a, u_c: gm.c, u_hmax: gm.H * 1.1 });
+      var gm = castGeo(p, g.box), far = g.whole({ maxSide: 1024 });
+      var hard = g.pass(CAST_PROJ, { u_src: subj(g), u_w: far, u_far: far ? 1 : 0, u_o: gm.o, u_a: gm.a, u_c: gm.c });
       var d = p.blurFar - p.blurNear, sg = g.draft ? [p.blurNear, p.blurNear, p.blurFar, p.blurFar] : [p.blurNear, p.blurNear + d / 9, p.blurNear + d / 3, p.blurFar];
       var lv = blurLevels(g, hard, sg);
       var u = Object.assign({ u_o: gm.o, u_a: gm.a, u_c: gm.c, u_H: gm.H, u_only: p.only ? 1 : 0, u_k: [p.blurNear, p.blurFar, p.opacity, p.fade], u_clip: [p.clip ? 1 : 0, p.clipY * g.box.h, p.clipSoft] }, levelU(lv, sg), shadeU(g, p));
@@ -184,7 +184,7 @@
     ui: { section: 'Shadows & reflections', order: 20, controls: ['opacity', 'direction', 'elevation', 'ground', 'perspective', { heading: 'Softness' }, 'blurNear', 'blurFar', 'fade', { heading: 'Placement' }, 'anchor', 'height', 'clip', { param: 'clipY', when: { clip: true } }, { param: 'clipSoft', when: { clip: true } }, { heading: 'Colour' }, 'color', 'receive', 'only'] },
     agent: {
       summary: 'A shadow cast by the cut-out onto the ground, from a light at a direction and elevation: hard at the contact, softer and fainter with distance. Composited under the subject in linear light.',
-      tips: ['Set anchor and height from LE.fx.composite.contact() (or use stage()); a wrong contact point makes the shadow float, a too small height cuts off the far end.', 'Soft daylight: elevation 35–50, blurNear 1–2, blurFar 0.05–0.1 × subject height, opacity 0.5–0.7. Hard sun: elevation 25–40, blurFar 4–8, opacity 0.75.', 'direction 270 (away) hides most of the shadow behind the subject; 300–330 or 210–240 read best. Use shadowFromVanishing() so several subjects agree.', 'Put it after floor-reflection and refine-edge in the stack; pair with contact-shadow for a grounded look.', 'Each tile must read the whole shadow length: very long shadows (elevation under 15°) on large exports can exceed the tile reach and show seams.'],
+      tips: ['Set the anchor from LE.fx.composite.contact() (or use stage()); a wrong contact point makes the shadow float. Leave height at 0 to take it from the layer box, or set the subject\'s real height so blur and fade grow at the right rate.', 'Soft daylight: elevation 35–50, blurNear 1–2, blurFar 0.05–0.1 × subject height, opacity 0.5–0.7. Hard sun: elevation 25–40, blurFar 4–8, opacity 0.75.', 'direction 270 (away) hides most of the shadow behind the subject; 300–330 or 210–240 read best. Use shadowFromVanishing() so several subjects agree.', 'Put it after floor-reflection and refine-edge in the stack; pair with contact-shadow for a grounded look.', 'The whole silhouette casts however long the shadow is (it is read from a copy of the layer at most 1,024 pixels on its longer side), so on very large exports the contact edge is a little softer than the picture.'],
       example: { type: 'cast-shadow', p: { opacity: 0.6, direction: 315, elevation: 38, ground: 0.3, blurNear: 1.5, blurFar: 30, fade: 0.7, height: 420, anchor: { x: 0.5, y: 0.95 } } }
     }
   });
@@ -238,14 +238,16 @@
      The soft edge is a Gaussian-blurred ellipse approximated with the ellipse's first-order signed distance and an erf profile.
      ===================================================================================================================== */
   function floatGeo(p, box) {
-    var hgt = p.height, rx = Math.max(1, p.width / 2 + hgt * 0.12), ry = Math.max(0.5, rx * p.aspect);
-    var sigma = p.softness + hgt * 0.22, op = p.opacity / (1 + hgt / Math.max(1, p.width));
+    var wd = p.width > 0 ? p.width : box ? 0.8 * box.w : 240;   /* width 0: 0.8 × the layer box */
+    var hgt = p.height, rx = Math.max(1, wd / 2 + hgt * 0.12), ry = Math.max(0.5, rx * p.aspect);
+    var sigma = p.softness + hgt * 0.22, op = p.opacity / (1 + hgt / Math.max(1, wd));
     return { c: box ? [p.anchor.x * box.w, p.anchor.y * box.h + hgt * p.drop] : [0, hgt * p.drop], r: [rx, ry], sigma: Math.max(0.3, sigma), op: op };
   }
-  /* Without the box, assume the anchor may sit on the box edge: the ellipse plus its blur, below the anchor by height × drop. */
-  function floatGrow(p, s) {
-    var gm = floatGeo(p, null), e = 3.2 * gm.sigma;
-    return Math.ceil(Math.max(gm.r[0], gm.c[1] + gm.r[1]) * s + e * s) + 2;
+  /* The ellipse plus its blur, where it leaves the box. Without the box, assume the anchor may sit on the box edge. */
+  function floatGrow(p, s, box) {
+    var gm = floatGeo(p, box && box.w ? box : null), e = 3.2 * gm.sigma;
+    if (!(box && box.w)) return Math.ceil(Math.max(gm.r[0], gm.c[1] + gm.r[1]) * s + e * s) + 2;
+    return Math.ceil(Math.max(0, gm.r[0] + e - gm.c[0], gm.c[0] + gm.r[0] + e - box.w, gm.r[1] + e - gm.c[1], gm.c[1] + gm.r[1] + e - box.h) * s) + 2;
   }
   var FLOAT_COMP = SHADE + [
     'uniform vec2 u_c, u_r; uniform float u_sg, u_op, u_core, u_only;',
@@ -255,11 +257,11 @@
     '  vec4 sh = shade(v * u_op); return u_only > 0.5 ? sh : under(texture(u_src, v_uv), sh); }'
   ].join('\n');
   FX.register({
-    id: 'floating-shadow', name: 'Floating shadow', group: 'shadow', version: 1, space: 'linear', needs: ['alpha'],
+    id: 'floating-shadow', name: 'Floating shadow', group: 'shadow', version: 2, space: 'linear', needs: ['alpha'],
     params: withCommon({
       opacity: { type: 'number', min: 0, max: 1, default: 0, step: 0.01, label: 'Opacity' },
       height: { type: 'number', min: 0, max: 1000, default: 40, step: 1, unit: 'px', label: 'Height', help: 'How far the object hovers above the ground.' },
-      width: { type: 'number', min: 2, max: 8000, default: 240, step: 1, unit: 'px', label: 'Width', help: 'Shadow width at height 0, usually 0.8 × the subject width.' },
+      width: { type: 'number', min: 0, max: 8000, default: 0, step: 1, unit: 'px', label: 'Width', help: 'Shadow width at height 0, usually 0.8 × the subject width. 0 takes 0.8 × the layer box.' },
       aspect: { type: 'number', min: 0.02, max: 1, default: 0.14, step: 0.005, label: 'Flatness' },
       softness: { type: 'number', min: 0, max: 200, default: 6, step: 0.5, unit: 'px', label: 'Softness' },
       core: { type: 'number', min: 0, max: 1, default: 0.35, step: 0.01, label: 'Core' },
@@ -267,7 +269,7 @@
       anchor: ANCHOR
     }),
     radius: function () { return 0; },
-    grow: function (p, s) { return p.opacity > 0 ? floatGrow(p, s) : 0; },
+    grow: function (p, s, box) { return p.opacity > 0 ? floatGrow(p, s, box) : 0; },
     passes: function (g, p) {
       if (!(p.opacity > 0)) return;
       var gm = floatGeo(p, g.box);
@@ -992,14 +994,14 @@
   ].join('\n');
   var meshParams = {};
   MESH.forEach(function (k, i) { meshParams[k] = { type: 'point', default: { x: (i % 4) / 3, y: Math.floor(i / 4) / 3 }, min: -1, max: 2, label: 'Point ' + (Math.floor(i / 4) + 1) + '·' + (i % 4 + 1) }; });
-  /* radius/grow do not receive the layer box, so the box's longer side is a parameter (stage helpers and meshFor() set it). */
-  meshParams.size = { type: 'number', min: 1, max: 20000, default: 1200, step: 1, unit: 'px', label: 'Layer size', help: 'The layer box\'s longer side in document pixels; bounds how far the warp may move pixels.', ui: { hidden: true } };
+  /* The reach comes from the layer box (radius and grow receive it); `size` is kept for documents that set it and overrides the box. */
+  meshParams.size = { type: 'number', min: 0, max: 20000, default: 0, step: 1, unit: 'px', label: 'Layer size', help: 'Leave at 0: the layer box bounds how far the warp may move pixels. A value replaces the box\'s longer side.', ui: { hidden: true } };
   FX.register({
     id: 'mesh-warp', name: 'Mesh warp', group: 'geometry', version: 1, space: 'linear', needs: ['alpha'],
     params: meshParams,
-    radius: function (p, s) { var d = meshDev(p); return d > 1e-6 ? Math.ceil(d * p.size * s) + 3 : 0; },
-    grow: function (p, s) {
-      var x0 = 0, y0 = 0, x1 = 1, y1 = 1, bw = p.size, bh = p.size;
+    radius: function (p, s, box) { var d = meshDev(p); return d > 1e-6 ? Math.ceil(d * (p.size > 0 ? p.size : box && box.w ? Math.max(box.w, box.h) : 1200) * s) + 3 : 0; },
+    grow: function (p, s, box) {
+      var x0 = 0, y0 = 0, x1 = 1, y1 = 1, bw = p.size > 0 ? p.size : box && box.w ? box.w : 1200, bh = p.size > 0 ? p.size : box && box.h ? box.h : 1200;
       if (!(meshDev(p) > 1e-6)) return 0;
       MESH.forEach(function (k) { x0 = Math.min(x0, p[k].x); y0 = Math.min(y0, p[k].y); x1 = Math.max(x1, p[k].x); y1 = Math.max(y1, p[k].y); });
       return Math.ceil(Math.max(-x0 * bw, -y0 * bh, (x1 - 1) * bw, (y1 - 1) * bh, 0) * s) + 2;
