@@ -171,6 +171,7 @@ cases['workspace: an action button applies its result as one undo step; a curve 
 
 cases['data assets: text stays text in the scene, loads for g.asset, and travels in .leproject and .ledesign.json'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);   /* the open format module loads on demand */
   const r = await page.evaluate(async () => {
     const LE = window.LE, c = window.LEStudio, s = c.scene;
     const FX = await LE.fxBoot.load();
