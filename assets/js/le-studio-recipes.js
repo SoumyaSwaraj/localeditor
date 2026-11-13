@@ -129,16 +129,22 @@
   }
   function applyTo(c, layer, wf, strength, key) {
     var res = combine(baseLook(layer), wf, strength);
+    key = key || c.gesture();
     setLook(c, layer.id, res.adjust, res.filter, key);
+    /* 2.0: the recipe's effect entries, in the same undo step (and a 1.x recipe replaces an Expert look's entries). */
+    var rec = isV2(wf) ? V2[wf.metadata.id] : null;
+    if (rec || (layer.fx || []).some(ours)) c.patch(layer.id, { fx: fxNext(layer, rec, strength) }, key);
     ST.lastLook = lookKey(c.L(layer.id));
     return res;
   }
   function removeFrom(c, layer) {
-    var b = baseLook(layer);
-    setLook(c, layer.id, b.adjust, b.filter);
+    var b = baseLook(layer), key = c.gesture();
+    setLook(c, layer.id, b.adjust, b.filter, key);
+    if ((layer.fx || []).some(ours)) c.patch(layer.id, { fx: fxNext(layer, null) }, key);
     ST.lastLook = lookKey(c.L(layer.id));
   }
   function applyFresh(c, layer, wf, strength) {
+    if (isV2(wf)) return applyV2(c, layer.id, wf, strength);
     var key = c.gesture();
     ST.applyKey = key;
     ST.applyFor = layer.id;
@@ -149,6 +155,166 @@
     });
     return res;
   }
+
+  /* ---------- Expert looks: recipes 2.0 (le-recipes-v2.js, docs/FORMAT-WORKFLOW.md) ----------
+     A 2.0 recipe adds its `fx` entries to the photo's effect stack with ids "rcp.N", next to the 1.x marker in
+     adjust.recipe (id, name, strength). Those ids are the group: changing strength rewrites them, Remove takes exactly
+     them out, and everything goes in or out in one undo step. Entries are checked by the effect registry first. */
+  var R2 = LE.recipes2 || null;
+  var V2 = {};   /* prepared looks by recipe id: { key, wf, entries, notes, maps, declined, mapNotes } */
+  var MAP_WORDS = { depth: 'a depth map', face: 'a face map', segments: 'a people map' };
+  function isV2(wf) { return !!(R2 && wf && R2.isV2(wf)); }
+  function ours(e) { return !!e && typeof e.id === 'string' && /^rcp\./.test(e.id); }
+  function storeLuts(res) {
+    return Promise.all(res.luts.map(function (l) {
+      return Promise.resolve().then(function () {
+        var bin = atob(l.uri.slice(l.uri.indexOf(',') + 1)), bytes = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return LE.project.putAsset({ blob: new Blob([bytes], { type: 'text/plain' }), name: 'look.cube', type: 'text/plain' });
+      }).then(function (meta) { res.entries[l.entry].p[l.key] = meta.id; }, function () { res.notes.push('A LUT in this recipe could not be read; it was left out.'); });
+    }));
+  }
+  /* The recipe with its entries checked by the registry (the renderer loads on demand, in Simple mode too). */
+  function prepare(c, wf) {
+    if (!isV2(wf)) return Promise.resolve(null);
+    return R2.fill(wf).then(function (full) {
+      var id = full.metadata.id, key = JSON.stringify(full.fx).length + '|' + full.fx.length;
+      if (V2[id] && V2[id].key === key) return V2[id];
+      return LE.fxBoot.load(c && c.scene).then(function (FX) {
+        var res = R2.resolve(full, FX);
+        return storeLuts(res).then(function () {
+          V2[id] = { key: key, wf: full, entries: res.entries, notes: res.notes, maps: res.maps, declined: {}, mapNotes: [] };
+          return V2[id];
+        });
+      });
+    });
+  }
+  function usable(rec) { return rec.entries.filter(function (e) { return !Object.keys(rec.declined).some(function (m) { return R2.needsMap(e, m); }); }); }
+  /* The layer's stack without this recipe's entries, then with them at a strength. */
+  function fxNext(layer, rec, strength) {
+    var keep = ((layer && layer.fx) || []).filter(function (e) { return !ours(e); });
+    if (!rec) return keep;
+    var add = R2.scale(usable(rec).slice(0, Math.max(0, 32 - keep.length)), strength).map(function (e, i) { e.id = 'rcp.' + i; return e; });
+    return keep.concat(add);
+  }
+  /* Depth, face and people maps a look's masks need are asked for the way the Light tool asks (LE.maps.gate). Declined or not
+     possible: the entries that need the map are left out and the note says so. */
+  function askMaps(c, layerId, rec, opts) {
+    var layer = c.L(layerId);
+    rec.declined = {}; rec.mapNotes = [];
+    var need = rec.maps.filter(function (m) { return !(layer && layer.maps && layer.maps[m]); });
+    if (!need.length) return Promise.resolve();
+    var decline = function (m) {
+      if (rec.declined[m]) return;
+      rec.declined[m] = true;
+      var n = rec.entries.filter(function (e) { return R2.needsMap(e, m); }).length;
+      rec.mapNotes.push((n === 1 ? 'One effect was' : n + ' effects were') + ' left out: ' + (n === 1 ? 'it needs ' : 'they need ') + MAP_WORDS[m] + ' of this photo.');
+    };
+    if (opts && opts.maps === false) { need.forEach(decline); return Promise.resolve(); }
+    var ready = LE.maps ? Promise.resolve() : (LE.lazy ? LE.lazy(root() + 'assets/js/le-maps.js') : Promise.reject(new Error('missing')));
+    return ready.then(function () {
+      return need.reduce(function (p, m) {
+        return p.then(function () {
+          var go = function () { return LE.maps.generate(c.scene, layerId, m, {}); };
+          return Promise.resolve().then(function () { return LE.maps.gate ? LE.maps.gate(m, { run: go }) : go(); }).then(function (r) { if (r && r.ok === false) decline(m); }, function () { decline(m); });
+        });
+      }, Promise.resolve());
+    }, function () { need.forEach(decline); });
+  }
+  function applyV2(c, layerId, wf, strength, opts) {
+    return prepare(c, wf).then(function (rec) {
+      return askMaps(c, layerId, rec, opts).then(function () {
+        var layer = c.L(layerId);
+        if (!layer) return null;
+        var key = c.gesture();
+        ST.applyKey = key;
+        ST.applyFor = layer.id;
+        var res = applyTo(c, layer, rec.wf, strength == null ? strengthOf(rec.wf) : strength, key);
+        res.notes = rec.notes.concat(rec.mapNotes);
+        res.entries = usable(rec).length;
+        c.toast('Applied “' + rec.wf.metadata.name + '”' + (res.notes.length ? '. ' + res.notes.join(' ') : ''), { action: { label: 'Undo', fn: function () { c.cmd('undo'); } } });
+        if (c.S.panel === 'recipes' && !(c.S.panelOpts && c.S.panelOpts.view === 'edit')) c.renderPanel(true);
+        return res;
+      });
+    }).catch(function (err) { c.toast((err && err.message) || 'That look could not be applied.'); return null; });
+  }
+  /* "Save look as a recipe" (Expert mode): the selected photo's effect stack as a 2.0 recipe. */
+  function lookFromLayer(c, layer, name, strength) {
+    var notes = [], FX = LE.fx;
+    var fx = R2.fromStack((layer.fx || []).filter(function (e) { return e && e.on !== false; }), notes);
+    fx.forEach(function (e) {
+      var d = FX && FX.get ? FX.get(e.type) : null;
+      Object.keys(e.p).forEach(function (k) {
+        if (!d || !d.params[k] || d.params[k].type !== 'lut' || typeof e.p[k] !== 'string') return;
+        var rec = FX.data ? FX.data(e.p[k]) : null, text = rec && typeof rec.text === 'string' ? rec.text : '';
+        var uri = text ? 'data:text/plain;base64,' + btoa(unescape(encodeURIComponent(text))) : '';
+        if (uri && uri.length <= R2.limits.lutChars) e.p[k] = uri; else { e.p[k] = null; notes.push('A LUT was too large to carry in a recipe; it was left out.'); }
+      });
+    });
+    var wf = {
+      format: 'localeditor-workflow', version: '2.0',
+      metadata: { id: LE.userRecipes.freeId(name || 'My look'), name: name || 'My look', description: '', author: 'You', category: 'personal', difficulty: 'beginner', tags: [], license: 'Free to use and share', created: new Date().toISOString().slice(0, 10) },
+      compatibility: { minimumEditorVersion: '2.0', mobileSupported: true },
+      parameters: [{ id: 'intensity', label: 'Strength', type: 'slider', min: 0, max: 100, default: strength == null ? 100 : strength }],
+      steps: [], fx: fx, export: { format: 'jpeg', quality: 90 }
+    };
+    var v = fx.length ? R.validate(wf) : { ok: false, errors: ['This photo has no effects to save.'] };
+    return { ok: v.ok, workflow: v.workflow || null, error: (v.errors || [])[0] || '', notes: notes };
+  }
+  function saveLook(c, layerId, o) {
+    o = o || {};
+    var layer = c.L(layerId || (c.targetImage() && c.targetImage().id));
+    if (!R2 || !layer || layer.type !== 'image') { c.toast('Select a photo first.'); return Promise.resolve(null); }
+    if (!(layer.fx || []).some(function (e) { return e && e.on !== false; })) { c.toast('Add an effect to this photo first, then save its look.'); return Promise.resolve(null); }
+    return LE.fxBoot.load(c.scene).then(function (FX) {
+      var st = { name: o.name || 'My look', strength: o.strength == null ? 100 : o.strength };
+      var finish = function () {
+        var made = lookFromLayer(c, layer, st.name.trim() || 'My look', st.strength);
+        if (!made.ok) { c.toast(made.error || 'That look could not be saved.'); return null; }
+        var saved;
+        try { saved = LE.userRecipes.save(made.workflow); } catch (err) { c.toast(err.message); return null; }
+        c.toast('Saved “' + saved.metadata.name + '” to your recipes' + (made.notes.length ? '. ' + made.notes.join(' ') : ''));
+        return saved;
+      };
+      if (o.silent) return finish();
+      return new Promise(function (resolve) {
+        var box = c.h('<div class="sxr-savelook"><div class="sxr-savelook-art"><img alt="Preview of the look"></div>' +
+          '<label class="sxr-label" for="sxr-look-name">Name</label><input id="sxr-look-name" class="sx-input" maxlength="60" value="' + esc(st.name) + '">' +
+          '<div data-strength></div><p class="sx-note">Strength scales every effect together. People who use the recipe can change it.</p>' +
+          '<p class="sx-note" data-notes hidden></p><div class="sxr-actions"><button type="button" class="btn btn-gold" data-go>' + c.ic('save') + '<span>Save recipe</span></button></div></div>');
+        var img = box.querySelector('img'), src = layerSource(c, layer, 360);
+        var entries = R2.resolve({ fx: R2.fromStack(layer.fx.filter(function (e) { return e && e.on !== false; })) }, FX).entries;
+        var paint = function () {
+          if (!src) return;
+          try { var out = FX.apply(src.canvas, { fx: R2.scale(entries, st.strength) }); img.src = out.toDataURL('image/jpeg', 0.84); } catch (e) { /* the preview is optional */ }
+        };
+        box.querySelector('[data-strength]').appendChild(c.ui.slider({ label: 'Strength', min: 0, max: 100, value: st.strength, reset: 100, fmt: function (v) { return Math.round(v) + '%'; }, onInput: function (v) { st.strength = Math.round(v); paint(); } }));
+        var pre = lookFromLayer(c, layer, st.name, st.strength);
+        if (pre.notes.length) { var n = box.querySelector('[data-notes]'); n.hidden = false; n.textContent = pre.notes.join(' '); }
+        box.querySelector('[data-go]').onclick = function () {
+          st.name = box.querySelector('input').value;
+          var saved = finish();
+          if (!saved) return;
+          c.closeModal();
+          ST.cat = 'mine'; ST.focus = saved.metadata.id;
+          resolve(saved);
+        };
+        c.openModal('Save look as a recipe', box);
+        paint();
+      });
+    }, function () { c.toast('The effect library did not load. Check your connection and try again.'); return null; });
+  }
+  /* A look opened from the recipes page (it cannot ride the 1.x handoff): a recipe, or the id of a built-in look. */
+  var PENDING = null;
+  try {
+    var held = sessionStorage.getItem('le-recipe-v2');
+    if (held) {
+      sessionStorage.removeItem('le-recipe-v2');
+      var hv = JSON.parse(held);
+      if (hv && typeof hv.builtin === 'string') PENDING = R.find(hv.builtin); else { var pv = R.validate(hv); PENDING = pv.ok ? pv.workflow : null; }
+      if (!isV2(PENDING)) PENDING = null;
+    }
+  } catch (e) { PENDING = null; }
 
   /* ---------- Thumbnails: small, cached, cancelled when the panel closes ---------- */
   var queue = [];
@@ -258,7 +424,7 @@
   function importWorkflow(c, wf, warnings) {
     var id = wf.metadata.id;
     var existing = LE.userRecipes.get(id);
-    var same = existing && JSON.stringify(existing.steps) === JSON.stringify(wf.steps) && existing.metadata.name === wf.metadata.name;
+    var same = existing && JSON.stringify(existing.steps) === JSON.stringify(wf.steps) && JSON.stringify(existing.fx || null) === JSON.stringify(wf.fx || null) && existing.metadata.name === wf.metadata.name;
     if (R.isBuiltin(id) || (existing && !same)) wf.metadata.id = LE.userRecipes.freeId(wf.metadata.name);
     var saved;
     try { saved = LE.userRecipes.save(wf); } catch (err) { c.toast(err.message); return null; }
@@ -380,6 +546,32 @@
     renderThumb(src.canvas, src.key, baseSteps, function (url) { before.src = url; card.classList.add('has-before'); });
     renderThumb(src.canvas, src.key, afterSteps, function (url) { after.src = url; card.classList.add('has-art'); });
   }
+  /* An Expert look's card: drawn through the renderer when it is already here (it is never downloaded for a thumbnail). */
+  function cardArtV2(c, card, layer, wf, base) {
+    var src = sourceFor(c, layer, wf), before = card.querySelector('.is-before'), after = card.querySelector('.is-after');
+    var baseSteps = R.lookSteps(base.adjust, base.filter);
+    renderThumb(src.canvas, src.key, baseSteps, function (url) {
+      before.src = url; card.classList.add('has-before');
+      if (!after.getAttribute('src')) { after.src = url; card.classList.add('has-art'); }
+    });
+    if (!(LE.fx && LE.fx.apply)) return;
+    var token = ST.token;
+    prepare(c, wf).then(function (rec) {
+      if (token !== ST.token || !rec) return;
+      var key = src.key + '|fx|' + rec.wf.metadata.id + rec.key + JSON.stringify(baseSteps);
+      if (ST.cache[key]) { after.src = ST.cache[key]; card.classList.add('has-art'); return; }
+      queue.push({ token: token, run: function () {
+        return LE.applySteps(src.canvas, baseSteps).then(function (res) {
+          var out = LE.fx.apply(res.canvas, { fx: R2.scale(rec.entries, strengthOf(rec.wf)) });
+          var url = out.toDataURL('image/jpeg', 0.84);
+          if (res.canvas !== src.canvas) release(res.canvas);
+          cachePut(key, url);
+          if (token === ST.token) { after.src = url; card.classList.add('has-art'); }
+        });
+      } });
+      pump();
+    }).catch(function () {});
+  }
   function renderList(c, body, o) {
     cancelThumbs();
     var layer = c.targetImage();
@@ -390,10 +582,11 @@
     var mine = LE.userRecipes.all();
     var mineIds = {};
     mine.forEach(function (r) { mineIds[r.metadata.id] = 1; });
-    var list = mine.concat(R.builtins);
+    var list = mine.concat(R.builtins, R2 ? R2.builtins : []);
+    if (PENDING && !c.S.handoffRecipe) { c.S.handoffRecipe = PENDING; ST.pendingId = PENDING.metadata.id; ST.handoffDone = false; PENDING = null; }
     var ho = c.S.handoffRecipe;
     if (ho && !list.some(function (r) { return r.metadata.id === ho.metadata.id; })) list.unshift(ho);
-    if (ho && o.recipe === ho.metadata.id && !ST.handoffDone && layer) {
+    if (ho && (o.recipe === ho.metadata.id || ST.pendingId === ho.metadata.id) && !ST.handoffDone && layer) {
       ST.handoffDone = true;
       applyFresh(c, c.L(layer.id), ho);
       layer = c.L(layer.id);
@@ -418,6 +611,7 @@
     var chips = sticky.querySelector('.sxr-cats');
     var cats = [['all', 'All']];
     if (mine.length || ho) cats.push(['mine', 'Yours']);
+    if (list.some(isV2)) cats.push(['expert', 'Expert']);
     R.categories.forEach(function (cat) { if (list.some(function (r) { return r.metadata.category === cat[0]; })) cats.push(cat); });
     if (!cats.some(function (x) { return x[0] === ST.cat; })) ST.cat = 'all';
     cats.forEach(function (cat) {
@@ -442,11 +636,12 @@
       var id = wf.metadata.id;
       var on = m && m.id === id;
       var yours = !!mineIds[id] || (ho && ho.metadata.id === id && !R.isBuiltin(id));
+      var x2 = isV2(wf);
       var card = c.h('<div class="sxr-card' + (on ? ' is-on' : '') + '" role="listitem" data-id="' + esc(id) + '">' +
         '<button type="button" class="sxr-card-main" aria-pressed="' + !!on + '" aria-label="' + esc((on ? 'Applied: ' : 'Apply ') + wf.metadata.name) + '">' +
-        '<span class="sxr-art"><img class="is-before" alt=""><img class="is-after" alt=""><i class="sxr-split" aria-hidden="true"></i>' + (on ? '<span class="sxr-badge">' + c.ic('check') + '</span>' : '') + '</span>' +
+        '<span class="sxr-art"><img class="is-before" alt=""><img class="is-after" alt=""><i class="sxr-split" aria-hidden="true"></i>' + (on ? '<span class="sxr-badge">' + c.ic('check') + '</span>' : '') + (x2 ? '<span class="sxr-tag">Expert</span>' : '') + '</span>' +
         '<span class="sxr-name">' + esc(wf.metadata.name) + '</span>' +
-        '<span class="sxr-meta">' + esc(yours ? 'Yours' : R.categoryLabel(wf.metadata.category)) + ' · ' + wf.steps.length + ' step' + (wf.steps.length === 1 ? '' : 's') + '</span></button>' +
+        '<span class="sxr-meta">' + esc(yours ? 'Yours' : R.categoryLabel(wf.metadata.category)) + ' · ' + (x2 ? (wf.fx.length ? wf.fx.length + ' effect' + (wf.fx.length === 1 ? '' : 's') : 'Expert look') : wf.steps.length + ' step' + (wf.steps.length === 1 ? '' : 's')) + '</span></button>' +
         '<button type="button" class="sxr-more" aria-label="More for ' + esc(wf.metadata.name) + '">' + c.ic('more') + '</button></div>');
       card._wf = wf;
       card._text = (wf.metadata.name + ' ' + wf.metadata.description + ' ' + wf.metadata.tags.join(' ') + ' ' + R.categoryLabel(wf.metadata.category)).toLowerCase();
@@ -461,13 +656,13 @@
       card.querySelector('.sxr-more').onclick = function (e) { moreMenu(c, e.currentTarget, wf, yours); };
       cards.push(card);
       grid.appendChild(card);
-      cardArt(c, card, layer, wf, base);
+      if (x2) cardArtV2(c, card, layer, wf, base); else cardArt(c, card, layer, wf, base);
     });
     function filter() {
       var shown = 0;
       cards.forEach(function (card) {
         var wf = card._wf;
-        var ok = (ST.cat === 'all' || (ST.cat === 'mine' ? card._mine : wf.metadata.category === ST.cat)) && (!ST.q || card._text.indexOf(ST.q) >= 0);
+        var ok = (ST.cat === 'all' || (ST.cat === 'mine' ? card._mine : ST.cat === 'expert' ? isV2(wf) : wf.metadata.category === ST.cat)) && (!ST.q || card._text.indexOf(ST.q) >= 0);
         card.hidden = !ok;
         if (ok) shown++;
       });
@@ -512,7 +707,8 @@
           var cur = c.L(layer.id);
           if (!cur) return;
           if (ST.applyFor !== layer.id || !ST.applyKey) { ST.applyKey = c.gesture(); ST.applyFor = layer.id; }
-          applyTo(c, cur, wf, v, ST.applyKey);
+          if (isV2(wf) && !V2[wf.metadata.id]) { var k2 = ST.applyKey; prepare(c, wf).then(function (rec) { var now = c.L(layer.id); if (now) applyTo(c, now, rec.wf, v, k2); }).catch(function () {}); return; }
+          applyTo(c, cur, isV2(wf) ? V2[wf.metadata.id].wf : wf, v, ST.applyKey);
         }
       });
       box.appendChild(slider);
@@ -529,7 +725,7 @@
       c.renderPanel(true);
     }));
     if (wf) {
-      row.appendChild(btn(c, 'Share', 'share', 'btn btn-ghost btn-sm', function () { openShare(c, wf); }));
+      row.appendChild(btn(c, 'Share', 'share', 'btn btn-ghost btn-sm', function () { whole(c, wf, function (full) { openShare(c, full); }); }));
       if (!R.isBuiltin(wf.metadata.id) && !LE.userRecipes.get(wf.metadata.id)) {
         row.appendChild(btn(c, 'Save', 'save', 'btn btn-ghost btn-sm', function () {
           var saved = importWorkflow(c, clone(wf));
@@ -541,6 +737,11 @@
     return box;
   }
 
+  /* A built-in Expert look gets its entries from the effect packs before it is shared or downloaded. */
+  function whole(c, wf, fn) {
+    if (!isV2(wf)) { fn(wf); return; }
+    R2.fill(wf).then(fn, function (err) { c.toast((err && err.message) || 'That look is not available.'); });
+  }
   function moreMenu(c, anchor, wf, yours) {
     var menu = c.h('<div class="sxr-menu" role="menu"></div>');
     function item(label, icon, fn, danger) {
@@ -549,17 +750,17 @@
       menu.appendChild(b);
     }
     item('Apply to many photos…', 'batch', function () { c.openPanel('apps', { app: 'batch', recipe: wf.metadata.id, back: 'recipes' }); });
-    item('Share…', 'share', function () { openShare(c, wf); });
-    item('Download .leworkflow', 'download', function () { download(c, wf); });
+    item('Share…', 'share', function () { whole(c, wf, function (full) { openShare(c, full); }); });
+    item('Download .leworkflow', 'download', function () { whole(c, wf, function (full) { download(c, full); }); });
     if (yours && LE.userRecipes.get(wf.metadata.id)) {
-      item('Edit', 'pen', function () { openEditor(c, { wf: clone(wf), isNew: false }); });
+      if (!isV2(wf)) item('Edit', 'pen', function () { openEditor(c, { wf: clone(wf), isNew: false }); });
       item('Duplicate', 'copy', function () { try { var d = LE.userRecipes.duplicate(wf); ST.focus = d.metadata.id; c.toast('Duplicated'); c.renderPanel(true); } catch (e) { c.toast(e.message); } });
       item('Delete', 'trash', function () {
         LE.userRecipes.remove(wf.metadata.id);
         c.toast('Deleted “' + wf.metadata.name + '”', { action: { label: 'Undo', fn: function () { try { LE.userRecipes.save(wf); } catch (e) {} c.renderPanel(true); } } });
         c.renderPanel(true);
       }, true);
-    } else {
+    } else if (!isV2(wf)) {
       item('Edit a copy', 'pen', function () {
         var copy = clone(wf);
         copy.metadata.name = wf.metadata.name + ' (mine)';
@@ -939,7 +1140,7 @@
     optLook.value = 'look'; optLook.textContent = 'This photo’s current look';
     if (!layer || !hasLook(fullLook(layer))) optLook.disabled = true;
     sel.appendChild(optLook);
-    [['Yours', mine], ['From LocalEditor', R.builtins]].forEach(function (g) {
+    [['Yours', mine], ['From LocalEditor', R.builtins], ['Expert looks', R2 ? R2.builtins : []]].forEach(function (g) {
       if (!g[1].length) return;
       var og = document.createElement('optgroup');
       og.label = g[0];
@@ -1005,10 +1206,23 @@
         steps = R.lookSteps(lk.adjust, lk.filter);
       }
       var label = wf ? wf.metadata.id : 'my-look';
+      /* An Expert look: its entries are checked first; ones that need a map of each photo are left out, and the result says so. */
+      if (isV2(wf) && !startNow.rec) {
+        prepare(c, wf).then(function (rec) { startNow.rec = rec; try { startNow(files); } finally { startNow.rec = null; } }, function (err) { c.toast((err && err.message) || 'That look could not be used.'); });
+        return;
+      }
+      var rec2 = startNow.rec, fx2 = null, note2 = '';
+      if (rec2) {
+        var free = rec2.entries.filter(function (e) { return !rec2.maps.some(function (m) { return R2.needsMap(e, m); }); });
+        fx2 = R2.scale(free, strength);
+        steps = R.prepare(rec2.wf, { intensity: strength, allowSkip: true }).steps;
+        var left = rec2.entries.length - free.length;
+        note2 = rec2.notes.concat(left ? [(left === 1 ? 'One effect was' : left + ' effects were') + ' left out: batch has no depth or face map for each photo.'] : []).join(' ');
+      }
       result.hidden = true;
       prog.hidden = false;
       var bar = prog.querySelector('i'), text = prog.querySelector('span');
-      var job = runBatch(files, { steps: steps, max: cfg.max, format: cfg.format, quality: 0.88, label: label }, function (i, n, name) {
+      var job = runBatch(files, { steps: steps, fx: fx2, max: cfg.max, format: cfg.format, quality: 0.88, label: label }, function (i, n, name) {
         bar.style.width = (i / n * 100) + '%';
         text.textContent = i + ' of ' + n + ' · ' + name;
       });
@@ -1020,6 +1234,7 @@
         if (!r.count) { result.appendChild(c.h('<p class="sxr-error">' + esc(r.cancelled ? 'Stopped before any photo was finished.' : 'None of those files could be read as photos.') + '</p>')); return; }
         if (window.LE && LE.support && LE.support.reportSuccess) LE.support.reportSuccess('studio.recipes');
         result.appendChild(c.h('<p class="sxr-done"><b>' + r.count + ' photo' + (r.count === 1 ? '' : 's') + ' ready</b> · ' + c.fmtBytes(r.zip.size) + (r.failed.length ? ' · ' + r.failed.length + ' skipped' : '') + (r.cancelled ? ' · stopped early' : '') + '</p>'));
+        if (note2) result.appendChild(c.h('<p class="sx-note">' + esc(note2) + '</p>'));
         var dl = btn(c, 'Download zip', 'download', 'btn btn-gold sxr-wide', function () { c.download(r.zip, r.name); });
         result.appendChild(dl);
         c.download(r.zip, r.name);
@@ -1049,6 +1264,15 @@
         var small = LE.fit(full, cfg.max);
         release(full);
         return LE.applySteps(small, cfg.steps).then(function (res) { if (res.canvas !== small) release(small); return res.canvas; });
+      }).then(function (canvas) {
+        /* 2.0: the look's effect entries, through the renderer, onto a canvas of our own. */
+        if (!cfg.fx || !cfg.fx.length) return canvas;
+        var out = LE.fx.apply(canvas, { fx: cfg.fx }), pad = (out._fx && out._fx.padPx) || 0;
+        var cv = document.createElement('canvas');
+        cv.width = canvas.width; cv.height = canvas.height;
+        cv.getContext('2d').drawImage(out, -pad, -pad);
+        release(canvas);
+        return cv;
       }).then(function (canvas) {
         return LE.exportImage(canvas, { format: cfg.format, quality: cfg.quality }).then(function (blob) { release(canvas); return blob.arrayBuffer(); });
       }).then(function (buf) {
@@ -1083,7 +1307,26 @@
 
   /* A small API for other modules and tests. */
   window.LEStudioRecipes = {
-    apply: function (c, layerId, wf, strength) { var l = c.L(layerId); return l ? applyFresh(c, l, wf, strength) : null; },
+    /* wf: a recipe or its id. A 1.x recipe answers at once; a 2.0 recipe (Expert look) answers with a promise of
+       { adjust, filter, notes, entries } once its entries are checked and added (opts.maps === false: never ask for maps). */
+    apply: function (c, layerId, wf, strength, opts) {
+      var l = c.L(layerId);
+      if (typeof wf === 'string') wf = findRecipe(c, wf);
+      if (!l || !wf) return null;
+      return isV2(wf) ? applyV2(c, l.id, wf, strength, opts) : applyFresh(c, l, wf, strength);
+    },
+    saveLook: saveLook, lookFromLayer: lookFromLayer, prepare: prepare, isExpertLook: isV2,
+    /* Batch with a recipe (1.x or 2.0) outside the panel: a promise of the same { done, cancel } as runBatch. */
+    batchWith: function (c, files, wf, o) {
+      o = o || {};
+      var s = o.strength == null ? strengthOf(wf) : o.strength, cfg = { max: o.max || 2048, format: o.format || 'jpeg', quality: 0.88, label: wf.metadata.id };
+      if (!isV2(wf)) { cfg.steps = R.prepare(wf, { intensity: s, allowSkip: true }).steps; return Promise.resolve(runBatch(files, cfg)); }
+      return prepare(c, wf).then(function (rec) {
+        cfg.steps = R.prepare(rec.wf, { intensity: s, allowSkip: true }).steps;
+        cfg.fx = R2.scale(rec.entries.filter(function (e) { return !rec.maps.some(function (m) { return R2.needsMap(e, m); }); }), s);
+        return runBatch(files, cfg);
+      });
+    },
     remove: function (c, layerId) { var l = c.L(layerId); if (l) removeFrom(c, l); },
     baseLook: baseLook,
     applied: marker,

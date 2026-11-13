@@ -78,7 +78,7 @@ cases['validator rejects bad files and keeps 1.0 files working'] = async ({ brow
       handler: V(step({ operation: 'text', parameters: { text: '<img src=x onerror=alert(1)>' } })).ok,
       badColor: V(step({ operation: 'border', parameters: { color: 'url(http://x)' } })).ok,
       big: V('{"format":"localeditor-workflow","version":"1.0","pad":"' + 'x'.repeat(2100000) + '","steps":[]}').ok,
-      newer: V(Object.assign({}, ok, { version: '2.0' })).errors[0],
+      newer: V(Object.assign({}, ok, { version: '3.0' })).errors[0],
       noSteps: V({ format: 'localeditor-workflow', version: '1.0', steps: [] }).ok,
       tooMany: V({ format: 'localeditor-workflow', version: '1.0', steps: Array.from({ length: 41 }, () => ({ operation: 'contrast', parameters: { value: 1 } })) }).ok,
       notJson: V('{nope').ok,
@@ -89,7 +89,7 @@ cases['validator rejects bad files and keeps 1.0 files working'] = async ({ brow
   h.assert(r.old && r.oldString, 'A 1.0 file should still validate');
   h.assert(r.v11, 'Files using fade should be written as 1.1');
   ['unknownOp', 'range', 'notNumber', 'proto', 'ctor', 'prototype', 'script', 'jsUrl', 'handler', 'badColor', 'big', 'noSteps', 'tooMany', 'notJson', 'wrongFormat'].forEach((k) => h.assert(r[k] === false, k + ' should be rejected'));
-  h.assert(/newer/.test(r.newer), 'Version 2 should ask for a newer app');
+  h.assert(/newer/.test(r.newer), 'A version above 2 should ask for a newer app (2.0 is read since recipes 2.0: tests/recipes-v2.test.js)');
   h.assert(r.unknownParam.ok && r.unknownParam.warnings.length === 1 && !('zap' in r.unknownParam.workflow.steps[0].parameters), 'Unknown parameters are dropped with a warning');
 };
 

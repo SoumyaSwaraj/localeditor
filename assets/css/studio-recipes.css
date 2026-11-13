@@ -221,3 +221,13 @@
 @media (prefers-reduced-motion: reduce) {
   .sxr-art, .sxr-art img, .sxr-split { animation: none; transition: none; }
 }
+
+/* Expert looks (recipes 2.0) */
+.sxr-tag {
+  position: absolute; right: 8px; top: 8px; padding: 3px 8px; border-radius: 999px; background: var(--ink); color: var(--surface);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.02em; pointer-events: none;
+}
+.sxr-savelook { display: grid; gap: 12px; max-width: 460px; }
+.sxr-savelook-art { border-radius: 12px; overflow: hidden; background: var(--surface-3); aspect-ratio: 4 / 3; display: grid; place-items: center; }
+.sxr-savelook-art img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.sxr-savelook-art img:not([src]) { visibility: hidden; }

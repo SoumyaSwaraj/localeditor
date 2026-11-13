@@ -294,6 +294,12 @@
         return;
       }
       tgt.appendChild(h('<div class="xp-dev-name">' + X.ic(l.type === 'adjust' ? 'adjust' : 'layers') + '<span>' + esc(l.name || 'Layer') + '</span>' + (l.type === 'adjust' ? '<small>Adjustment layer</small>' : '') + '</div>'));
+      /* Recipes 2.0: this photo's effect stack as a shareable recipe (LEStudioRecipes.saveLook in le-studio-recipes.js). */
+      if (l.type === 'image' && global.LE && global.LE.modules && global.LEStudio) {
+        var sv = h('<button type="button" class="btn btn-sm xp-save-look" data-xp-save-look>' + X.ic('save') + '<span>Save look as a recipe</span></button>');
+        sv.addEventListener('click', function () { global.LE.modules.need('recipes').then(function () { global.LEStudioRecipes.saveLook(global.LEStudio, targetId); }, function () {}); });
+        tgt.appendChild(sv);
+      }
       var secs = X.sections();
       if (!secs.length) secsHost.appendChild(h('<p class="xp-note">The effect library is not loaded on this device yet.</p>'));
       /* Layer mask first, then the registry's sections in the professional order. */

@@ -185,7 +185,7 @@ cases['studio triggers: a panel, a command, the first selection and Download eac
   let before = await loadedIds(page);
   h.assert(await page.evaluate(() => { LEStudio.openPanel('recipes'); return !!document.querySelector('#sx-panel-body .le-load-wait .skel') && !document.getElementById('sx-panel').hidden; }), 'the panel frame shows a skeleton at once');
   await page.waitForSelector('#sx-panel-body .sxr-foot, #sx-panel-body .sxr-body, #sx-panel-body [class^="sxr-"]', { timeout: 15000 });
-  h.assert.equal(JSON.stringify(newIds(before, await loadedIds(page))), JSON.stringify(['recipes']), 'Recipes and nothing else');
+  h.assert.equal(JSON.stringify(newIds(before, await loadedIds(page))), JSON.stringify(['recipes', 'recipes2']), 'Recipes (with the 2.0 reader) and nothing else');
   /* A new design, then the first selection: the selection tools (and their libraries) arrive; the toolbar is redrawn. */
   await page.evaluate(() => LEStudio.closePanel());
   await page.evaluate(() => LEStudio.newDesign(1080, 1080, 'Test'));

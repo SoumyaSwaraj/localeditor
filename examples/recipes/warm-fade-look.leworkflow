@@ -1,0 +1,105 @@
+{
+  "format": "localeditor-workflow",
+  "version": "2.0",
+  "metadata": {
+    "id": "warm-fade-look",
+    "name": "Warm fade",
+    "description": "Lifted blacks, warm highlights and quieter colour.",
+    "author": "LocalEditor",
+    "category": "film",
+    "difficulty": "beginner",
+    "tags": [
+      "warm",
+      "matte"
+    ],
+    "license": "Free to use and share"
+  },
+  "compatibility": {
+    "minimumEditorVersion": "2.0",
+    "mobileSupported": true
+  },
+  "parameters": [
+    {
+      "id": "intensity",
+      "label": "Strength",
+      "type": "slider",
+      "min": 0,
+      "max": 100,
+      "default": 85
+    }
+  ],
+  "steps": [],
+  "fx": [
+    {
+      "type": "tone-curve",
+      "on": true,
+      "amount": 1,
+      "blend": "normal",
+      "mask": null,
+      "p": {
+        "curve": {
+          "master": [
+            [
+              0,
+              0.07
+            ],
+            [
+              0.25,
+              0.24
+            ],
+            [
+              0.75,
+              0.79
+            ],
+            [
+              1,
+              0.95
+            ]
+          ]
+        },
+        "mode": "luminosity"
+      }
+    },
+    {
+      "type": "color-grading",
+      "on": true,
+      "amount": 0.8,
+      "blend": "normal",
+      "mask": {
+        "on": true,
+        "invert": false,
+        "parts": [
+          {
+            "kind": "luma",
+            "mode": "add",
+            "invert": false,
+            "min": 0.5,
+            "max": 1,
+            "soft": 0.2
+          }
+        ]
+      },
+      "p": {
+        "highlights": {
+          "h": 42,
+          "a": 0.14,
+          "l": 0
+        }
+      }
+    },
+    {
+      "type": "vibrance",
+      "on": true,
+      "amount": 1,
+      "blend": "normal",
+      "mask": null,
+      "p": {
+        "amount": -12
+      }
+    }
+  ],
+  "export": {
+    "format": "jpeg",
+    "quality": 90
+  }
+}

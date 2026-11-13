@@ -109,6 +109,7 @@ Sizes are gzip, script + CSS.
 | `collage`, `collagelib` | `le-studio-collage.js` + css, `le-collage.js` | 24+4, 6 | first selection; Design → Templates; Uploads → Stock; Apps → Collage; Replace photo; a document with slots | 5 |
 | `icons` | `le-studio-icons.js` + css (moved) | 8+1 | the 34 icon styles in Elements; its commands | 6 |
 | `cutout` | `le-studio-cutout.js` + css | 26+3 | first selection; Remove background; Apps → Thumbnail; its commands; a document with cut-outs | 6 |
+| `recipes2` | `le-recipes-v2.js` | 7 | with `recipes` (its dependency): the reader for recipes 2.0, shared with the recipes page | — |
 | `recipes` | `le-studio-recipes.js` + css | 17+4 | Recipes panel (`.leworkflow` launches queue onto it); Apps → Batch; a document with a recipe look | 7 |
 | `makers`, `makerslib` | `le-studio-makers.js` + css, `le-makers.js` | 12+2, 25 | the start screen's makers row (a skeleton until the studio is interactive and idle, or scrolled to); Apps → Make; `?make=`; a document with a maker page | 8 |
 | `stock` | `le-stock.js` | 10 | Uploads → Stock | 9 |

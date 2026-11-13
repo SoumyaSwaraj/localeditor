@@ -6,6 +6,10 @@
   if (!LE || !LE.recipes) return;
   var R = LE.recipes;
   function $(id) { return document.getElementById(id); }
+  /* Recipes 2.0 (Expert looks, le-recipes-v2.js): shown with an "Expert" tag and opened in the studio, where they are drawn. */
+  var R2 = LE.recipes2 || null;
+  function isX(wf) { return !!(R2 && R2.isV2(wf)); }
+  function countText(wf) { var n = isX(wf) ? wf.fx.length : wf.steps.length; return isX(wf) ? (n ? n + (n === 1 ? ' effect' : ' effects') : 'Expert look') : n + (n === 1 ? ' step' : ' steps'); }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -122,10 +126,9 @@
     el.className = 'rx-card';
     el.setAttribute('role', 'listitem');
     el.dataset.id = wf.metadata.id;
-    var n = wf.steps.length;
     el.innerHTML = '<button type="button" class="rx-card-btn" aria-label="' + esc(wf.metadata.name) + ', ' + esc(mine ? 'yours' : R.categoryLabel(wf.metadata.category)) + '">' +
-      '<span class="rx-card-art"><img class="is-before" alt=""><img class="is-after" alt=""><span class="rx-peek" aria-hidden="true">Before</span></span>' +
-      '<span class="rx-card-text"><b>' + esc(wf.metadata.name) + '</b><small>' + esc(mine ? 'Yours' : R.categoryLabel(wf.metadata.category)) + ' · ' + n + (n === 1 ? ' step' : ' steps') + '</small></span></button>';
+      '<span class="rx-card-art"><img class="is-before" alt=""><img class="is-after" alt=""><span class="rx-peek" aria-hidden="true">Before</span>' + (isX(wf) ? '<span class="rx-xtag">Expert</span>' : '') + '</span>' +
+      '<span class="rx-card-text"><b>' + esc(wf.metadata.name) + '</b><small>' + esc(mine ? 'Yours' : R.categoryLabel(wf.metadata.category)) + ' · ' + countText(wf) + '</small></span></button>';
     el._wf = wf;
     el._text = (wf.metadata.name + ' ' + wf.metadata.description + ' ' + (wf.metadata.tags || []).join(' ') + ' ' + R.categoryLabel(wf.metadata.category)).toLowerCase();
     var b = el.querySelector('button');
@@ -139,11 +142,12 @@
   function paintLibrary() {
     var grid = $('rx-grid');
     grid.innerHTML = '';
-    R.builtins.forEach(function (wf) { grid.appendChild(card(wf, false)); });
+    var looks = R2 ? R2.builtins : [];
+    R.builtins.concat(looks).forEach(function (wf) { grid.appendChild(card(wf, false)); });
     var cats = $('rx-cats');
     cats.innerHTML = '';
-    [['all', 'All']].concat(R.categories).forEach(function (c) {
-      var count = c[0] === 'all' ? R.builtins.length : R.builtins.filter(function (w) { return w.metadata.category === c[0]; }).length;
+    [['all', 'All']].concat(R.categories, looks.length ? [['expert', 'Expert']] : []).forEach(function (c) {
+      var count = c[0] === 'all' ? R.builtins.length + looks.length : c[0] === 'expert' ? looks.length : R.builtins.concat(looks).filter(function (w) { return w.metadata.category === c[0]; }).length;
       if (!count) return;
       var b = document.createElement('button');
       b.type = 'button';
@@ -162,7 +166,7 @@
   function filter() {
     var shown = 0;
     $('rx-grid').querySelectorAll('.rx-card').forEach(function (el) {
-      var ok = (ST.cat === 'all' || el._wf.metadata.category === ST.cat) && (!ST.q || el._text.indexOf(ST.q) >= 0);
+      var ok = (ST.cat === 'all' || (ST.cat === 'expert' ? isX(el._wf) : el._wf.metadata.category === ST.cat)) && (!ST.q || el._text.indexOf(ST.q) >= 0);
       el.hidden = !ok;
       if (ok) shown++;
     });
@@ -245,6 +249,7 @@
     var meta = wf.metadata;
     var strength = wf.parameters && wf.parameters[0] ? wf.parameters[0].default : 75;
     var external = mode === 'shared' || mode === 'import';
+    var x2 = isX(wf), bare = x2 && !wf.fx.length;   /* bare: a built-in look whose values live in the studio's effect packs */
     dbody.innerHTML =
       '<div class="rx-d">' +
         '<div class="rx-d-view">' +
@@ -257,25 +262,29 @@
           '<p class="kicker">' + esc(mode === 'mine' ? 'Yours' : R.categoryLabel(meta.category)) + ' · by ' + esc(meta.author) + '</p>' +
           '<h2 id="rx-d-title">' + esc(meta.name) + '</h2>' +
           (meta.description ? '<p class="rx-d-desc">' + esc(meta.description) + '</p>' : '') +
-          '<div class="rx-strength"><div class="rx-strength-row"><label for="rx-d-strength">Strength</label><output id="rx-d-sv">' + strength + '%</output></div><input type="range" id="rx-d-strength" min="0" max="100" value="' + strength + '"></div>' +
+          (x2 ? '<p class="rx-xnote"><b>Expert look.</b> It uses the studio’s effects, so it is drawn there. Open it in the studio to see it on a photo; nothing in it can run code.</p>' : '') +
+          '<div class="rx-strength"' + (x2 && !wf.steps.length ? ' hidden' : '') + '><div class="rx-strength-row"><label for="rx-d-strength">Strength</label><output id="rx-d-sv">' + strength + '%</output></div><input type="range" id="rx-d-strength" min="0" max="100" value="' + strength + '"></div>' +
           '<div class="rx-row rx-d-main">' +
-            '<button type="button" class="btn btn-gold" id="rx-d-result">' + icon('download') + '<span>' + (ST.photo ? 'Download result' : 'Download preview') + '</span></button>' +
-            '<button type="button" class="btn" id="rx-d-studio">' + icon('studio') + '<span>Open in studio</span></button>' +
+            (x2 ? '' : '<button type="button" class="btn btn-gold" id="rx-d-result">' + icon('download') + '<span>' + (ST.photo ? 'Download result' : 'Download preview') + '</span></button>') +
+            '<button type="button" class="btn' + (x2 ? ' btn-gold' : '') + '" id="rx-d-studio">' + icon('studio') + '<span>Open in studio</span></button>' +
           '</div>' +
           '<div class="rx-row rx-d-more">' +
             (mode === 'builtin' ? '' : (mode === 'mine'
               ? '<button type="button" class="btn btn-sm" id="rx-d-delete">' + icon('trash') + '<span>Delete</span></button>'
               : '<button type="button" class="btn btn-sm" id="rx-d-save">' + icon(isSaved(wf) ? 'check' : 'save') + '<span>' + (isSaved(wf) ? 'Saved on this device' : 'Save to this device') + '</span></button>')) +
-            '<button type="button" class="btn btn-sm" id="rx-d-file-dl">' + icon('file') + '<span>Download recipe</span></button>' +
-            '<button type="button" class="btn btn-sm" id="rx-d-share" aria-expanded="false">' + icon('share') + '<span>Share</span></button>' +
+            (bare ? '' : '<button type="button" class="btn btn-sm" id="rx-d-file-dl">' + icon('file') + '<span>Download recipe</span></button>' +
+            '<button type="button" class="btn btn-sm" id="rx-d-share" aria-expanded="false">' + icon('share') + '<span>Share</span></button>') +
           '</div>' +
           '<div class="rx-sharebox" id="rx-sharebox" hidden></div>' +
           '<div class="rx-notices" id="rx-d-notices"></div>' +
-          '<h3 class="rx-h3">Steps</h3>' +
+          (x2 && wf.fx.length ? '<h3 class="rx-h3">Effects</h3><ol class="rx-steps">' + wf.fx.map(function (e) {
+            return '<li' + (e.on === false ? ' class="is-off"' : '') + '><b>' + esc(R2.effectLabel(e.type)) + '</b><span>' + Math.round((e.amount == null ? 1 : e.amount) * 100) + '%</span>' + (e.mask ? '<small>On part of the photo</small>' : '') + '</li>';
+          }).join('') + '</ol>' : '') +
+          (wf.steps.length ? '<h3 class="rx-h3">Steps</h3>' : '') +
           '<ol class="rx-steps">' + wf.steps.map(function (s) {
             return '<li' + (s.enabled === false ? ' class="is-off"' : '') + '><b>' + esc(s.label) + '</b><span>' + esc(stepValue(s)) + '</span>' + (s.description ? '<small>' + esc(s.description) + '</small>' : '') + (s.enabled === false ? '<small>Turned off</small>' : '') + '</li>';
           }).join('') + '</ol>' +
-          '<details class="rx-json"><summary>View the file</summary><pre class="mono">' + esc(R.stringify(wf)) + '</pre></details>' +
+          (bare ? '' : '<details class="rx-json"><summary>View the file</summary><pre class="mono">' + esc(R.stringify(wf)) + '</pre></details>') +
         '</div>' +
       '</div>';
     var range = dbody.querySelector('.rx-compare input');
@@ -292,10 +301,10 @@
       e.target.value = '';
       if (f) usePhoto(f).then(function (ok) { if (ok && ST.detail) openDetail(ST.detail, ST.mode); });
     });
-    $('rx-d-result').addEventListener('click', downloadResult);
+    if ($('rx-d-result')) $('rx-d-result').addEventListener('click', downloadResult);
     $('rx-d-studio').addEventListener('click', openStudio);
-    $('rx-d-file-dl').addEventListener('click', function () { save(new Blob([R.stringify(wf)], { type: 'application/json' }), meta.id + '.leworkflow'); });
-    $('rx-d-share').addEventListener('click', toggleShare);
+    if ($('rx-d-file-dl')) $('rx-d-file-dl').addEventListener('click', function () { save(new Blob([R.stringify(wf)], { type: 'application/json' }), meta.id + '.leworkflow'); });
+    if ($('rx-d-share')) $('rx-d-share').addEventListener('click', toggleShare);
     if ($('rx-d-save')) $('rx-d-save').addEventListener('click', function () { saveHere(wf); });
     if ($('rx-d-delete')) $('rx-d-delete').addEventListener('click', function () {
       LE.userRecipes.remove(meta.id);
@@ -369,13 +378,15 @@
     var src = ST.photoFull ? Promise.resolve(ST.photoFull) : baseFor(wf).then(function (b) { return b.canvas; });
     var name = ST.photo ? ST.photoName : (wf.metadata.cover || 'sample') + '.jpg';
     src.then(function (canvas) { return LE.toBlob(canvas, 'image/jpeg', 0.92); }).then(function (blob) {
+      /* An Expert look travels beside the photo (this tab's session storage); the studio's Recipes panel picks it up and checks it again. */
+      if (isX(wf)) { sessionStorage.setItem('le-recipe-v2', wf.fx.length ? JSON.stringify(wf) : JSON.stringify({ builtin: wf.metadata.id })); return LE.handoff.put(blob, { name: name }); }
       return LE.handoff.put(blob, { name: name, recipe: wf });
     }).then(function () { location.href = ROOT + 'studio/?tool=recipes'; }, function () { say('The studio could not be opened from here.'); });
   }
   function saveHere(wf) {
     var copy = JSON.parse(JSON.stringify(wf));
     var existing = LE.userRecipes.get(copy.metadata.id);
-    if (R.isBuiltin(copy.metadata.id) || (existing && JSON.stringify(existing.steps) !== JSON.stringify(copy.steps))) copy.metadata.id = LE.userRecipes.freeId(copy.metadata.name);
+    if (R.isBuiltin(copy.metadata.id) || (existing && (JSON.stringify(existing.steps) !== JSON.stringify(copy.steps) || JSON.stringify(existing.fx || null) !== JSON.stringify(copy.fx || null)))) copy.metadata.id = LE.userRecipes.freeId(copy.metadata.name);
     try {
       var saved = LE.userRecipes.save(copy);
       ST.detail = saved;
@@ -447,7 +458,7 @@
     var saved = isSaved(wf);
     box.className = 'rx-shared';
     box.innerHTML = '<div class="rx-shared-art"><img alt=""></div><div class="rx-shared-text"><p class="kicker">Shared with you</p><h2>' + esc(wf.metadata.name) + '</h2>' +
-      '<p>' + esc(wf.metadata.description || (wf.steps.length + ' steps')) + '</p>' +
+      '<p>' + (isX(wf) ? '<b>Expert look</b> · ' : '') + esc(wf.metadata.description || countText(wf)) + '</p>' +
       '<div class="rx-row"><button type="button" class="btn btn-ink btn-sm" id="rx-shared-open">Preview</button>' +
       '<button type="button" class="btn btn-sm" id="rx-shared-save"' + (saved ? ' disabled' : '') + '>' + icon(saved ? 'check' : 'save') + '<span>' + (saved ? 'Saved on this device' : 'Save to this device') + '</span></button>' +
       '<button type="button" class="btn btn-sm" id="rx-shared-studio">' + icon('studio') + '<span>Open in studio</span></button></div></div>';
