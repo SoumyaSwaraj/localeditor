@@ -113,6 +113,7 @@
       isDesignFile: function (f) { return !!f && (/\.json$/i.test(f.name || '') || f.type === 'application/json'); },
       studioImport: later('design', D, 'studioImport'), studioCmd: later('design', D, 'studioCmd'), openShare: later('design', D, 'openShare'),
       parse: later('design', D, 'parse'), stringify: later('design', D, 'stringify'), saveDialog: later('design', D, 'saveDialog'), openSharedLink: later('design', D, 'openSharedLink'),
+      importText: later('design', D, 'importText'), exportText: later('design', D, 'exportText'), fetchRemote: later('design', D, 'fetchRemote'),   /* all three answer with a promise in the real module too */
       /* Template links (#d=…): the hash trigger above already loads the module; later links (hashchange) load it then. */
       studioBoot: function (c) {
         if (M.loaded('design') || /(?:^#|[#&])d=[A-Za-z0-9_-]/.test(location.hash || '')) return M.need('design').then(function () { return LE.design.studioBoot(c); });

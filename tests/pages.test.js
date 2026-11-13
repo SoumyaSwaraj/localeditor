@@ -78,7 +78,7 @@ cases['every live feature, tool page and hub is registered: llms.txt, header sea
   h.assert(dir && Number(dir[1]) === build.TOOLS.filter((t) => t.cat === 'dev').length, 'homepage Utilities count matches the tool list');
   const img = home.match(/id="dir-image">Image <span>(\d+)<\/span>/);
   h.assert(img && Number(img[1]) === build.TOOLS.filter((t) => t.cat === 'image').length, 'homepage Image count matches the tool list');
-  const n = (llms.match(/ plus (\d+) browser tools/) || [])[1];
+  const n = (llms.match(/ (?:plus|and) (\d+) browser tools/) || [])[1];
   h.assert.equal(Number(n), build.TOOLS.length, 'llms.txt tool count');
   soon.forEach((e) => h.assert(!llms.includes(e.title) && !(e.url && llms.includes(e.url)) && !(e.url && index.includes('"' + e.url + '"')), 'a soon entry leaked into llms.txt or search: ' + e.title));
   const bad = [];
