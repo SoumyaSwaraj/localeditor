@@ -30,6 +30,7 @@ le apply poster.ledesign.json fix.json           # fix what check or your eyes f
 2. **Small batches.** One `apply` per idea (layout, then type, then colour). A batch is atomic: if one operation is wrong nothing is written and the error names it (`/ops/2/layer/x`).
 3. **Read the problems.** `apply` prints *new* problems; `check` prints all of them with JSON pointers:
    `overflow` (text taller or wider than its box), `clipped` (text past the page edge), `off-page`, `low-contrast`, `missing-image`, `remote-image`, `unknown-font`, `unknown-icon`, `unknown-shape`, `shrink-needs-height`, `refused-path`.
+   When the design names a brand (`"brand": "brand.lebrand.json"`) or you pass `--brand <file>`: `brand-color`, `brand-font`, `brand-contrast`, `brand-logo-size`, `brand-logo-space`, each with a `fix` operation. `le brand check file --fix` applies them; `le brand show brand.lebrand.json` prints what the brand asks for (`docs/FORMAT-BRAND.md`). `le lint` is another name for `le check`; both take several files.
 4. **Look.** `le render` (MCP `design_render` returns the picture to you directly). Check hierarchy, spacing and alignment — lint does not see taste.
 5. **Use only what exists.** `le catalog fonts|icons|shapes|recipes|makers|layouts|sizes|fx [query]`. `le catalog fx` lists the expert effects, `le catalog fx <id>` prints one in full (parameters, ranges, an example entry), `le catalog fx schema` the blends, mask kinds and limits.
 
@@ -66,7 +67,7 @@ A batch is a JSON list. Pages are counted from 0 or named by page id; without `p
 | `fx.call` | `layer`, `name`, `args` | A helper that answers with effect operations (`composite.stage`, `grade.preset`, `creative.look`, `retouch.*`, `relight.portrait` …): `le catalog fx actions`. It sees the design as it was before this batch. Helpers that measure the open picture (`composite.match`, `relight.estimate`, `grade.auto`) need agent mode. |
 | `map.generate`, `raw.open`, `hdr.merge`, `raw.settings`, `raw.autoTone` | | Not on files: they need a model, a decoder or the picture's pixels. They answer `unsupported`; use agent mode (`window.LEAgent`) in the studio. |
 | `note.add` / `note.resolve` | `text`, `layer` / `id`, `reply`, `status` | Notes live in the file under `notes`. |
-| `doc.update` | `set` | `name variables remix notes`. |
+| `doc.update` | `set` | `name variables remix notes brand`. |
 
 Example batches:
 
@@ -115,7 +116,7 @@ Exit codes: `0` ok · `1` invalid input, problems found (`check`) or refused ope
 
 ## MCP (`localeditor mcp`)
 
-Tools: `design_new`, `design_read` (outline or full), `design_apply` (optionally with `render: true` to get a picture back), `design_check`, `design_render` (returns an image block, downscaled to `max_edge`, default 1024), `design_find`, `catalog_search`, `design_make`, `design_validate`, `design_link_status`, `notes_read`, `notes_resolve`. Resources: the format guide, this page, the JSON Schema and the ten examples. Prompts: `design_from_brief`, `fix_problems`.
+Tools: `design_new`, `design_read` (outline or full), `design_apply` (optionally with `render: true` to get a picture back), `design_check` (optionally with `brand`), `brand_read`, `brand_check` (optionally with `fix: true`), `design_render` (returns an image block, downscaled to `max_edge`, default 1024), `design_find`, `catalog_search`, `design_make`, `design_validate`, `design_link_status`, `notes_read`, `notes_resolve`. Resources: the format guide, this page, the JSON Schema and the ten examples. Prompts: `design_from_brief`, `fix_problems`.
 
 Only files under the folder the server was started in (or `--root`) can be read or written. Setup snippets for each client: `agent-kit/mcp/README.md`.
 

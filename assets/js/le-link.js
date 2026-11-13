@@ -30,7 +30,7 @@
   var BAD_KEYS = { __proto__: 1, constructor: 1, prototype: 1 };
   var ID_RE = /^[\w:.-]{1,48}$/;
   var PAGE_KEYS = ['id', 'name', 'width', 'height', 'background', 'collage'];
-  var DOC_KEYS = ['name', 'variables', 'remix', 'notes'];
+  var DOC_KEYS = ['name', 'variables', 'remix', 'notes', 'brand'];
 
   function OpError(code, message, path) { this.code = code; this.message = message; this.path = path || ''; }
 

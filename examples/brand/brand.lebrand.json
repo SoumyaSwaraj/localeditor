@@ -1,0 +1,75 @@
+{
+  "$schema": "https://localeditor.net/schema/brand-1.json",
+  "format": "localeditor-brand",
+  "version": 1,
+  "name": "Harbour Bakery",
+  "colors": [
+    {
+      "role": "primary",
+      "value": "#14213D",
+      "name": "Harbour navy"
+    },
+    {
+      "role": "accent",
+      "value": "#E0B354",
+      "name": "Crust"
+    },
+    {
+      "role": "background",
+      "value": "#FFF8EC",
+      "name": "Flour"
+    },
+    {
+      "role": "surface",
+      "value": "#FFFFFF"
+    },
+    {
+      "role": "text",
+      "value": "#17131F",
+      "name": "Ink"
+    }
+  ],
+  "fonts": {
+    "heading": {
+      "family": "Anton",
+      "weight": 400
+    },
+    "body": {
+      "family": "Inter",
+      "weight": 400
+    }
+  },
+  "logos": [
+    {
+      "id": "main",
+      "src": "assets/harbour-logo.png",
+      "name": "Harbour Bakery mark",
+      "on": "light",
+      "clearSpace": 0.25,
+      "minWidth": 120
+    }
+  ],
+  "spacing": {
+    "unit": 8,
+    "margin": 64,
+    "gap": 24,
+    "radius": 16
+  },
+  "tone": [
+    "warm",
+    "plain",
+    "local"
+  ],
+  "do": [
+    "Lead with the product or the date, one idea per page.",
+    "Keep headlines to six words or fewer."
+  ],
+  "dont": [
+    "Do not put text over the busiest part of a photo.",
+    "Do not stretch or recolour the logo."
+  ],
+  "rules": {
+    "neutrals": true,
+    "contrast": 4.5
+  }
+}

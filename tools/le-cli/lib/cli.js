@@ -20,8 +20,10 @@ Read and check
   show <file>                Outline: pages, layers with ids, types, text, boxes  [--full]
   find <file> <query>        Layers whose id, name, text, font or type matches
   validate <file…>           Errors with JSON-pointer paths (exit 1 if any file is invalid)
-  check <file>               Problems: overflowing text, off-page layers, low contrast, missing images, unknown fonts
-                             (exit 1 if any)  [--max-warnings n]
+  check <file…>              Problems: overflowing text, off-page layers, low contrast, missing images, unknown fonts,
+                             and brand problems when the design names a brand  (exit 1 if any)  [--brand f] [--max-warnings n]
+  brand check <file>         Only the brand problems, each with a fix  [--brand brand.lebrand.json] [--fix]
+  brand show <brand file>    Check a brand file and print what it asks for
   render <file>              Draw a page  [--page n|id|all] [-o out.png] [--scale 1] [--format png|jpg|webp|pdf]
   catalog <kind> [query]     fonts | icons | shapes | recipes | makers | layouts | sizes | fx
                              (fx: expert effects; the query is a word, an effect id, "schema" or "actions")
@@ -62,9 +64,17 @@ Operations: add update remove reorder group ungroup align distribute page.add pa
   render: `localeditor render <file> [--page 0|<page id>|all] [-o out.png] [--scale 1] [--format png|jpg|webp|pdf] [--transparent]
 Pages are counted from 0. Several pages with -o out.png write out-0.png, out-1.png, … (PDF: one file).
 Without -o the image goes to stdout when it is not a terminal, else to <design>.png.`,
-  check: `localeditor check <file> [--max-warnings n]
+  check: `localeditor check <file…> [--brand <brand.lebrand.json>] [--max-warnings n]      (also: localeditor lint)
 Lists problems (overflow, clipped, off-page, missing-image, unknown-font, low-contrast, unknown-icon, remote-image …)
-with JSON pointers and layer ids. Exit 1 when there are more than --max-warnings (default 0).`,
+with JSON pointers and layer ids. When the design names a brand ("brand": "brand.lebrand.json" or an inline block) or
+--brand is given, brand problems are listed too (brand-color, brand-font, brand-contrast, brand-logo-space,
+brand-logo-size), each with a "fix" operation in --json. Exit 1 when a file has more than --max-warnings (default 0).`,
+  brand: `localeditor brand check <design> [--brand <brand.lebrand.json>] [--fix]
+localeditor brand show <brand.lebrand.json>
+check lists where a design leaves its brand: colours outside the palette, fonts outside the brand, text that is hard to
+read on a brand colour, logos that are too small or too close to something. --json adds "fixes": an operation list you
+can pass to apply; --fix applies it and checks again. Exit 1 while problems remain.
+show checks a brand file and prints its colours, fonts, logos, tone and do / don't lines. Format: docs/FORMAT-BRAND.md`,
   validate: 'localeditor validate <file…>   (- reads stdin)\nRefuses unsafe or malformed files with { path, message } errors.',
   show: 'localeditor show <file> [--full]\nAn outline of pages and layers; --full prints the normalised file.',
   find: 'localeditor find <file> <query>\nLayers whose id, name, type, text, font or image path contains the query.',
@@ -85,7 +95,7 @@ Setup for Claude Code, Cursor, Codex, OpenCode and Gemini CLI: agent-kit/mcp/REA
   doctor: 'localeditor doctor\nChecks Node, finds a browser, starts it headless, renders the hello-world example and proves the network seal.'
 };
 
-const BOOL = new Set(['json', 'dry-run', 'partial', 'full', 'force', 'verbose', 'help', 'transparent', 'no-open', 'quiet', 'h', 'all', 'no-previews', 'exit-on-stdin-end']);
+const BOOL = new Set(['json', 'dry-run', 'partial', 'full', 'force', 'verbose', 'help', 'transparent', 'no-open', 'quiet', 'h', 'all', 'no-previews', 'exit-on-stdin-end', 'fix', 'pixels']);
 const MULTI = new Set(['allow-path', 'allow-host']);
 const SHORT = { o: 'out', h: 'help' };
 
@@ -176,14 +186,38 @@ const COMMANDS = {
     });
   },
   async check(args) {
-    const file = args._[0];
-    if (!file) throw usage('localeditor check <file>');
+    const files = args._;
+    if (!files.length) throw usage('localeditor check <file…>');
     const max = args['max-warnings'] != null ? Number(args['max-warnings']) : 0;
+    const human = (x) => (x.problems.length ? x.problems.length + ' problem' + (x.problems.length > 1 ? 's' : '') + ' in ' + path.relative(process.cwd(), x.file) + '\n' + fmtProblems(x.problems) : 'No problems in ' + path.relative(process.cwd(), x.file)) + (x.brand ? '\n  (brand: ' + (x.brand.name || 'inline') + ')' : '');
     return withService(args, async (svc) => {
-      const r = await svc.check(file);
-      r.maxWarnings = max;
-      r.ok = r.problems.length <= max;
-      out(args, r, (x) => (x.problems.length ? x.problems.length + ' problem' + (x.problems.length > 1 ? 's' : '') + ' in ' + path.relative(process.cwd(), x.file) + '\n' + fmtProblems(x.problems) : 'No problems in ' + path.relative(process.cwd(), x.file)));
+      const all = [];
+      for (const file of files) {
+        const r = await svc.check(file, { brand: args.brand });
+        r.maxWarnings = max;
+        r.ok = r.problems.length <= max;
+        all.push(r);
+      }
+      if (all.length === 1) out(args, all[0], human);
+      else out(args, { ok: all.every((r) => r.ok), files: all }, (x) => x.files.map(human).join('\n'));
+      return all.every((r) => r.ok) ? 0 : 1;
+    });
+  },
+  async lint(args) { return COMMANDS.check(args); },
+  async brand(args) {
+    const sub = args._.shift();
+    const file = args._[0];
+    if ((sub !== 'check' && sub !== 'show') || !file) throw usage('localeditor brand check <design> [--brand <file>] [--fix]  |  localeditor brand show <brand file>');
+    return withService(args, async (svc) => {
+      if (sub === 'show') {
+        const b = await svc.brandRead(file);
+        out(args, b, (x) => x.summary + (x.warnings.length ? '\n' + fmtProblems(x.warnings) : ''));
+        return 0;
+      }
+      const r = await svc.brandCheck(file, { brand: args.brand, fix: args.fix });
+      out(args, r, (x) => (x.fixed != null ? x.fixed + ' fix' + (x.fixed === 1 ? '' : 'es') + ' applied\n' : '') +
+        (x.problems.length ? x.problems.length + ' brand problem' + (x.problems.length > 1 ? 's' : '') + ' in ' + path.relative(process.cwd(), x.file) + ' (brand: ' + x.brand.name + ')\n' + fmtProblems(x.problems) + (x.fixes.length ? '\n' + x.fixes.length + ' can be fixed: add --fix, or --json for the operations' : '')
+          : path.relative(process.cwd(), x.file) + ' follows the brand ' + x.brand.name + '.'));
       return r.ok ? 0 : 1;
     });
   },

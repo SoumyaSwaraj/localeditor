@@ -203,6 +203,17 @@ const { text, assets } = await LEAgent.save({ images: 'paths' });   // assets: [
 
 Results are plain JSON (images as data URLs), safe to pass across a process boundary.
 
-## 11. Testing it yourself
+## 11. Following a brand
+
+A brand file (`brand.lebrand.json`, `docs/FORMAT-BRAND.md`) holds the colours with their roles, the fonts by role, the logos, spacing, tone words and do / don't lines. The person keeps the same file in the studio's Brand kit (Brand kit → Brand file → Import / Export), so you both work from one source.
+
+1. **Read it first.** `localeditor brand show brand.lebrand.json` (MCP `brand_read`) prints the roles, fonts, tone and the do / don't lines. Use the roles as intended: `background` behind, `text` for body copy, `primary` and `accent` for emphasis; write in the brand's tone.
+2. **Name it in the design**: `"brand": "brand.lebrand.json"` (a path in the design's folder) or the brand inline. Then every `check` is brand-aware.
+3. **Check and fix.** `localeditor brand check design.ledesign.json --json` (MCP `brand_check`) lists `brand-color`, `brand-font`, `brand-contrast`, `brand-logo-size` and `brand-logo-space` problems. Most carry a `fix` operation; `fixes` is the merged list for `apply` (or pass `--fix` / `fix: true`). Render afterwards: a fix picks the nearest brand colour, which is not always the right one.
+4. **Logos.** Give the logo layer the id `logo` (or the brand logo's id) so its size and clear space are checked. Never recolour, stretch or crop it.
+
+In the browser, `LE.design.lint(project, { brand })` and `LE.brand.lint(project, brand)` give the same warnings; a design with an inline brand reports them on every load.
+
+## 12. Testing it yourself
 
 `node tests/run.js agent` runs the API, console, link and interruption tests. `node tools/agent-demo/run.js` plays an agent through every channel and saves screenshots of the watching experience.

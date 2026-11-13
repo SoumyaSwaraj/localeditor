@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://localeditor.net/schema/brand-1.json",
+  "title": "LocalEditor brand (brand.lebrand.json), version 1",
+  "description": "One brand as plain JSON: colours with roles, fonts by role, logos, spacing, tone words and do / don't notes. Declarative data only; nothing in it is ever run. The reader (LE.brand.read in assets/js/le-brand.js) is the authority: it also refuses markup in any text, web addresses and paths that leave the folder. Inside a design file (\"brand\": { … }) \"format\" may be left out.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "format": {
+      "const": "localeditor-brand"
+    },
+    "version": {
+      "const": 1
+    },
+    "name": {
+      "$ref": "#/$defs/text80"
+    },
+    "colors": {
+      "description": "Brand colours. The long form is a list; the short form is an object of role: colour.",
+      "oneOf": [
+        {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "object",
+            "required": [
+              "value"
+            ],
+            "properties": {
+              "role": {
+                "description": "What the colour is for. Usual roles: primary, secondary, accent, background, surface, text, muted, success, warning, danger. Any short lower-case name is allowed.",
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]{0,23}$"
+              },
+              "value": {
+                "$ref": "#/$defs/color"
+              },
+              "name": {
+                "$ref": "#/$defs/text40"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "type": "object",
+          "maxProperties": 40,
+          "additionalProperties": {
+            "$ref": "#/$defs/color"
+          }
+        }
+      ]
+    },
+    "fonts": {
+      "description": "Fonts by role, from the font list (localeditor catalog fonts).",
+      "type": "object",
+      "properties": {
+        "heading": {
+          "$ref": "#/$defs/font"
+        },
+        "subheading": {
+          "$ref": "#/$defs/font"
+        },
+        "body": {
+          "$ref": "#/$defs/font"
+        },
+        "accent": {
+          "$ref": "#/$defs/font"
+        }
+      },
+      "additionalProperties": false
+    },
+    "logos": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/logoSrc"
+          },
+          {
+            "type": "object",
+            "required": [
+              "src"
+            ],
+            "properties": {
+              "id": {
+                "description": "A layer whose id is this id, \"logo-<id>\", or whose id or name contains \"logo\", is checked as this logo.",
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]{0,23}$"
+              },
+              "src": {
+                "$ref": "#/$defs/logoSrc"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 60,
+                "not": {
+                  "pattern": "[<>]"
+                }
+              },
+              "on": {
+                "description": "The kind of background this version is for.",
+                "enum": [
+                  "light",
+                  "dark",
+                  "any"
+                ]
+              },
+              "clearSpace": {
+                "description": "Empty space kept around the logo, as a share of its shorter side (0.25 is a quarter).",
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2
+              },
+              "minWidth": {
+                "description": "The smallest width, in pixels, the logo may be drawn at.",
+                "type": "number",
+                "minimum": 0,
+                "maximum": 20000
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "spacing": {
+      "description": "Preferences in pixels for a 1080-wide page; scale them with the page.",
+      "type": "object",
+      "properties": {
+        "unit": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4000
+        },
+        "margin": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4000
+        },
+        "gap": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4000
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4000
+        }
+      },
+      "additionalProperties": false
+    },
+    "tone": {
+      "description": "A few words for the voice of the text.",
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "$ref": "#/$defs/text40"
+      }
+    },
+    "do": {
+      "$ref": "#/$defs/notes"
+    },
+    "dont": {
+      "$ref": "#/$defs/notes"
+    },
+    "rules": {
+      "type": "object",
+      "properties": {
+        "neutrals": {
+          "description": "Pure black and pure white are allowed next to the palette. Default true.",
+          "type": "boolean"
+        },
+        "contrast": {
+          "description": "The contrast ratio body text must reach on a brand colour. Default 4.5 (3 for text of 24 px and larger).",
+          "type": "number",
+          "minimum": 1,
+          "maximum": 21
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "color": {
+      "description": "A solid colour: #RGB or #RRGGBB.",
+      "type": "string",
+      "pattern": "^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$"
+    },
+    "text40": {
+      "type": "string",
+      "maxLength": 40,
+      "not": {
+        "pattern": "[<>]"
+      }
+    },
+    "text80": {
+      "type": "string",
+      "maxLength": 80,
+      "not": {
+        "pattern": "[<>]"
+      }
+    },
+    "notes": {
+      "description": "Short lines of plain text.",
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "maxLength": 300,
+        "not": {
+          "pattern": "[<>]"
+        }
+      }
+    },
+    "font": {
+      "oneOf": [
+        {
+          "type": "string",
+          "maxLength": 80
+        },
+        {
+          "type": "object",
+          "required": [
+            "family"
+          ],
+          "properties": {
+            "family": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "weight": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 900,
+              "multipleOf": 100
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "logoSrc": {
+      "description": "A path relative to the brand file, or an embedded PNG, JPG, WebP or GIF (data:image, base64, up to 256 KB).",
+      "type": "string",
+      "maxLength": 350000,
+      "oneOf": [
+        {
+          "pattern": "^data:image/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$"
+        },
+        {
+          "pattern": "^(?![/\\\\])(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*\\.\\.)[^<>:\\\\]{1,200}$"
+        }
+      ]
+    }
+  }
+}

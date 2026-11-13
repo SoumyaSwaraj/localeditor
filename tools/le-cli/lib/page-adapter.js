@@ -361,6 +361,26 @@
     if (input && input.full) out.text = cur.text;
     return out;
   }
+  /* Brand checks (docs/FORMAT-BRAND.md): input.brand is brand-file text, or absent for the design's own inline brand. */
+  function brandLib() {
+    if (LE.brand) return Promise.resolve(LE.brand);
+    var root = document.documentElement.getAttribute('data-root') || '../';
+    return Promise.resolve(LE.lazy(root + (/\/$/.test(root) ? '' : '/') + 'assets/js/le-brand.js')).then(function () { return LE.brand; });
+  }
+  function brand(input) {
+    if (!cur && !input.only) return { ok: false, code: 'no-session', errors: [{ path: '', message: 'No design is open.' }] };
+    return brandLib().then(function (B) {
+      var b = null, notes = [];
+      if (input.brand != null) {
+        var r = B.read(input.brand);
+        if (!r.ok) return { ok: false, code: 'invalid', errors: r.errors.map(function (e) { return { path: e.path, message: 'Brand file: ' + e.message }; }) };
+        b = r.brand; notes = r.warnings;
+      } else if (cur) b = B.of(cur.project.meta && cur.project.meta.studio && cur.project.meta.studio.brand);
+      if (!b) return { ok: true, brand: null, problems: [], fixes: [] };
+      var w = input.only ? [] : B.lint(cur.project, b);
+      return { ok: true, brand: b, summary: B.summary(b), notes: notes, problems: w.map(function (x) { return { path: x.path, layer: x.layer || null, kind: x.kind, message: x.message, fix: x.fix || undefined }; }), fixes: B.fixes(w) };
+    });
+  }
   function find(input) {
     if (!cur) return { ok: false, code: 'no-session', errors: [{ path: '', message: 'No design is open.' }] };
     var q = String(input.query || '').toLowerCase();
@@ -483,7 +503,7 @@
   }
   window.__lecli = {
     info: guard(info), load: guard(load), apply: guard(apply), state: guard(state), render: guard(render), find: guard(find),
-    catalog: guard(catalog), make: guard(make), validate: guard(validate), selfTest: guard(selfTest),
+    catalog: guard(catalog), make: guard(make), validate: guard(validate), selfTest: guard(selfTest), brand: guard(brand),
     exportProject: guard(exportProject), importProject: guard(importProject), exportText: guard(exportText),
     close: function () { cur = null; return true; }
   };

@@ -1448,6 +1448,27 @@
     var l = c.one();
     if (l && l.type === 'image' && kit.logos.indexOf(l.src) < 0) s3.querySelector('.sx-sec-body').appendChild(U.btn(c, 'Save selected image as a logo', 'brand', 'btn btn-ghost btn-sm', function () { saveKit(c, Object.assign({}, kit, { logos: kit.logos.concat([l.src]).slice(0, 12) })); }));
     host.appendChild(s3);
+    /* One brand file for people, assistants and the command line (docs/FORMAT-BRAND.md); le-brand.js loads on first use. */
+    var brandLib = function () { return LE.brand ? Promise.resolve(LE.brand) : Promise.resolve(LE.lazy((document.documentElement.getAttribute('data-root') || '../') + 'assets/js/le-brand.js')).then(function () { return LE.brand; }); };
+    var s4 = c.ui.section('Brand file');
+    var brandIn = c.h('<input type="file" accept=".json,application/json" hidden aria-label="Brand file">');
+    brandIn.onchange = function () {
+      var f = brandIn.files && brandIn.files[0];
+      brandIn.value = '';
+      if (!f) return;
+      brandLib().then(function (B) { return B.importFile(c, f, kit); }).then(function (r) {
+        return saveKit(c, r.kit).then(function () { c.toast('Brand file imported' + (r.skipped ? '. ' + r.skipped + (r.skipped > 1 ? ' logos are' : ' logo is') + ' named by path and cannot be read here; add ' + (r.skipped > 1 ? 'them' : 'it') + ' under Logos.' : '')); });
+      }).catch(function (e) { c.toast(e && e.errors ? 'That brand file could not be read. ' + e.message : 'Could not import that brand file.'); });
+    };
+    var brandRow = c.h('<div class="sx-row"></div>');
+    brandRow.appendChild(U.btn(c, 'Import brand file', 'plus', 'btn btn-ghost btn-sm', function () { brandIn.click(); }));
+    brandRow.appendChild(U.btn(c, 'Export brand file', 'download', 'btn btn-ghost btn-sm', function () {
+      brandLib().then(function (B) { return B.exportFile(c, kit); }).then(function (r) { c.toast('Saved ' + r.name + (r.left ? '. ' + r.left + (r.left > 1 ? ' logos were' : ' logo was') + ' too large to include.' : '')); }).catch(function () { c.toast('Could not export the brand file.'); });
+    }));
+    s4.querySelector('.sx-sec-body').appendChild(brandRow);
+    s4.querySelector('.sx-sec-body').appendChild(brandIn);
+    s4.querySelector('.sx-sec-body').appendChild(U.note(c, 'A brand file (brand.lebrand.json) holds these colours, fonts and logos as plain data, so an assistant or a script can follow the same brand.', 'is-muted'));
+    host.appendChild(s4);
     host.appendChild(U.note(c, 'Your brand kit is stored in this browser’s project ledger and appears in every colour picker and in Replace all.', 'is-muted'));
   }
 

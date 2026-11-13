@@ -381,6 +381,10 @@ Sans: Inter, Poppins, Montserrat, DM Sans, Manrope, Space Grotesk, Outfit, Nunit
 
 `cinematic-portrait soft-wedding golden-hour soft-skin crisp-headshot clean-product white-sweep ecommerce-export fresh-food moody-table vivid-landscape blue-hour misty-morning vintage-film warm-negative teal-orange instant-fade classic-bw noir silver-matte sepia-print feed-pop pastel-dream clean-scan whiteboard crisp-receipt`, plus recipes the person saved.
 
+## Brand
+
+`"brand"` at the top of a design names the brand it follows: a path to a brand file in the design's folder (`"brand": "brand.lebrand.json"`) or the brand inline (`"brand": { "name": …, "colors": [ … ], "fonts": { … } }`). It is plain data and is written back unchanged. Lint then also reports colours and fonts outside the brand, text that is hard to read on a brand colour, and logos that are too small or crowded, each with a fix an agent can apply. A path is read by the command line, the MCP server and CI; the studio checks an inline brand. Full description: `docs/FORMAT-BRAND.md`; schema: `schema/brand-1.json`. In a template link an inline brand travels without embedded logos.
+
 ## Template links (remix)
 
 A design without its photos can travel in a link: `https://localeditor.net/studio/#d=<payload>`. The part after `#` never reaches a server.

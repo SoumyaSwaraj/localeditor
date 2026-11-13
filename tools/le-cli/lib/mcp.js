@@ -65,8 +65,19 @@ const TOOLS = [
   {
     name: 'design_check', title: 'Check a design for problems',
     description: 'List problems in a design: text overflowing its box, text running past the page edge, layers off the page, low text contrast, missing or remote images, unknown fonts, icons or shapes. Each has a kind, the layer id and a JSON pointer. Fix them with design_apply and check again.',
-    inputSchema: { type: 'object', properties: { path: PATH }, required: ['path'], additionalProperties: false },
+    inputSchema: { type: 'object', properties: { path: PATH, brand: { type: 'string', description: 'Optional brand file (brand.lebrand.json) to check against; without it the design\'s own "brand" is used when it has one.' } }, required: ['path'], additionalProperties: false },
     annotations: { readOnlyHint: true }
+  },
+  {
+    name: 'brand_read', title: 'Read a brand file',
+    description: 'Read and check a brand file (brand.lebrand.json): colours with roles, fonts by role, logos, spacing, tone words and do / don\'t lines. Read it before designing so the first draft already follows the brand.',
+    inputSchema: { type: 'object', properties: { path: { type: 'string', description: 'The brand file, relative to the working folder.' } }, required: ['path'], additionalProperties: false },
+    annotations: { readOnlyHint: true }
+  },
+  {
+    name: 'brand_check', title: 'Check a design against a brand',
+    description: 'List where a design leaves its brand: colours outside the palette (brand-color), fonts outside the brand (brand-font), text that is hard to read on a brand colour (brand-contrast), logos too small or without clear space (brand-logo-size, brand-logo-space). Each problem has the layer id and usually a "fix" operation; "fixes" is the whole list, ready for design_apply. With fix: true the fixes are applied and the design is checked again.',
+    inputSchema: { type: 'object', properties: { path: PATH, brand: { type: 'string', description: 'The brand file. Optional when the design names one ("brand": "brand.lebrand.json") or carries it inline.' }, fix: { type: 'boolean', description: 'Apply every suggested fix, then check again.' } }, required: ['path'], additionalProperties: false }
   },
   {
     name: 'design_render', title: 'Look at a design',
@@ -147,7 +158,9 @@ function resources() {
   const list = [
     { uri: 'localeditor://docs/format', name: 'format', title: 'The open design format (.ledesign.json)', mimeType: 'text/markdown', file: 'docs/FORMAT-DESIGN.md' },
     { uri: 'localeditor://docs/agent-cli', name: 'agent-cli', title: 'Working fast: CLI, MCP and the write → check → render loop', mimeType: 'text/markdown', file: 'docs/AGENT-CLI.md' },
-    { uri: 'localeditor://schema/design-1.json', name: 'schema', title: 'JSON Schema, format 1', mimeType: 'application/schema+json', file: 'schema/design-1.json' }
+    { uri: 'localeditor://schema/design-1.json', name: 'schema', title: 'JSON Schema, format 1', mimeType: 'application/schema+json', file: 'schema/design-1.json' },
+    { uri: 'localeditor://docs/brand', name: 'brand-format', title: 'The brand file (brand.lebrand.json)', mimeType: 'text/markdown', file: 'docs/FORMAT-BRAND.md' },
+    { uri: 'localeditor://schema/brand-1.json', name: 'brand-schema', title: 'JSON Schema, brand file 1', mimeType: 'application/schema+json', file: 'schema/brand-1.json' }
   ];
   try {
     fs.readdirSync(siteFile('examples/designs')).filter((f) => f.endsWith('.ledesign.json')).sort().forEach((f) => {
@@ -305,7 +318,17 @@ class McpServer {
           return this.ok(r, [{ type: 'image', data: p.data, mimeType: p.mime }]);
         }
         case 'design_check': {
-          const r = await svc.check(a.path);
+          const r = await svc.check(a.path, { brand: a.brand });
+          if (r.brand && r.brand.source !== 'inline') r.brand.source = this.rel(r.brand.source);
+          return this.ok(Object.assign(r, { file: this.rel(r.file) }));
+        }
+        case 'brand_read': {
+          const r = await svc.brandRead(a.path);
+          return this.ok(Object.assign(r, { file: this.rel(r.file) }));
+        }
+        case 'brand_check': {
+          const r = await svc.brandCheck(a.path, { brand: a.brand, fix: a.fix });
+          if (r.brand && r.brand.source !== 'inline') r.brand.source = this.rel(r.brand.source);
           return this.ok(Object.assign(r, { file: this.rel(r.file) }));
         }
         case 'design_render': {
