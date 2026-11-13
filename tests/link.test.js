@@ -166,6 +166,22 @@ cases['notes, two tabs, tab closing, file deleted and replaced, server stopping'
   } finally { await s.stop(); }
 };
 
+cases['a brand the agent names in the file reaches the tab and is not taken out again by the tab'] = async ({ browser, h }) => {
+  const s = await start('brandref');
+  try {
+    fs.writeFileSync(path.join(s.dir, 'brand.lebrand.json'), JSON.stringify({ format: 'localeditor-brand', version: 1, name: 'B', colors: { primary: '#14213D', text: '#17131F' } }));
+    const page = await tab(browser, s.info.url);
+    agentEdit(s, (d) => { d.brand = 'brand.lebrand.json'; L(d, 'a').x = 44; });
+    await until(async () => (await layer(page, 'a')).x === 44, 15000, 'the change reaches the tab');
+    await until(() => page.evaluate(() => LE.link.client.applying === 0 && ((LEStudio.S.project.meta.studio.brand || {}).ref === 'brand.lebrand.json')), 15000, 'the tab holds the brand reference');
+    await page.evaluate(() => window.LEStudio.patch('b', { text: 'Edited in the tab' }));
+    await until(() => L(readFile(s), 'b').text === 'Edited in the tab', 15000, 'the tab edit is written');
+    h.assert.equal(readFile(s).brand, 'brand.lebrand.json', 'the brand reference is still in the file');
+    agentEdit(s, (d) => { delete d.brand; });
+    await until(() => page.evaluate(() => LE.link.client.applying === 0 && !LEStudio.S.project.meta.studio.brand), 15000, 'removing it reaches the tab too');
+  } finally { await s.stop(); }
+};
+
 /* ---------- consent: a tool asks to show another design in a tab that is already open ---------- */
 const OTHER = () => { const d = DESIGN(); d.name = 'Other'; d.pages[0].layers[1].text = 'Other file'; return d; };
 /* The tool's side: POST <api>attach and wait for the person's answer. → { status, body } */

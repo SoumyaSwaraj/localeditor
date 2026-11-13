@@ -970,6 +970,9 @@
     var A = this.win.LEAgent;
     self.applying++;
     var done = function () { self.applying--; };
+    /* The brand a design names (docs/FORMAT-BRAND.md) is document data with nothing to draw: it follows the file at once. */
+    var theirs = (res.project.meta && res.project.meta.studio) || {}, ours = c.S.project && c.S.project.meta && c.S.project.meta.studio;
+    if (ours) { if (theirs.brand) ours.brand = clone(theirs.brand); else delete ours.brand; }
     if (A && typeof A.applyExternal === 'function') {
       /* Agent mode applies the whole new version as one batch (replace), animated and listed in the activity feed. */
       return Promise.resolve(A.applyExternal(stripNotes(next), { source: 'le-link', name: self.name, label: 'Changed ' + self.name + ' (' + ops.length + ' change' + (ops.length > 1 ? 's' : '') + ')' }))
