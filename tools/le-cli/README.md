@@ -64,6 +64,16 @@ Exit codes: `0` ok · `1` invalid design, problems found or operations refused �
 
 The operation list, results and error codes, the MCP tools and the API endpoints are in [`docs/AGENT-CLI.md`](../../docs/AGENT-CLI.md); the file format in [`docs/FORMAT-DESIGN.md`](../../docs/FORMAT-DESIGN.md).
 
+### Brand and design as code
+
+| Command | What it does |
+|---|---|
+| `localeditor brand show <brand.lebrand.json>` | Check a brand file and print its colours, fonts, logos, tone and do / don't lines. |
+| `localeditor brand check <design> [--brand <file>] [--fix]` | Where the design leaves its brand, each with a fix; `--fix` applies them. `docs/FORMAT-BRAND.md` |
+| `localeditor check <design…> [--brand <file>]` (also `lint`) | Lint and brand together; exit 1 on problems, for CI. |
+| `localeditor build <file.js\|file.json…> -o out/` | Run a design script (`require('localeditor/dsl')`), write `.ledesign.json`, draw every page. `docs/DESIGN-AS-CODE.md` |
+| `localeditor diff <a> <b> [--pixels diff.png]` | What changed, by page and layer id, and optionally a picture of the differing pixels. |
+
 ## Images and files
 
 - Image paths in a design are relative to the design file (`assets/beach.jpg`). Nothing outside the design's folder is read unless you pass `--allow-path`; `..` and symlinks that lead out are refused (reported as `refused-path`).

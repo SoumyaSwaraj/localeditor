@@ -152,6 +152,30 @@ class Service {
       return out;
     });
   }
+  /* diff(a, b, { pixels?, page? }) → what changed from design a to design b, by page and layer id; with pixels, also a
+     picture per page that marks the pixels that differ. Both files are compared in their normalised form. */
+  async diff(a, b, o) {
+    o = o || {};
+    const B = require('./build');
+    const A = await this.show(a, { full: true }), Z = await this.show(b, { full: true });
+    const da = JSON.parse(A.text), db = JSON.parse(Z.text);
+    const ops = linkCore.diff(da, db);
+    const out = Object.assign({ ok: true, a: A.file, b: Z.file }, B.describe(da, db, ops), { ops });
+    if (o.pixels) {
+      const n = Math.min(da.pages.length, db.pages.length);
+      out.pixels = [];
+      for (let i = 0; i < n; i++) {
+        if (o.page != null && Number(o.page) !== i) continue;
+        const edge = (d) => 1024 / Math.max(d.pages[i].width, d.pages[i].height, 1024);
+        const ra = await this.render(a, { page: i, format: 'png', scale: edge(da) }), rb = await this.render(b, { page: i, format: 'png', scale: edge(db) });
+        const r = await this.engine.call('validate', 'pixelDiff', { a: ra.pages[0].data, b: rb.pages[0].data }, 120000);
+        if (!r.ok) fail(r);
+        out.pixels.push({ page: i, changed: r.changed, total: r.total, share: r.share, sameSize: r.sameSize, width: r.width, height: r.height, data: r.data });
+      }
+      if (out.pixels.some((p) => p.changed > 0)) out.same = false;
+    }
+    return out;
+  }
   /* Reads and checks a brand file on its own: the normalised brand and a short summary for an agent. */
   async brandRead(file) {
     const abs = this.sandbox.file(file, 'the brand file');

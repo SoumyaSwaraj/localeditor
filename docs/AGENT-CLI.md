@@ -34,6 +34,10 @@ le apply poster.ledesign.json fix.json           # fix what check or your eyes f
 4. **Look.** `le render` (MCP `design_render` returns the picture to you directly). Check hierarchy, spacing and alignment — lint does not see taste.
 5. **Use only what exists.** `le catalog fonts|icons|shapes|recipes|makers|layouts|sizes|fx [query]`. `le catalog fx` lists the expert effects, `le catalog fx <id>` prints one in full (parameters, ranges, an example entry), `le catalog fx schema` the blends, mask kinds and limits.
 
+## Design as code
+
+`le build poster.design.js -o out/` runs a script that exports designs made with the builder (`require('localeditor/dsl')`), writes each as `.ledesign.json` and draws every page; `le diff a b [--pixels diff.png]` lists what changed by layer id; `le check a b c` fails with exit 1 for CI. A GitHub Action does all three on pull requests. See `docs/DESIGN-AS-CODE.md`.
+
 ## Operations
 
 A batch is a JSON list. Pages are counted from 0 or named by page id; without `page`, a layer is found on any page (ids are unique in a file) and new layers go on the current page (the first, or the last one `page.add` / `page.select` made current). Positions accept pixels, `"50%"`, or `left` / `center` / `right` (x) and `top` / `center` / `bottom` (y). The layer fields are the open format's (`docs/FORMAT-DESIGN.md`).

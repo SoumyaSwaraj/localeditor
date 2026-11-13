@@ -16,6 +16,10 @@ Write and change
   make <maker> -o <file>     Build a design from a quick maker  --values '{"…":…}' [--style] [--size]
   convert <in> <out>         .ledesign.json <-> .leproject; --images embed|assets
 
+Design as code
+  build <file.js|file.json…> Write the designs a script exports as .ledesign.json and draw every page  [-o out/] [--format png,pdf]
+  diff <a> <b>               What changed between two designs, by page and layer id  [--pixels diff.png] (exit 1 if different)
+
 Read and check
   show <file>                Outline: pages, layers with ids, types, text, boxes  [--full]
   find <file> <query>        Layers whose id, name, text, font or type matches
@@ -69,6 +73,16 @@ Lists problems (overflow, clipped, off-page, missing-image, unknown-font, low-co
 with JSON pointers and layer ids. When the design names a brand ("brand": "brand.lebrand.json" or an inline block) or
 --brand is given, brand problems are listed too (brand-color, brand-font, brand-contrast, brand-logo-space,
 brand-logo-size), each with a "fix" operation in --json. Exit 1 when a file has more than --max-warnings (default 0).`,
+  build: `localeditor build <poster.design.js | poster.ledesign.json …> [-o out/] [--format png|jpg|webp|pdf[,…]] [--scale 1] [--brand <file>]
+A .js file is run with Node and exports designs made with the builder (require('localeditor/dsl')): one design,
+a list, an object of name: design, or a function returning those. Each is written next to the script as
+<name>.ledesign.json — plain data, the same open format, nothing in it is run when it is opened. Every page of
+every design is then drawn into the output folder (default out/): <name>.png, or <name>-<page>.png for several pages.
+Problems are listed; add "localeditor check" for a failing exit code. Guide: docs/DESIGN-AS-CODE.md`,
+  diff: `localeditor diff <a.ledesign.json> <b.ledesign.json> [--pixels diff.png] [--page n]
+Lists pages and layers added, removed, moved and changed (with the fields and their old and new values), matched by
+id, so a renamed colour is one line and not a wall of JSON. --pixels also draws both and writes a picture per page
+with the differing pixels marked. --json adds the operation list that turns a into b. Exit 0 when the same, 1 when not.`,
   brand: `localeditor brand check <design> [--brand <brand.lebrand.json>] [--fix]
 localeditor brand show <brand.lebrand.json>
 check lists where a design leaves its brand: colours outside the palette, fonts outside the brand, text that is hard to
@@ -95,7 +109,7 @@ Setup for Claude Code, Cursor, Codex, OpenCode and Gemini CLI: agent-kit/mcp/REA
   doctor: 'localeditor doctor\nChecks Node, finds a browser, starts it headless, renders the hello-world example and proves the network seal.'
 };
 
-const BOOL = new Set(['json', 'dry-run', 'partial', 'full', 'force', 'verbose', 'help', 'transparent', 'no-open', 'quiet', 'h', 'all', 'no-previews', 'exit-on-stdin-end', 'fix', 'pixels']);
+const BOOL = new Set(['json', 'dry-run', 'partial', 'full', 'force', 'verbose', 'help', 'transparent', 'no-open', 'quiet', 'h', 'all', 'no-previews', 'exit-on-stdin-end', 'fix']);
 const MULTI = new Set(['allow-path', 'allow-host']);
 const SHORT = { o: 'out', h: 'help' };
 
@@ -204,6 +218,36 @@ const COMMANDS = {
     });
   },
   async lint(args) { return COMMANDS.check(args); },
+  async build(args) {
+    if (!args._.length) throw usage('localeditor build <file.js|file.json…> [-o out/]');
+    const B = require('./build');
+    return withService(args, async (svc) => {
+      const r = await B.build(svc, args._, { out: args.out, formats: args.format ? String(args.format).split(',') : null, scale: args.scale, brand: args.brand, quality: args.quality ? Number(args.quality) : undefined });
+      const rel = (f) => path.relative(process.cwd(), f);
+      out(args, r, (x) => x.designs.map((d) => (d.generated ? 'Wrote ' + rel(d.file) + '\n' : '') + d.files.map((f) => 'Wrote ' + rel(f.file) + (f.width ? ' (' + f.width + '×' + f.height + ')' : '')).join('\n') +
+        (d.problems.length ? '\n' + d.problems.length + ' problem' + (d.problems.length > 1 ? 's' : '') + ' in ' + rel(d.file) + '\n' + fmtProblems(d.problems) : '')).join('\n'));
+      return 0;
+    });
+  },
+  async diff(args) {
+    const [a, b] = args._;
+    if (!a || !b) throw usage('localeditor diff <a> <b> [--pixels diff.png]');
+    const B = require('./build');
+    const want = args.pixels === true ? 'diff.png' : args.pixels;
+    return withService(args, async (svc) => {
+      const r = await svc.diff(a, b, { pixels: !!want, page: args.page });
+      if (r.pixels) {
+        r.pixels.forEach((p) => {
+          const target = svc.sandbox.file(r.pixels.length > 1 ? String(want).replace(/(\.png)?$/i, '-' + p.page + '.png') : String(want), 'the output');
+          fs.mkdirSync(path.dirname(target), { recursive: true });
+          fs.writeFileSync(target, Buffer.from(p.data, 'base64'));
+          p.file = target; delete p.data;
+        });
+      }
+      out(args, r, (x) => B.describeText(x) + (x.pixels ? '\n' + x.pixels.map((p) => 'page ' + p.page + ': ' + (p.changed ? (p.share * 100).toFixed(2) + ' % of the pixels differ' : 'pixels are the same') + '  → ' + path.relative(process.cwd(), p.file)).join('\n') : ''));
+      return r.same ? 0 : 1;
+    });
+  },
   async brand(args) {
     const sub = args._.shift();
     const file = args._[0];

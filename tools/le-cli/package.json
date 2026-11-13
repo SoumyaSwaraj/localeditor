@@ -11,6 +11,7 @@
   "files": [
     "bin/",
     "lib/",
+    "dsl.js",
     "scripts/",
     "site/",
     "README.md"

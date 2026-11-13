@@ -25,7 +25,7 @@ const SKIP = [
   /^assets\/models\//, /^assets\/vendor\/ort/, /^assets\/vendor\/tesseract\//, /^assets\/data\/withicons\//, /^assets\/screenshots\//,
   /(^|\/)\.[^/]+$/, /\.md$/
 ];
-const KEEP_DOCS = ['docs/FORMAT-DESIGN.md', 'docs/AGENT-CLI.md'];
+const KEEP_DOCS = ['docs/FORMAT-DESIGN.md', 'docs/AGENT-CLI.md', 'docs/FORMAT-BRAND.md', 'docs/DESIGN-AS-CODE.md'];
 
 let files = 0, bytes = 0;
 function copy(rel) {

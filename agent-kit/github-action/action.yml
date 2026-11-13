@@ -1,0 +1,82 @@
+name: LocalEditor design check
+description: Builds the LocalEditor designs a pull request changed, checks them (lint and brand), uploads the pictures as an artifact and writes a job summary. No secrets, nothing uploaded elsewhere.
+branding:
+  icon: image
+  color: purple
+
+inputs:
+  files:
+    description: Design files to build and check. One pattern per line or comma-separated ("**" any folders, "*" within a folder).
+    default: '**/*.ledesign.json'
+  scripts:
+    description: Design scripts to run with Node (for example "**/*.design.js"). Empty runs none. A script is code from the pull request; leave this empty for pull requests you do not trust.
+    default: ''
+  brand:
+    description: A brand file (brand.lebrand.json) to check every design against. Empty uses the brand each design names, if any.
+    default: ''
+  changed-only:
+    description: Build only the designs the pull request changed ("true"), or all of them ("false").
+    default: 'true'
+  base:
+    description: The commit to compare with. Defaults to the pull request's base.
+    default: ''
+  format:
+    description: Picture formats, comma-separated - png, jpg, webp, pdf.
+    default: png
+  max-warnings:
+    description: How many problems are allowed before the job fails.
+    default: '0'
+  fail-on-problems:
+    description: Fail the job when there are more problems than max-warnings.
+    default: 'true'
+  artifact-name:
+    description: The name of the uploaded artifact.
+    default: localeditor-previews
+  node-version:
+    description: The Node version to run with (20 or later).
+    default: '20'
+  browser:
+    description: Path to Chrome, Edge or Chromium. Empty finds the one on the runner.
+    default: ''
+
+outputs:
+  designs:
+    description: How many designs were built.
+    value: ${{ steps.run.outputs.designs }}
+  problems:
+    description: How many problems were found.
+    value: ${{ steps.run.outputs.problems }}
+  previews:
+    description: The folder with the pictures and report.json.
+    value: ${{ steps.run.outputs.previews }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    # Inputs reach the script as environment variables only; nothing from the pull request is pasted into a command.
+    - id: run
+      shell: bash
+      env:
+        LE_FILES: ${{ inputs.files }}
+        LE_SCRIPTS: ${{ inputs.scripts }}
+        LE_BRAND: ${{ inputs.brand }}
+        LE_CHANGED_ONLY: ${{ inputs.changed-only }}
+        LE_BASE: ${{ inputs.base || github.event.pull_request.base.sha }}
+        LE_FORMAT: ${{ inputs.format }}
+        LE_MAX_WARNINGS: ${{ inputs.max-warnings }}
+        LE_FAIL_ON_PROBLEMS: ${{ inputs.fail-on-problems }}
+        LE_ARTIFACT: ${{ inputs.artifact-name }}
+        LE_BROWSER: ${{ inputs.browser }}
+        LE_OUT: ${{ runner.temp }}/localeditor-previews
+      run: node "$GITHUB_ACTION_PATH/run.js"
+
+    - if: ${{ always() && steps.run.outputs.designs != '' && steps.run.outputs.designs != '0' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ steps.run.outputs.previews }}
+        if-no-files-found: ignore
