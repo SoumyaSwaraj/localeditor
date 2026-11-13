@@ -116,7 +116,16 @@
       if (M.loaded('office')) return b.apply(this, arguments);
       var self = this, a = arguments;
       pane.innerHTML = '<div class="le-load-wait" role="status" aria-busy="true"><span class="skel skel-row"></span><span class="skel skel-cards"></span></div>';
-      M.need('office').then(null, function () { pane.innerHTML = ''; b.apply(self, a); });
+      M.need('office').then(null, function () {
+        /* The other tools still work: list them, and say plainly what is missing with one way to get it. */
+        pane.innerHTML = ''; b.apply(self, a);
+        var box = node('div', 'le-load-error', '', { role: 'alert' });
+        box.appendChild(node('p', 'ps-note', navigator.onLine === false ? 'You are offline and the Office tools are not kept on this device yet. The tools below still work.' : 'The Office tools did not download. Check your connection and try again. The tools below still work.'));
+        var r = node('button', 'btn btn-sm le-load-retry', 'Try again', { type: 'button' });
+        r.addEventListener('click', function () { t.build.apply(self, a); });
+        box.appendChild(r);
+        pane.insertBefore(box, pane.firstChild);
+      });
     };
   })();
 

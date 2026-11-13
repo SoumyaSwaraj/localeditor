@@ -55,6 +55,8 @@ button.xp-rst:hover { color: var(--ink); background: var(--surface-2); }
 .xp-num-in { position: absolute; inset: -2px; width: calc(100% + 4px); border: 1px solid var(--primary); border-radius: 6px; background: var(--surface); color: var(--ink); font: 650 12.5px var(--font, sans-serif); text-align: right; padding: 0 4px; font-variant-numeric: tabular-nums; }
 .xp-num-in:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
 .xp-num-sm { min-width: 38px; }
+/* Develop rows: values sit on one right-aligned column, so every track in a section ends at the same place. */
+.xp-row > .xp-num { min-width: 56px; }
 .xp-slider.is-compact { min-height: 28px; }
 
 /* Toggle */
@@ -278,6 +280,14 @@ button.xp-sec-tog span { overflow: hidden; text-overflow: ellipsis; white-space:
 .xp-sec.is-off .xp-sec-tog span::after { background: var(--faint); }
 .xp-sec-body { padding: 0 0 12px; display: grid; gap: 1px; }
 .xp-sec-head .xp-ib[data-act="eye"]:not(:disabled) { color: var(--ink); }
+/* With a mouse the section's Reset stays out of the way until the header is pointed at or focused, or there is something to reset. */
+@media (hover: hover) and (pointer: fine) {
+  .xp-sec-head .xp-ib[data-act="reset"]:disabled { opacity: 0; transition: opacity var(--dur-1, .15s) var(--ease, ease); }
+  .xp-sec-head:hover .xp-ib[data-act="reset"]:disabled, .xp-sec-head:focus-within .xp-ib[data-act="reset"]:disabled { opacity: .35; }
+}
+/* Said once, under the first develop section. */
+.xp-sec[data-sec="Mask"] + .xp-sec > .xp-sec-body::after { content: "Double-tap a slider to reset it."; margin-top: 8px; font-size: 12px; line-height: 1.4; color: var(--muted); }
+@media (hover: hover) and (pointer: fine) { .xp-sec[data-sec="Mask"] + .xp-sec > .xp-sec-body::after { content: "Double-click a slider to reset it."; } }
 .xp-fxpanel { display: grid; gap: 1px; }
 .xp-fxgroup + .xp-fxgroup { margin-top: 4px; }
 .xp-fxgroup > .xp-subhead { margin-top: 8px; }

@@ -373,4 +373,13 @@ cases['a finished job gets one calm confirmation (and none under reduced motion 
   h.assert(d < 0.01, 'reduced motion: no animation (' + d + 's)');
 };
 
+cases['maker forms: the photo remove button is a 44px target that still draws a 28px disc'] = async ({ h }) => {
+  const css = fs.readFileSync(path.join(ROOT, 'assets/css/studio-makers.css'), 'utf8');
+  const rule = (css.match(/\.mk-ph-x \{([^}]*)\}/) || [])[1] || '';
+  const disc = (css.match(/\.mk-ph-x::before \{([^}]*)\}/) || [])[1] || '';
+  h.assert(/width: 44px/.test(rule) && /height: 44px/.test(rule), 'the button is 44px: ' + rule.trim());
+  h.assert(/width: 28px/.test(disc) && /height: 28px/.test(disc), 'the disc is 28px: ' + disc.trim());
+  h.assert(!/inset: -/.test(disc), 'the target does not rely on an overflow the thumbnail clips');
+};
+
 module.exports = cases;

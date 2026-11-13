@@ -280,6 +280,11 @@
       if (!l) {
         var c = global.LEStudio;
         tgt.appendChild(h('<div class="xp-empty"><strong>' + (c && c.S && c.S.project ? 'Select a photo or an adjustment layer' : 'Open a photo to start') + '</strong><p>' + esc(c && c.S && c.S.project ? 'Develop settings apply to photos, groups and adjustment layers.' : 'The develop panel, masks and scopes work on the photo you open.') + '</p></div>'));
+        if (c && c.pickFiles) {
+          var add = h('<button type="button" class="btn btn-sm" data-xp-add-photo>' + X.ic('image') + '<span>Add a photo</span></button>');
+          add.addEventListener('click', function () { c.pickFiles('add'); });
+          tgt.firstChild.appendChild(add);
+        }
         if (c && c.S && c.S.project) {
           var b = h('<button type="button" class="btn btn-sm">' + X.ic('adjust') + '<span>New adjustment layer</span></button>');
           b.addEventListener('click', function () { if (X.layers && X.layers.addAdjustMenu) X.layers.addAdjustMenu(b); });

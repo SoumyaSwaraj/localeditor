@@ -1649,5 +1649,7 @@ body.ps-drop .ps-dropveil { display: grid; }
 .pb-entry svg, .po-entry svg, .pd-entry svg { width: 17px; height: 17px; flex: none; }
 .pb-entry:hover, .po-entry:hover, .pd-entry:hover { background: var(--surface); border-style: solid; }
 .pb-entry:focus-visible, .po-entry:focus-visible, .pd-entry:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-.ps-start.psn-start { display: grid; gap: 18px; max-width: 620px; margin: 0 auto; padding-top: 8px; }
+/* The camera tile shares a class name with the scan screen's layout (.psn-start in pdf-scan.css): it keeps the tile's own box, like its neighbours. */
+.ps-start.psn-start { gap: 2px 12px; max-width: none; margin: 0; padding: 14px; }
+@media (max-width: 767px) { .ps-start.psn-start { gap: 4px 6px; padding: 12px; } }
 @media (max-width: 767px) { .pb-entry, .po-entry { font-size: 13px; } }

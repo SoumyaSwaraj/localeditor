@@ -77,5 +77,9 @@
 .ld-packs .lp-btn, .ld-log .lp-btn { flex: none; min-height: 44px; }
 .ld-packs .lp-link { flex: none; min-height: 44px; }
 .ld-empty, .ld-fine { color: var(--muted, #5C5C5C); font-size: 13.5px; }
+.ld-packs .ld-wait { display: grid; gap: 8px; }
+.ld-packs .ld-wait .skel-row { height: var(--target, 44px); }
+.ld-packs .ld-fail { flex-wrap: wrap; gap: 10px; }
+.ld-packs .ld-fail span { flex: 1 1 200px; }
 .ld-settings-sheet .lp-head h2 { margin: 0; }
 .ld-studio-btn { margin-top: 8px; }

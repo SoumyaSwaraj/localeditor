@@ -268,4 +268,19 @@ cases['memory guard lets studio bitmaps go in the background and redraws on retu
   h.assert.noErrors(page);
 };
 
+cases['while sizes are measured the sheet shows skeleton rows, then the lists'] = async ({ browser, base, h }) => {
+  const page = await h.open(browser, base, '/image-compressor/', 'phone');
+  await page.waitForFunction(() => window.LEPwa);
+  await page.evaluate(() => { navigator.storage.estimate = () => new Promise((res) => { window.__release = () => res({ usage: 0, quota: 1e9 }); }); });
+  await page.evaluate(() => { window.LEPwa.openStorage(); });
+  await page.waitForSelector('dialog.lp-storage .lp-loading[aria-busy="true"]');
+  const sk = await page.$$eval('dialog.lp-storage .lp-loading .skel', (l) => l.map((e) => Math.round(e.getBoundingClientRect().height)));
+  h.assert(sk.length >= 4 && sk.every((x) => x > 0), 'skeleton rows ' + sk);
+  h.assert(/Measuring/.test(await page.textContent('dialog.lp-storage .lp-loading')), 'says what it is doing in words');
+  h.assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll');
+  await page.evaluate(() => window.__release());
+  await page.waitForSelector('dialog.lp-storage .lp-cats');
+  h.assert.equal(await page.locator('dialog.lp-storage .lp-loading').count(), 0, 'the skeleton is replaced');
+};
+
 module.exports = cases;
