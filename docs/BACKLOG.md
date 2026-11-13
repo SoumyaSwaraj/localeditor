@@ -132,3 +132,20 @@ Known quality limits worth an owner look: depth blur edges, noise reduction (gui
 Still open:
 - `expert-ui` slider drag at 4x CPU: 18 ms against a 12 ms budget with about 130 effects registered (was passing at 10 to 13 ms with one pack). Treated as real until the renderer hardening pass lands its registry changes.
 - `install` per-app precache lists failed once in the full run and passes alone; suspected cause is another test writing a file into a scanned folder between the two directory scans.
+
+## Deferred on 13 Nov to keep cost down
+
+Renderer and packs:
+- P6 float through the stack after RAW develop and the RAW seam in the core; P3 output for `develop.basic`.
+- P7 `ui.order` and a grouped add-effect list; P8 on-canvas handle descriptors (`ui.handles`); P9 analysis loaded per document and `kinds: ['light']`.
+- `g.below()`, `clip` on ordinary layers, fill versus opacity.
+- Pack adoptions: X4 `data` parameters and `HINTS`; X3 cast shadow on `g.whole` and box defaults; X6 depth fallback and shadow cap; X2 `g.whole` and Oklab copies; X1 `selective-color` fold, `ui.channels`, `g.asset`.
+- Deep links `&tab`, `&tool`, `&add`, `?open=raw|hdr`; `page.resize` px rescale in `le-link.js`; template-field operations in the command-line tool; `summarize()` labels for template-field operations.
+- `hdr.merge`, `composite.match`, `relight.portrait` and `relight.retime` are wired for agents but not exercised by a test beyond input checks.
+
+First load:
+- Split `le-studio-panels.js` (20 to 25 KB) to get the studio back under 250 KB; split `le-pwa.js` (32 KB) with its owner; defer `le-assets` and `le-fonts` in the PDF studio; a studio-only stylesheet; a static summary for the start-screen makers row.
+
+Tests:
+- `install` per-app precache lists fails in full parallel runs and passes alone (a file appears in a scanned folder mid-run).
+- Running more than two browsers at once on the shared machine crashes pages ("Page crashed", `ERR_INSUFFICIENT_RESOURCES`); use `TEST_JOBS=2`.

@@ -2,15 +2,25 @@
 
 Written 12 November 2026 by the lead architect. This supersedes the "Plans afterwards" list in `docs/HANDOFF.md`; the hard rules in that file still apply.
 
-## Status (lead architect, 12 November 2026, evening)
+## Status (lead architect, 13 November 2026)
 
-Integration branch: `evergrow/focused-pasteur-t84h3j`. Last full run on the combined build: 405 passed, 16 known, 14 failed (cross-module; being fixed).
+Integration branch: `evergrow/focused-pasteur-t84h3j`. Everything listed as merged is on that branch and pushed. The last full run and what is still open are in `docs/BACKLOG.md` (sections "Full suite…" and "Left after…").
 
-**Merged:** phase 1 (landing and design system, photo backgrounds, collage, recipes, Unsplash, install and storage, background-remover prototype, QA suite); device support check; open design format and template links; export (every size, carousel, replay, copy, share); photo privacy check and redact; background remover in the studio with three options and the thumbnail kit; quick makers framework and six makers; category hubs and feature pages; PDF security (D1–D4, D6); PDF bulk (D5, D7, D8, D12, D13); OCR and camera-scan prototypes (labs only); photo-resolution fix.
+**Merged**
+- Phase 1: landing and design system, photo backgrounds, collage, recipes, stock (Pixabay, Pexels, Openverse, Unsplash), install and storage manager, QA suite.
+- Wave 2: device support check and gates, open design format and template links, export (every size, carousel, replay, copy, share), photo privacy and redact, background remover with small and large models, 25 quick makers, template fields and Create many, hubs and feature pages (12 hubs, 59 feature pages).
+- PDF studio D1 to D20, including searchable scans and camera scan.
+- Fonts: 257 open-licence families on demand and 20 originals.
+- Light first load and on-demand modules (`docs/LOADING.md`), download policy and packs (`docs/DOWNLOADS.md`), three installable apps (`docs/INSTALL.md`).
+- Agents: agent mode in the browser, command line and MCP, live link; Expert effects, maps, RAW, HDR and template fields as agent operations (`docs/AGENT-GUIDE.md`, `docs/AGENT-CLI.md`).
+- Expert mode: workspace, renderer (`docs/FX-AUTHORING.md`), seven effect packs with about 120 effects (`docs/FX-REFERENCE.md`), RAW develop and HDR (`docs/RAW-HDR.md`), depth, face and segment maps.
+- Design: five themes with Clear as the default (`docs/DESIGN.md`).
 
-**In progress:** integration fixes across modules; site data pass and deep links; studio shell phone pass; pro background-remover models (BiRefNet lite, BiRefNet full, BEN2); makers set 2 (posters, event kit, invitations, payment and Wi-Fi posters, app-store screenshots, link cards); makers set 3 (printables, photo book and zine, catalogue from a spreadsheet); PDF office tools (D11, D14, D15, D16, D19, D20, font bug); PDF documents (real-text convert for QA-010, D17 invoices, D18 tables).
+**Paused by the owner:** cross-pack Expert tests and Expert looks as recipes (X7); on-canvas tools for patch and red-eye; the Wave 3 remainder (brand file, design as code, embed viewer, consent handshake).
 
-**Not started:** template variables and bulk create (2.6); screenshot beautifier (2.8); photobooth strips and recap collages (2.10); OCR and camera scan in the PDF studio (D9, D10 product build); wave 3 (live link, self-check loop, local bridge and MCP, brand file, design as code, embed, agent kit, agent activity).
+**Deferred to keep cost down (not started):** renderer items P6 to P9 and the remaining pack clean-ups, Expert deep links beyond `?mode=expert`, splitting `le-studio-panels.js` and `le-pwa.js` for a lighter first load. Details in `docs/BACKLOG.md`.
+
+**Cannot be checked in the build sandbox:** speed on real GPUs and phones, cameras, install on iOS, Android and Safari, real RAW files beyond two samples.
 
 ## The three goals
 
@@ -163,8 +173,8 @@ Not planned: accounts, cloud sync, a hosted gallery, a forced watermark, an in-a
 | X0a | Expert effect renderer `LE.fx` (contract: `docs/FX-AUTHORING.md`). | Merged |
 | X1 | Expert colour grading pack (18 effects, presets, LUT import/export). | Merged |
 | X2–X6 | Expert packs: creative effects (45), shadows/reflections/compositing (20), retouching and liquify (17), RAW develop and HDR merge, relighting and depth with `LE.maps`. Reference: `docs/FX-REFERENCE.md`, `docs/RAW-HDR.md`. | Merged |
-| Renderer hardening | Fixes and shared inputs the six packs asked for, draw-time cache, cut-out order, on-canvas handles, agent and CLI wiring for effects. | Building |
+| Renderer hardening | Catalogue index, data parameters, whole-layer and map inputs, cut-out before effects, draw-time cache, agent and command-line operations. On-canvas handle descriptors deferred. | Merged |
 | Integration fixes | Cross-module failures, device-support wiring, open-format fields, shadow scaling, page ids. | Merged |
-| L1 | Light first load for both studios and the home page (studio blocking scripts are 539 KB gzip against a 480 KB budget today). | Building |
-| Site data 2 | Hubs and feature pages for everything built since; audience hubs for photographers and online sellers. | Building |
-| 2.6 | Template variables and bulk create (spreadsheet in, zip out). | Building |
+| L1 | Light first load: studio about 257 KB blocking (was 623), PDF studio about 285 KB, home 44 KB. | Merged |
+| Site data 2 | 12 hubs, 59 feature pages, every launch link checked by a test. | Merged |
+| 2.6 | Template fields and Create many (`docs/VARIABLES.md`). | Merged |
