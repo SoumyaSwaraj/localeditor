@@ -1961,6 +1961,138 @@
     var k = (Math.abs(page.width / w0) + Math.abs(page.height / h0)) / 2;
     return fxLoad(path).then(function (fx) { expert.forEach(function (l) { fx.rescale(l, k); }); return out; }, function () { return out; });
   };
+  /* fx.call: a registered helper (LE.fx.actions, kind "call" or any button action) answers with operations, which are applied
+     here like any others. Only what a pack registered can be called; the name is looked up, never evaluated. */
+  OPS['fx.call'] = function (W, op, path, B) {
+    if (typeof op.name !== 'string') throw err('invalid', '"fx.call" needs "name": a helper such as "composite.stage". catalog("fx", "actions") lists them.', path + '/name');
+    var hit = findLayer(W, String(op.layer), op.page, path + '/layer', B), pi = hit.page, c = C(), args = isObj(op.args) ? clone(op.args) : {};
+    return fxLoad(path).then(function (fx) {
+      var info = fx.actions.get(op.name);
+      if (!info) throw err('invalid', 'No helper named ' + quote(op.name) + '. Helpers: ' + fx.actions.list().map(function (x) { return x.id; }).join(', ') + '.', path + '/name');
+      var stack = Array.isArray(hit.layer.fx) ? hit.layer.fx : [], entry = null;
+      if (op.entry != null) entry = stack.filter(function (e) { return e.id === op.entry; })[0] || stack.filter(function (e) { return e.type === op.entry; })[0] || null;
+      var ctx = { layer: hit.layer, stack: stack, entry: entry, doc: W.pages[pi], args: args, pick: args.pick || null, text: args.text == null ? null : args.text, name: args.name || null };
+      var rec = c && c.scene && c.scene._assets ? c.scene._assets[hit.layer.src] : null;
+      if (info.needs.indexOf('image') >= 0 && rec) ctx.image = rec.canvas || rec.image || null;
+      if (info.needs.indexOf('scene') >= 0 && c && pi === (project().activePage || 0)) ctx.scene = c.scene;
+      var ready = info.needs.indexOf('stats') >= 0 && c ? Promise.resolve(fx.analyze({ scene: c.scene, layer: hit.layer.id })).then(function (st) { ctx.stats = st; }, function () {}) : Promise.resolve();
+      return ready.then(function () { return fx.actions.run(op.name, ctx); }).then(function (r) {
+        if (!r.ok) throw err('invalid', r.message || 'The helper could not do that.', path);
+        var ids = [], added = [], warnings = [];
+        r.ops.forEach(function (o, i) {
+          var x = fx.ops.apply(W.pages[pi], o);
+          if (!x.ok) throw err('invalid', op.name + ': ' + x.errors[0].message, path);
+          W.pages[pi] = x.doc;
+          warnings = warnings.concat(x.warnings || []);
+          if (o.op === 'adjust.add') { added.push(x.id); W.added = (W.added || []).concat([{ page: pi, id: x.id }]); touch(W, pi, x.id); }
+          else { touch(W, pi, o.layer); if (x.id) ids.push(x.id); }
+        });
+        var out = { layer: hit.layer.id, applied: r.ops.length, entries: ids, message: r.message || undefined };
+        if (added.length) out.added = added;
+        if (r.data) out.data = r.data;
+        if (r.download) out.download = { name: r.download.name, type: r.download.type, text: r.download.text.slice(0, 400000) };
+        if (warnings.length) out.warnings = warnings.slice(0, 20);
+        return out;
+      });
+    });
+  };
+  /* Files for raw.open and hdr.merge: a File or Blob, a data: URI, or a path the person (or the command line) resolves. */
+  var HERE = (function () { var el = document.querySelector('script[src*="le-agent.js"]'); return el ? el.src.replace(/le-agent\.js.*$/, '') : '../assets/js/'; })();
+  function fileOf(v, name, path) {
+    var named = function (b, n) { n = String(n || b.name || 'photo').replace(/[^\w .()-]/g, '_').slice(0, 100); try { return new File([b], n, { type: b.type || '' }); } catch (e) { b.name = n; return b; } };
+    if (typeof Blob !== 'undefined' && v instanceof Blob) return Promise.resolve(named(v, name));
+    if (isObj(v) && typeof v.data === 'string') return fileOf(v.data, v.name || name, path);
+    if (typeof v !== 'string' || !v) return Promise.reject(err('invalid', 'Give the file as a data: URI, a File, or a path next to the design.', path));
+    if (/^data:/i.test(v)) { if (v.length > 140e6) return Promise.reject(err('too-large', 'This file is too large to pass as a data: URI.', path)); return fetch(v).then(function (r) { return r.blob(); }).then(function (b) { return named(b, name); }); }
+    if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return Promise.reject(err('invalid', 'Files are not fetched from the network. Give a data: URI or a local path.', path));
+    var rs = resolver();
+    return Promise.resolve(rs ? rs(v) : null).then(function (b) { if (!b) throw err('invalid', 'The file ' + quote(v) + ' was not provided.', path); return named(b, name || v.split('/').pop()); });
+  }
+  function rawLib(path) {
+    return LE.lazy(HERE + 'raw/le-raw-layer.js').then(function () { return LE.rawLayer.ready(); }).then(function () { return LE.raw; }, function () { throw err('unsupported', 'RAW and HDR support could not be loaded.', path); });
+  }
+  /* The result of LE.raw.open / LE.hdr.mergeFiles joins the batch: its assets, then a photo layer fitted to the page. */
+  function rawPlace(W, op, res, path) {
+    var pi = pageIndex(W, op.page, path + '/page'), page = W.pages[pi], a = res.assets;
+    [a.src, a.raw || a.hdr].forEach(function (x) { if (x && x.id && x.blob) { W.blobs[x.id] = x.blob; W.assets[x.id] = { id: x.id, type: x.type || 'image/png', name: String(x.name || 'photo').slice(0, 100), width: x.width, height: x.height, bytes: x.blob.size }; } });
+    var L = clone(res.layer), k = Math.min(page.width / L.w, page.height / L.h, 1) || 1;
+    if (typeof op.w === 'number' && op.w > 0) k = op.w / L.w;
+    L.id = typeof op.id === 'string' && findOn(page, op.id) === -1 ? op.id : freshId({ layers: layerList(page) }, res.layer.raw && res.layer.raw.kind === 'hdr' ? 'hdr' : 'raw');
+    L.w = r2(L.w * k); L.h = r2(L.h * k);
+    L.x = typeof op.x === 'number' ? op.x : r2((page.width - L.w) / 2); L.y = typeof op.y === 'number' ? op.y : r2((page.height - L.h) / 2);
+    page.layers.push(L);
+    W.added = (W.added || []).concat([{ page: pi, id: L.id }]);
+    touch(W, pi, L.id);
+    return { added: [L.id], info: res.info ? { format: res.info.format, width: res.info.width, height: res.info.height, limit: res.info.limit, camera: res.info.camera } : undefined };
+  }
+  OPS['raw.open'] = function (W, op, path) {
+    return fileOf(op.file, op.name, path + '/file').then(function (f) {
+      /* Camera RAW other than DNG needs the person's one-time agreement to the decoder's licence, as in the File menu. */
+      var gate = !/\.dng$/i.test(f.name) && !HEADLESS && LE.support && LE.support.gate ? function (run) { return LE.support.gate('raw.camera', { title: 'Camera RAW support', run: run, onCancel: function () {} }); } : function (run) { return run(); };
+      return Promise.resolve(gate(function () { return rawLib(path); })).then(function () {
+        if (!LE.raw || !LE.raw.open) throw err('consent', 'Camera RAW support was not turned on.', path);
+        return LE.raw.open(f, {});
+      }).then(function (res) { return rawPlace(W, op, res, path); }, function (e) { throw e instanceof AgentError ? e : err('invalid', String(e && e.message || e).slice(0, 300), path); });
+    });
+  };
+  OPS['hdr.merge'] = function (W, op, path) {
+    var list = Array.isArray(op.files) ? op.files : [];
+    if (list.length < 2 || list.length > 9) throw err('invalid', '"files" is a list of 2 to 9 bracketed photos of the same scene.', path + '/files');
+    return Promise.all(list.map(function (v, i) { return fileOf(v, Array.isArray(op.names) ? op.names[i] : null, path + '/files/' + i); })).then(function (files) {
+      return rawLib(path).then(function () { return LE.hdr.mergeFiles(files, { deghost: op.deghost, mode: op.mode, align: op.align }); })
+        .then(function (res) { return rawPlace(W, op, res, path); }, function (e) { throw e instanceof AgentError ? e : err('invalid', String(e && e.message || e).slice(0, 300), path); });
+    });
+  };
+  /* raw.settings: develop settings (LE.raw.settings.copy of another layer, or a preset id) onto a RAW or HDR layer. */
+  OPS['raw.settings'] = function (W, op, path, B) {
+    var hit = findLayer(W, String(op.layer), op.page, path + '/layer', B);
+    if (!hit.layer.raw) throw err('invalid', quote(hit.layer.id) + ' is not a RAW or HDR layer.', path + '/layer');
+    return rawLib(path).then(function (raw) {
+      var st = op.settings;
+      if (typeof op.preset === 'string') { var pr = raw.presets.get(op.preset); if (!pr) throw err('invalid', 'No develop preset ' + quote(op.preset) + '. catalog("raw") lists them.', path + '/preset'); st = pr.settings; }
+      if (typeof op.from === 'string') st = raw.settings.copy(findLayer(W, op.from, op.page, path + '/from', B).layer);
+      if (!isObj(st) || !Array.isArray(st.fx)) throw err('invalid', 'Give "settings" ({ kind: "develop-settings", fx: [...] }), "preset" (an id) or "from" (a layer to copy from).', path + '/settings');
+      var patch = raw.settings.paste(hit.layer, st, { whiteBalance: op.whiteBalance !== false, only: Array.isArray(op.only) ? op.only : undefined });
+      hit.layer.fx = patch.fx;
+      touch(W, hit.page, hit.layer.id);
+      return { layer: hit.layer.id, entries: (patch.fx || []).map(function (e) { return e.type; }) };
+    });
+  };
+  /* raw.autoTone: exposure, highlights, shadows, whites and blacks from the picture's own luminance, set on develop.basic. */
+  OPS['raw.autoTone'] = function (W, op, path, B) {
+    var hit = findLayer(W, String(op.layer), op.page, path + '/layer', B);
+    if (!hit.layer.raw) throw err('invalid', quote(hit.layer.id) + ' is not a RAW or HDR layer.', path + '/layer');
+    return rawLib(path).then(function (raw) { return raw.autoTone(hit.layer); }).then(function (v) {
+      return fxLoad(path).then(function (fx) {
+        var has = (hit.layer.fx || []).some(function (e) { return e.type === 'develop.basic'; });
+        var r = fx.ops.apply(W.pages[hit.page], has ? { op: 'fx.update', layer: hit.layer.id, id: 'develop.basic', p: v } : { op: 'fx.add', layer: hit.layer.id, entry: { type: 'develop.basic', p: v } });
+        if (!r.ok) throw err('invalid', r.errors[0].message, path);
+        W.pages[hit.page] = r.doc;
+        touch(W, hit.page, hit.layer.id);
+        return { layer: hit.layer.id, values: v };
+      });
+    }, function (e) { throw e instanceof AgentError ? e : err('invalid', String(e && e.message || e).slice(0, 300), path); });
+  };
+  /* map.generate: depth, face landmarks or person segments for a photo layer, made on this device (LE.maps) and kept in layer.maps. */
+  OPS['map.generate'] = function (W, op, path, B) {
+    var hit = findLayer(W, String(op.layer), op.page, path + '/layer', B), c = C();
+    return LE.lazy(HERE + 'le-maps.js').then(function () { return LE.maps; }, function () { throw err('unsupported', 'The maps module could not be loaded.', path); }).then(function (mp) {
+      return mp.ops.run({ op: 'map.generate', kind: op.kind, model: op.model, force: op.force === true, maxSide: op.maxSide }, {
+        layer: hit.layer, quiet: HEADLESS, confirmed: HEADLESS && op.download === true,
+        image: function (layer) { var rec = c && c.scene._assets ? c.scene._assets[layer.src] : null; return Promise.resolve(rec && rec.ready ? rec.ready : rec).then(function (x) { x = x || rec; return x ? x.canvas || x.image || null : null; }, function () { return null; }); },
+        store: function (canvas, name) {
+          return new Promise(function (res) { canvas.toBlob(res, 'image/png'); }).then(function (blob) {
+            return LE.project.hash(blob).then(function (id) { W.blobs[id] = blob; W.assets[id] = { id: id, type: 'image/png', name: name, width: canvas.width, height: canvas.height, bytes: blob.size }; return id; });
+          });
+        }
+      });
+    }).then(function (r) {
+      if (!r.ok) throw err(r.code === 'unsupported' ? 'unsupported' : r.code === 'declined' ? 'consent' : 'invalid', r.message, path, { canForce: r.canForce });
+      hit.layer.maps = r.maps;
+      touch(W, hit.page, hit.layer.id);
+      return { layer: hit.layer.id, kind: r.kind, asset: r.asset, count: r.count, info: r.info };
+    });
+  };
   /* LEAgent.analyze(target?, { region, kinds }): the numbers to grade by. target: nothing or "page" (the whole page), or a layer id or name. */
   function analyze(target, o) {
     if (isObj(target) && !o) { o = target; target = o.target != null ? o.target : o.layer; }
@@ -1981,6 +2113,10 @@
   var catalogBase = catalog;
   catalog = function (kind, q, o) {
     var K = String(kind || '').toLowerCase();
+    if (K === 'raw' || K === 'hdr') return rawLib('').then(function (raw) {
+      return { ok: true, kind: 'raw', formats: raw.formats(), presets: raw.presets.list().map(function (x) { return { id: x.id, name: x.name }; }), effects: ['develop.basic', 'develop.tonemap', 'develop.detail', 'develop.lens'].filter(function (id) { return LE.fx && LE.fx.get && LE.fx.get(id); }),
+        hint: 'raw.open adds a RAW photo as a layer; its develop settings are ordinary effect entries (catalog("fx", "develop.basic")). raw.settings applies a preset; raw.autoTone sets the tone.' };
+    }, function (e) { return fail(e.code || 'unsupported', e.message); });
     if (K !== 'fx' && K !== 'effects' && K !== 'effect') return catalogBase(kind, q, o);
     o = isObj(q) ? q : (o || {});
     if (isObj(q)) q = q.q;
@@ -1995,6 +2131,14 @@
       out.hint = 'catalog("fx", "<id>") gives one effect in full (parameters, ranges, tips, an example entry); catalog("fx", "schema") the blends, mask kinds and limits.';
       return out;
     }, function (e) { return fail(e.code || 'unsupported', e.message); });
+  };
+  /* state(): the theme and light or dark choice the person sees, read-only. */
+  var stateBase = state;
+  state = function (o) {
+    return Promise.resolve(stateBase(o)).then(function (r) {
+      if (r && r.ok !== false) { try { r.appearance = LE.appearance && LE.appearance.state ? LE.appearance.state() : null; } catch (e) { r.appearance = null; } }
+      return r;
+    });
   };
   var commandBase = command;
   command = function (o) { return isObj(o) && o.op === 'analyze' ? analyze(o.target != null ? o.target : o.layer, o) : commandBase(o); };
@@ -2012,6 +2156,13 @@
       r.operations['fx.reorder'] = { example: { op: 'fx.reorder', layer: 'photo', id: 'grain', index: 0 }, fields: 'Moves an entry inside its stack; the first runs first.' };
       r.operations['mask.set'] = { example: { op: 'mask.set', layer: 'photo', fx: 'gaussian-blur', mask: { parts: [{ kind: 'radial', cx: 0.5, cy: 0.4, rx: 0.3, ry: 0.3, feather: 0.5, invert: true }] } }, fields: 'Without fx it sets the layer mask; mask: null clears.' };
       r.operations['adjust.add'] = { example: { op: 'adjust.add', fx: [{ type: 'contrast', p: { amount: 15 } }], name: 'Grade', above: 'photo' }, fields: 'An adjustment layer over the page (or x, y, w, h); clip: true limits it to the layer below.' };
+      r.methods['catalog("raw")'] = 'RAW formats this copy opens and the develop presets.';
+      r.operations['fx.call'] = { example: { op: 'fx.call', layer: 'product', name: 'composite.stage', args: { preset: 'soft-table-reflection' } }, fields: 'Runs a registered helper that answers with effect operations (presets, looks, staging, retouch strokes, relighting). catalog("fx", "actions") lists the names and their args.' };
+      r.operations['map.generate'] = { example: { op: 'map.generate', layer: 'photo', kind: 'depth' }, fields: 'kind: depth, faces or segments. Made on this device and kept in layer.maps; depth and face masks and the relight effects need them. A model may have to download first (the person is asked).' };
+      r.operations['raw.open'] = { example: { op: 'raw.open', file: 'data:application/octet-stream;base64,…', name: 'IMG_0001.dng' }, fields: 'Adds a RAW photo as a developed layer. file: a data: URI, a File, or a local path; name gives the format. x, y, w, id, page optional.' };
+      r.operations['hdr.merge'] = { example: { op: 'hdr.merge', files: ['a.jpg', 'b.jpg', 'c.jpg'], deghost: 'medium' }, fields: '2 to 9 bracketed photos of one scene, all RAW or all JPEG. deghost: off, low, medium, high.' };
+      r.operations['raw.settings'] = { example: { op: 'raw.settings', layer: 'raw', preset: 'night-city' }, fields: 'Develop settings onto a RAW or HDR layer: preset (catalog("raw")), from (another layer) or settings. whiteBalance: false keeps the layer\'s own.' };
+      r.operations['raw.autoTone'] = { example: { op: 'raw.autoTone', layer: 'raw' }, fields: 'Sets exposure, highlights, shadows, whites and blacks from the picture.' };
       r.operations['transform.set'] = { example: { op: 'transform.set', layer: 'photo', quad: [[0, 40], [1000, 0], [1000, 800], [0, 760]] }, fields: 'Perspective: four corners in page units; quad: null clears.' };
     } catch (e) { /* help keeps its own shape */ }
     return r;

@@ -1325,4 +1325,16 @@
   ['cast-shadow', 'contact-shadow', 'floating-shadow', 'studio-shadow', 'inner-shadow', 'outer-glow', 'inner-glow', 'edge-light', 'long-shadow', 'floor-reflection', 'water-reflection', 'glass-reflection', 'refine-edge', 'match-color', 'ambient-light', 'light-wrap', 'blend-options', 'apply-image', 'displace', 'mesh-warp']
     .forEach(function (id) { var d = FX.get(id); if (d) d._pack = 'composite'; });
   C.list = function () { return FX.list().filter(function (id) { var d = FX.get(id); return d && d._pack === 'composite'; }); };
+  /* Helpers for agents (the fx.call operation). */
+  if (FX.actions) {
+    FX.actions.register({ id: 'composite.stage', label: 'Stage a product', kind: 'call', summary: 'Shadows and reflection for a cut-out subject in one step. Presets: ' + Object.keys(C.presets).join(', ') + '.',
+      args: { preset: 'preset id', contact: 'optional { x, y } of where the subject touches the ground, fractions of the layer box' },
+      run: function (ctx) { return C.stage(ctx.doc, ctx.layer.id, ctx.args.preset, ctx.args); } });
+    FX.actions.register({ id: 'composite.match', label: 'Match the background', kind: 'call', needs: ['scene'], summary: 'Measures the layer and the page behind it and adds a match-color entry that brings the layer to the page\'s colour and contrast.',
+      args: { strength: '0 to 100 (default 100)' },
+      run: function (ctx) {
+        if (!ctx.scene) return { ok: false, message: 'composite.match needs the open design; it is not available on plain files.' };
+        return C.match({ scene: ctx.scene, layer: ctx.layer.id }, { scene: ctx.scene }, ctx.args).then(function (m) { return m ? { fx: [m.entry], data: { stats: m.stats, whiteBalance: m.whiteBalance } } : null; });
+      } });
+  }
 })(window);

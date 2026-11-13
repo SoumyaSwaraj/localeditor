@@ -1284,4 +1284,19 @@
     });
     return c;
   };
+  /* Helpers for agents (the fx.call operation): positions are fractions of the layer box. */
+  if (FX.actions) {
+    [['retouch.heal', 'heal', 'Heals a spot or a stroke from nearby texture.', { x: 'centre x', y: 'centre y', r: 'radius, fraction of the long side', points: 'or a stroke: [[x, y], ...]', source: 'optional { dx, dy }' }],
+     ['retouch.clone', 'clone', 'Copies from an offset onto a spot or a stroke.', { x: 'centre x', y: 'centre y', r: 'radius', dx: 'source offset x', dy: 'source offset y' }],
+     ['retouch.patch', 'patch', 'Heals the inside of a polygon.', { points: '[[x, y], ...]', dx: 'source offset x', dy: 'source offset y' }],
+     ['retouch.liquify', 'liquify', 'One liquify stroke.', { tool: 'forward | pinch | bloat | twirl | restore', points: '[[x, y], ...]', size: 'brush size, fraction of the long side', pressure: '0 to 1' }],
+     ['retouch.red-eye', 'redEye', 'Places red-eye removal on the eyes of a face (needs a face map).', { face: 'face index (default 0)' }]
+    ].forEach(function (d) {
+      FX.actions.register({ id: d[0], label: d[0], kind: 'call', summary: d[2], args: d[3], run: function (ctx) { return R.ops[d[1]](ctx.doc, ctx.layer.id, ctx.args); } });
+    });
+    FX.actions.register({ id: 'retouch.face', label: 'retouch.face', kind: 'call', summary: 'Face-aware liquify by named sliders (needs a face map: map.generate faces).', args: { sliders: '{ name: value } of face-liquify parameters', face: 'face index (default 0)' },
+      run: function (ctx) { return R.ops.face(ctx.doc, ctx.layer.id, ctx.args.sliders || {}, ctx.args); } });
+    FX.actions.register({ id: 'retouch.dodge-burn-layer', label: 'retouch.dodge-burn-layer', kind: 'call', summary: 'Adds a dodge and burn adjustment layer above the layer.', args: {},
+      run: function (ctx) { return R.ops.dodgeBurnLayer(ctx.doc, Object.assign({ above: ctx.layer.id }, ctx.args)); } });
+  }
 })(window);
