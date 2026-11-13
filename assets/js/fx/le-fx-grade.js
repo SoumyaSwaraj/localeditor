@@ -1278,4 +1278,7 @@
     FX.actions.register({ id: 'grade.import-cube', label: 'Import .cube', kind: 'import', accept: '.cube,text/plain', summary: 'Reads a .cube LUT, stores it with the project and applies it.',
       run: function (ctx) { return G.importCube(ctx.text || '', ctx.name).then(function (m) { return { fx: [{ type: 'lut', p: { lut: m.id } }] }; }); } });
   }
+  /* Helpers for agents (the fx.call operation): each answers with operations. */
+  if (FX.actions) FX.actions.register({ id: 'grade.preset', label: 'Grade preset', kind: 'call', summary: 'Adds a named colour grade (a few entries). Ids: ' + (G.presets || []).map(function (x) { return x.id; }).join(', ') + '.', args: { id: 'preset id' },
+    run: function (ctx) { var ops = G.presetOps(ctx.layer.id, ctx.args.id); return ops ? { ops: ops } : { ok: false, message: 'Unknown preset. Known: ' + (G.presets || []).map(function (x) { return x.id; }).join(', ') + '.' }; } });
 })(window);

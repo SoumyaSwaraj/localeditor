@@ -63,6 +63,8 @@ A batch is a JSON list. Pages are counted from 0 or named by page id; without `p
 | `mask.set` | `layer`, `mask`, `fx` | Limits one effect (`fx`: entry id or type) or, without `fx`, the layer to an area. `mask: null` clears. |
 | `adjust.add` | `fx: [ … ]`, `above`, `name`, `clip`, `x y w h` | An adjustment layer over everything beneath it. |
 | `transform.set` | `layer`, `quad` | Perspective: four corners in page units. `quad: null` clears. |
+| `fx.call` | `layer`, `name`, `args` | A helper that answers with effect operations (`composite.stage`, `grade.preset`, `creative.look`, `retouch.*`, `relight.portrait` …): `le catalog fx actions`. It sees the design as it was before this batch. Helpers that measure the open picture (`composite.match`, `relight.estimate`, `grade.auto`) need agent mode. |
+| `map.generate`, `raw.open`, `hdr.merge`, `raw.settings`, `raw.autoTone` | | Not on files: they need a model, a decoder or the picture's pixels. They answer `unsupported`; use agent mode (`window.LEAgent`) in the studio. |
 | `note.add` / `note.resolve` | `text`, `layer` / `id`, `reply`, `status` | Notes live in the file under `notes`. |
 | `doc.update` | `set` | `name variables remix notes`. |
 

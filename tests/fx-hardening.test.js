@@ -171,6 +171,7 @@ cases['workspace: an action button applies its result as one undo step; a curve 
 
 cases['data assets: text stays text in the scene, loads for g.asset, and travels in .leproject and .ledesign.json'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['design']);   /* the open format module loads on demand */
   const r = await page.evaluate(async () => {
     const LE = window.LE, c = window.LEStudio, s = c.scene;
     const FX = await LE.fxBoot.load();
@@ -463,6 +464,52 @@ cases['silhouette stage: g.subject is the layer as it entered the stage, g.whole
   h.assert(r.b[0][2] <= 2 && r.b[1][2] === 255 && r.b[1][0] === 0, 'g.whole in the silhouette stage is the layer as it entered the stage: ' + JSON.stringify(r.b));
   h.assert(r.tiled[0][2] <= 2 && r.tiled[1][2] === 255, 'and the same in every tile: ' + JSON.stringify(r.tiled));
   h.assert.noErrors(page);
+};
+
+cases['workspace: the Shadows and reflections section opens with the five staging presets; one tap stages the product in one undo step'] = async ({ browser, base, h }) => {
+  const page = await h.studioWithSample(browser, base, 'desktop');
+  const r = await page.evaluate(async () => {
+    const LE = window.LE, c = window.LEStudio, s = c.scene;
+    const FX = await LE.fxBoot.load();
+    const id = s.layers()[0].id;
+    s.select([id]);
+    ['webgl2', 'pointer-fine', 'device-memory-4gb'].forEach((cap) => LE.support && LE.support.override(cap, true));
+    c.mode('expert');
+    for (let i = 0; i < 100 && !(LE.expert && LE.expert.active && LE.expert.active()); i++) await new Promise((res) => setTimeout(res, 50));
+    await new Promise((res) => setTimeout(res, 300));
+    LE.expert.workspace.components().develop.open('Shadows & reflections', true);
+    await new Promise((res) => setTimeout(res, 300));
+    const btns = Array.from(document.querySelectorAll('#xp-right .xp-action[data-action="composite.stage"]'));
+    const d0 = s._hist.undo.length;
+    const hit = btns.find((b) => b.dataset.preset === 'soft-table-reflection');
+    if (hit) hit.click();
+    await new Promise((res) => setTimeout(res, 600));
+    return { presets: btns.map((b) => b.dataset.preset), labels: btns.map((b) => b.textContent.trim()), known: Object.keys(FX.composite.presets), names: Object.keys(FX.composite.presets).map((k) => FX.composite.presets[k].name), fx: (s.layer(id).fx || []).map((e) => e.type), steps: s._hist.undo.length - d0 };
+  });
+  h.assert.equal(r.presets.join(), r.known.join(), 'one button per staging preset');
+  h.assert.equal(r.labels.join(), r.names.join(), 'labelled with the preset names');
+  h.assert(r.fx.length >= 2 && r.steps === 1, 'one tap applies the preset as one undo step: ' + JSON.stringify(r.fx) + ', steps ' + r.steps);
+  h.assert.noErrors(page);
+};
+
+cases['deep link: ?mode=expert opens Expert for this visit and does not change the remembered workspace; the switch does'] = async ({ browser, base, h }) => {
+  const page = await h.open(browser, base, '/studio/?mode=expert', 'desktop');
+  await page.waitForFunction(() => window.LEStudio && window.LEStudio.scene);
+  await page.evaluate(() => { ['webgl2', 'pointer-fine', 'device-memory-4gb'].forEach((cap) => window.LE.support && window.LE.support.override(cap, true)); });
+  await page.waitForFunction(() => document.querySelector('.is-expert') || (window.LE.expert && window.LE.expert.active && window.LE.expert.active()), null, { timeout: 20000 }).catch(() => {});
+  const r = await page.evaluate(async () => {
+    const c = window.LEStudio, out = {};
+    out.expert = !!document.querySelector('.is-expert');
+    out.query = location.search;
+    out.stored = c.lsGet('le-studio-mode', null);
+    await c.mode('simple'); out.afterSimple = c.lsGet('le-studio-mode', null);
+    await c.mode('expert'); out.afterExpert = c.lsGet('le-studio-mode', null);
+    return out;
+  });
+  h.assert(r.expert, 'the link opened Expert: ' + JSON.stringify(r));
+  h.assert(r.stored === null, 'the link did not change what is remembered: ' + r.stored);
+  h.assert(r.afterSimple === 'simple' && r.afterExpert === 'expert', 'the switch is remembered: ' + r.afterSimple + ', ' + r.afterExpert);
+  h.assert(!/mode=/.test(r.query), 'the query is cleared from the address');
 };
 
 module.exports = cases;

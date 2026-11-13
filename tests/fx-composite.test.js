@@ -70,7 +70,7 @@ cases['registry: every effect is registered with a complete schema, ui and agent
     h.assert(e.agent.summary && e.agent.tips.length >= 1 && e.agent.example.type === e.id, e.id + ' agent descriptor');
     h.assert(e.support.needs.indexOf('webgl2') >= 0, e.id + ' support');
     Object.keys(e.params).forEach((k) => { const s = e.params[k]; h.assert(r.sch.indexOf(s.type) >= 0 && s.label, e.id + '.' + k); if (s.type === 'number') h.assert(s.default >= s.min && s.default <= s.max && s.step > 0, e.id + '.' + k + ' range'); });
-    (e.ui.controls || []).forEach((c) => h.assert(typeof c === 'string' ? !!e.params[c] : (c.heading || !!e.params[c.param]), e.id + ' control ' + JSON.stringify(c)));
+    (e.ui.controls || []).forEach((c) => h.assert(typeof c === 'string' ? !!e.params[c] : (c.heading || c.action || !!e.params[c.param]), e.id + ' control ' + JSON.stringify(c)));
   });
   r.ex.forEach((x) => h.assert(x.ok && !x.clamped.length, 'the agent example of ' + x.id + ' is valid as written: ' + x.clamped));
   h.assert(!r.api.length, 'LE.fx.composite helpers missing: ' + r.api);

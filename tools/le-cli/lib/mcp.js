@@ -24,6 +24,8 @@ const OPS_DOC = 'A list of operations, applied atomically (all or nothing). Laye
   '{"op":"fx.remove","layer":"hero","id":"exposure"}; {"op":"fx.reorder","layer":"hero","id":"grain","index":0}; ' +
   '{"op":"mask.set","layer":"hero","fx":"gaussian-blur","mask":{"parts":[{"kind":"radial","cx":0.5,"cy":0.4,"rx":0.3,"ry":0.3,"feather":0.5,"invert":true}]}} (without fx: the layer mask); ' +
   '{"op":"adjust.add","fx":[{"type":"contrast","p":{"amount":15}}],"above":"hero"}; {"op":"transform.set","layer":"hero","quad":[[0,40],[1000,0],[1000,800],[0,760]]}. ' +
+  '{"op":"fx.call","layer":"hero","name":"composite.stage","args":{"preset":"soft-table-reflection"}} runs a helper that answers with effect operations (catalog_search kind "fx", query "actions" lists them; the helper sees the design as it was before this batch). ' +
+  'map.generate, raw.open, hdr.merge, raw.settings and raw.autoTone need the design open in the studio (agent mode), not a file. ' +
   'Fonts, icons, shapes, recipes and effects must come from catalog_search.';
 
 const TOOLS = [

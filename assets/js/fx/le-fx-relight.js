@@ -781,4 +781,13 @@
     if (num(o.desaturate, 0) > 0) ops.push({ op: 'fx.add', layer: layerId, entry: { type: 'saturation', p: { saturation: -Math.round(num(o.desaturate, 0) * 100) }, mask: depthMask(false, split, soft) } });
     return { ok: true, ops: ops };
   };
+  /* Helpers for agents (the fx.call operation). */
+  if (FX.actions) {
+    FX.actions.register({ id: 'relight.portrait', label: 'Portrait light', kind: 'call', summary: 'A named lighting set-up for a portrait (needs a depth map: map.generate depth). Presets: ' + R.presets.map(function (x) { return x.id; }).join(', ') + '.', args: { preset: 'preset id' },
+      run: function (ctx) { return R.portrait(ctx.doc, ctx.layer.id, ctx.args.preset, ctx.args); } });
+    FX.actions.register({ id: 'relight.retime', label: 'Time of day', kind: 'call', summary: 'Re-lights a photo for another time of day (needs a depth map).', args: { when: 'for example golden-hour, blue-hour, noon, night' },
+      run: function (ctx) { return R.retime(ctx.doc, ctx.layer.id, ctx.args.when, ctx.args); } });
+    FX.actions.register({ id: 'relight.estimate', label: 'Estimate the light', kind: 'call', needs: ['image'], summary: 'Where the light in the photo comes from: direction, softness, temperature, in numbers and words. Changes nothing.', args: {},
+      run: function (ctx) { if (!ctx.image) return { ok: false, message: 'The photo of this layer is not loaded.' }; var e = R.estimate(ctx.image, {}); return { data: e, message: e && e.words ? String(e.words) : '' }; } });
+  }
 })(window);

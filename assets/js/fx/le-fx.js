@@ -263,11 +263,15 @@
   FX.actions = {
     register: function (a) {
       if (!isObj(a) || typeof a.id !== 'string' || !/^[a-z][\w.-]{1,59}$/.test(a.id) || typeof a.run !== 'function') throw new Error('An action needs an id such as "grade.auto" and run(ctx).');
-      actions[a.id] = { id: a.id, label: String(a.label || a.id).slice(0, 60), kind: ['pick', 'export', 'import'].indexOf(a.kind) >= 0 ? a.kind : 'apply', needs: Array.isArray(a.needs) ? a.needs.filter(function (n) { return n === 'stats'; }) : [], accept: typeof a.accept === 'string' ? a.accept.slice(0, 80) : '', summary: String(a.summary || '').slice(0, 200), run: a.run };
+      actions[a.id] = { id: a.id, label: String(a.label || a.id).slice(0, 60), kind: ['pick', 'export', 'import', 'call'].indexOf(a.kind) >= 0 ? a.kind : 'apply', needs: Array.isArray(a.needs) ? a.needs.filter(function (n) { return n === 'stats' || n === 'image' || n === 'scene'; }) : [], accept: typeof a.accept === 'string' ? a.accept.slice(0, 80) : '', summary: String(a.summary || '').slice(0, 200), run: a.run };
+      /* kind 'call': a helper for agents (the fx.call operation). args: { name: 'what it is' }, plain words. */
+      var args = {};
+      if (isObj(a.args)) Object.keys(a.args).slice(0, 16).forEach(function (k) { if (!BAD[k]) args[k.slice(0, 32)] = String(a.args[k]).slice(0, 160); });
+      actions[a.id].args = args;
       revision++;
       return actions[a.id];
     },
-    get: function (id) { var a = own(actions, id) ? actions[id] : null; return a ? { id: a.id, label: a.label, kind: a.kind, needs: a.needs.slice(), accept: a.accept, summary: a.summary } : null; },
+    get: function (id) { var a = own(actions, id) ? actions[id] : null; return a ? { id: a.id, label: a.label, kind: a.kind, needs: a.needs.slice(), accept: a.accept, summary: a.summary, args: clone(a.args || {}) } : null; },
     list: function () { return Object.keys(actions).map(function (id) { return FX.actions.get(id); }); },
     run: function (id, ctx) {
       var a = own(actions, id) ? actions[id] : null;
@@ -275,8 +279,14 @@
       if (!a) return Promise.resolve({ ok: false, ops: [], message: 'Unknown action "' + String(id).slice(0, 60) + '".' });
       var layer = isObj(ctx.layer) ? ctx.layer : { id: 'layer' }, stack = Array.isArray(ctx.stack) ? ctx.stack : (Array.isArray(layer.fx) ? layer.fx : []);
       var given = { layer: clone(layer), stack: clone(stack), entry: ctx.entry ? clone(ctx.entry) : null, p: ctx.entry && isObj(ctx.entry.p) ? clone(ctx.entry.p) : {}, stats: ctx.stats || null, pick: ctx.pick || null, text: ctx.text == null ? null : String(ctx.text), file: ctx.file || null, name: ctx.name || '' };
+      given.args = isObj(ctx.args) ? clone(ctx.args) : {};
+      given.doc = isObj(ctx.doc) ? clone(ctx.doc) : null;
+      given.image = ctx.image || null; given.scene = ctx.scene || null;   /* only for actions that declare needs: ['image'] / ['scene'] */
       return Promise.resolve().then(function () { return a.run(given); }).then(function (r) {
+        if (r == null && a.kind === 'call') return { ok: false, ops: [], message: 'Nothing to do: the layer does not have what "' + a.id + '" needs.' };
         r = isObj(r) ? r : {};
+        if (typeof r.op === 'string') r = { ops: [r] };   /* a helper may answer with one operation */
+        if (r.ok === false) return { ok: false, ops: [], message: String((Array.isArray(r.errors) && r.errors[0] && r.errors[0].message) || r.message || 'It could not be done.').slice(0, 300) };
         var ops = [], seen = {};
         if (isObj(r.p) && given.entry) ops.push({ op: 'fx.update', layer: layer.id, id: given.entry.id, p: clone(r.p) });
         (Array.isArray(r.fx) ? r.fx : []).slice(0, LIMITS.stack).forEach(function (e) {
@@ -286,9 +296,13 @@
           if (at >= 0) { seen[stack[at].id] = 1; ops.push({ op: 'fx.update', layer: layer.id, id: stack[at].id, p: clone(e.p || {}) }); }
           else ops.push({ op: 'fx.add', layer: layer.id, entry: clone(e) });
         });
-        (Array.isArray(r.ops) ? r.ops : []).slice(0, 64).forEach(function (o) { if (isObj(o) && own(OPS, o.op)) { var c = clone(o); c.layer = layer.id; ops.push(c); } });
+        (Array.isArray(r.ops) ? r.ops : []).slice(0, 64).forEach(function (o) { if (isObj(o) && own(OPS, o.op)) { var c = clone(o); if (c.op !== 'adjust.add' && (a.kind !== 'call' || typeof c.layer !== 'string')) c.layer = layer.id; ops.push(c); } });
         var dl = isObj(r.download) && typeof r.download.text === 'string' ? { name: String(r.download.name || 'download.txt').replace(/[^\w .()-]/g, '').slice(0, 80) || 'download.txt', text: r.download.text, type: /^[\w.+-]+\/[\w.+-]+$/.test(r.download.type || '') ? r.download.type : 'text/plain' } : null;
-        return { ok: true, ops: ops, download: dl, message: typeof r.message === 'string' ? r.message.slice(0, 300) : '' };
+        var data = null;
+        if (isObj(r.data)) { try { var js = JSON.stringify(r.data); if (js.length <= 20000) data = JSON.parse(js); } catch (e2) { data = null; } }
+        var out = { ok: true, ops: ops, download: dl, message: typeof r.message === 'string' ? r.message.slice(0, 300) : '' };
+        if (data) out.data = data;
+        return out;
       }, function (e) { return { ok: false, ops: [], message: String(e && e.message || e).slice(0, 300) }; });
     }
   };

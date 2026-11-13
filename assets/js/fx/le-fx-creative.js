@@ -1842,4 +1842,7 @@
   };
   /* A fresh copy of a look's entries, ready for fx.add (or null). */
   CR.look = function (id) { var pr = CR.presets[id]; return pr ? JSON.parse(JSON.stringify(pr.fx)) : null; };
+  /* Helper for agents (the fx.call operation). */
+  if (FX.actions) FX.actions.register({ id: 'creative.look', label: 'Creative look', kind: 'call', summary: 'Applies a named look (several effects). Ids: ' + Object.keys(CR.presets || {}).join(', ') + '.', args: { id: 'look id' },
+    run: function (ctx) { var fx = CR.look(ctx.args.id); return fx ? { fx: fx } : { ok: false, message: 'Unknown look. Known: ' + Object.keys(CR.presets || {}).join(', ') + '.' }; } });
 })(window);

@@ -21,6 +21,9 @@
   var LE = global.LE, FX = LE && LE.fx;
   if (!FX || !FX.register) return;
   var M = FX.math, C = FX.composite = FX.composite || {};
+  /* What casts shadows and glows is the layer as it entered the silhouette stage (g.subject): a reflection or an earlier shadow
+     of the same stack does not cast one of its own, so the order of these effects no longer matters. */
+  function subj(g) { return (typeof g.subject === 'function' && g.subject()) || g.source; }
   var GPU = { needs: ['webgl2'], wants: ['webgl-float'], memoryMB: 120 };
   var GPU_HEAVY = { needs: ['webgl2'], wants: ['webgl-float'], memoryMB: 200 };
   var D2R = Math.PI / 180;
@@ -171,7 +174,7 @@
     passes: function (g, p) {
       if (!(p.opacity > 0)) return;
       var gm = castGeo(p, g.box);
-      var hard = g.pass(CAST_PROJ, { u_o: gm.o, u_a: gm.a, u_c: gm.c, u_hmax: gm.H * 1.1 });
+      var hard = g.pass(CAST_PROJ, { u_src: subj(g), u_o: gm.o, u_a: gm.a, u_c: gm.c, u_hmax: gm.H * 1.1 });
       var d = p.blurFar - p.blurNear, sg = g.draft ? [p.blurNear, p.blurNear, p.blurFar, p.blurFar] : [p.blurNear, p.blurNear + d / 9, p.blurNear + d / 3, p.blurFar];
       var lv = blurLevels(g, hard, sg);
       var u = Object.assign({ u_o: gm.o, u_a: gm.a, u_c: gm.c, u_H: gm.H, u_only: p.only ? 1 : 0, u_k: [p.blurNear, p.blurFar, p.opacity, p.fade], u_clip: [p.clip ? 1 : 0, p.clipY * g.box.h, p.clipSoft] }, levelU(lv, sg), shadeU(g, p));
@@ -212,12 +215,16 @@
     passes: function (g, p) {
       if (!(p.opacity > 0)) return;
       var o = [p.anchor.x * g.box.w, p.anchor.y * g.box.h];
-      var foot = g.pass(CONTACT_FOOT, { u_o: o, u_k: [p.distance, p.squash] });
+      var foot = g.pass(CONTACT_FOOT, { u_src: subj(g), u_o: o, u_k: [p.distance, p.squash] });
       var soft = p.softness > 0 ? g.blur(p.softness, { source: foot }) : foot;
       return g.pass(CONTACT_COMP, Object.assign({ u_sh: soft, u_op: p.opacity, u_only: p.only ? 1 : 0 }, shadeU(g, p)));
     },
     support: GPU,
-    ui: { section: 'Shadows & reflections', order: 15, controls: ['opacity', 'distance', 'softness', 'squash', 'anchor', { heading: 'Colour' }, 'color', 'receive', 'only'] },
+    /* The section opens with the staging presets (C.presets; the composite.stage action): one tap, one undo step. */
+    ui: { section: 'Shadows & reflections', order: 15, controls: [{ heading: 'Stage product' },
+      { action: 'composite.stage', label: 'Studio white sweep', args: { preset: 'studio-white-sweep' } }, { action: 'composite.stage', label: 'Soft table reflection', args: { preset: 'soft-table-reflection' } },
+      { action: 'composite.stage', label: 'Hard sun', args: { preset: 'hard-sun' } }, { action: 'composite.stage', label: 'Floating', args: { preset: 'floating' } }, { action: 'composite.stage', label: 'Dark glossy', args: { preset: 'dark-glossy' } },
+      { heading: 'Contact shadow' }, 'opacity', 'distance', 'softness', 'squash', 'anchor', { heading: 'Colour' }, 'color', 'receive', 'only'] },
     agent: {
       summary: 'A tight, dark, soft occlusion where the subject touches the ground; the single most important cue that an object sits on a surface.',
       tips: ['Typical: opacity 0.8–0.9, distance 0.06–0.08 × subject height, softness 0.01 × height, squash 0.25–0.3 (the occlusion lies about distance × squash deep on the ground).', 'Always pair with a cast or floating shadow for a product shot; alone it reads as a studio sweep with overhead light.', 'Needs a correct anchor (LE.fx.composite.contact()).'],
@@ -311,7 +318,7 @@
     draft: function (p) { var q = Object.assign({}, p); q.layers = Math.min(2, p.layers); return q; },
     passes: function (g, p) {
       if (!(p.opacity > 0)) return;
-      var a = g.pass(ALPHA_OF), ls = studioLayers(p), b = [], d = [0, 0, 0, 0], op = [0, 0, 0, 0];
+      var a = g.pass(ALPHA_OF, { u_src: subj(g) }), ls = studioLayers(p), b = [], d = [0, 0, 0, 0], op = [0, 0, 0, 0];
       ls.forEach(function (l, i) { b[i] = l.size > 0 ? g.blur(l.size, { source: a }) : a; d[i] = l.dist; op[i] = l.op; });
       for (var i = ls.length; i < 4; i++) b[i] = b[0];
       var r = p.angle * D2R;
@@ -380,7 +387,7 @@
     grow: function (p, s) { return p.opacity > 0 ? reachOf(p.size, s) + 2 : 0; },
     passes: function (g, p) {
       if (!(p.opacity > 0)) return;
-      var a = g.pass(ALPHA_OF), b = p.size > 0 ? g.blur(p.size, { source: a }) : a;
+      var a = g.pass(ALPHA_OF, { u_src: subj(g) }), b = p.size > 0 ? g.blur(p.size, { source: a }) : a;
       return g.pass(OUTER_GLOW, { u_b: b, u_spread: p.spread, u_op: p.opacity, u_col: linColor(p.color), u_only: p.only ? 1 : 0 });
     },
     support: GPU,
@@ -462,7 +469,7 @@
     grow: function (p, s) { return p.opacity > 0 ? Math.ceil(p.length * s) + 3 : 0; },
     passes: function (g, p) {
       if (!(p.opacity > 0)) return;
-      var r = p.angle * D2R, dir = [-Math.cos(r), Math.sin(r)], Lpx = Math.max(1, p.length * g.scale), cur = g.pass(ALPHA_OF);
+      var r = p.angle * D2R, dir = [-Math.cos(r), Math.sin(r)], Lpx = Math.max(1, p.length * g.scale), cur = g.pass(ALPHA_OF, { u_src: subj(g) });
       var perPx = p.fade > 0 ? Math.pow(Math.max(1e-4, 1 - p.fade), 1 / Lpx) : 1, step = 1, covered = 0;
       while (covered * 2 + 1 < Lpx && step < 8192) {
         var nx = g.pass(LONG_STEP, { u_src: cur, u_d: [dir[0] * step / g.scale, dir[1] * step / g.scale], u_f: Math.pow(perPx, step) });
@@ -1325,4 +1332,16 @@
   ['cast-shadow', 'contact-shadow', 'floating-shadow', 'studio-shadow', 'inner-shadow', 'outer-glow', 'inner-glow', 'edge-light', 'long-shadow', 'floor-reflection', 'water-reflection', 'glass-reflection', 'refine-edge', 'match-color', 'ambient-light', 'light-wrap', 'blend-options', 'apply-image', 'displace', 'mesh-warp']
     .forEach(function (id) { var d = FX.get(id); if (d) d._pack = 'composite'; });
   C.list = function () { return FX.list().filter(function (id) { var d = FX.get(id); return d && d._pack === 'composite'; }); };
+  /* Helpers for agents (the fx.call operation). */
+  if (FX.actions) {
+    FX.actions.register({ id: 'composite.stage', label: 'Stage a product', kind: 'call', summary: 'Shadows and reflection for a cut-out subject in one step. Presets: ' + Object.keys(C.presets).join(', ') + '.',
+      args: { preset: 'preset id', contact: 'optional { x, y } of where the subject touches the ground, fractions of the layer box' },
+      run: function (ctx) { return C.stage(ctx.doc, ctx.layer.id, ctx.args.preset, ctx.args); } });
+    FX.actions.register({ id: 'composite.match', label: 'Match the background', kind: 'call', needs: ['scene'], summary: 'Measures the layer and the page behind it and adds a match-color entry that brings the layer to the page\'s colour and contrast.',
+      args: { strength: '0 to 100 (default 100)' },
+      run: function (ctx) {
+        if (!ctx.scene) return { ok: false, message: 'composite.match needs the open design; it is not available on plain files.' };
+        return C.match({ scene: ctx.scene, layer: ctx.layer.id }, { scene: ctx.scene }, ctx.args).then(function (m) { return m ? { fx: [m.entry], data: { stats: m.stats, whiteBalance: m.whiteBalance } } : null; });
+      } });
+  }
 })(window);

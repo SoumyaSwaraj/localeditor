@@ -215,12 +215,26 @@
       });
     }));
   }
+  /* fx.call: a registered helper answers with effect operations; they take the call's place in the batch. The helper sees the
+     design as it is before this batch. Helpers that measure pixels of the open design are not available on plain files. */
+  function expandCalls(ops) {
+    if (!Array.isArray(ops) || !ops.some(function (o) { return isObj(o) && o.op === 'fx.call'; }) || !LE.fx || !LE.fx.actions) return Promise.resolve(ops);
+    return Promise.all(ops.map(function (o) {
+      if (!isObj(o) || o.op !== 'fx.call') return [o];
+      var page = null, layer = null;
+      (cur.doc.pages || []).forEach(function (pg) { (pg.layers || []).forEach(function (l) { if (!layer && l.id === o.layer) { layer = l; page = pg; } }); });
+      var bad = function (m) { var e = new Error(m); e.code = 'invalid'; throw e; };
+      if (!layer) bad('fx.call: no layer "' + String(o.layer).slice(0, 48) + '" in the design as it is before this batch.');
+      if (typeof o.name !== 'string' || !LE.fx.actions.get(o.name)) bad('fx.call: no helper named "' + String(o.name).slice(0, 48) + '". Helpers: ' + LE.fx.actions.list().map(function (x) { return x.id; }).join(', ') + '.');
+      return LE.fx.actions.run(o.name, { layer: layer, doc: page, args: isObj(o.args) ? o.args : {} }).then(function (r) { if (!r.ok) bad(o.name + ': ' + r.message); return r.ops; });
+    })).then(function (lists) { return [].concat.apply([], lists); });
+  }
   function apply(input) {
     if (!cur) return Promise.resolve({ ok: false, code: 'no-session', errors: [{ path: '', message: 'No design is open.' }] });
     return expandMakes(input.ops).then(function (ops) {
       /* Expert operations need the effect registry, which loads on first use. */
       var expert = [].concat(isObj(ops) && Array.isArray(ops.ops) ? ops.ops : ops).some(function (o) { return isObj(o) && /^(fx\.|mask\.set$|adjust\.add$|transform\.set$)/.test(String(o.op)); });
-      return (expert && LE.fxBoot ? LE.fxBoot.load().catch(function () {}) : Promise.resolve()).then(function () { return applyExpanded(Object.assign({}, input, { ops: ops, original: input.ops })); });
+      return (expert && LE.fxBoot ? LE.fxBoot.load().catch(function () {}) : Promise.resolve()).then(function () { return expandCalls(ops); }).then(function (list) { return applyExpanded(Object.assign({}, input, { ops: list, original: input.ops })); });
     });
   }
   function applyExpanded(input) {

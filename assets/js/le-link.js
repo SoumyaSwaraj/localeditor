@@ -491,6 +491,10 @@
       return { id: r.id, page: p };
     };
   });
+  /* Operations that need the open app (a model, a decoder, the picture's pixels): named here so a file-only caller gets a reason. */
+  ['fx.call', 'map.generate', 'raw.open', 'hdr.merge', 'raw.settings', 'raw.autoTone'].forEach(function (name) {
+    OPS[name] = function (doc, op, path) { throw new OpError('unsupported', '"' + name + '" works on a design that is open in the app: use agent mode (window.LEAgent) in the studio.', path + '/op'); };
+  });
   var ALIASES = { 'add-layer': 'add', set: 'update', patch: 'update', delete: 'remove', move: 'reorder', order: 'reorder', background: 'page.background',
     'replace-text': 'text.replace', fill: 'image.fill', 'add-page': 'page.add', 'update-page': 'page.update', 'remove-page': 'page.remove', 'resolve-note': 'note.resolve' };
 
