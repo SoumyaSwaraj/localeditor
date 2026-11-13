@@ -11,6 +11,7 @@ const ENGINE_RE = /\/tesseract\/|traineddata/;   /* the engine, its worker and l
 
 async function studioWithScan(h, browser, base, viewport) {
   const page = await h.open(browser, base, '/pdf-studio/', viewport || 'desktop');
+  await h.need(page, ['ocr']);
   const b64 = fs.readFileSync(h.FIXTURE('scanned.pdf')).toString('base64');
   await page.evaluate(async (b) => {
     const bin = atob(b); const u = new Uint8Array(bin.length); for (let i = 0; i < u.length; i++) u[i] = bin.charCodeAt(i);
@@ -98,6 +99,7 @@ cases['cancel mid-run leaves the document unchanged and frees the engine'] = asy
 
 cases['Find sensitive data reads scanned pages when asked, and leaves those matches unticked'] = async ({ browser, base, h }) => {
   const page = await studioWithScan(h, browser, base, 'desktop');
+  await h.need(page, 'security');
   await page.evaluate(() => { PS.openPanel('security'); PS.security.findOpen = true; PS.security.go('redact'); });
   await page.waitForSelector('.sec-findbox [data-sec-search]');
   await page.click('.sec-findbox [data-sec-search]');

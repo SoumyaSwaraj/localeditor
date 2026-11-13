@@ -4,6 +4,7 @@ const cases = {};
 
 async function studioWithPhoto(browser, base, h, viewport, photo) {
   const page = await h.open(browser, base, '/studio/', viewport || 'desktop');
+  await h.need(page, ['cutout']);
   await page.waitForFunction(() => window.LEStudio && window.LEStudio.scene && window.LEStudioCutout);
   /* These cases test the kit, not the model pick: pin the small Quick model so they stay fast (the automatic,
      quality-first pick is covered in tests/cutout-pro.test.js). */

@@ -19,6 +19,7 @@ function track(page) {
 }
 async function studioText(h, browser, base, vp, layer) {
   const page = await h.newDesign(browser, base, vp || 'desktop', 'Instagram post');
+  await h.need(page, ['fonts']);
   const id = await page.evaluate((l) => { const c = window.LEStudio; const id = c.addText(l); c.scene.select([id]); return id; }, layer);
   await page.waitForTimeout(400);
   return { page, id };
@@ -84,6 +85,7 @@ module.exports = {
 
   'opening the picker loads only the slim index and visible previews': async ({ browser, base, h }) => {
     const page = await h.newDesign(browser, base, 'desktop', 'Instagram post');
+    await h.need(page, ['fonts']);
     const reqs = track(page);
     await h.openPanel(page, 'fonts');
     await page.waitForSelector('.sf-row .sf-name.is-ready');
@@ -119,6 +121,7 @@ module.exports = {
 
   'old documents render each of the 44 original families': async ({ browser, base, h }) => {
     const page = await h.open(browser, base, '/studio/', 'desktop');
+    await h.need(page, ['fonts']);
     const bad = await page.evaluate(async (names) => {
       const out = [];
       const cv = document.createElement('canvas'); cv.width = 600; cv.height = 80;
@@ -162,6 +165,7 @@ module.exports = {
 
   'save for offline, use with no network, remove, storage manager lists it': async ({ browser, base, h }) => {
     const page = await h.open(browser, base, '/studio/', 'desktop');
+    await h.need(page, ['fonts']);
     const r = await page.evaluate(async () => {
       const size = await LE.fonts.sizeOf('Kanit');
       let first = null;

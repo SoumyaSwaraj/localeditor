@@ -1,84 +1,187 @@
-# Loading the photo studio
+# Light first load (roadmap L1)
 
-Roadmap L1 ("Light first load"), the part the 25 MB rule allows: everything still downloads on the first visit (see `docs/DOWNLOADS.md`),
-but scripts that are only needed after a tap must not block the first paint.
+Owner, 12 November 2026: "making this whole setup very light weight initially and unlocking features to download as people use
+them in the background." The photo studio, the PDF studio and the home page load a small **core** first. Everything else loads
+when it is first used, when a link or a document needs it, or in the background once the device is idle. Offline nothing
+changes: the worker still keeps every file of the installed app (see "Offline" below).
 
-## The mechanism: `LE.modules.defer`
+## Budgets (`tests/loading.test.js`)
 
-`assets/js/le-load.js` is a small blocking script in `studio/index.html`. A module declared with it is not a `<script src>` tag:
+gzip (level 9) of what the page's HTML loads before it is interactive: `<script src>` that is not `async` (defer counts) and
+`<link rel="stylesheet">`. Raise a budget only with a reason written here.
 
-```html
-<script src="../assets/js/le-load.js"></script>
-<script>LE.modules.defer({ id: 'stock', src: '../assets/js/le-stock.js', rerender: ['apps', 'uploads', 'elements'] });</script>
-```
+| Page | JS | CSS | Total | Budget (JS / CSS / total) | Before (12 Nov) |
+|---|---|---|---|---|---|
+| `/studio/` | 208 KB | 42 KB | **250 KB** | 214 / 45 / 256 KB | 551 + 72 = 623 KB |
+| `/pdf-studio/` | 242 KB | 41 KB | **283 KB** | 248 / 44 / 290 KB | 490 + 59 = 549 KB |
+| `/` (home) | 14 KB | 30 KB | **44 KB** | 20 / 34 / 90 KB | 13 + 30 KB, plus 83 KB of install/support/download code before the load event |
 
-Deferred modules load **after the load event when the main thread is idle**, one after another **in declaration order** (the same
-order their tags had), or **at once** when one of their panels is opened. When one arrives after the studio has booted:
+The studio's target is 250 KB; it sits right at it, so the next module that grows the core must give something back.
 
-- `init` hooks it added run once with the studio context (other hooks — `toolbar`, `select`, `change`, … — simply start working);
-- the rail and the phone More sheet are redrawn (`ctx.renderRail()`), so `_rail` entries and `spec.rail` appear;
-- the open panel is re-rendered when it belongs to the module, or is listed in `rerender`.
+## The core
 
-Options:
+**Photo studio** (`studio/index.html`, in order): `app.js`, `le-engine.js`, `le-load.js`, `le-objects.js`, `le-project.js`,
+`le-fx-boot.js`, `le-studio-panels.js`, `le-studio-lazy.js` (the loader map), `le-studio.js`, `raw/le-raw-studio.js`; styles
+`app.css` (all five themes' tokens stay here), `le-objects.css`, `studio.css`. That is enough to open or drop a photo, see it,
+pan and zoom, adjust, filter, crop, add shapes, undo, autosave and restore.
+
+**PDF studio** (`pdf-studio/index.html`, all `defer`): `app.js`, `le-engine.js`, `le-objects.js`, `le-fonts.js`,
+`le-fonts-originals.js`, `le-assets.js`, `le-pdf.js`, `le-pdf-studio.js`, `-color`, `-panels`, `-graphics`, `-office`,
+`le-load.js`, `le-pdf-studio-lazy.js`; styles `app.css`, `le-objects.css`, `pdf-studio.css`. That is the viewer and the everyday
+panels (Pages, Edit, Sign, Forms, Tools, Convert, Export). pdf.js, pdf-lib and fontkit load when a PDF opens (`LE.pdf.ready()`),
+as before.
+
+**Every page** (`app.js`): `le-pwa.js`, `le-support.js`, `le-downloads.js` and their CSS now load **after the load event**, when
+the main thread is idle (`window.__leLate`). They load at once for `?install=`, `?storage=1`, `#storage`, `?share-target=`,
+`?shared=`, or when Install app / Storage is tapped before they arrived (the tap is then carried out). The install prompt is still
+caught early by `app.js`; the worker registers a moment later than before; update safety is untouched.
+
+No vendor library (fontkit, SheetJS, pdf-lib, pdf.js and its worker, mammoth, html2canvas, JSZip, the WOFF2 decoder) is requested
+before a studio is interactive: they were already loaded through `LE.lazy` where they are used (PDF export, office files, fonts).
+No font or image blocks the first paint: the default theme uses system fonts, `@font-face` rules use `font-display: swap`, and
+the home page's only preload is its hero picture.
+
+## The mechanism: `LE.modules` (`assets/js/le-load.js`)
+
+A page's loader map declares each deferred module with `LE.modules.defer({...})`. Modules load one after another on one chain (a
+dependency always runs first), CSS before script, so a panel is never drawn unstyled. A failed download is never cached: the tag is
+removed and the next request (Try again, the next tap) asks the network again. `LE.lazy` (in `le-objects.js`) and `le-pdf.js`'s
+script loader now do the same.
+
+When a module arrives after the studio booted:
+
+- `init` hooks it added run once with the studio context; `ready` hooks run once with the boot result if the studio was already ready;
+- calls to hooks listed in `replay` (a shortcut pressed before it arrived) are replayed to the module's own hooks;
+- the rail is redrawn; the toolbar too when `retool` is set; the open panel re-renders when it belongs to the module (`panels`,
+  `wrap`, `rerender`); `after(ctx)` runs.
 
 | Option | Meaning |
 |---|---|
-| `id`, `src` | Required. `src` is relative to the page, like the tag it replaces. |
-| `css` | A stylesheet that must be there before the module renders (loaded first). |
-| `panels: { id: 'Title' }` | Panel ids the module registers. Until it arrives, `LEStudioPanels[id]` is a placeholder that shows "Opening…", loads the module and swaps in the real panel. Deep links (`?tool=id`) and `openPanel(id, opts)` work with it; `opts` are kept. |
-| `wrap: { panelId: fn(opts) }` | Views the module adds inside another panel (Apps → Batch is `{ apps: (o) => o.app === 'batch' }`). Those views wait for the module; the rest of the panel is untouched. |
-| `queue: 'onRecipeFile'` | A handler the module puts on `ctx.S` when its panel renders. Calls made before it arrives are kept and replayed. |
-| `rerender: ['apps']` | Panels to re-render when the module arrives (for libraries such as `LE.stock` that a panel reads). |
+| `id`, `src` | Required. `src` is relative to the page. |
+| `css` | Its stylesheet, loaded before the script (and so before its first render). |
+| `deps` | Module ids that must run first (`tools` needs `color`; `agent` needs `design`). |
+| `label` | Plain words for "Downloading …" and errors. |
+| `panels: { id: 'Title' }` | Panels the module provides. Until it arrives, the panel opens at once with a skeleton (`.skel` from `app.css`), loads the module and swaps in the real panel; on a slow network the skeleton says "Downloading …"; on failure it says so in plain words with **Try again**. Deep links (`?tool=`) and `openPanel(id, opts)` work with it. |
+| `wrap: { panelId: fn(opts, ctx) }` | Views the module adds inside another panel; those views wait for it (with the same skeleton and retry). |
+| `queue: 'onRecipeFile'` | A handler the module puts on `ctx.S` when its panel renders; calls made before it arrives are replayed. |
+| `cmds: ['copyStyle']` | `data-cmd` commands the module registers. A stub loads the module, then runs the real command. |
+| `on: ['select']` | Hooks that are the trigger to load (the first selection loads the modules that add selection tools). |
+| `replay: ['key']` | Hooks whose calls are kept and replayed once it is there. |
+| `retool` | Redraw the toolbar after it loads (it adds toolbar buttons). |
+| `doc: fn(pages, project)` | Documents that need it. `ctx.startProject` (restore, open, import, design files) and version previews call `LE.modules.forDoc(project)` and wait for these before the first render — the same idea as `LE.fxBoot` for Expert data. A module that cannot load (offline and not kept) does not stop the document opening. |
+| `param`, `hash`, `when` | Load at once: a URL parameter (`?make=`, `?agent`, `?link=`), a hash (`#d=`, `#ops=`), or a test (a session to resume). |
+| `idle: rank` | Warm it when the device is idle (lower first). Without it, a module loads only when asked. |
+| `features` | `LE.downloads` usage ids that move it up the warm-up order (panel ids count as `studio.<panel>` already). |
 
-`LE.modules.need(id)` loads one now (and everything declared before it); `LE.modules.list()` and `LE.modules.loaded(id)` report.
-Declarations with `panels` or `wrap` must come **after** `le-studio-panels.js`, which starts a fresh `LEStudioPanels` object.
+API: `LE.modules.need(id)`, `needAll(ids)`, `forDoc(doc)`, `loaded(id)`, `state(id)` (`waiting`, `loading`, `loaded`, `error`),
+`list()`, `on(fn)` (also a `le-load` window event), `interactive()` (the PDF studio calls it on load; the photo studio's `ready`
+hook does), `warmStatus()`.
 
-## What is deferred today (12 November 2026)
+**Warm-up.** It starts at the first pointer, key or touch after the app is interactive, or 5 s after it, whichever is first, then
+loads one module per idle slot, most-used first (`LE.downloads` usage signals from the last 30 days, then `idle` rank). It never
+runs offline, on a metered or data-saver connection (`navigator.connection` `saveData`, `cellular`, `slow-2g`/`2g`/`3g`), on a
+device with under 2 GB (`navigator.deviceMemory`) or `LE.perf.level() === 'low'`, or when downloads are set to "ask"
+(`LE.downloads.mode()`). `window.LE_LOAD_NO_WARM = true` turns it off (tests).
 
-| Module | Why it is safe |
-|---|---|
-| `assets/js/le-stock.js` (40 KB, 10 KB gzip) | A library: only the collage photo search reads `LE.stock`, inside functions run on a tap. |
+## The photo studio's map (`assets/js/le-studio-lazy.js`)
 
-## What stays blocking, and what it would take
+Sizes are gzip, script + CSS.
 
-A module can only be deferred when nothing it does is needed before the person taps something. These were checked and are not
-safe yet; the owners can convert them with the small change listed:
+| Module | File | KB | Loads on | Warm rank |
+|---|---|---|---|---|
+| `fontlib`, `fontorig` | `le-fonts.js`, `le-fonts-originals.js` | 15, 4 | first edit or selection; Text panel; a document with text (scene redrawn after) | 0 |
+| `assets` | `le-assets.js` | 19 | first edit or selection; Elements panel; a document with icons, stickers or library shapes | 0 |
+| `export` | `le-studio-export.js` + css | 23+3 | Download panel; `ctx.exportImage`; a carousel document | 0 |
+| `tools` | `le-studio-tools.js` + css (moved from studio.css) | 15+2 | first selection; Pages; format painter, QR, rulers commands; shortcuts (replayed); rulers left on; a document with frames | 1 |
+| `fonts` | `le-studio-fonts.js` + css | 9+2 | Fonts panel | 1 |
+| `color` | `le-studio-color.js` + css (moved) | 23+2 | colour picker (`_colorPop`); Replace, Brand kit; dep of tools, icons, background | 2 |
+| `privacy` | `le-studio-privacy.js` + css | 7+1 | first selection; Elements; Redact; Apps → Metadata; redaction commands; a document with redactions | 3 |
+| `background` | `le-studio-background.js` + css | 14+2 | first selection; Background panel; its commands; a document with an image background | 4 |
+| `collage`, `collagelib` | `le-studio-collage.js` + css, `le-collage.js` | 24+4, 6 | first selection; Design → Templates; Uploads → Stock; Apps → Collage; Replace photo; a document with slots | 5 |
+| `icons` | `le-studio-icons.js` + css (moved) | 8+1 | the 34 icon styles in Elements; its commands | 6 |
+| `cutout` | `le-studio-cutout.js` + css | 26+3 | first selection; Remove background; Apps → Thumbnail; its commands; a document with cut-outs | 6 |
+| `recipes` | `le-studio-recipes.js` + css | 17+4 | Recipes panel (`.leworkflow` launches queue onto it); Apps → Batch; a document with a recipe look | 7 |
+| `makers`, `makerslib` | `le-studio-makers.js` + css, `le-makers.js` | 12+2, 25 | the start screen's makers row (a skeleton until the studio is interactive and idle, or scrolled to); Apps → Make; `?make=`; a document with a maker page | 8 |
+| `stock` | `le-stock.js` | 10 | Uploads → Stock | 9 |
+| `design` | `le-design.js` + css | 37+1 | `#d=` template links (also on hashchange); Open/Save design file; Share as template link; dropping a `.ledesign.json` | 10 |
+| `agent`, `agentui`, `link` | `le-agent.js`, `le-studio-agent.js` + css, `le-link.js` | 37, 14+3, 18 | `?agent`, `#ops=`, `?link=`, a session to resume, `LE_AGENT_HEADLESS` (the command-line engine; it also loads `link`), File → Agent mode…, any call on `window.LEAgent` | never warmed |
 
-| Module | Blocks because | To defer it |
+Stubs kept in the core (each is replaced when its module arrives): `LE.design` (`isDesignFile` is synchronous; the rest forward),
+`window.LEAgent` (every method forwards and returns its promise; `on()` returns a working `off`), `LEStudioCollage.openReplace`,
+`LEStudioBackground.fromLayer`, `P._colorPop`, the Elements views `P._grids`, `P._stylesTab`, `P._withIcons`, `P._withIconsSearch`,
+the command stubs above, and the Apps → Thumbnail entry (registration data stays in the core).
+
+## The PDF studio's map (`assets/js/le-pdf-studio-lazy.js`)
+
+| Module | KB | Loads on | Warm rank |
+|---|---|---|---|
+| `security` (Protect) | 58+3 | its rail tab or panel; `?panel=security`; with Office kit | 1 |
+| `office` (Office kit) | 69+5 | its start-screen link or panel; the Tools panel (it lists the kit first; a skeleton until it arrives); `?panel=office`; saved workflows opened from the system (`PS.office.open` stub). Edit and Forms draw at once, ask for it in the background and gain their office rows when it arrives. Bulk and Protect follow it in the background. | 2 |
+| `bulk` (Bulk & protect) | 53+3 | its rail tab, start-screen link or panel; `?panel=bulk&job=…` | 3 |
+| `docs` (Business docs) | 30+3 | its rail tab, start-screen link or panel; `?panel=docs` | 4 |
+| `ocr` (Scan & read text) | 22+1 | its rail tab or panel; `?panel=scan`; **a PDF opening** (when idle, it checks for scanned pages and offers to read them) | 5 |
+| `scan` (camera scan) | 25+3 | the Scan with camera tile; `?panel=scan&job=camera` | 6 |
+
+The rail tabs and start-screen links are drawn by the map with the modules' own markup, in their usual order, so the first paint is
+unchanged; the modules find them there. Their link styles are copied into `pdf-studio.css`. Protect swaps its stand-in tab for
+its own (it picks a PDF first when none is open). Deep links load the module during parsing, so it is there by the load event,
+when the studio applies `?panel=&job=`.
+
+## Offline
+
+`scripts/build.js` splits the Basic editor into app parts by following what each studio page loads, including the string paths in
+the code it loads (`'../assets/js/…'`). The loader maps name every deferred file that way, so each stays in its studio's part:
+`le-load.js` is shared (core); the photo studio's modules and CSS are in the design part; the PDF studio's in the pdf part. No
+change to `build.js` was needed; `tests/loading.test.js` fails if a deferred file falls out of its part, and
+`tests/install.test.js` loads every deferred studio module offline in a Design-only install.
+
+## How to add a deferred module
+
+Take its `<script>` (and `<link>`) out of the page and add one `M.defer({...})` line to the page's loader map. Then make sure nothing
+the page does before a tap needs it: panel specs become `panels`; views inside other panels become `wrap`; its `data-cmd` names
+go in `cmds`; hooks it needs to see from the start become triggers (`on`) or `replay`; anything another file checks synchronously
+(`window.X && X.fn`) gets a stub in the map that forwards after `M.need(id)`; anything that changes how a document draws gets a
+`doc` test. Registration data (rail entries, app tiles, start-screen links) stays in the map as data.
+
+1. Its CSS goes in `css` (never in `studio.css`), so it loads before its first render.
+2. `deps` for every module whose globals it reads while running.
+3. A `doc` test if saved designs use it; a `param`/`hash` if a link opens it.
+4. `idle` only if most people use it soon; agent-like tools stay "only when asked".
+5. Tests that drive its API straight away call `await h.need(page, 'id')`.
+6. Run `node tests/run.js loading`, the module's own suite, `deep-links`, `shell`, `smoke`, `install`.
+
+## What still blocks, and why
+
+| File | KB | Why it is core |
 |---|---|---|
-| `le-studio-recipes.js` | Wraps `Scene._processImage` so saved designs with recipe looks draw correctly at boot | Move the shim (`shim()` at the top) into `le-objects.js` or `le-engine.js`; then `panels: { recipes: 'Recipes' }, wrap: { apps: (o) => o.app === 'batch' }, queue: 'onRecipeFile', css: '../assets/css/studio-recipes.css'` |
-| `le-studio-export.js` | `history`/`page` hooks record the process-replay timeline from the first edit; draws the carousel strip | Record the timeline in the core (or accept that edits before idle are not in the replay); then `panels: { export: 'Download' }` |
-| `le-studio-privacy.js` | Toolbar entries for redaction layers; `history` hook restores redaction images | Move `restoreAssets` to the core; then `panels: { redact: 'Redact' }` and `wrap: { apps: (o) => o.app === 'metadata' }` |
-| `le-makers.js` + `le-studio-makers.js` | `_start` adds the makers to the start screen; `le-studio-makers.js` exits if `LE.makers` is missing at load | Read `LE.makers` lazily; the start-screen entry can stay in a 1 KB stub |
-| `le-studio-cutout.js` | Being reworked this wave | Its panel and toolbar hooks are a natural `panels` + idle case once it settles |
-| `le-studio-fonts.js`, `le-agent.js`, `le-studio-agent.js`, `le-link.js`, `le-fx-boot.js` | Stubs (under 200 bytes) being written this wave | Declare them with `LE.modules.defer` when they land, unless they register `_start`, `drop` or render hooks used at boot |
+| `le-studio.js`, `le-studio-panels.js` | 54, 37 | The editor and every core panel. Splitting the panel renderers out of `le-studio-panels.js` is the next large saving (follow-ups). |
+| `le-objects.js`, `le-engine.js` | 45, 29 | The scene and the adjust/filter pipeline draw the first photo. `le-engine.js` also carries the recipe catalogue and helpers for the tool pages. |
+| `le-project.js` | 17 | Autosave, restore and the start screen's "Your designs"; `le-studio.js` will not start without it. |
+| `app.js`, `app.css` | 14, 24 | The shell and the five themes on every page. |
+| `studio.css` | 18 | The shell and core panels; rules for deferred modules' own elements moved out. |
+| `raw/le-raw-studio.js`, `le-fx-boot.js` | 3, 1 | Capture RAW drops and Expert documents before the studio sees them. |
+| PDF: `le-pdf.js`, `le-pdf-studio*.js`, `le-assets.js`, `le-fonts.js` | 31, 77, 19, 19 | The viewer, its panels, the sign panel's inks and text editing. |
 
-## How to convert a module
+## Measurements (12 November 2026, this machine, shared with other test runs)
 
-1. Check what it does when its file runs: panel specs and `_rail` entries are fine; `init` hooks are fine; anything that changes
-   rendering (`Scene` prototypes, `_start`, `drop`, `history` bookkeeping) is not, unless it moves elsewhere first.
-2. Replace its `<script src>` tag in `studio/index.html` with `LE.modules.defer({...})` in the same place.
-3. Run `node tests/run.js loading`, then `deep-links`, `shell`, `smoke` and the module's own tests.
-4. The worker still precaches the file (it lives under `assets/`), so nothing changes offline.
+Desktop 1440 × 900, 4× CPU slowdown, cache disabled, served from localhost, median of 3. Interactive = the studio's size cards and
+scene are there; the PDF studio's `PS` and shell; the home page's `main`. Relative only. Method: the scratch script used for the
+report (requests until interactive, gzip sizes as served by CloudFront).
 
-## The budget
+| | Studio before | Studio after | PDF before | PDF after | Home before | Home after |
+|---|---|---|---|---|---|---|
+| Requests before interactive | 86 | 20 | 32 | 19 | 18 | 15 |
+| JS before interactive (gzip) | 750 KB | 281 KB | 491 KB | 243 KB | 86 KB | 46 KB |
+| CSS before interactive (gzip) | 82 KB | 52 KB | 68 KB | 41 KB | 40 KB | 40 KB |
+| Time to interactive (4× CPU) | 2.3 s | 2.0 s | 0.81 s | 0.74 s | 1.25 s | 1.08 s |
+| First contentful paint | 1.04 s | 0.93 s | 0.55 s | 0.42 s | 0.92 s | 0.40 s |
+| Layout shift | 0.07 | 0 | 0.19 | 0.19 | 0 | 0 |
 
-`tests/loading.test.js` fails when the gzip size of the studio's blocking scripts passes **480 KB** (or 1,800 KB raw). It was
-432 KB gzip (1,596 KB raw, 27 scripts) on 12 November 2026. Raise it only with a reason written here.
+"JS before interactive" counts what had arrived when the page became interactive: on the studio it includes `le-pwa.js`,
+`le-support.js` and `le-downloads.js`, which now start after the load event but still land during the studio's async boot.
+The PDF studio's layout shift is the same before and after this work; it was not investigated here.
 
-## Measurements (12 November 2026)
+## Budget changes
 
-`/studio/` cold, desktop 1440 × 900, 4× CPU slowdown, slow 4G (150 ms, 1.4 Mbit/s), text served gzip like CloudFront, median of 5.
-Method: `tests/qa/perf.js` plus CDP network throttling and a server that gzips text.
-
-| | Before | After |
-|---|---|---|
-| Time to interactive (start screen ready) | 5.8 s | 6.0 s (no measurable change; machine shared with other test runs) |
-| First contentful paint | 4.6 s | 4.8 s |
-| Requests before interactive | 56 | 56 (stock moved after, `le-load.js` added) |
-| Transfer before interactive | 635 KB | 628 KB |
-| Long tasks in the first ~10 s | 27, 4.1 s total, longest 578 ms | 30, 4.4 s, longest 548 ms |
-
-The honest reading: the studio's first paint is drawn by `le-studio.js` after every boot-coupled module has run, so deferring one
-library does not move it. The mechanism is in place; the gain comes when recipes, export, privacy and makers are converted as above
-(about 72 KB gzip of the 432 KB; not measured yet).
+- 13 Nov 2026: studio JS 214 → 217 KB and PDF studio JS 248 → 250 KB. `le-objects.js` grew 1.6 KB gzip for template fields (the detector that loads `le-variables.js` and the seam that draws a filled copy of a layer). The studio now blocks on about 257 KB against the 250 KB target; splitting `le-studio-panels.js` (20 to 25 KB) is the way back under.
+- Template fields (`le-studio-variables.js` + `studio-variables.css`) are in the studio's loader map: first selection, the Fields and Create many panels, or a document with fields or values.

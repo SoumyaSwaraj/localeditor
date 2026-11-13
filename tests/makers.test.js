@@ -6,6 +6,7 @@ const PHOTOS = ['travel-08', 'still-02', 'people-07', 'travel-07', 'people-08'];
 
 async function studio(h, browser, base, vp, url) {
   const page = await h.open(browser, base, url || '/studio/', vp || 'desktop');
+  await h.need(page, ['makers', 'design']);
   await page.waitForFunction(() => window.LEStudio && window.LEStudioMakers && window.LE.makers);
   await page.evaluate(() => LE.makers.ready());
   return page;

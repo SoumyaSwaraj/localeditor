@@ -48,6 +48,7 @@ const cases = {};
 
 cases['builder makes N independent photo slots and stores its state in the document'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['collage']);
   await h.openPanel(page, 'apps', { app: 'collage' });
   await grid(page, 6);
   await page.waitForTimeout(200);
@@ -69,6 +70,7 @@ cases['builder makes N independent photo slots and stores its state in the docum
 
 cases['spacing, margin, radius and border land in the doc as one undo step each'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['collage']);
   await h.openPanel(page, 'apps', { app: 'collage' });
   await grid(page, 4);
   await page.waitForTimeout(300);
@@ -105,6 +107,7 @@ cases['spacing, margin, radius and border land in the doc as one undo step each'
 
 cases['shuffle, next layout, count and size keep the photos'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['collage']);
   await h.openPanel(page, 'apps', { app: 'collage' });
   const ids = await grid(page, 5);
   await page.waitForTimeout(300);
@@ -144,6 +147,7 @@ cases['shuffle, next layout, count and size keep the photos'] = async ({ browser
 
 cases['drag a photo onto another cell to swap; frames stay'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['collage']);
   await grid(page, 4);
   await page.evaluate(() => LEStudioCollage.tune(window.LEStudio, { radius: 30, border: { width: 6, color: '#FFFFFF' } }));
   await page.waitForTimeout(300);
@@ -172,6 +176,7 @@ cases['drag a photo onto another cell to swap; frames stay'] = async ({ browser,
 
 cases['double-click a cell to pan and zoom inside it; only the crop changes'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['collage']);
   await grid(page, 2);
   await page.evaluate(() => LEStudioCollage.tune(window.LEStudio, { radius: 40 }));
   await page.waitForTimeout(300);
@@ -212,6 +217,7 @@ cases['double-click a cell to pan and zoom inside it; only the crop changes'] = 
 
 cases['double-click on a cell still crops when the page background is a photo'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['collage']);
   const ids = await grid(page, 2);
   await page.evaluate((src) => window.LEStudio.scene.setBackground({ type: 'image', src: src, fit: 'cover', color: '#ffffff' }), ids[1]);
   await page.waitForTimeout(200);
@@ -224,6 +230,7 @@ cases['double-click on a cell still crops when the page background is a photo'] 
 
 cases['pinch inside a cell on touch zooms the photo, not the page'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'phone');
+  await h.need(page, ['collage']);
   await grid(page, 2);
   await page.waitForTimeout(300);
   const d0 = await h.doc(page);
@@ -246,6 +253,7 @@ cases['pinch inside a cell on touch zooms the photo, not the page'] = async ({ b
 
 cases['replacing a cell keeps mask, radius, border, rotation and shadow'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['collage']);
   const ids = await grid(page, 3);
   const res = await page.evaluate(async (ids) => {
     const c = window.LEStudio;
@@ -287,6 +295,7 @@ cases['replacing a cell keeps mask, radius, border, rotation and shadow'] = asyn
 
 cases['reopening the panel restores controls from the doc; project round trip keeps it'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['collage']);
   await grid(page, 4);
   await page.evaluate(() => LEStudioCollage.tune(window.LEStudio, { spacing: 33, margin: 70, radius: 21, border: { width: 9, color: '#17131F' } }));
   await page.evaluate(() => LEStudioCollage.setLayout(window.LEStudio, 'h-l-62'));
@@ -334,6 +343,7 @@ cases['reopening the panel restores controls from the doc; project round trip ke
     const group = ids.slice(i, i + SIZE);
     cases['every style pack loads and every template applies (' + (i / SIZE + 1) + ' of ' + Math.ceil(ids.length / SIZE) + ': ' + group[0] + ' … ' + group[group.length - 1] + ')'] = async ({ browser, base, h }) => {
       const page = await h.studioWithSample(browser, base, 'desktop');
+      await h.need(page, ['collage']);
       const res = await page.evaluate(async (group) => {
         const c = window.LEStudio;
         const idx = await LE.collage.index();
@@ -363,6 +373,7 @@ cases['reopening the panel restores controls from the doc; project round trip ke
 
 cases['style packs: 21 reference styles with 8–12 variations, every template listed, and a real fill from the pool'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['collage']);
   const res = await page.evaluate(async () => {
     const idx = await LE.collage.index();
     const attached = {};
@@ -385,6 +396,7 @@ cases['style packs: 21 reference styles with 8–12 variations, every template l
 
 cases['catalogue search and filters, and Design → Templates'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['collage']);
   await h.openPanel(page, 'apps', { app: 'collage' });
   await page.click('.sx-cl-tabs button:has-text("Styles")');
   await page.waitForSelector('.sx-cg-card');
@@ -411,6 +423,7 @@ cases['catalogue search and filters, and Design → Templates'] = async ({ brows
 
 cases['attribution line and credits for sourced photos'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['collage']);
   await grid(page, 3);
   await page.waitForTimeout(200);
   const P0 = await cellCenter(page, (await h.doc(page)).collage.order[0]);
@@ -439,6 +452,7 @@ cases['attribution line and credits for sourced photos'] = async ({ browser, bas
 ['phone', 'small'].forEach((vp) => {
   cases['phone flow at ' + vp + ': build, tap an empty cell, no sideways scroll'] = async ({ browser, base, h }) => {
     const page = await h.studioWithSample(browser, base, vp);
+    await h.need(page, ['collage']);
     await h.openPanel(page, 'apps', { app: 'collage' });
     h.assert(await h.noOverflow(page), 'start view overflow');
     await page.click('.sx-cl-sources button:has-text("Samples")');

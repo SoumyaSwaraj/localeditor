@@ -37,6 +37,7 @@ async function studio(browser, base, h, o) {
     return route.fulfill({ status: 404, body: '' });
   });
   await page.goto(base + '/studio/', { waitUntil: 'networkidle' });
+  await h.need(page, ['cutout']);
   await page.waitForFunction(() => window.LEStudio && window.LEStudio.scene && window.LEStudioCutout);
   await page.evaluate(async () => {
     const b = await (await fetch('/assets/photos/collage/people-07.jpg')).blob();

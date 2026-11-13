@@ -11,6 +11,7 @@ const FX = path.join(__dirname, 'fixtures', 'pdf-bulk');
 /* Opens the PDF studio with helpers: __fx(name) → Uint8Array, __text(bytes, pw) → [page text], __file(name) → File. */
 async function studio(h, browser, base, vp) {
   const page = await h.open(browser, base, '/pdf-studio/', vp || 'desktop');
+  await h.need(page, ['bulk']);
   page.logs = [];
   page.on('console', (m) => page.logs.push(m.type() + ': ' + m.text()));
   await page.waitForFunction(() => window.LE && LE.pdfBulk && window.PS && PS.bulk);

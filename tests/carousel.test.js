@@ -21,6 +21,7 @@ const cases = {};
 
 cases['carousel lands in the doc as plain data and survives undo/redo'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['export']);
   const w0 = (await h.doc(page)).width;
   await page.evaluate(() => LEStudioExport.carousel.make(window.LEStudio, { slides: 3 }));
   let d = await h.doc(page);
@@ -40,6 +41,7 @@ cases['carousel lands in the doc as plain data and survives undo/redo'] = async 
 
 cases['carousel survives a .leproject round trip'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['export']);
   await carouselWithContent(page);
   const f = await grab(page, () => page.evaluate(() => window.LEStudio.exportProject()));
   h.assert(f.name.endsWith('.leproject'), 'project file');
@@ -53,6 +55,7 @@ cases['carousel survives a .leproject round trip'] = async ({ browser, base, h }
 
 cases['add and remove slide keep content in place; split gives N slide images that meet at the seams'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['export']);
   const ids = await carouselWithContent(page);
   const x = async (id) => (await h.doc(page)).layers.find((l) => l.id === id).x;
   const t0 = await x(ids.text), b0 = await x(ids.bar);
@@ -106,6 +109,7 @@ cases['add and remove slide keep content in place; split gives N slide images th
 
 cases['slide edges snap, guides are drawn, strip jumps between slides, swipe preview opens'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, ['export']);
   await carouselWithContent(page);
   const snap = await page.evaluate(() => { const s = window.LEStudio.scene; s.zoomTo(1); return s._snapRect({ x: 1077, y: 40, w: 100, h: 50 }, []).x; });
   h.assert.equal(snap, 1080, 'left edge snaps to the slide edge');
@@ -138,6 +142,7 @@ cases['slide edges snap, guides are drawn, strip jumps between slides, swipe pre
 
 cases['Design → Resize offers the Instagram carousel start; multi-page designs export as numbered slides'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'phone');
+  await h.need(page, ['export']);
   await h.openPanel(page, 'design', { tab: 'sizes' });
   await page.click('.sxe-car-start');
   await page.waitForTimeout(300);

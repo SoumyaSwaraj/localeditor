@@ -47,6 +47,7 @@ async function openScanner(h, browser, base, viewport, init) {
   page.on('console', (m) => { if (m.type() === 'error') page.errors.push(m.text()); });
   page.on('pageerror', (e) => page.errors.push('pageerror: ' + e.message));
   await page.goto(base + '/pdf-studio/', { waitUntil: 'networkidle' });
+  await require('./lib/harness').need(page, ['scan']);
   return page;
 }
 /* A desk photo as a PNG buffer (generated in the page). */

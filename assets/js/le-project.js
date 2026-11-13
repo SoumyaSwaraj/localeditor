@@ -165,6 +165,7 @@
         if (l.cutout && l.cutout.asset) ids[l.cutout.asset] = 1;   /* cut-out masks */
         if (LE.Scene && LE.Scene.expertAssets) LE.Scene.expertAssets(l).forEach(function (id) { ids[id] = 1; });   /* masks, retouch overlays, maps, LUTs */
       });
+      Object.keys(doc.values || {}).forEach(function (k) { if (typeof doc.values[k] === 'string') ids[doc.values[k]] = 1; });   /* photos filled into template fields */
     }
     ((project && project.pages) || []).forEach(scan);
     return Object.keys(ids).filter(function (k) { return /^[a-f0-9]{64}$/.test(k); });
@@ -636,6 +637,7 @@
     } else if (l.type === 'adjust') l.clip = bool(src.clip);
     /* Expert fields (fx, layerMask, transform, retouch, maps, raw): the same shape check LE.Scene applies; LE.fx validates entries before they run. */
     if (LE.Scene && LE.Scene.expertOf) LE.Scene.expertOf(src, l);
+    if (LE.Scene && LE.Scene.bindOf) LE.Scene.bindOf(src, l);   /* template fields: bind, overflow, minSize (docs/VARIABLES.md) */
     return l;
   }
   /* Photo background framing and look (see le-objects.js "Photo backgrounds"); only fields that are present are kept. */
@@ -688,6 +690,8 @@
     if (maker) out.maker = maker;
     var print = LE.Scene && LE.Scene.printOf ? LE.Scene.printOf(doc.print) : null;
     if (print) out.print = print;
+    var values = LE.Scene && LE.Scene.valuesOf ? LE.Scene.valuesOf(doc.values) : null;   /* the page's filled-in template fields */
+    if (values) out.values = values;
     return out;
   }
   function sizeEntry(e, errors) {
@@ -733,14 +737,7 @@
     });
     if (fx) out.fx = fx;
     /* Open design format (le-design.js): template variables, remix credit and page ids, all plain text. */
-    if (Array.isArray(m.variables)) {
-      out.variables = m.variables.slice(0, 50).map(function (v) {
-        if (!v || typeof v !== 'object' || typeof v.key !== 'string' || !/^[A-Za-z_][\w.-]{0,39}$/.test(v.key)) return null;
-        var o = { key: v.key, label: str(v.label, 80).replace(/[<>]/g, ''), type: oneOf(v.type, ['text', 'image'], 'text') };
-        if (typeof v.default === 'string') o.default = v.default.slice(0, 2000);
-        return o;
-      }).filter(Boolean);
-    }
+    if (Array.isArray(m.variables) && LE.Scene && LE.Scene.variablesOf) out.variables = LE.Scene.variablesOf(m.variables);   /* docs/VARIABLES.md */
     if (m.remix && typeof m.remix === 'object') {
       var rn = str(m.remix.name, 160).replace(/[<>]/g, '').trim(), rb = str(m.remix.by, 80).replace(/[<>]/g, '').trim();
       if (rn || rb) out.remix = { name: rn, by: rb };

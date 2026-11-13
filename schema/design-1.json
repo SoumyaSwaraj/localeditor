@@ -17,21 +17,25 @@
       "additionalProperties": false
     },
     "variables": {
-      "description": "Template variables. {{key}} tokens in text are ordinary text until a bulk-create tool fills them.",
+      "description": "Template variables (docs/VARIABLES.md). {{key}} in any text, bind on layers; values fill them. The list is optional: fields are also found from the layers.",
       "type": "array",
       "maxItems": 50,
       "items": {
         "type": "object",
-        "required": ["key"],
         "properties": {
-          "key": { "type": "string", "pattern": "^[A-Za-z_][\\w.-]{0,39}$" },
+          "key": { "$ref": "#/$defs/fieldKey" },
+          "name": { "description": "Shorthand for key.", "$ref": "#/$defs/fieldKey" },
           "label": { "$ref": "#/$defs/plainText80" },
-          "type": { "enum": ["text", "image"], "default": "text" },
-          "default": { "type": "string", "maxLength": 2000 }
+          "type": { "enum": ["text", "number", "date", "image", "colour", "color", "url", "boolean"], "default": "text" },
+          "sample": { "description": "An example value: form placeholders and the example list.", "type": ["string", "number", "boolean"] },
+          "default": { "description": "Used when a value is empty.", "type": ["string", "number", "boolean"] },
+          "required": { "type": "boolean", "default": false }
         },
+        "anyOf": [{ "required": ["key"] }, { "required": ["name"] }],
         "additionalProperties": false
       }
     },
+    "values": { "$ref": "#/$defs/values" },
     "notes": {
       "description": "Notes pinned for an assistant (agent mode). Plain text.",
       "type": "array",
@@ -57,6 +61,22 @@
   },
   "$defs": {
     "id": { "type": "string", "pattern": "^[\\w:.-]{1,48}$" },
+    "fieldKey": { "type": "string", "pattern": "^[A-Za-z_][\\w.-]{0,39}$" },
+    "values": {
+      "description": "Field values: { key: text | number | true/false }. On the document they fill every page; a page's own values win. An image field's value is an image source like src. '#' and '#total' are the row counter.",
+      "type": "object",
+      "maxProperties": 60,
+      "propertyNames": { "pattern": "^([A-Za-z_][\\w.-]{0,39}|#|#total)$" },
+      "additionalProperties": { "oneOf": [{ "type": "string", "maxLength": 2000 }, { "type": "number" }, { "type": "boolean" }] }
+    },
+    "bind": {
+      "description": "Fill this layer from fields: content (a photo slot's photo, or a QR code's text), color (text, shape or icon colour, a hex value), show (a yes / no field; !key inverts), fit (cover or contain, photos). A string is shorthand for content.",
+      "oneOf": [
+        { "$ref": "#/$defs/fieldKey" },
+        { "type": "object", "properties": { "content": { "$ref": "#/$defs/fieldKey" }, "color": { "$ref": "#/$defs/fieldKey" }, "show": { "type": "string", "pattern": "^!?[A-Za-z_][\\w.-]{0,39}$" }, "fit": { "enum": ["cover", "contain"] } }, "additionalProperties": false }
+      ]
+    },
+    "fieldToken": { "description": "Shorthand: a colour taken from a field, like {{brand}}.", "type": "string", "pattern": "^\\{\\{\\s*[A-Za-z_][\\w.-]{0,39}\\s*\\}\\}$" },
     "plainText80": { "type": "string", "maxLength": 80, "not": { "pattern": "[<>]" } },
     "plainText160": { "type": "string", "maxLength": 160, "not": { "pattern": "[<>]" } },
     "color": {
@@ -208,6 +228,8 @@
         "collage": { "$ref": "#/$defs/collage" },
         "carousel": { "$ref": "#/$defs/carousel" },
         "maker": { "$ref": "#/$defs/maker" },
+        "print": { "description": "The physical page: millimetres and the pixels per inch it was laid out at. PDF export and print sheets use it.", "type": "object", "required": ["w", "h"], "properties": { "paper": { "type": "string", "pattern": "^[\\w.:-]{0,24}$" }, "w": { "type": "number", "minimum": 10, "maximum": 2000 }, "h": { "type": "number", "minimum": 10, "maximum": 2000 }, "dpi": { "type": "number", "minimum": 72, "maximum": 1200, "default": 300 } }, "additionalProperties": false },
+        "values": { "$ref": "#/$defs/values" },
         "layers": { "type": "array", "maxItems": 600, "items": { "$ref": "#/$defs/layer" } }
       },
       "additionalProperties": false
@@ -253,6 +275,7 @@
         "flipY": { "type": "boolean", "default": false },
         "groupId": { "$ref": "#/$defs/id" },
         "shadow": { "$ref": "#/$defs/shadow" },
+        "bind": { "$ref": "#/$defs/bind" },
         "layerMask": { "$ref": "#/$defs/layerMask" },
         "transform": { "description": "Perspective or distort: where the four corners of the layer go, in page units (top-left, top-right, bottom-right, bottom-left). The layer box is the quad's bounding box. Photo layers only for now.", "type": "object", "properties": { "quad": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "minimum": -100000, "maximum": 100000 } } } }, "required": ["quad"], "additionalProperties": false },
         "retouch": { "description": "An RGBA overlay drawn over the source photo before anything else (healing, cloning, dodge and burn).", "type": "object", "properties": { "asset": { "$ref": "#/$defs/imageSrc" }, "version": { "type": "integer", "minimum": 0 } }, "required": ["asset"], "additionalProperties": false },
@@ -285,8 +308,8 @@
         "weight": { "oneOf": [{ "type": "number", "minimum": 100, "maximum": 900 }, { "enum": ["normal", "regular", "bold"] }], "default": 700 },
         "italic": { "type": "boolean" },
         "size": { "type": "number", "minimum": 1, "maximum": 5000, "default": 48 },
-        "color": { "$ref": "#/$defs/color", "default": "#17131F" },
-        "fill": { "$ref": "#/$defs/fill" },
+        "color": { "oneOf": [{ "$ref": "#/$defs/color" }, { "$ref": "#/$defs/fieldToken" }], "default": "#17131F" },
+        "fill": { "oneOf": [{ "$ref": "#/$defs/fill" }, { "$ref": "#/$defs/fieldToken" }] },
         "align": { "enum": ["left", "center", "right"], "default": "left" },
         "lineHeight": { "type": "number", "minimum": 0.5, "maximum": 5, "default": 1.2 },
         "letterSpacing": { "type": "number", "minimum": -200, "maximum": 2000, "default": 0 },
@@ -296,7 +319,9 @@
         "stroke": { "type": "object", "properties": { "width": { "type": "number", "minimum": 0, "maximum": 500 }, "color": { "$ref": "#/$defs/color" } }, "additionalProperties": false },
         "background": { "oneOf": [{ "$ref": "#/$defs/color" }, { "type": "object", "properties": { "color": { "$ref": "#/$defs/color" }, "radius": { "type": "number", "default": 999 }, "padding": { "type": "number", "default": 8 } }, "additionalProperties": false }] },
         "curve": { "type": "number", "minimum": -360, "maximum": 360, "default": 0 },
-        "fit": { "description": "shrink: the largest size at which the text fits its w × h box.", "enum": ["shrink", "none"] }
+        "fit": { "description": "shrink: the largest size at which the text fits its w × h box. On text with {{fields}} it means overflow: shrink.", "enum": ["shrink", "none"] },
+        "overflow": { "description": "When the filled-in text is longer than its box: shrink (default for text with fields), wrap, or ellipsis.", "enum": ["shrink", "wrap", "ellipsis"] },
+        "minSize": { "description": "The smallest size shrink goes to (default 40 % of size).", "type": "number", "minimum": 1, "maximum": 5000 }
       }
     },
     "imageLayer": {
@@ -348,7 +373,7 @@
         "shape": { "description": "A shape id from the catalogue, e.g. rectangle, rounded-rectangle, ellipse, triangle, star, burst, heart, arrow-right, line.", "type": "string", "pattern": "^[\\w-]{1,40}$", "default": "rectangle" },
         "params": { "type": "object", "maxProperties": 16, "additionalProperties": { "oneOf": [{ "type": "number" }, { "type": "array" }] } },
         "radius": { "type": "number", "minimum": 0 },
-        "fill": { "$ref": "#/$defs/fill" },
+        "fill": { "oneOf": [{ "$ref": "#/$defs/fill" }, { "$ref": "#/$defs/fieldToken" }] },
         "stroke": {
           "oneOf": [
             { "$ref": "#/$defs/color" },

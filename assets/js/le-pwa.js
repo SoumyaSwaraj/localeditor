@@ -1885,14 +1885,14 @@
         var docs = files.filter(function (f) { return flows.indexOf(f) < 0; });
         if (docs.length) PS.addFiles(docs);
         if (flows.length && PS.office && PS.office.open && PS.pickFiles) {
-          PS.office.open('workflows');
-          setTimeout(function () {
+          /* Office kit may still be downloading (docs/LOADING.md): open() returns a promise then. */
+          Promise.resolve(PS.office.open('workflows')).then(function () { setTimeout(function () {
             var b = document.querySelector('[data-po="wf-import"]');
             if (!b) return;
             var orig = PS.pickFiles;
             PS.pickFiles = function () { PS.pickFiles = orig; return Promise.resolve([flows[0]]); };
             b.click();
-          }, 400);
+          }, 400); });
         }
       });
     };

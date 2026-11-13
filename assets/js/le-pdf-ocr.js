@@ -1086,6 +1086,8 @@
   };
 
   function boot() { addEntryPoints(); hookSecurity(); }
+  /* Protect may load after this file (docs/LOADING.md): hook it when it arrives. */
+  global.addEventListener('le-load', function (e) { if (e.detail && e.detail.id === 'security' && e.detail.state === 'loaded') hookSecurity(); });
   if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 0); });
   else setTimeout(boot, 0);
 })(window);

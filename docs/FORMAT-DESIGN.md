@@ -308,12 +308,24 @@ With only `layout` (or slot layers without positions), the reader lays the slots
 
 ```json
 "variables": [
-  { "key": "name", "label": "Recipient name", "type": "text", "default": "Alex Morgan" },
+  { "key": "name", "label": "Recipient name", "type": "text", "required": true, "sample": "Alex Morgan" },
+  { "key": "price", "type": "number" },
   { "key": "photo", "label": "Photo", "type": "image" }
-]
+],
+"values": { "name": "Alex Morgan", "price": 899 }
 ```
 
-`key` starts with a letter or `_`, then letters, digits, `_ . -` (≤ 40). `type` is `text` (default) or `image`. `default` ≤ 2000. `{{name}}` inside any text is ordinary text for now; bulk create (roadmap 2.6) fills it. Variables are kept through open → edit → save (`meta.studio.variables`).
+`key` starts with a letter or `_`, then letters, digits, `_ . -` (≤ 40); `name` is accepted for `key`. `type` is `text` (default), `number`, `date`, `image`, `colour` (`color` accepted), `url` or `boolean`. `sample` (an example), `default` (used when a value is empty) ≤ 2000; `required`. The list is optional: fields are also found from the layers. Stored in `meta.studio.variables`.
+
+| Where | Field | Meaning |
+|---|---|---|
+| text | `{{key}}`, `{{key\|pipe:arg\|pipe}}` | Filled when drawn. Pipes: `upper`, `lower`, `title`, `number[:0–6]`, `currency:INR` (whole amounts without decimals), `date:long\|medium\|short\|iso\|year\|month\|day\|weekday`, `default:text`. `{{#}}` and `{{#total}}` are the row number and count. Unknown pipes are drawn as written and reported (`unknown-pipe`). |
+| text | `overflow` | `shrink` (default for text with fields), `wrap` or `ellipsis`: what happens when the filled text is longer than the box. `minSize` is the shrink limit (40 % of `size`). `"fit": "shrink"` on text with fields means `overflow: "shrink"`. |
+| any layer | `bind` | `{ "content": key }` fills a photo slot (image layer; the value is an image source) or a QR code (svg layer); `{ "color": key }` a text, shape or icon colour (hex); `{ "show": key }` shows the layer when a yes / no field is yes (`"!key"` inverts); `"fit": "cover" \| "contain"` for photos. `"bind": "photo"` is shorthand for `{ "content": "photo" }`; `"color": "{{brand}}"` or `"fill": "{{brand}}"` for `{ "color": "brand" }`. |
+| document / page | `values` | `{ key: text \| number \| true/false }`. Top-level values fill every page; a page's own `values` win. The writer puts values shared by every page at the top. An image field's value is an image source like `src`. |
+| page | `print` | `{ "paper", "w", "h", "dpi" }` in millimetres: the physical page, used by PDF export and print sheets. |
+
+Filling never changes the layers: a template with values draws the values; without values it draws its `{{fields}}`. The full model, the bulk engine and the agent operations: `docs/VARIABLES.md`.
 
 ## The long form (what the studio writes)
 

@@ -11,6 +11,7 @@ const cases = {};
 async function studio(browser, base, h, vp) {
   const page = await h.open(browser, base, '/studio/', vp || 'desktop');
   await page.waitForFunction(() => window.LEStudio && window.LE && window.LE.design);
+  await h.need(page, 'design');
   return page;
 }
 const D = (layers, extra) => JSON.stringify(Object.assign({ format: 'localeditor-design', version: 1, name: 'T', pages: [{ width: 1080, height: 1080, layers: layers }] }, extra || {}));
@@ -187,6 +188,7 @@ cases['remote image URLs are listed with their host and never fetched without co
 
 cases['round trips are byte-stable: sample, collage, photo background, recipe photo, multi-page'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, 'design');
   const r = await page.evaluate(async () => {
     const c = window.LEStudio;
     async function trip(label) {
@@ -246,6 +248,7 @@ cases['round trips are byte-stable: sample, collage, photo background, recipe ph
 
 cases['side maps fold onto layers, unfold on read, and variables survive'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, 'design');
   const r = await page.evaluate(async () => {
     const c = window.LEStudio;
     await LE.assets.load('lucide');
@@ -322,6 +325,7 @@ cases['lint reports overflow, off-page, missing image, unknown font and low cont
 
 cases['studio opens design files, keeps the open design on errors, and saves them'] = async ({ browser, base, h }) => {
   const page = await h.studioWithSample(browser, base, 'desktop');
+  await h.need(page, 'design');
   const text = fs.readFileSync(path.join(EX_DIR, 'summer-sale-post.ledesign.json'), 'utf8');
   const before = await page.evaluate(() => window.LEStudio.S.project.id);
   // A broken file: plain-language problem with its path, open design untouched.

@@ -74,7 +74,7 @@
       s.async = false;
       s.setAttribute('data-le-src', src);
       s.onload = function () { s.setAttribute('data-le-done', '1'); resolve(); };
-      s.onerror = function () { reject(new Error('Could not load ' + src)); };
+      s.onerror = function () { delete scriptPromises[src]; if (s.parentNode) s.parentNode.removeChild(s); reject(new Error('Could not load ' + src)); };
       if (!existing) document.head.appendChild(s);
     });
     return scriptPromises[src];

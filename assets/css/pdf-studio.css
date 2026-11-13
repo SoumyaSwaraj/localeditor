@@ -1635,3 +1635,19 @@ body.ps-drop .ps-dropveil { display: grid; }
 @media (prefers-reduced-motion: reduce) {
   .ps-app *, .ps-panel, .ps-hint, .ps-cp, .ps-palpop, .ps-skel { animation: none !important; transition: none !important; }
 }
+
+/* Start-screen links of the modules that load on demand (docs/LOADING.md). The same rules live in their own files;
+   they are here too so the start screen is styled before those modules arrive. */
+.pb-entry, .po-entry, .pd-entry {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; margin: 10px 0 0; padding: 10px 14px;
+  border: 1px dashed var(--border-hover); border-radius: var(--r-md, 14px); background: transparent; color: var(--muted);
+  font: inherit; font-size: 13.5px; text-align: left; cursor: pointer;
+}
+.pb-entry { margin-top: 12px; }
+.pb-entry strong, .po-entry strong, .pd-entry strong { color: var(--ink); font-weight: 700; }
+.pb-entry span, .po-entry span, .pd-entry span { flex: 1; min-width: 0; }
+.pb-entry svg, .po-entry svg, .pd-entry svg { width: 17px; height: 17px; flex: none; }
+.pb-entry:hover, .po-entry:hover, .pd-entry:hover { background: var(--surface); border-style: solid; }
+.pb-entry:focus-visible, .po-entry:focus-visible, .pd-entry:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.ps-start.psn-start { display: grid; gap: 18px; max-width: 620px; margin: 0 auto; padding-top: 8px; }
+@media (max-width: 767px) { .pb-entry, .po-entry { font-size: 13px; } }

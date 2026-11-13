@@ -1,0 +1,63 @@
+/* Moved from studio.css (docs/LOADING.md): styles for this module's own elements; they load with it. */
+.sx-sub-h { margin: 10px 0 2px; }
+.sx-style-row { gap: 6px; }
+.sx-style-sample { font-size: 22px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-style-row small { font-size: 11.5px; color: var(--muted); }
+:root[data-theme="dark"] .sx-style-sample { background: #F1F1F1; border-radius: 8px; padding: 2px 8px; }
+.sx-painter-card { display: grid; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--brand-soft, rgba(63, 103, 217, 0.12)); border: 1px solid var(--hair); }
+.sx-painter-card strong { font-size: 15px; }
+.sx-painter-card small { font-size: 11.5px; color: var(--muted); }
+.sx-grid-5.sx-tfx-grid { gap: 6px; }
+.sx-tfx { display: grid; gap: 4px; justify-items: center; padding: 0; border: 0; background: none; cursor: pointer; }
+.sx-tfx small { font-size: 10.5px; font-weight: 650; color: var(--muted); }
+.sx-tfx-art { width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--hair); font: 800 19px var(--font); color: #151515; transition: transform 0.15s var(--ease-tb); }
+.sx-tfx:hover .sx-tfx-art { transform: translateY(-1px); }
+.sx-tfx[aria-pressed="true"] .sx-tfx-art { border-color: var(--amethyst); box-shadow: 0 0 0 3px rgba(63, 103, 217, 0.16); }
+.sx-tfx[aria-pressed="true"] small { color: var(--ink); }
+:root[data-theme="dark"] .sx-tfx-art { background: #F1F1F1; }
+.sx-duo-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.sx-duo { padding: 0; border: 0; border-radius: 10px; cursor: pointer; aspect-ratio: 1; background: none; }
+.sx-duo i { display: block; width: 100%; height: 100%; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(16, 16, 16, 0.12); transition: transform 0.15s var(--ease-tb); }
+.sx-duo:hover i { transform: translateY(-1px); }
+.sx-grid-art { width: 70%; height: 70%; fill: currentColor; opacity: 0.85; }
+.sx-qr { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 18px; align-items: start; }
+.sx-qr-prev { aspect-ratio: 1; border-radius: 14px; border: 1px solid var(--hair); background: repeating-conic-gradient(#EDEDED 0 25%, #fff 0 50%) 50% / 16px 16px; display: grid; place-items: center; padding: 10px; color: var(--muted); font-size: 13px; text-align: center; }
+.sx-qr-prev svg { width: 100%; height: 100%; display: block; }
+.sx-qr-form { display: grid; gap: 12px; }
+.sx-qr-form textarea { resize: vertical; min-height: 72px; padding: 10px 12px; font: 500 14px ui-monospace, "SF Mono", Menlo, monospace; height: auto; }
+.sx-ov { position: absolute; inset: 0; pointer-events: none; z-index: 4; overflow: hidden; }
+.sx-ov[hidden] { display: none; }
+.sx-ov-grid { position: absolute; background-image: linear-gradient(to right, rgba(63, 103, 217, 0.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(63, 103, 217, 0.22) 1px, transparent 1px); outline: 1px solid rgba(63, 103, 217, 0.3); }
+.sx-ov-grid[hidden] { display: none; }
+.sx-ruler { position: absolute; display: none; pointer-events: auto; }
+.sx-ov.has-rulers .sx-ruler { display: block; }
+.sx-ruler-x { left: 20px; right: 0; top: 0; height: 20px; width: calc(100% - 20px); cursor: s-resize; border-bottom: 1px solid var(--hair); }
+.sx-ruler-y { top: 20px; left: 0; bottom: 0; width: 20px; height: calc(100% - 20px); cursor: e-resize; border-right: 1px solid var(--hair); }
+.sx-ruler-corner { position: absolute; left: 0; top: 0; width: 20px; height: 20px; background: var(--sx-ruler-bg); display: none; border-right: 1px solid var(--hair); border-bottom: 1px solid var(--hair); }
+.sx-ov.has-rulers .sx-ruler-corner { display: block; }
+.sx-guide { position: absolute; pointer-events: auto; }
+.sx-guide::after { content: ""; position: absolute; background: #E0668E; }
+.sx-guide.is-x { top: 0; bottom: 0; width: 9px; margin-left: -4px; cursor: ew-resize; }
+.sx-guide.is-x::after { left: 4px; top: 0; bottom: 0; width: 1px; }
+.sx-guide.is-y { left: 0; right: 0; height: 9px; margin-top: -4px; cursor: ns-resize; }
+.sx-guide.is-y::after { top: 4px; left: 0; right: 0; height: 1px; }
+.sx-guide:hover::after { background: #c2185b; box-shadow: 0 0 0 1px rgba(224, 102, 142, 0.3); }
+.sx-guide-tip { position: absolute; z-index: 5; pointer-events: none; font: 700 11px ui-monospace, Menlo, monospace; color: #fff; background: #E0668E; border-radius: 6px; padding: 2px 6px; }
+.sx-guides-pop { display: grid; gap: 8px; padding: 4px 10px 10px; width: 280px; max-width: 100%; }
+.sx-pagelist { list-style: none; margin: 10px 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sx-pagecard { display: grid; gap: 6px; padding: 8px; border-radius: 12px; border: 1px solid var(--hair); background: var(--surface); transition: transform 0.15s var(--ease-tb), box-shadow 0.15s, border-color 0.15s; }
+.sx-pagecard.is-on { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(63, 103, 217, 0.2); }
+.sx-pagecard.is-drag { opacity: 0.5; }
+.sx-pagecard.is-over { border-color: var(--amethyst); transform: translateY(-2px); }
+.sx-pagecard-art { display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: var(--surface-2); cursor: pointer; overflow: hidden; aspect-ratio: 4 / 3; }
+.sx-pagecard-art img { max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); animation: sx-fade 0.22s var(--ease-tb); }
+.sx-pagecard-art .sx-skel { width: 70%; max-height: 100%; }
+.sx-pagecard-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.sx-pagecard-meta b { font-size: 12.5px; }
+.sx-pagecard-meta small { font-size: 11px; color: var(--muted); }
+.sx-pagecard-act { display: flex; justify-content: space-between; }
+.sx-pagecard-act .sx-iconbtn { width: 40px; height: 40px; }
+.sx-pagecard-act .sx-iconbtn:first-child .sx-ic { transform: rotate(90deg); }
+.sx-pagecard-act .sx-iconbtn:nth-child(2) .sx-ic { transform: rotate(90deg); }
+@media (max-width: 767px) { .sx-qr { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 767px) { .sx-qr-prev { max-width: 220px; justify-self: center; width: 100%; } }

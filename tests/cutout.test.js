@@ -4,6 +4,7 @@ const cases = {};
 
 async function studioWithPhoto(browser, base, h, viewport, photo) {
   const page = await h.open(browser, base, '/studio/', viewport || 'desktop');
+  await h.need(page, ['cutout']);
   await page.waitForFunction(() => window.LEStudio && window.LEStudio.scene && window.LEStudioCutout);
   await page.evaluate(async (p) => {
     const b = await (await fetch('/assets/photos/collage/' + p + '.jpg')).blob();
