@@ -21,6 +21,9 @@
   var LE = global.LE, FX = LE && LE.fx;
   if (!FX || !FX.register) return;
   var M = FX.math, C = FX.composite = FX.composite || {};
+  /* What casts shadows and glows is the layer as it entered the silhouette stage (g.subject): a reflection or an earlier shadow
+     of the same stack does not cast one of its own, so the order of these effects no longer matters. */
+  function subj(g) { return (typeof g.subject === 'function' && g.subject()) || g.source; }
   var GPU = { needs: ['webgl2'], wants: ['webgl-float'], memoryMB: 120 };
   var GPU_HEAVY = { needs: ['webgl2'], wants: ['webgl-float'], memoryMB: 200 };
   var D2R = Math.PI / 180;
@@ -171,7 +174,7 @@
     passes: function (g, p) {
       if (!(p.opacity > 0)) return;
       var gm = castGeo(p, g.box);
-      var hard = g.pass(CAST_PROJ, { u_o: gm.o, u_a: gm.a, u_c: gm.c, u_hmax: gm.H * 1.1 });
+      var hard = g.pass(CAST_PROJ, { u_src: subj(g), u_o: gm.o, u_a: gm.a, u_c: gm.c, u_hmax: gm.H * 1.1 });
       var d = p.blurFar - p.blurNear, sg = g.draft ? [p.blurNear, p.blurNear, p.blurFar, p.blurFar] : [p.blurNear, p.blurNear + d / 9, p.blurNear + d / 3, p.blurFar];
       var lv = blurLevels(g, hard, sg);
       var u = Object.assign({ u_o: gm.o, u_a: gm.a, u_c: gm.c, u_H: gm.H, u_only: p.only ? 1 : 0, u_k: [p.blurNear, p.blurFar, p.opacity, p.fade], u_clip: [p.clip ? 1 : 0, p.clipY * g.box.h, p.clipSoft] }, levelU(lv, sg), shadeU(g, p));
@@ -212,7 +215,7 @@
     passes: function (g, p) {
       if (!(p.opacity > 0)) return;
       var o = [p.anchor.x * g.box.w, p.anchor.y * g.box.h];
-      var foot = g.pass(CONTACT_FOOT, { u_o: o, u_k: [p.distance, p.squash] });
+      var foot = g.pass(CONTACT_FOOT, { u_src: subj(g), u_o: o, u_k: [p.distance, p.squash] });
       var soft = p.softness > 0 ? g.blur(p.softness, { source: foot }) : foot;
       return g.pass(CONTACT_COMP, Object.assign({ u_sh: soft, u_op: p.opacity, u_only: p.only ? 1 : 0 }, shadeU(g, p)));
     },
@@ -315,7 +318,7 @@
     draft: function (p) { var q = Object.assign({}, p); q.layers = Math.min(2, p.layers); return q; },
     passes: function (g, p) {
       if (!(p.opacity > 0)) return;
-      var a = g.pass(ALPHA_OF), ls = studioLayers(p), b = [], d = [0, 0, 0, 0], op = [0, 0, 0, 0];
+      var a = g.pass(ALPHA_OF, { u_src: subj(g) }), ls = studioLayers(p), b = [], d = [0, 0, 0, 0], op = [0, 0, 0, 0];
       ls.forEach(function (l, i) { b[i] = l.size > 0 ? g.blur(l.size, { source: a }) : a; d[i] = l.dist; op[i] = l.op; });
       for (var i = ls.length; i < 4; i++) b[i] = b[0];
       var r = p.angle * D2R;
@@ -384,7 +387,7 @@
     grow: function (p, s) { return p.opacity > 0 ? reachOf(p.size, s) + 2 : 0; },
     passes: function (g, p) {
       if (!(p.opacity > 0)) return;
-      var a = g.pass(ALPHA_OF), b = p.size > 0 ? g.blur(p.size, { source: a }) : a;
+      var a = g.pass(ALPHA_OF, { u_src: subj(g) }), b = p.size > 0 ? g.blur(p.size, { source: a }) : a;
       return g.pass(OUTER_GLOW, { u_b: b, u_spread: p.spread, u_op: p.opacity, u_col: linColor(p.color), u_only: p.only ? 1 : 0 });
     },
     support: GPU,
@@ -466,7 +469,7 @@
     grow: function (p, s) { return p.opacity > 0 ? Math.ceil(p.length * s) + 3 : 0; },
     passes: function (g, p) {
       if (!(p.opacity > 0)) return;
-      var r = p.angle * D2R, dir = [-Math.cos(r), Math.sin(r)], Lpx = Math.max(1, p.length * g.scale), cur = g.pass(ALPHA_OF);
+      var r = p.angle * D2R, dir = [-Math.cos(r), Math.sin(r)], Lpx = Math.max(1, p.length * g.scale), cur = g.pass(ALPHA_OF, { u_src: subj(g) });
       var perPx = p.fade > 0 ? Math.pow(Math.max(1e-4, 1 - p.fade), 1 / Lpx) : 1, step = 1, covered = 0;
       while (covered * 2 + 1 < Lpx && step < 8192) {
         var nx = g.pass(LONG_STEP, { u_src: cur, u_d: [dir[0] * step / g.scale, dir[1] * step / g.scale], u_f: Math.pow(perPx, step) });
