@@ -14,7 +14,7 @@
     summary: 'A headline, a chart drawn to scale, a note and a source line.',
     keywords: ['chart', 'graph', 'bar chart', 'data', 'statistics', 'numbers', 'infographic', 'report', 'comparison', 'slide'],
     needs: ['assets/js/le-charts.js'],
-    sizes: [{ id: 'wide', name: 'Wide', w: 1600, h: 1000 }, 'square', 'portrait', 'story', { id: 'slide', name: 'Slide', w: 1920, h: 1080 }],
+    sizes: [{ id: 'wide', name: 'Wide', w: 1600, h: 1000 }, 'square', 'portrait', { id: 'slide', name: 'Slide 16:9', w: 1920, h: 1080 }],
     inputs: [
       { key: 'eyebrow', label: 'Small line above', type: 'text', max: 60, placeholder: 'How high the ceilings are' },
       { key: 'headline', label: 'Headline', type: 'text', required: true, max: 110, placeholder: 'Only three of the eight rooms list a ceiling height', hint: 'Say what the numbers show, in one plain sentence.' },
@@ -40,7 +40,7 @@
     build: function (v, env) {
       var C = LE.charts, W = env.W, H = env.H;
       if (!C) { var blank = env.page('#FFFFFF'); blank.layers = [env.text({ id: 'headline', name: 'Headline', text: v.headline, x: 64, y: 64, w: W - 128, h: 300, font: 'Inter', weight: 700, size: 54, min: 28 })]; env.warn('input', 'The chart maker could not be loaded.', 'data'); return { name: 'Chart poster', pages: [blank] }; }
-      var T = C.theme(env.style), u = Math.max(0.72, Math.min(W / 1600, H / 900)), M = Math.round(Math.max(48, 64 * u)), L = [], page = env.page(T.page);
+      var T = C.theme(env.style), u = Math.max(0.72, Math.min(W / 1600, H / 900)), M = Math.round(Math.max(48, 64 * u)), L = [], page = env.page(T.page), accentInk = env.color.ensure(T.accent, T.page, 4.5), muted = env.color.ensure(T.muted, T.page, 4.5);
       var top = env.tall ? 230 : M + 8 * u, bottom = env.tall ? 290 : M * 0.72, x = M, w = W - 2 * M, y = top;
       var rows = (v.data || []).filter(function (r) { return r && String(r[0] || '').trim() && String(r[1] == null ? '' : r[1]).trim(); });
       var chart = { v: 1, type: v.chart || 'bar', data: { columns: ['Label', 'Value'], rows: rows.map(function (r) { return [String(r[0]).trim(), String(r[1]).trim()]; }) }, map: { category: 0, series: [1] }, theme: env.style, options: {} };
@@ -52,7 +52,7 @@
       C.fonts(chart).forEach(function (f) { env.fit({ text: '0', font: f[0], weight: f[1], size: 20, w: 200 }); });
 
       if (v.eyebrow) {
-        var eb = env.text({ id: 'eyebrow', name: 'Eyebrow', text: v.eyebrow, x: x, y: y, w: w, font: T.body, weight: 500, size: Math.round(Math.max(18, 24 * u)), min: 14, maxLines: 2, uppercase: true, tracking: 0.18, color: T.accentInk });
+        var eb = env.text({ id: 'eyebrow', name: 'Eyebrow', text: v.eyebrow, x: x, y: y, w: w, font: T.body, weight: 500, size: Math.round(Math.max(18, 24 * u)), min: 14, maxLines: 2, uppercase: true, tracking: 0.18, color: accentInk });
         L.push(eb); y = eb.y + eb.h + 6 * u;
       }
       var hl = env.text({ id: 'headline', name: 'Headline', text: v.headline, x: x, y: y, w: w, h: Math.max(120, H * 0.24), font: T.head, weight: T.hw, size: Math.round(Math.max(44, 54 * u)), min: 28, lineHeight: 1.12, color: T.ink });
@@ -62,10 +62,10 @@
       var foot = H - bottom, srcSize = Math.round(Math.max(15, 18 * u));
       if (v.wordmark || v.source) {
         var wm = v.wordmark ? env.fit({ text: v.wordmark, font: T.body, weight: 700, size: Math.round(Math.max(18, 22 * u)), w: w * 0.4, maxLines: 1 }) : null, wmW = wm ? Math.ceil(wm.textWidth || wm.width) + 8 : 0;
-        var src = v.source ? env.text({ id: 'source', name: 'Source', text: v.source, x: x, y: 0, w: w - (wmW ? wmW + 32 * u : 0), font: T.body, weight: 400, size: srcSize, min: 12, maxLines: 3, lineHeight: 1.3, color: T.muted }) : null;
+        var src = v.source ? env.text({ id: 'source', name: 'Source', text: v.source, x: x, y: 0, w: w - (wmW ? wmW + 32 * u : 0), font: T.body, weight: 400, size: srcSize, min: 12, maxLines: 3, lineHeight: 1.3, color: muted }) : null;
         var fh = Math.max(src ? src.h : 0, wm ? wm.height : 0);
         if (src) { src.y = foot - fh + (fh - src.h) / 2; L.push(src); }
-        if (wm) L.push(env.text({ id: 'wordmark', name: 'Wordmark', text: v.wordmark, x: x + w - wmW, y: foot - fh, w: wmW, h: fh, valign: 'middle', align: 'right', font: T.body, weight: 700, size: wm.size, min: 12, maxLines: 1, color: T.accentInk }));
+        if (wm) L.push(env.text({ id: 'wordmark', name: 'Wordmark', text: v.wordmark, x: x + w - wmW, y: foot - fh, w: wmW, h: fh, valign: 'middle', align: 'right', font: T.body, weight: 700, size: wm.size, min: 12, maxLines: 1, color: accentInk }));
         foot -= fh + 26 * u;
       }
       if (v.noteTitle || v.note) {

@@ -63,6 +63,7 @@ Examples:
 Operations: add update remove reorder group ungroup align distribute page.add page.remove page.resize page.background
   page.update page.move replace rename text.replace image.fill recipe collage make note.add note.resolve doc.update
   fx.add fx.update fx.remove fx.reorder mask.set adjust.add transform.set   (expert effects: localeditor catalog fx)
+  chart.add chart.update chart.data   (charts as data: docs/CHARTS.md; a group layer with "chart": { type, data } is drawn on build and render)
   fx.call   (a helper that answers with effect operations, e.g. composite.stage, grade.preset, creative.look: localeditor catalog fx actions)
   le apply photo.ledesign.json '[{"op":"fx.add","layer":"hero","entry":{"type":"exposure","p":{"ev":0.4}}}]'`,
   render: `localeditor render <file> [--page 0|<page id>|all] [-o out.png] [--scale 1] [--format png|jpg|webp|pdf] [--transparent]

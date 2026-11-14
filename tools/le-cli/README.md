@@ -64,6 +64,25 @@ Exit codes: `0` ok Â· `1` invalid design, problems found or operations refused Â
 
 The operation list, results and error codes, the MCP tools and the API endpoints are in [`docs/AGENT-CLI.md`](../../docs/AGENT-CLI.md); the file format in [`docs/FORMAT-DESIGN.md`](../../docs/FORMAT-DESIGN.md).
 
+### Charts
+
+A chart is data on a group layer; the engine draws it as ordinary shapes and text when the file is read (`docs/CHARTS.md`).
+
+```bash
+# in a design file: only the data
+#   { "id": "seats", "type": "group", "x": 90, "y": 200, "w": 900, "h": 560,
+#     "chart": { "type": "bar", "theme": "paper", "data": { "columns": ["Room", "Seats"], "rows": [["Hall", 620], ["Lounge", 450]] }, "options": { "highlight": "Hall" } } }
+localeditor render post.ledesign.json -o post.png        # the bars, labels and card are drawn
+localeditor build post.ledesign.json                     # the file now also lists the drawn layers
+
+# or as operations
+localeditor apply post.ledesign.json '[{"op":"chart.add","id":"seats","type":"bar","data":{"columns":["Room","Seats"],"rows":[["Hall",620],["Lounge",450]]}}]'
+localeditor apply post.ledesign.json '[{"op":"chart.update","layer":"seats","type":"column","theme":"dark","options":{"sort":"desc"}}]'
+localeditor apply post.ledesign.json '[{"op":"chart.data","layer":"seats","rows":[["Room","Seats"],["Hall",640],["Lounge",455]]}]'
+```
+
+Types: `bar column line area pie donut scatter bubble histogram combo waterfall funnel radar gauge lollipop slope bullet heatmap treemap pictogram stat sparkline table`. Themes: `clean paper dark contrast mono pastel grey vivid brand`. Cells are text or numbers and are never evaluated.
+
 ### Brand and design as code
 
 | Command | What it does |

@@ -131,6 +131,17 @@ Effects are non-destructive: the picture is never changed, the layer carries a l
 
 Limits: 32 entries per layer, 8 mask parts. Effect names in a design made elsewhere that this copy does not know are kept and skipped, never dropped.
 
+### Charts
+
+A chart is one group layer that carries its data (`layer.chart`) and ordinary child layers drawn from it (`docs/CHARTS.md`). You give data; the engine draws bars to scale, picks tick marks, keeps labels apart and makes every label readable.
+
+1. Have the numbers as a table. `LE.charts.suggest({ columns, rows })` ranks chart types for it, each with a reason and a ready mapping; `catalog("charts")` lists the 23 types with their options and the 9 themes.
+2. Add it in one operation: `{ "op": "chart.add", "data": { "columns": ["Room", "Seats"], "rows": [["Hall", 620], ["Lounge", 450]] }, "type": "bar", "theme": "paper", "options": { "title": "Seats by room", "highlight": "Hall" }, "box": { "x": 90, "y": 200, "w": 900, "h": 560 } }`. Leave `type` out to take the best fit. `csv` or `rows` work in place of `data`.
+3. Read the answer: `summary` is the chart in a sentence ("Bar chart of Seats by Room, 2 bars. Highest: Hall, 620…"), `warnings` are the engine's notes (cells that are not numbers, rows added up, a cut axis).
+4. Refine with `chart.update` (`type`, `theme`, `map`, `box`, `options` merged, `null` removes an option) or replace the numbers with `chart.data`. Each redraws the chart inside the same box.
+
+Say what the chart shows in `options.title`, name the source in `options.source`, and highlight the one thing the reader should see (`options.highlight`). Do not edit a chart's child layers by hand: the next `chart.update` replaces them. In a design file you may write just the group, `{ "type": "group", "x": 90, "y": 200, "w": 900, "h": 560, "chart": { "type": "bar", "data": { … } } }`; its layers are drawn when the file is read.
+
 ### Errors
 
 Every failure has a stable `code` and, per operation, a JSON pointer `path` (`/ops/2/set/opacity`) and a message you can act on.

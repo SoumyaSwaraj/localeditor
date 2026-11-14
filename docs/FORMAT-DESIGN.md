@@ -192,6 +192,10 @@ The studio writes icons as `{ "type": "svg", "assetId": "lucide:sun", … }` wit
 
 A `group` layer is a box; members point at it with `groupId`. Members are listed after the group as ordinary layers.
 
+| Key | Type / range | Default | Notes |
+|---|---|---|---|
+| `chart` | `{ type, data: { columns, rows }, map?, theme?, options? }` | none | Makes the group a chart (`docs/CHARTS.md`): plain data, at most 5,000 cells, never evaluated. The members are the chart drawn as ordinary shapes and text. **A chart group without members is drawn when the file is read**, so an agent can write only the data. `type`: `bar column line area pie donut scatter bubble histogram combo waterfall funnel radar gauge lollipop slope bullet heatmap treemap pictogram stat sparkline table`. `theme`: `clean paper dark contrast mono pastel grey vivid brand`. |
+
 ## Expert fields
 
 Optional, on any layer. The model is in `docs/EXPERT-MODE.md`; effect ids, parameters and ranges come from the effect registry (`LE.fx.describe()` lists them and `LE.fx.describe(id)` gives one in full, in the studio; `localeditor catalog fx [id]` on the command line; `docs/FX-AUTHORING.md` has the contract). An effect has up to 48 parameters; a parameter may be a flat list of up to 4,096 numbers (16,384 per layer). A LUT parameter holds an asset id; a file with embedded images carries the LUT text as a `data:text/plain;base64,…` URI of up to 4 MB in its place, and that is the only place such a URI is read. On a photo layer the cut-out is applied before the effects. A design that uses them still opens in the simple studio and draws the same.

@@ -78,7 +78,7 @@
     { id: 'dark', name: 'Dark', page: '#101217', card: '#1B1D23', border: '#30343D', ink: '#F3F4F6', muted: '#A6ADBA', grid: '#2C3039', axis: '#6B7280', accent: '#6CB6FF', neutral: '#4A505C',
       palette: ['#6CB6FF', '#FFB454', '#5EEAD4', '#EA73B3', '#A77AFD', '#FDE68A', '#FA5A68', '#D1FFEE'], seq: ['#24364D', '#8CC8FF'], div: ['#FFB454', '#30343D', '#6CB6FF'], up: '#5EEAD4', down: '#FFB454',
       head: 'Manrope', body: 'Manrope', hw: 700, vw: 600, radius: 6, cardRadius: 20, panel: '#2A2E37' },
-    { id: 'contrast', name: 'High contrast', page: '#FFFFFF', card: '#FFFFFF', border: '#000000', ink: '#000000', muted: '#1F1F1F', grid: '#8A8A8A', axis: '#000000', accent: '#BC0A12', neutral: '#000000',
+    { id: 'contrast', name: 'High contrast', page: '#FFFFFF', card: '#FFFFFF', border: '#000000', ink: '#000000', muted: '#1F1F1F', grid: '#A6A6A6', axis: '#000000', accent: '#BC0A12', neutral: '#000000',
       palette: ['#000000', '#BC0A12', '#0844E7', '#006744', '#7109AC', '#C77000', '#0D919D', '#655D87'], seq: ['#D9D9D9', '#000000'], div: ['#BC0A12', '#E6E6E6', '#0844E7'], up: '#006744', down: '#BC0A12',
       head: 'Atkinson Hyperlegible', body: 'Atkinson Hyperlegible', hw: 700, vw: 700, radius: 0, cardRadius: 0, panel: '#000000', borderWidth: 2 },
     { id: 'mono', name: 'One accent', page: '#F2F2F0', card: '#FFFFFF', border: '#DEDEDA', ink: '#1F2430', muted: '#5A6170', grid: '#E7E9EE', axis: '#9AA1AF', accent: '#E4572E', neutral: '#C4C8D2',
@@ -1038,18 +1038,19 @@
     var iy = r.y + titleH, ih = Math.max(10, r.h - titleH - tickS * 3.1);
     G.text(data.columns[map.y], r.x, r.y, { role: 'value', size: tickS, color: T.muted, max: r.w * 0.6, name: 'Axis title' });
     var ys = vGrid(env, ay, ix, iw, iy, ih), xs = (logX ? scale.log : scale.linear)(tx.min, tx.max, ix, ix + iw);
-    tx.ticks.forEach(function (v) { var x = xs(v); G.line(x, iy, x, iy + ih, v === 0 ? T.axis : T.grid, Math.max(1, env.k * 1.5), { name: 'Gridline' }); G.text(tfx(v), x, iy + ih + tickS * 0.35, { size: tickS, color: T.muted, align: 'center', opt: true, name: 'Axis label' }); });
+    tx.ticks.forEach(function (v, ti) { var x = xs(v); G.line(x, iy, x, iy + ih, v === 0 ? T.axis : T.grid, Math.max(1, env.k * 1.5), { name: 'Gridline' }); G.text(tfx(v), x, iy + ih + tickS * 0.35, { size: tickS, color: T.muted, align: 'center', opt: true, gap: ti ? tickS * 0.3 : 0, name: 'Axis label' }); });
     G.text(data.columns[map.x], ix + iw, iy + ih + tickS * 1.75, { role: 'value', size: tickS, color: T.muted, align: 'right', max: iw, name: 'Axis title' });
     var hl = highlightOf(o), hit = hl.any && pts.some(function (p) { return hl.has(p.label); }), zmax = Math.max.apply(null, pts.map(function (p) { return p.z || 0; })) || 1;
     var rmax = Math.max(S * 0.3, Math.min(iw, ih) * 0.085), rad = function (p) { return bubble && p.z != null ? Math.max(S * 0.1, Math.sqrt(p.z / zmax) * rmax) : Math.max(3.5, S * (pts.length > 80 ? 0.17 : 0.27)); };
     pts.sort(function (a, b) { return rad(b) - rad(a); });
+    var trendBoxes = [];
     if (o.trend && pts.length > 2) {
       var n = pts.length, mx = sum(xs0) / n, my = sum(ys0) / n, sxy = 0, sxx = 0, syy = 0;
       pts.forEach(function (p) { sxy += (p.x - mx) * (p.y - my); sxx += (p.x - mx) * (p.x - mx); syy += (p.y - my) * (p.y - my); });
       if (sxx > 0) {
         var b = sxy / sxx, a = my - b * mx, x1 = tx.min, x2 = tx.max, lim = function (x) { return a + b * x; };
         if (b !== 0) { var xa = (ay.tk.min - a) / b, xb = (ay.tk.max - a) / b; x1 = Math.max(x1, Math.min(xa, xb)); x2 = Math.min(x2, Math.max(xa, xb)); }
-        if (x2 > x1 && !logX && !logY) { G.line(xs(x1), ys(lim(x1)), xs(x2), ys(lim(x2)), T.ink, Math.max(1.5, S * 0.06), { dash: [S * 0.25, S * 0.18], name: 'Trend line' }); G.text('Trend', xs(x2) - S * 0.2, ys(lim(x2)) - S * 0.3, { size: tickS, role: 'value', align: 'right', base: 'bottom', opt: true, name: 'Trend label' }); }
+        if (x2 > x1 && !logX && !logY) { G.line(xs(x1), ys(lim(x1)), xs(x2), ys(lim(x2)), T.ink, Math.max(1.5, S * 0.06), { dash: [S * 0.25, S * 0.18], name: 'Trend line' }); for (var q = 0; q <= 40; q++) { var qx = x1 + (x2 - x1) * q / 40; trendBoxes.push({ x0: xs(qx) - S * 0.12, x1: xs(qx) + S * 0.12, y0: ys(lim(qx)) - S * 0.12, y1: ys(lim(qx)) + S * 0.12 }); } G.text('Trend', xs(x2) - S * 0.2, ys(lim(x2)) - S * 0.3, { size: tickS, role: 'value', align: 'right', base: 'bottom', opt: true, name: 'Trend label' }); }
         G.info.trend = { slope: b, intercept: a, r2: syy > 0 ? sxy * sxy / (sxx * syy) : 1 };
       }
     }
@@ -1060,6 +1061,7 @@
       where[p.label] = { x: px, y: py }; p.px = px; p.py = py; p.r = rr;
       G.reserve({ x0: px - rr, x1: px + rr, y0: py - rr, y1: py + rr });
     });
+    trendBoxes.forEach(function (b) { G.reserve(b); });
     if (pts[0].label && (pts.length <= 16 || hit)) pts.forEach(function (p) {
       if (hit && !hl.has(p.label) && pts.length > 16) return;
       var lo2 = { size: S * 0.68, color: hit && hl.has(p.label) ? T.accentInk : T.ink, role: hit && hl.has(p.label) ? 'value' : 'body', max: iw * 0.3, opt: true, gap: S * 0.08, name: 'Point label' }, d = p.r + S * 0.22;
@@ -1091,7 +1093,7 @@
       if (x.count) { G.rect(ix + bw * i + gap / 2, ys(x.count), bw - gap, ys(0) - ys(x.count), T.palette[0], { name: tfx(x.x0) + ' to ' + tfx(x.x1) }); G.info.bars.push({ i: G.layers.length - 1, v: x.count }); }
       if (o.labels !== 'off' && x.count && bins.length <= 24) G.text(String(x.count), ix + bw * (i + 0.5), ys(x.count) - tickS * 0.2, { role: 'value', size: tickS, align: 'center', base: 'bottom', opt: true, name: 'Count' });
     });
-    for (var e = 0; e <= bins.length; e++) G.text(tfx(start + step * e), ix + bw * e, iy + ih + tickS * 0.35, { size: tickS, color: T.muted, align: 'center', opt: true, name: 'Axis label' });
+    for (var e = 0; e <= bins.length; e++) G.text(tfx(start + step * e), ix + bw * e, iy + ih + tickS * 0.35, { size: tickS, color: T.muted, align: 'center', opt: true, gap: e ? tickS * 0.3 : 0, name: 'Axis label' });
     G.text(env.chart.data.columns[col] || 'Value', ix + iw, iy + ih + tickS * 1.75, { role: 'value', size: tickS, color: T.muted, align: 'right', max: iw, name: 'Axis title' });
     G.text('Count', r.x, r.y, { role: 'value', size: tickS, color: T.muted, name: 'Axis title' });
     G.info.scale = { k: ih / (ay.tk.max - ay.tk.min), zero: ys(0), axis: 'y' };
@@ -1115,7 +1117,7 @@
     var kx = r.x, ky = r.y, key = S * 0.74;
     barsS.forEach(function (x, i) { G.rect(kx, ky + key * 0.25, key * 0.75, key * 0.75, cols[i], { r: T.radius ? key * 0.18 : 0, name: 'Legend key' }); var t = G.text(x.name + (i === mb - 1 ? ' (left axis)' : ''), kx + key * 1.1, ky, { role: 'value', size: key, max: r.w * 0.5, name: 'Axis title' }); kx = t.x1 + key * 1.2; });
     var rt = G.text(line.name + ' (right axis)', r.x + r.w, ky, { role: 'value', size: key, color: lci, align: 'right', max: r.w * 0.45, name: 'Axis title' });
-    if (rt) G.rect(rt.x0 - key * 1.5, ky + key * 0.52, key * 0.95, Math.max(3, key * 0.2), lc, { name: 'Legend key' });
+    if (rt) G.rect(rt.x0 - key * 1.75, ky + key * 0.52, key * 0.95, Math.max(3, key * 0.2), lc, { name: 'Legend key' });
     var top = key * 2.5, H = r.h - top - S * 2, al = vAxis(env, blo, bhi || 1, P.series[li === 0 ? 1 : 0].f, H), ar = vAxis(env, llo, lhi, line.f, H);
     /* the same number of gridlines on both sides, so one set of lines serves both */
     var cnt = al.tk.ticks.length - 1, rs = niceStep((lhi - llo) / cnt), rlo = Math.floor(llo / rs + 1e-9) * rs;
@@ -1301,7 +1303,7 @@
     n = rows.length;
     var band = r.h / n, u = clamp(band * 0.42, S * 0.6, S * 1.1), ls = Math.min(u * 0.9, band * 0.6), hi = Math.max.apply(null, rows.map(function (x) { return Math.max(x.v, x.t || 0); })), max = ticks(0, hi > 0 ? hi * 1.02 : 1, 4).max;
     var col = Math.min(Math.max.apply(null, rows.map(function (x) { return G.width(x.name, { role: 'label', size: ls }); })), r.w * 0.32) + u * 0.6;
-    var txt = function (x) { return format(x.v, f, x.v >= 100000) + (x.t != null ? ' / ' + format(x.t, f, x.t >= 100000) : ''); }, out = Math.max.apply(null, rows.map(function (x) { return G.width(txt(x), { role: 'value', size: ls }); })) + u * 0.6;
+    var txt = function (x) { return format(x.v, f, x.v >= 100000) + (x.t != null ? ' / ' + format(x.t, f, x.t >= 100000) : ''); }, out = Math.max.apply(null, rows.map(function (x) { return G.width(txt(x), { role: 'value', size: ls }); })) + u * 0.9;
     var x0 = r.x + col, avail = Math.max(10, r.w - col - out), k = avail / max, th = clamp(band * 0.5, 4, u * 1.6);
     rows.forEach(function (x, i) {
       var cy = r.y + band * (i + 0.5), c = hl.any ? (hl.has(x.key) ? T.accent : T.neutral) : T.palette[0];
@@ -1311,7 +1313,7 @@
       G.info.bars.push({ i: G.layers.length - 1, v: Math.max(0, x.v), cat: x.key });
       if (x.t != null && x.t >= 0) G.rect(x0 + x.t * k - Math.max(1.5, u * 0.07), cy - th * 0.42, Math.max(3, u * 0.14), th * 0.84, T.ink, { name: 'Target' });
       var vb = G.text(format(x.v, f, x.v >= 100000), x0 + avail + u * 0.5, cy, { role: 'value', size: ls, base: 'middle', name: 'Value' });
-      if (x.t != null && vb) G.text(' / ' + format(x.t, f, x.t >= 100000), vb.x1 + ls * 0.12, cy, { size: ls, color: T.muted, base: 'middle', name: 'Target value' });
+      if (x.t != null && vb) G.text('/ ' + format(x.t, f, x.t >= 100000), vb.x1 + ls * 0.3, cy, { size: ls, color: T.muted, base: 'middle', name: 'Target value' });
     });
     G.info.scale = { k: k, zero: x0, axis: 'x' };
   };
