@@ -131,6 +131,9 @@ The photo studio has a second workspace, Expert mode (https://localeditor.net/st
 - [Camera RAW develop](https://localeditor.net/raw-develop/): Open camera RAW files and develop them.
 - [HDR merge](https://localeditor.net/hdr-merge/): Merge two to nine exposures into one.
 - [Relight and depth effects](https://localeditor.net/relight/): Add lights, rim light, light rays and depth fog.
+- [Embed a design](https://localeditor.net/embed-a-design/): A read-only design on any page, with a button to edit.
+- [Brand file](https://localeditor.net/brand-file/): Colours, fonts and logos in a file a person or an agent can read.
+- [Design as code](https://localeditor.net/design-as-code/): Build, check and compare designs like source files.
 - [Agent mode](https://localeditor.net/agent-mode/): Watch an agent edit live, and step in at any time.
 - [Command line and MCP](https://localeditor.net/agent-cli/): Command line, MCP server and local API.
 - [Font library](https://localeditor.net/font-library/): 257 families and 20 originals, loaded only when used.

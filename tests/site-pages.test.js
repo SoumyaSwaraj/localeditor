@@ -62,7 +62,7 @@ const SEARCH = [
   ['scan to pdf', 'scan-to-pdf/'], ['raw', 'raw-develop/'], ['hdr', 'hdr-merge/'], ['lut', 'colour-grading/'], ['liquify', 'liquify/'], ['relight', 'relight/'],
   ['product shadow', 'product-shadows/'], ['remove background', 'background-remover/'], ['invoice', 'invoice-maker/'], ['price list', 'catalogue-maker/'], ['wifi sign', 'qr-posters/'],
   ['sign pdf', 'pdf-editor/'], ['compare pdf', 'compare-pdfs/'], ['dark mode', 'themes/'], ['fonts', 'font-library/'], ['ai agent', 'agent-mode/'], ['screenshot', 'screenshot-beautifier/'],
-  ['photo booth', 'photobooth-strip/'], ['calendar', 'studio/?make=calendar'], ['zine', 'studio/?make=zine'], ['photographers', 'photographers/'], ['sell online', 'sellers/'],
+  ['photo booth', 'photobooth-strip/'], ['embed design', 'embed-a-design/'], ['brand file', 'brand-file/'], ['design as code', 'design-as-code/'], ['expert look', 'batch-edit/'], ['calendar', 'studio/?make=calendar'], ['zine', 'studio/?make=zine'], ['photographers', 'photographers/'], ['sell online', 'sellers/'],
 ];
 
 cases['site data: every live launch is one the tests can check (studio and PDF studio launches name a panel, maker or launchCheck)'] = async ({ h }) => {

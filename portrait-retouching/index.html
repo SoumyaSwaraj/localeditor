@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="../assets/css/app.css">
 <link rel="stylesheet" href="../assets/css/pages.css">
 <script>try{var t=localStorage.getItem('le-theme')||localStorage.getItem('it-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);var k=localStorage.getItem('le-skin');if(k&&k!=='clear')document.documentElement.setAttribute('data-skin',k)}catch(e){}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Portrait retouching — LocalEditor","url":"https://localeditor.net/portrait-retouching/","description":"Frequency separation, blemish removal, skin smoothing, dodge and burn, heal and clone in Expert mode. Face finding runs on your device.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Heal and clone brushes to remove spots, dust and small distractions","Frequency separation and detail bands: smooth colour and tone while keeping skin texture","Skin smoothing, blemishes and shine, which find skin by colour, or by face once faces are found","Eyes, under-eyes, teeth, lips and face contour, which work on a face the app has found","Dodge and burn with a brush to shape light and shadow, and red-eye removal"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Expert mode","item":"https://localeditor.net/expert/"},{"@type":"ListItem","position":3,"name":"Portrait retouching","item":"https://localeditor.net/portrait-retouching/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Will it make skin look fake?","acceptedAnswer":{"@type":"Answer","text":"Strong smoothing can. Every tool has an amount slider, and frequency separation keeps the fine texture, so modest settings look natural. Use the before and after view to check."}},{"@type":"Question","name":"Does it find every face?","acceptedAnswer":{"@type":"Answer","text":"No. Face finding is an estimate, and a small, turned or covered face can be missed. A mask lets you limit an effect to where you want it."}},{"@type":"Question","name":"Does it change my original photo?","acceptedAnswer":{"@type":"Answer","text":"No. Healing, cloning and dodge and burn are stored as a layer over the untouched photo, and the other tools are settings."}},{"@type":"Question","name":"Can I paint on a phone?","acceptedAnswer":{"@type":"Answer","text":"Yes, with one finger to paint and two to zoom, but Expert mode is designed for a larger screen."}}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Portrait retouching — LocalEditor","url":"https://localeditor.net/portrait-retouching/","description":"Frequency separation, blemish removal, skin smoothing, dodge and burn, heal and clone in Expert mode. Face finding runs on your device.","applicationCategory":"DesignApplication","operatingSystem":"Any","browserRequirements":"A current version of Chrome, Edge, Safari or Firefox","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Heal and clone brushes to remove spots, dust and small distractions, a Patch tool that covers an area with a clean one, and Red-eye by tapping each pupil","Frequency separation and detail bands: smooth colour and tone while keeping skin texture","Skin smoothing, blemishes and shine, which find skin by colour, or by face once faces are found","Eyes, under-eyes, teeth, lips and face contour, which work on a face the app has found","Dodge and burn with a brush to shape light and shadow, and red-eye removal"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://localeditor.net/"},{"@type":"ListItem","position":2,"name":"Expert mode","item":"https://localeditor.net/expert/"},{"@type":"ListItem","position":3,"name":"Portrait retouching","item":"https://localeditor.net/portrait-retouching/"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Will it make skin look fake?","acceptedAnswer":{"@type":"Answer","text":"Strong smoothing can. Every tool has an amount slider, and frequency separation keeps the fine texture, so modest settings look natural. Use the before and after view to check."}},{"@type":"Question","name":"Does it find every face?","acceptedAnswer":{"@type":"Answer","text":"No. Face finding is an estimate, and a small, turned or covered face can be missed. A mask lets you limit an effect to where you want it."}},{"@type":"Question","name":"Does it change my original photo?","acceptedAnswer":{"@type":"Answer","text":"No. Healing, cloning and dodge and burn are stored as a layer over the untouched photo, and the other tools are settings."}},{"@type":"Question","name":"How does the Patch tool work?","acceptedAnswer":{"@type":"Answer","text":"Draw around the area, then drag the outline onto a clean area. It is stored as one step you can undo, over the untouched photo."}},{"@type":"Question","name":"Can I paint on a phone?","acceptedAnswer":{"@type":"Answer","text":"Yes, with one finger to paint and two to zoom, but Expert mode is designed for a larger screen."}}]}]}</script>
 </head>
 <body class="le-built pg-body">
 <a class="skip" href="#main">Skip to content</a>
@@ -39,9 +39,9 @@
           <div class="pg-hero-copy">
             <p class="eyebrow">Portrait retouching</p>
             <h1 id="pg-title">Retouch portraits <em>without losing the skin.</em></h1>
-            <p class="pg-lead">Expert mode has a retouching set for portraits: heal and clone for spots, frequency separation that smooths tone and keeps texture, skin and face tools, red-eye removal, and dodge and burn painted with a brush. The original photo is never changed.</p>
+            <p class="pg-lead">Expert mode has a retouching set for portraits: heal and clone for spots, frequency separation that smooths tone and keeps texture, skin and face tools, red-eye removal, and dodge and burn painted with a brush. Effects that sit on a place in the photo show handles you can drag. The original photo is never changed.</p>
             <div class="hp-cta">
-              <a class="btn btn-gold btn-lg" href="../studio/?mode=expert">Open Expert mode<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+              <a class="btn btn-gold btn-lg" href="../studio/?mode=expert&tool=heal">Open the Heal tool<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
               
             </div>
             <p class="hp-kicker pg-kicker"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Free</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>No account</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Nothing uploaded</span></p>
@@ -52,7 +52,7 @@
           <div>
             <h2 class="pg-label">What it does</h2>
             <ul class="pg-checks">
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Heal and clone brushes to remove spots, dust and small distractions</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Heal and clone brushes to remove spots, dust and small distractions, a Patch tool that covers an area with a clean one, and Red-eye by tapping each pupil</span></li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Frequency separation and detail bands: smooth colour and tone while keeping skin texture</span></li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Skin smoothing, blemishes and shine, which find skin by colour, or by face once faces are found</span></li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span>Eyes, under-eyes, teeth, lips and face contour, which work on a face the app has found</span></li>
@@ -62,8 +62,8 @@
           <div>
             <h2 class="pg-label">How it works</h2>
             <ol class="pg-steps">
-              <li><span>Open the studio in Expert mode and add a portrait.</span></li>
-              <li><span>Use the Heal or Clone tool for spots. For skin, open Retouch in the panel and add Portrait retouch or Frequency separation.</span></li>
+              <li><span>Open the studio with the button and add a portrait. The Heal tool is ready once a photo is open.</span></li>
+              <li><span>Use the Heal or Clone tool for spots. For a larger area choose Patch: outline it, then drag the outline onto clean skin. Tap each pupil with Red-eye. For skin, open Retouch in the panel and add Portrait retouch or Frequency separation.</span></li>
               <li><span>For eyes, teeth and lips, run Find faces in the Liquify tool first. Check with the before and after view, then download.</span></li>
             </ol>
           </div>
@@ -85,6 +85,7 @@
             <details><summary>Will it make skin look fake?</summary><p>Strong smoothing can. Every tool has an amount slider, and frequency separation keeps the fine texture, so modest settings look natural. Use the before and after view to check.</p></details>
             <details><summary>Does it find every face?</summary><p>No. Face finding is an estimate, and a small, turned or covered face can be missed. A mask lets you limit an effect to where you want it.</p></details>
             <details><summary>Does it change my original photo?</summary><p>No. Healing, cloning and dodge and burn are stored as a layer over the untouched photo, and the other tools are settings.</p></details>
+            <details><summary>How does the Patch tool work?</summary><p>Draw around the area, then drag the outline onto a clean area. It is stored as one step you can undo, over the untouched photo.</p></details>
             <details><summary>Can I paint on a phone?</summary><p>Yes, with one finger to paint and two to zoom, but Expert mode is designed for a larger screen.</p></details>
           </div>
         </section>
@@ -93,15 +94,15 @@
           <ul class="pg-list">
           <li class="pg-row">
             <a class="pg-row-main" href="../liquify/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></span><span><b>Liquify and reshape</b><small>Brush reshaping and face-aware liquify</small></span></a>
-            <a class="pg-row-go" href="../studio/?mode=expert" aria-label="Open Liquify and reshape">Open</a>
+            <a class="pg-row-go" href="../studio/?mode=expert&tool=liquify" aria-label="Open Liquify and reshape">Open</a>
           </li>
           <li class="pg-row">
             <a class="pg-row-main" href="../colour-grading/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></span><span><b>Colour grading</b><small>Curves, hue bands, colour wheels and LUTs</small></span></a>
-            <a class="pg-row-go" href="../studio/?mode=expert" aria-label="Open Colour grading">Open</a>
+            <a class="pg-row-go" href="../studio/?mode=expert&tab=develop" aria-label="Open Colour grading">Open</a>
           </li>
           <li class="pg-row">
             <a class="pg-row-main" href="../relight/"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg></span><span><b>Relight and depth effects</b><small>Add lights, rim light, light rays and depth fog</small></span></a>
-            <a class="pg-row-go" href="../studio/?mode=expert" aria-label="Open Relight and depth effects">Open</a>
+            <a class="pg-row-go" href="../studio/?mode=expert&tool=light" aria-label="Open Relight and depth effects">Open</a>
           </li>
           <li class="pg-row">
             <a class="pg-row-main" href="../studio/?tool=redact"><span class="hp-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h6M7 14h10"/></svg></span><span><b>Redact a photo</b><small>Box, pixelate or blur faces, plates, names and numbers</small></span><span class="pg-row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
@@ -112,7 +113,7 @@
         <section class="hp-close pg-close" aria-labelledby="pg-close-title">
           <h2 id="pg-close-title">Portrait retouching, <em>on this device.</em></h2>
           <p>Frequency separation, blemishes, skin, dodge and burn. It opens in this browser and keeps your files on this device.</p>
-          <div class="hp-cta"><a class="btn btn-gold btn-lg" href="../studio/?mode=expert">Open Expert mode</a></div>
+          <div class="hp-cta"><a class="btn btn-gold btn-lg" href="../studio/?mode=expert&tool=heal">Open the Heal tool</a></div>
         </section>
         <footer class="hp-foot pg-foot">
           <div class="hp-foot-top">
