@@ -14,7 +14,7 @@
     /* Weekly-use set: screenshot and code beautifier, photobooth strips, recap collages. */
     'beautify', 'photobooth', 'recap',
     /* Print and identity set (printkit is their shared helper, not a maker). */
-    'printkit', 'certificate', 'businesscard'];
+    'printkit', 'certificate', 'businesscard', 'idbadge'];
 
   var SIZES = {
     square: { id: 'square', name: 'Square', w: 1080, h: 1080 },
