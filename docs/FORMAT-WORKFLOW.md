@@ -1,6 +1,7 @@
 # The `.leworkflow` recipe format
 
 Status: **version 1.1**, 12 November 2026. Implemented in `assets/js/le-engine.js` (`LE.recipes.validate`). Tested in `tests/recipes.test.js`.
+**Version 2.0** (13 November 2026) adds Expert looks: see "Version 2.0: Expert looks" below. Implemented in `assets/js/le-recipes-v2.js`, tested in `tests/recipes-v2.test.js`. Everything on this page up to that section describes 1.x and is unchanged.
 
 A recipe is a named, ordered list of image edits plus a default strength. It is **data only**: no script, no HTML, no URLs that are fetched, no expressions. An importer checks every field against the fixed lists below and either accepts the file, drops a harmless unknown field with a warning, or rejects the whole file with a plain-language error. Nothing in a recipe is ever evaluated.
 
@@ -154,6 +155,7 @@ Every recipe has one strength slider (0–100). At strength *s*, each numeric pa
 
 - **1.0**: the original operations.
 - **1.1** adds `fade`, `clarity` and `split-tone`, the matching `adjust` keys, and widens `temperature`/`tint` to ±100 and `grain` to 0–100. A file is written as `"1.1"` only when it uses one of the new operations or keys; otherwise it stays `"1.0"` so older LocalEditor builds can open it.
+- **2.0** adds the `fx` list (Expert looks) and makes `steps` optional. It is read where `le-recipes-v2.js` is loaded (the recipes page and the studio's Recipes module); a build without it answers "needs a newer LocalEditor", as 1.x readers always did for a higher major version. A file is written as `"2.0"` only when it has `fx`.
 - Every `1.x` file is read by this importer. A 1.x file from the future that uses an operation this build does not know is refused with "… is not a LocalEditor edit".
 - Files are normalised on import: fields are written back in the order shown in the example, so exporting an imported recipe produces the same text.
 
@@ -169,6 +171,63 @@ The whole file is refused, and nothing runs, when:
 - a step's `operation` is not in the lists above;
 - a number is not a JSON number or is outside its range; an enum, colour, font or id is not allowed; a boolean is not `true`/`false`;
 - `parameters[0].default` or `export` values are out of range.
+
+## Version 2.0: Expert looks
+
+A 2.0 recipe carries an `fx` list: the same plain effect entries a photo layer holds in `layer.fx` (`docs/FX-AUTHORING.md`, "Document model"). It is still only data. Nothing in it is code, and nothing is drawn before the effect registry has checked every entry against its effect's schema.
+
+```json
+{
+  "format": "localeditor-workflow",
+  "version": "2.0",
+  "metadata": { "id": "warm-fade-look", "name": "Warm fade", "category": "film" },
+  "parameters": [{ "id": "intensity", "default": 85 }],
+  "fx": [
+    { "type": "tone-curve", "p": { "curve": { "master": [[0, 0.07], [0.25, 0.24], [0.75, 0.79], [1, 0.95]] }, "mode": "luminosity" } },
+    { "type": "color-grading", "amount": 0.8, "p": { "highlights": { "h": 42, "a": 0.14, "l": 0 } },
+      "mask": { "parts": [{ "kind": "luma", "min": 0.5, "max": 1, "soft": 0.2 }] } },
+    { "type": "vibrance", "p": { "amount": -12 } }
+  ]
+}
+```
+
+The normalised file (what LocalEditor writes) is `examples/recipes/warm-fade-look.leworkflow`.
+
+| Field | Rules |
+|---|---|
+| `version` | `"2.0"`; any `"2.x"` is read. A major version above 2 is refused ("needs a newer LocalEditor"). |
+| `fx` | **1 to 32** entries, applied in order, after `steps`. |
+| `steps` | Optional in 2.0: 0 to 40 steps, with every 1.x rule. Written as `[]` when there are none. |
+| `metadata`, `parameters`, `export`, `compatibility` | As in 1.x. `compatibility.minimumEditorVersion` is written as `"2.0"`. |
+
+An entry is `{ type, on, amount, blend, mask, p }`:
+
+- `type`: an effect id (`a-z`, digits, `.` and `-`, 2 to 40 characters). Ids are listed by `LE.fx.list()`; parameters by `LE.fx.describe(id)`.
+- `on` (boolean, default `true`), `amount` (number 0 to 1, default 1), `blend` (one of the eleven blend names, default `normal`).
+- `p`: the effect's parameters, plain data only.
+- `mask`: `{ on, invert, parts }` with up to 8 parts of the kinds that resolve on each photo: `linear`, `radial`, `luma`, `color`, `subject`, `depth`, `face`, `segment`. A painted mask (`asset`) belongs to one photo: it is left out with a note when a look is saved, and dropped with a warning when a file has one.
+- Entry `id`s are not carried.
+
+**Strength.** One number, 0 to 100 (`parameters[0].default`), scales every entry's own `amount`: applied amount = `amount × strength / 100`. `steps` are scaled as in 1.x.
+
+**Validation, in two stages.**
+
+1. *Shape* (`LE.recipes.validate`, everywhere, before the recipe is stored, shown or shared). All 1.x rules hold for the whole file: size (2,000,000 characters), nesting, the forbidden keys, no markup or script in any string. For `fx`, out-of-shape values **reject the file**: a missing or unreadable `type`, `amount` outside 0 to 1, an unknown `blend` or mask kind, a number that is not a JSON number, a parameter name that is not a plain name, more than 48 keys in an object, more than 512 items in a list (4,096 in a list of numbers only), a string over 120 characters, nesting deeper than 5 inside `p`, or more than 200,000 characters of entries. Unknown entry fields are dropped with a warning.
+2. *Registry* (`LE.recipes2.resolve(workflow, LE.fx)`, in the studio, before anything is drawn). Each entry goes through `LE.fx.validate`: unknown parameters are dropped, values are clamped to their ranges, wrong types become the default. **An effect type this build does not know stays in the file, is reported ("… is not known to this LocalEditor and was left out") and never reaches a layer.** The recipes page does stage 1 only and never draws a look.
+
+**Assets.** A recipe carries no images and no script. The one exception is the one design files already have: a parameter of type `lut` may hold a small LUT as text, `data:text/plain;base64,…` (or `application/octet-stream`), at most 1,000,000 characters each and two per recipe. Any other `data:` value rejects the file; a data value on a parameter that is not a `lut` is left out with a note. On apply the text is stored as a data asset and its id put back.
+
+**In the studio.**
+
+- *Save*: Expert mode, the Develop panel of a photo, **Save look as a recipe**: the switched-on entries of its effect stack, a name, a strength and a preview. Code: `LEStudioRecipes.saveLook(ctx, layerId, { name, strength, silent })`.
+- *Apply*: Recipes panel (Simple mode too; the renderer loads on demand through `LE.fxBoot`) or `LEStudioRecipes.apply(ctx, layerId, recipeOrId, strength?, { maps: false }?)`, which answers with a promise for a 2.0 recipe. The entries are added after the layer's own entries with ids `rcp.0`, `rcp.1`, …, and the usual marker is written to `adjust.recipe` (`id`, `name`, `strength`), all in **one undo step**. Those ids are the group: changing strength rewrites exactly them, **Remove** takes exactly them (and the marker) out in one step, and a different recipe replaces them. Entries a person added themselves are never touched.
+- *Maps*: when a mask needs a depth, face or people map the photo does not have, the studio asks the way the Light tool does (`LE.maps.gate`). If the person declines, or the device cannot make it, the entries that need it are left out and the toast says so.
+- *Batch*: Apps → Batch lists Expert looks. Entries whose masks need a per-photo map are left out, and the result says so.
+- *Built-in looks*: eight, defined in `LE.recipes2.builtins` as pointers to the effect packs' own presets (`LE.fx.grade.presets`: teal-orange, filmic-fade, cool-cinematic, noir; `LE.fx.creative.presets`: 35mm-print, night-neon, faded-summer, crisp-landscape). Their values are read from the packs when a look is first used (`LE.recipes2.fill`), so they cannot drift.
+- *Saved on this device*: 2.0 recipes are kept in their own list (`localStorage` key `le-user-recipes-2`, 40 at most), so a page that only reads 1.x never rewrites them. `LE.userRecipes` returns both.
+- *Agents*: recipes are data, so an agent can write a 2.0 file and hand it to `LEStudioRecipes.apply(LEStudio, layerId, recipeOrId, strength)`, which checks it and adds the entries. `LE.recipes.find(id)` knows 2.0 recipes once the Recipes module is loaded, so `{ "op": "recipe", "recipe": "<id>" }` resolves one; that operation goes through `le-design.js`, which writes the `steps` part and the marker only (the entries then arrive with the first strength change in the panel, or with `LEStudioRecipes.apply`).
+
+**Share links** work as for 1.x (same payload, same 6,000 character cap). A look that does not fit answers "This recipe is too large for a link. Share the .leworkflow file instead." and the share dialog keeps its **Download .leworkflow** button. On the recipes page a 2.0 recipe shows an **Expert** tag, lists its effects, and opens in the studio (the recipe is handed over in the tab's session storage and checked again there).
 
 ## Share links
 
@@ -203,3 +262,7 @@ Applying a recipe to a photo collapses its live steps into the layer's `adjust` 
 3. Keep looks subtle at 100 % and set `parameters[0].default` to 70–85 so people can push or pull.
 4. Use `"version": "1.1"` if you use `fade`, `clarity` or `split-tone`; otherwise `"1.0"`.
 5. Validate: open `/recipes/`, paste the JSON into **Import a recipe**. Errors name the step and the field.
+
+### Expert looks and agents
+
+A design file does not name a 2.0 recipe: it carries the effects themselves in the layer's `fx` list. In agent mode, add a look with `fx.add` or with `fx.call` (`grade.preset`, `creative.look`). A `recipe` reference to a 2.0 recipe is reported as `expert-recipe` and left out, never half-applied. In the studio, a person applies a 2.0 recipe from the Recipes panel.

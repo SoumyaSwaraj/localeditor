@@ -882,6 +882,11 @@
     var R = LE.recipes;
     if (!R || typeof R.find !== 'function') { rep.warn(d.path + '/recipe', 'unknown-recipe', 'Recipes are not available here; the look was left out.', d.l.id); return; }
     var wf = R.find(d.recipe.id);
+    /* Expert looks (recipes 2.0) are effect entries, not adjustments: a design file carries them as the layer's own `fx` list,
+       and a live agent adds them with fx.add or fx.call (grade.preset, creative.look). Naming one here says so, never half-applies it. */
+    var R2 = LE.recipes2;
+    var isLook = (wf && R2 && R2.isV2 && R2.isV2(wf)) || (!wf && R2 && (R2.builtins || []).some(function (b) { return b && b.metadata && b.metadata.id === d.recipe.id; }));
+    if (isLook) { rep.warn(d.path + '/recipe', 'expert-recipe', 'This recipe is an Expert look. Put its effects in the layer\'s "fx" list, or use fx.call (grade.preset, creative.look) in agent mode; the look was left out.', d.l.id); return; }
     if (!wf) { rep.err(d.path + '/recipe', 'Unknown recipe "' + d.recipe.id + '".'); return; }
     var strength = d.recipe.strength == null ? (wf.parameters && wf.parameters[0] && isNum(wf.parameters[0].default) ? wf.parameters[0].default : 75) : clamp(d.recipe.strength, 0, 100);
     var prep = R.prepare(wf, { intensity: strength, allowSkip: true });

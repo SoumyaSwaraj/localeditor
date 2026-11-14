@@ -27,6 +27,9 @@
     doc: function (pages) { return anyLayer(pages, function (l) { return l.type === 'text'; }); }, after: redraw, idle: 0 });
   M.defer({ id: 'assets', src: JS + 'le-assets.js', label: 'graphics', on: ['change', 'select'], wrap: { elements: function () { return true; } },
     doc: function (pages) { return anyLayer(pages, function (l) { return l.type === 'svg' || l.assetId || (l.type === 'shape' && l.shape && !BASIC_SHAPES[l.shape]); }); }, after: redraw, idle: 0 });
+  /* Panels most sessions never open (le-studio-panels-more.js): Design's tabs (views below), Position, Your designs, Version history, Performance, the small Apps. */
+  var MORE_APPS = { watermark: 1, meme: 1, palette: 1, metadata: 1, compare: 1, upscale: 1, contact: 1 };
+  M.defer({ id: 'panels2', src: JS + 'le-studio-panels-more.js', css: CSS + 'studio-panels-more.css', label: 'this panel', panels: { layers: '', projects: '', history: '', settings: '' }, wrap: { apps: function (o) { return MORE_APPS[o.app] === 1; } }, idle: 1, features: ['studio.design', 'studio.apps'] });
   M.defer({ id: 'stock', src: JS + 'le-stock.js', label: 'stock photos', rerender: ['apps', 'uploads', 'elements'], wrap: { uploads: function (o) { return o.tab === 'stock'; } }, idle: 9, features: ['studio.uploads'] });
   M.defer({ id: 'color', src: JS + 'le-studio-color.js', css: CSS + 'studio-color.css', label: 'colour tools', deps: ['assets'], panels: { replace: 'Replace', brand: 'Brand kit' }, doc: function (pages) { return anyPage(pages, function (p) { return p.background && p.background.spec; }); }, idle: 2 });
   M.defer({ id: 'tools', src: JS + 'le-studio-tools.js', css: CSS + 'studio-tools.css', label: 'studio tools', deps: ['color'], panels: { pages: 'Pages' }, cmds: ['addQr', 'copyStyle', 'editQr', 'guidesMenu', 'pasteStyle'], on: ['select'], replay: ['key'], retool: true,
@@ -42,7 +45,9 @@
   /* Template fields and Create many (docs/VARIABLES.md). The model, le-variables.js, loads on its own through LE.varBoot when a page with values is drawn. */
   M.defer({ id: 'variables', src: JS + 'le-studio-variables.js', css: CSS + 'studio-variables.css', label: 'template fields', panels: { fields: 'Fields', bulk: 'Create many' }, cmds: ['fields'], on: ['select'], rerender: ['design'],
     doc: function (pages) { return anyPage(pages, function (p) { return p.values || p.variables; }) || anyLayer(pages, function (l) { return typeof l.text === 'string' && l.text.indexOf('{{') >= 0; }); }, idle: 9 });
-  M.defer({ id: 'recipes', src: JS + 'le-studio-recipes.js', css: CSS + 'studio-recipes.css', label: 'recipes', panels: { recipes: 'Recipes' }, wrap: { apps: function (o) { return o.app === 'batch'; } }, queue: 'onRecipeFile',
+  /* Recipes 2.0 (Expert looks): the shared reader, also on the recipes page. */
+  M.defer({ id: 'recipes2', src: JS + 'le-recipes-v2.js', label: 'recipes' });
+  M.defer({ id: 'recipes', src: JS + 'le-studio-recipes.js', css: CSS + 'studio-recipes.css', label: 'recipes', deps: ['recipes2'], panels: { recipes: 'Recipes' }, wrap: { apps: function (o) { return o.app === 'batch'; } }, queue: 'onRecipeFile',
     doc: function (pages) { return anyLayer(pages, function (l) { return l.adjust && l.adjust.recipe; }); }, idle: 7 });
   M.defer({ id: 'export', src: JS + 'le-studio-export.js', css: CSS + 'studio-export.css', label: 'download options', panels: { export: 'Download' },
     doc: function (pages) { return anyPage(pages, function (p) { return p.carousel; }); }, idle: 0 });
@@ -99,6 +104,9 @@
       M.need(id).then(function () { if (P[key] && !P[key].__leStub && c.S.panel === open && c.renderPanel) c.renderPanel(true); }, function () { sk.innerHTML = '<p class="sx-note">This did not download. Check your connection and open the panel again.</p>'; });
     });
   }
+  view('panels2', '_templates');
+  view('panels2', '_sizes');
+  view('panels2', '_sizeHistory');
   view('tools', '_grids');
   view('tools', '_stylesTab');
   view('icons', '_withIcons');

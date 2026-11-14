@@ -238,3 +238,10 @@ html.rx-lock, html.rx-lock body { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .rx-card-art, .rx-card-art img, .rx-dialog, .rx-scrim { animation: none; transition: none; }
 }
+
+/* Expert looks (recipes 2.0) */
+.rx-xtag {
+  position: absolute; right: 10px; top: 10px; padding: 4px 10px; border-radius: 999px; background: var(--ink); color: var(--surface);
+  font-size: 12px; font-weight: 700; pointer-events: none;
+}
+.rx-xnote { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); color: var(--ink-2, var(--ink)); font-size: 14px; }

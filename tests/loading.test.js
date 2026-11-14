@@ -14,7 +14,7 @@ const KB = 1024;
    the page is interactive. Measured 12 November 2026 (docs/LOADING.md): studio 208 KB JS + 42 KB CSS = 250 KB (it was
    551 + 72); PDF studio 242 + 41 = 283 KB (490 + 59); home 14 + 30 = 44 KB. Raise one only with a reason in docs/LOADING.md. */
 const BUDGET = {
-  'studio/index.html': { js: 217 * KB, css: 45 * KB, all: 259 * KB },   /* 13 Nov: +1.6 KB in le-objects.js for template fields (the detector and the filled-layer seam) */
+  'studio/index.html': { js: 201 * KB, css: 44 * KB, all: 242 * KB },   /* 13 Nov: measured 198.3 + 41.4 = 239.7 KB after le-studio-panels-more.js left the core (it was 215.6 + 42.8 = 258.4) */
   'pdf-studio/index.html': { js: 250 * KB, css: 44 * KB, all: 292 * KB },
   'index.html': { js: 20 * KB, css: 34 * KB, all: 90 * KB }
 };
@@ -157,6 +157,26 @@ cases['home: no late stylesheet shifts the layout; install and storage code load
   h.assert.noErrors(page);
 };
 
+/* le-pwa.js keeps install state, the worker and update safety; the storage manager and the install chooser (le-pwa-more.js)
+   arrive on first use. The housekeeping pass (every 6 hours, when idle) is the only other thing that asks for them. */
+cases['home: the storage manager and the install chooser are not requested before use; Storage and Install app load them'] = async ({ browser, base, h }) => {
+  const page = await openPage(browser, base, h, '/', { waitUntil: 'load', route: (p) => p.addInitScript(() => { try { localStorage.setItem('le-pwa', JSON.stringify({ enforcedAt: Date.now() })); } catch (e) {} }) });
+  await page.waitForFunction(() => window.LEPwa && LEPwa.openStorage && LEPwa.updateReady, null, { timeout: 15000 });
+  await page.waitForTimeout(1200);
+  h.assert(page.reqs.indexOf('assets/js/le-pwa-more.js') < 0, 'le-pwa-more.js was requested before anyone asked for storage or install');
+  h.assert.equal(await page.evaluate(() => typeof LEPwa.update + ' ' + typeof LEPwa.registerEditor + ' ' + LEPwa.updateReady()), 'function function false', 'updates and editors are in the always part');
+  await page.evaluate(() => LEPwa.openStorage());
+  h.assert(await page.$('dialog.lp-storage[open]'), 'Storage opened once its code arrived');
+  h.assert(page.reqs.indexOf('assets/js/le-pwa-more.js') >= 0, 'and it came from le-pwa-more.js');
+  await page.evaluate(() => LEPwa.closeStorage());
+  const r = await page.evaluate(() => LEPwa.report());
+  h.assert(r && Array.isArray(r.categories), 'LEPwa.report() answers as before');
+  const how = await page.evaluate(() => LEPwa.install());
+  h.assert(how === 'chooser' && (await page.$('dialog.lp-choose[open]')), 'Install app opens the chooser: ' + how);
+  h.assert.equal(await page.$$eval('script[src$="le-pwa-more.js"]', (n) => n.length), 1, 'loaded once');
+  h.assert.noErrors(page);
+};
+
 /* ---------- Triggers: each loads its module (and deps) and nothing else ---------- */
 cases['studio triggers: a panel, a command, the first selection and Download each load exactly their modules'] = async ({ browser, base, h }) => {
   const page = await openPage(browser, base, h, '/studio/');
@@ -165,7 +185,7 @@ cases['studio triggers: a panel, a command, the first selection and Download eac
   let before = await loadedIds(page);
   h.assert(await page.evaluate(() => { LEStudio.openPanel('recipes'); return !!document.querySelector('#sx-panel-body .le-load-wait .skel') && !document.getElementById('sx-panel').hidden; }), 'the panel frame shows a skeleton at once');
   await page.waitForSelector('#sx-panel-body .sxr-foot, #sx-panel-body .sxr-body, #sx-panel-body [class^="sxr-"]', { timeout: 15000 });
-  h.assert.equal(JSON.stringify(newIds(before, await loadedIds(page))), JSON.stringify(['recipes']), 'Recipes and nothing else');
+  h.assert.equal(JSON.stringify(newIds(before, await loadedIds(page))), JSON.stringify(['recipes', 'recipes2']), 'Recipes (with the 2.0 reader) and nothing else');
   /* A new design, then the first selection: the selection tools (and their libraries) arrive; the toolbar is redrawn. */
   await page.evaluate(() => LEStudio.closePanel());
   await page.evaluate(() => LEStudio.newDesign(1080, 1080, 'Test'));
