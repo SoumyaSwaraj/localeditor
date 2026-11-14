@@ -339,6 +339,19 @@ cases['command line: fx operations are applied to the file, the render shows the
     h.assert(JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).pages[0].layers.find((l) => l.id === 'block').fx.length > 2, 'the helper\'s entries are in the file');
     r = await run(['apply', f, '-', '--json'], JSON.stringify([{ op: 'map.generate', layer: 'block', kind: 'depth' }]));
     h.assert(r.code === 1 && /agent mode/.test(r.stdout + r.stderr), 'operations that need the open app say so: ' + (r.stdout + r.stderr).slice(0, 300));
+    /* page.resize: lengths in document pixels (a blur radius, a mask blur) follow the content, as in the studio */
+    const before = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).pages[0];
+    r = await run(['apply', f, '-', '--json'], JSON.stringify([
+      { op: 'fx.add', layer: 'block', entry: { id: 'soft', type: 'gaussian-blur', p: { radius: 6 }, mask: { parts: [{ kind: 'radial', cx: 0.5, cy: 0.5, rx: 0.3, ry: 0.3, blur: 10 }] } } },
+      { op: 'page.resize', width: before.width * 2, height: before.height * 2 }
+    ]));
+    h.assert(r.code === 0 && r.json.written, 'resize with effects: ' + (r.stdout + r.stderr).slice(0, 400));
+    const grown = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).pages[0], soft = grown.layers.find((l) => l.id === 'block').fx.find((e) => e.id === 'soft');
+    const b0 = before.layers.find((l) => l.id === 'block'), b1 = grown.layers.find((l) => l.id === 'block');
+    h.assert(grown.width === before.width * 2 && Math.abs(b1.w - b0.w * 2) < 0.01, 'the page and the layer doubled');
+    h.assert(soft.p.radius === 12 && soft.mask.parts[0].blur === 20 && soft.mask.parts[0].rx === 0.3, 'px parameters and mask blurs doubled, fractions stayed: ' + JSON.stringify(soft));
+    r = await run(['apply', f, '-', '--json'], JSON.stringify([{ op: 'fx.update', layer: 'block', id: 'soft', p: {} }, { op: 'page.resize', width: before.width, height: before.height, scaleContent: false }]));
+    h.assert(r.code === 0 && JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).pages[0].layers.find((l) => l.id === 'block').fx.find((e) => e.id === 'soft').p.radius === 12, 'without scaleContent the effect keeps its lengths');
     r = await run(['catalog', 'fx', '--json']);
     h.assert(r.code === 0 && r.json.items.length >= 20 && r.json.items.every((e) => e.id && e.summary), 'catalog fx lists the index: ' + r.stdout.slice(0, 200));
     r = await run(['catalog', 'fx', 'exposure', '--json']);
