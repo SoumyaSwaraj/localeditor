@@ -45,7 +45,7 @@
 .qr-preset { display: grid; gap: 4px; justify-items: center; padding: 6px 4px; min-height: 44px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); color: var(--ink); font-size: var(--text-xs); cursor: pointer; }
 .qr-preset:hover { border-color: var(--border-hover); }
 .qr-preset img { width: 100%; max-width: 72px; height: auto; aspect-ratio: 1; border-radius: var(--r-xs); display: block; }
-.qr-preset span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.qr-preset span { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .qr-out { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: end; }
 .qr-out .qr-f { flex: 0 1 150px; }
 .qr-row { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: end; }

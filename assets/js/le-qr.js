@@ -185,7 +185,7 @@
     var q = spec.quiet == null ? 4 : spec.quiet, S = n + 2 * q;
     var fr = spec.frame || null, st = fr ? fr.style : 'none';
     var p = st === 'none' ? 0 : st === 'label' || st === 'ticket' ? Math.max(1, S * 0.05) : Math.max(0.6, S * 0.03);
-    var band = st === 'none' ? 0 : st === 'badge' ? S * 0.15 : S * 0.2, gap = st === 'tab' ? S * 0.05 : 0;
+    var band = st === 'none' ? 0 : st === 'badge' ? S * 0.15 : S * 0.2, gap = st === 'tab' ? S * 0.075 : 0;
     var W = S + 2 * p, H = S + 2 * p + (st === 'label' || st === 'ticket' ? band : st === 'tab' ? gap + band : st === 'badge' ? band / 2 : 0);
     var g = { m: m, n: n, ec: ec, q: q, S: S, W: W, H: H, p: p, band: band, gap: gap, tx: p, ty: p, ox: p + q, oy: p + q, frame: st, plate: null };
     if (spec.image) {
@@ -265,8 +265,8 @@
         '<path d="M' + f(nr * 2) + ' ' + f(ny) + 'H' + f(W - nr * 2) + '" stroke="' + fc.ink + '" stroke-opacity=".45" stroke-width="' + f(S * 0.006) + '" stroke-dasharray="' + f(S * 0.02) + ' ' + f(S * 0.02) + '" fill="none"/>' +
         label(text, W / 2, ny + nr + (H - ny - nr) / 2 - p * 0.2, W - 4 * p, band * 0.9, fc.ink);
     } else if (st === 'tab') {
-      var y0 = S + 2 * p + g.gap, tw = S * 0.05;
-      out = '<path d="' + rrect(0, 0, W, S + 2 * p, Math.min(R, W / 4)) + '" fill="' + fc.color + '"/><path d="' + rrect(0, y0, W, band, band * 0.28) + 'M' + f(W / 2 - tw) + ' ' + f(y0 + 0.02) + 'L' + f(W / 2) + ' ' + f(y0 - g.gap * 0.8) + 'L' + f(W / 2 + tw) + ' ' + f(y0 + 0.02) + 'z" fill="' + fc.color + '"/>' +
+      var y0 = S + 2 * p + g.gap, tw = S * 0.07;
+      out = '<path d="' + rrect(0, 0, W, S + 2 * p, Math.min(R, W / 4)) + '" fill="' + fc.color + '"/><path d="' + rrect(0, y0, W, band, band * 0.28) + 'M' + f(W / 2 - tw) + ' ' + f(y0 + 0.02) + 'L' + f(W / 2) + ' ' + f(y0 - g.gap * 0.72) + 'L' + f(W / 2 + tw) + ' ' + f(y0 + 0.02) + 'z" fill="' + fc.color + '"/>' +
         label(text, W / 2, y0 + band / 2, W - 2 * band * 0.4, band, fc.ink);
     } else if (st === 'badge') {
       var pw = Math.min(W * 0.86, Math.max(W * 0.46, String(text).length * band * 0.36 + band)), py = H - band;
@@ -295,7 +295,10 @@
       var lightDots = '';
       for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (!g.m.dark(r, c) && !inEye(n, r, c)) lightDots += 'M' + f(g.ox + c + 0.5) + ' ' + f(g.oy + r + 0.5) + 'h.01';
       body += '<path d="' + lightDots + '" fill="none" stroke="' + light + '" stroke-opacity=".86" stroke-width=".56" stroke-linecap="round"/>';
-      [[0, 0], [n - 7, 0], [0, n - 7]].forEach(function (e) { body += '<path d="' + rrect(g.ox + e[0] - 0.6, g.oy + e[1] - 0.6, 8.2, 8.2, 1.2) + '" fill="' + light + '" fill-opacity=".92"/>'; });
+      var plates = '';
+      [[0, 0], [n - 7, 0], [0, n - 7]].forEach(function (e) { plates += rrect(g.ox + e[0] - 0.6, g.oy + e[1] - 0.6, 8.2, 8.2, 1.2); });
+      alignments(n).forEach(function (a) { if (!inPlate(g.plate, a[0], a[1], 2)) plates += rrect(g.ox + a[1] - 2.5, g.oy + a[0] - 2.5, 6, 6, 1); });
+      body += '<path d="' + plates + '" fill="' + light + '" fill-opacity=".92"/>';
       if (shape === 'square' || shape === 'connected' || shape === 'vbars' || shape === 'hbars') shape = 'dots';
     } else if (spec.bg) body += '<path d="' + tile + '" fill="' + spec.bg + '"/>';
     var mods = modulesPath(n, on, shape, g.ox, g.oy, fill);
@@ -303,8 +306,10 @@
     body += mods;
     var rings = '', pupils = '';
     [[0, 0, 2], [n - 7, 0, 3], [0, n - 7, 1]].forEach(function (e) { var p = eyePaths(eye, g.ox + e[0], g.oy + e[1], e[2]); rings += p.ring; pupils += p.pupil; });
-    var marks = '';
-    g.align.forEach(function (a) { var x = g.ox + a[1] - 2, y = g.oy + a[0] - 2; marks += rrect(x, y, 5, 5, 0) + rrect(x + 1, y + 1, 3, 3, 0) + rrect(x + 2, y + 2, 1, 1, 0); });
+    /* Alignment squares stay solid and keep one shape through ring, gap and centre (the same rule as the eyes), a little
+       rounded when the dots are. */
+    var marks = '', ar = shape === 'square' ? 0 : 0.28;
+    g.align.forEach(function (a) { var x = g.ox + a[1] - 2, y = g.oy + a[0] - 2; marks += rrect(x, y, 5, 5, 5 * ar) + rrect(x + 1, y + 1, 3, 3, 3 * ar) + rrect(x + 2, y + 2, 1, 1, ar); });
     if (marks) body += '<path fill-rule="evenodd" d="' + marks + '" fill="' + fill + '"/>';
     body += '<path fill-rule="evenodd" d="' + rings + '" fill="' + (eye.outerColor || fill) + '"/><path d="' + pupils + '" fill="' + (eye.innerColor || eye.outerColor || fill) + '"/>';
     if (g.plate) {

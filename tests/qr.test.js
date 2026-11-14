@@ -510,6 +510,18 @@ cases['agents and designs: a layer with "qr" settings alone is drawn by the engi
   h.assert(JSON.stringify(r).indexOf('qr-contrast') > 0, 'a pale code comes back with a warning: ' + JSON.stringify(r).slice(0, 400));
   r = await page.evaluate(() => LEAgent.apply([{ op: 'add', layer: { id: 'none', type: 'svg', x: 0, y: 0, w: 100 } }]));
   h.assert(!r.ok, 'an svg layer with nothing in it is still refused');
+  /* LE.qr.layers: ordinary layers an agent can add as they are; and the two examples in docs/QR.md, as written */
+  r = await page.evaluate(() => LEAgent.apply([{ op: 'add', layers: LE.qr.layers({ text: 'https://example.com/a', shape: 'rounded', fg: '#1e3a8a', bg: '#ffffff', frame: { style: 'label', text: 'Scan me' } }, { x: 60, y: 520, w: 300, id: 'card' }) }]));
+  const parts = await page.evaluate(() => { const ls = LEStudio.scene.toJSON().layers; return ['card-frame', 'card', 'card-label'].map((id) => { const l = ls.find((x) => x.id === id); return l && [l.type, l.text || '', Math.round(l.w)]; }); });
+  h.assert(r.ok && parts[0][0] === 'shape' && parts[1][0] === 'svg' && parts[2][1] === 'Scan me' && !!(await page.evaluate(() => LEStudio.studio().qr.card && !LEStudio.studio().qr.card.frame)), 'layers(): a plate, the code and an editable label: ' + JSON.stringify(parts) + JSON.stringify(r).slice(0, 200));
+  const blocks = fs.readFileSync(path.join(ROOT, 'docs', 'QR.md'), 'utf8').split('```json').slice(1).map((b) => JSON.parse(b.split('```')[0]));
+  const opDoc = blocks.find((b) => b.op === 'add'), fileDoc = blocks.find((b) => b.format);
+  h.assert(opDoc && fileDoc, 'the doc has an agent example and a design-file example');
+  opDoc.layer.id = 'doc-qr';
+  r = await page.evaluate((op) => LEAgent.apply([op]), opDoc);
+  h.assert(r.ok && !r.warnings, 'the agent example applies cleanly: ' + JSON.stringify(r).slice(0, 300));
+  const parsed = await page.evaluate(async (d) => { const p = await LE.design.parse(JSON.stringify(d)); const l = p.ok && p.project.pages[0].layers.find((x) => x.id === 'wifi-qr'); const c = l && await LE.qr.check(p.project.meta.studio.qr['wifi-qr']); return { ok: p.ok, errors: p.errors, warnings: p.warnings.map((w) => w.kind), tall: l && l.h > l.w, scan: c && c.ok && c.decoded }; }, fileDoc);
+  h.assert(parsed.ok && parsed.tall && parsed.scan && !parsed.warnings.some((k) => /^qr-/.test(k)), 'the design-file example opens and scans: ' + JSON.stringify(parsed));
   /* makers */
   await page.addScriptTag({ url: base + '/assets/vendor/jsqr.js' });
   const mk = await page.evaluate(async () => {

@@ -180,7 +180,7 @@ A recipe on an empty slot is fine: the look applies to the photo the person adds
 | `strokeWidth` | 0–48 | 2 for lucide | |
 | `w`, `h` | px | 120 | One side given → square. |
 | `iconStyle` | object | none | Icon picker state (`style`, `name`, `palette`, `color`, `colors`). |
-| `qr` | `{ text, fg, bg, ec }` | none | QR code settings (QR layers keep their `svg`). |
+| `qr` | `{ text, fg, bg, ec }`, plus the style keys in `docs/QR.md` (`shape`, `eye`, `quiet`, `radius`, `image`, `picture`, `frame`) | none | QR code settings. QR layers keep their `svg`; a layer with `qr` and no `svg` is drawn by the studio from the settings. |
 
 The studio writes icons as `{ "type": "svg", "assetId": "lucide:sun", … }` without markup. An `svg` layer with raw `svg` markup is allowed (≤ 200 KB) but goes through the SVG sanitiser; markup with `<script>`, event handlers, `foreignObject` or `javascript:` is refused.
 

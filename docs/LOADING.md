@@ -101,6 +101,7 @@ Sizes are gzip, script + CSS.
 | `assets` | `le-assets.js` | 19 | first edit or selection; Elements panel; a document with icons, stickers or library shapes | 0 |
 | `export` | `le-studio-export.js` + css | 23+3 | Download panel; `ctx.exportImage`; a carousel document | 0 |
 | `tools` | `le-studio-tools.js` + css (moved from studio.css) | 15+2 | first selection; Pages; format painter, QR, rulers commands; shortcuts (replayed); rulers left on; a document with frames | 1 |
+| `qr`, `qrui` | `le-qr.js`, `le-qr-ui.js` + `qr.css` (docs/QR.md) | 16, 15+2 | the QR dialog (Add or Edit QR); a QR code pasted from the tool page; a design or agent layer with `qr` settings and no `svg`; a maker asked for a QR look. The decoder (`assets/vendor/jsqr.js`, 55) loads with the first check | — |
 | `fonts` | `le-studio-fonts.js` + css | 9+2 | Fonts panel | 1 |
 | `panels2` | `le-studio-panels-more.js` + css (moved from studio.css) | 15+2 | Design's tabs (text layouts, Resize, Size history: a skeleton under the tab bar until it arrives); Position (arrange, layers); Your designs; Version history; Performance; Apps → Watermark, Meme, Palette, Metadata, Before / after, Upscale, Contact sheet | 1 |
 | `color` | `le-studio-color.js` + css (moved) | 23+2 | colour picker (`_colorPop`); Replace, Brand kit; dep of tools, icons, background | 2 |

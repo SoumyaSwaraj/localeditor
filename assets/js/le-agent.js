@@ -1867,7 +1867,7 @@
         'page.background': { example: { op: 'page.background', background: { type: 'gradient', kind: 'linear', colors: ['#14213D', '#2F6BFF'], angle: 90 } }, fields: 'a colour, gradient, pattern { type: "pattern", id: "dots", fg, bg } or image { type: "image", src }' },
         'page.select': { example: { op: 'page.select', page: 0 } },
         replace: { example: { op: 'replace', design: { format: 'localeditor-design', version: 1, pages: [{ width: 1080, height: 1080, background: '#FFF3E2', layers: [] }] } }, fields: 'design: a whole open-format document (replaces every page), or with page: replaces only that page with design.pages[0].' },
-        make: { example: { op: 'make', maker: 'quote', style: 'editorial', size: 'square', values: { quote: 'Ship small, ship often.', author: 'The team' } }, fields: 'Replaces the current page (or newPage: true). catalog("makers") lists ids, styles, sizes and inputs.' },
+        make: { example: { op: 'make', maker: 'quote', style: 'editorial', size: 'square', values: { quote: 'Ship small, ship often.', author: 'The team' } }, fields: 'Replaces the current page (or newPage: true). catalog("makers") lists ids, styles, sizes and inputs. qrStyle?: a QR look (preset id or style spec, docs/QR.md) for makers that draw a code.' },
         recipe: { example: { op: 'recipe', id: 'hero', recipe: 'golden-hour', strength: 80 }, fields: 'recipe: null removes it. catalog("recipes").' },
         collage: { example: { op: 'collage', layout: 'r-2.3', count: 5, spacing: 16, margin: 40, radius: 18 }, fields: 'or template: <id>. Lays out the page\'s photo slots (creates count slots if there are none).' },
         'text.replace': { example: { op: 'text.replace', find: '2025', replace: '2026', page: 'all' } },
