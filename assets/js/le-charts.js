@@ -421,7 +421,14 @@
       return w * size / 100 + (spacing ? spacing * Math.max(0, str.length - 1) : 0);
     }
     function style(o) { var r = o.role || 'body', head = r === 'title' || r === 'label'; return { font: o.font || (head ? T.head : T.body), weight: o.weight || (head ? T.hw : r === 'value' ? T.vw : 400) }; }
-    function push(l) { n++; if (id) { l.id = id + '.' + n; l.groupId = id; } L.push(l); return l; }
+    /* Every layer leaves here complete (the fields LE.Scene gives a layer), so a document can take it as it is. */
+    function push(l) {
+      n++;
+      var full = { id: (id || 'c') + '.' + n, type: l.type, name: l.name, x: l.x, y: l.y, w: l.w, h: l.h, rotation: 0, opacity: 1, blend: 'source-over', visible: true, locked: false, flipX: false, flipY: false, shadow: null, groupId: id || null };
+      Object.assign(full, l.type === 'text' ? { italic: false, fill: null, uppercase: false, underline: false, strike: false, stroke: null, background: null, curve: 0 } : { params: {}, radius: 0, stroke: null }, l);
+      L.push(full);
+      return full;
+    }
     function hits(b, gap) {
       for (var i = 0; i < boxes.length; i++) { var q = boxes[i]; if (b.x0 < q.x1 + gap && b.x1 > q.x0 - gap && b.y0 < q.y1 + gap && b.y1 > q.y0 - gap) return true; }
       return false;
@@ -520,7 +527,7 @@
         var l = { type: 'text', name: o.name || 'Label', text: lines.join('\n'), x: r2(lx), y: r2(ly), w: wl, h: r2(h), font: st.font, weight: st.weight, size: r2(size), color: ensure(o.color || T.ink, on, 4.5), align: al, lineHeight: lh, letterSpacing: r2(sp) };
         if (o.upper) l.uppercase = true;
         if (rot) l.rotation = rot;
-        push(l);
+        l = push(l);
         info.texts.push({ i: L.length - 1, on: on, box: box });
         box.w = ink; box.h = h; box.top = ly; box.bottom = ly + h; box.count = lines.length; box.layer = l;
         return box;
@@ -726,9 +733,9 @@
       var at = o.labelsAt === 'above' || o.labelsAt === 'left' ? o.labelsAt : (catW <= r.w * 0.3 || band < S * 2.3 ? 'left' : 'above');
       if (at === 'above' && band < S * 1.7) at = 'left';
       var u, ls, thick, col = 0, top0;
-      if (at === 'above') { u = clamp(band * 0.22, S * 0.75, S * 1.35); ls = Math.min(u, band * 0.4); thick = Math.max(2, Math.min(band - ls * 1.3 - u * 0.4, u * 2.6)); top0 = ls * 1.3; }
+      if (at === 'above') { u = clamp(band * 0.34, S * 0.75, S * 1.35); ls = Math.min(u, band * 0.4); thick = Math.max(2, Math.min(band - ls * 1.3 - u * 0.4, u * 2.6)); top0 = ls * 1.3; }
       else { u = clamp(band * 0.5, S * 0.6, S * 1.15); ls = Math.min(u * 0.9, band * 0.72); thick = clamp(band * 0.64, 2, u * 2.3); top0 = (band - thick) / 2; col = Math.min(Math.max.apply(null, labels.map(function (l) { return G.width(l, { role: 'label', size: ls }); })), r.w * 0.34) + u * 0.6; }
-      var vs = inside ? Math.min(thick * 0.62, u * 1.7) : at === 'above' ? Math.min(u * 1.15, thick * 0.95) : Math.min(ls, thick * 1.1), each = stacked ? thick : thick / m;
+      var vs = inside ? Math.min(thick * 0.62, u * 1.7) : at === 'above' ? Math.min(u * 1.2, thick * 0.95) : Math.min(ls, thick * 1.1), each = stacked ? thick : thick / m;
       if (!stacked && !single) vs = Math.min(vs, Math.max(each * 1.05, 7));
       var plain = function (v) { return fmtV(v, false); }, vf = plain;
       var valW = function (fn) { var w = 0; V.forEach(function (vv) { vv.forEach(function (v) { w = Math.max(w, G.width(fn(v), { role: 'value', size: vs })); }); }); return w; };
@@ -738,10 +745,14 @@
       var x0 = r.x + col, avail = Math.max(10, r.w - col - out - (lo < 0 ? out : 0));
       if (axis) { tk = ticks(lo, hi, clamp(Math.floor(avail / (S * 4.2)), 2, 6)); lo = tk.min; hi = tk.max; tf = tickFormat(tk, f); avail -= G.width(tf(hi), { size: S * 0.72 }) / 2; }
       k = avail / (hi - lo); zero = x0 + (lo < 0 ? out : 0) + (0 - lo) * k;
-      var yTop = r.y, y1 = r.y + band * n + noteH;
+      /* bars at their largest size: keep the rows together and centre the block instead of spreading them out */
+      var bandFit = Math.min(band, at === 'above' ? top0 + thick + u * 0.95 : thick * 1.8), slack = (band - bandFit) * n + (at === 'above' ? bandFit - top0 - thick : 0);
+      if (at !== 'above') top0 = (bandFit - thick) / 2;
+      band = bandFit;
+      var yTop = r.y + (axis ? 0 : slack / 2), y1 = axis ? r.y + r.h - axisH : yTop + band * n + noteH;
       if (axis) tk.ticks.forEach(function (v) { var x = zero + v * k; G.line(x, yTop, x, y1, v === 0 ? T.axis : T.grid, Math.max(1, env.k * 1.5), { name: 'Gridline' }); G.text(tf(v), x, y1 + S * 0.3, { size: S * 0.72, color: T.muted, align: 'center', opt: true, name: 'Axis label' }); });
       else if (lo < 0) G.line(zero, yTop, zero, y1, T.axis, Math.max(1, env.k * 1.5), { name: 'Zero line' });
-      var yb = r.y, pos = {};
+      var yb = axis ? r.y + slack / 2 : yTop, pos = {};
       for (i = 0; i < n; i++) {
         var by = yb + top0, accP = 0, accN = 0;
         if (at === 'above') G.text(labels[i], r.x, yb, { role: 'label', size: ls, max: r.w, name: 'Category' });
@@ -765,9 +776,9 @@
           var gx0 = zero + V[0][gv.low] * k + u * 0.22, gx1 = zero + V[0][gv.high] * k, gw = gx1 - gx0;
           if (gw > 4) {
             G.rect(gx0, by, gw, thick, mix(T.accent, T.card, 0.86), { r: rad(thick), stroke: mix(T.accent, T.card, 0.55), sw: Math.max(1.5, u * 0.07), dash: [u * 0.2, u * 0.16], name: 'Gap' });
-            var gs = Math.min(vs, u * 1.0), gwd = G.width(gv.label, { role: 'label', size: gs }), gon = mix(T.accent, T.card, 0.86);
+            var gs = Math.min(vs, u * 1.0), gwd = G.width(gv.label, { role: 'value', size: gs }), gon = mix(T.accent, T.card, 0.86);
             if (gwd > gw - gs * 0.6) gs = Math.max(gs * 0.6, gs * (gw - gs * 0.6) / gwd);
-            if (G.width(gv.label, { role: 'label', size: gs }) <= gw - gs * 0.3) G.text(gv.label, gx0 + gw / 2, by + thick / 2, { role: 'label', size: gs, align: 'center', base: 'middle', on: gon, color: T.accentInk, name: 'Gap label' });
+            if (G.width(gv.label, { role: 'value', size: gs }) <= gw - gs * 0.3) G.text(gv.label, gx0 + gw / 2, by + thick / 2, { role: 'value', size: gs, align: 'center', base: 'middle', on: gon, color: T.accentInk, name: 'Gap label' });
             else G.text(gv.label, gx1 + u * 0.4, by + thick / 2, { role: 'label', size: gs, base: 'middle', color: T.accentInk, opt: true, name: 'Gap label' });
             if (gv.note) { var ns = u * 0.78, nw = G.width(gv.note, { role: 'value', size: ns }), nx = clamp(gx0 + gw / 2, r.x + nw / 2, r.x + r.w - nw / 2); G.text(gv.note, nx, by + thick + u * 0.3, { role: 'value', size: ns, align: 'center', color: T.accentInk, name: 'Gap note' }); }
           }
@@ -1732,6 +1743,7 @@
     if (Array.isArray(op.rows)) return { table: Array.isArray(op.columns) ? { columns: op.columns, rows: op.rows } : op.rows };
     return null;
   }
+  function groupLayer(id, name, box, chart) { return { id: id, type: 'group', name: name || 'Chart', x: r2(box.x), y: r2(box.y), w: r2(box.w), h: r2(box.h), rotation: 0, opacity: 1, blend: 'source-over', visible: true, locked: false, flipX: false, flipY: false, shadow: null, groupId: null, chart: chart }; }
   function pageBg(page) { var b = page && page.background; return b && typeof b === 'object' ? (isHex(b.color) ? b.color : '') : isHex(b) ? b : ''; }
   /* The layers of a page with the chart group `gid` redrawn from its data (children replaced, in place, before the group). */
   function regenerate(page, gid, ctx) {
@@ -1774,7 +1786,7 @@
         var b = isObj(op.box) ? op.box : {}, bw = clamp(Number(b.w) || W * 0.84, 60, 20000), bh = clamp(Number(b.h) || Math.min(H * 0.62, bw * 0.68), 60, 20000);
         var id = typeof op.id === 'string' && /^[\w:.-]{1,40}$/.test(op.id) ? op.id : uniqueId(layers, 'chart');
         if (layers.some(function (l) { return l.id === id; })) return fail('The id "' + id + '" is already used on this page.', '/id');
-        g = { id: id, type: 'group', name: text(op.name || (chart.options.title || 'Chart'), 120), x: b.x == null ? r2((W - bw) / 2) : Number(b.x) || 0, y: b.y == null ? r2((H - bh) / 2) : Number(b.y) || 0, w: r2(bw), h: r2(bh), chart: chart };
+        g = groupLayer(id, text(op.name || (chart.options.title || 'Chart'), 120), { x: b.x == null ? r2((W - bw) / 2) : Number(b.x) || 0, y: b.y == null ? r2((H - bh) / 2) : Number(b.y) || 0, w: r2(bw), h: r2(bh) }, chart);
         layers.push(g);
       } else if (op.op === 'chart.update' || op.op === 'chart.data') {
         var ref = String(op.layer == null ? '' : op.layer), hits = layers.filter(function (l) { return l.type === 'group' && l.chart && (l.id === ref || l.name === ref); });
@@ -1829,7 +1841,7 @@
     build: build, render: render, types: types, themes: themes, theme: themeOf, suggest: suggest, summary: summary, sample: sample,
     sanitize: sanitize, analyse: analyse, prepare: prepare, fromTable: fromTable, fit: fit, autoMap: autoMap,
     format: format, ticks: ticks, scale: scale, number: function (v) { var d = numberOf(v); return d ? d.v : null; }, numberOf: numberOf, date: dateOf, color: color,
-    fonts: fontsOf, ready: ready, regenerate: regenerate, expand: expand, ops: ops, catalog: catalog
+    fonts: fontsOf, ready: ready, regenerate: regenerate, expand: expand, ops: ops, catalog: catalog, groupLayer: groupLayer, uniqueId: uniqueId
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = LE.charts;
 })(typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : this);

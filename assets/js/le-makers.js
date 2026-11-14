@@ -12,7 +12,9 @@
     /* Second social set: posters, event kit, QR signs and invitations, store screenshots, link cards. */
     'payposter', 'wifisign', 'qrinvite', 'eventkit', 'movieposter', 'albumcover', 'frontpage', 'appshots', 'linkcard',
     /* Weekly-use set: screenshot and code beautifier, photobooth strips, recap collages. */
-    'beautify', 'photobooth', 'recap'];
+    'beautify', 'photobooth', 'recap',
+    /* Data: a headline, a chart drawn to scale, a note and a source line (docs/CHARTS.md). */
+    'chartposter'];
 
   var SIZES = {
     square: { id: 'square', name: 'Square', w: 1080, h: 1080 },
@@ -71,6 +73,8 @@
       maxPages: clamp(Math.round(num(def.maxPages, 8)), 1, 50),
       /* Optional studio-side form extras (camera, paste, sorting): ui(form, api) → cleanup. Never called by build. */
       ui: typeof def.ui === 'function' ? def.ui : null,
+      /* Site scripts this maker's build needs (loaded before the first build, never at registration). */
+      needs: (def.needs || []).filter(function (s) { return typeof s === 'string' && /^assets\/js\/[\w.\/-]+\.js$/.test(s) && s.indexOf('..') < 0; }).slice(0, 4),
       build: def.build
     };
     if (!registry[m.id]) order.push(m.id);
@@ -1149,6 +1153,9 @@
   function build(id, values, opts) {
     opts = opts || {};
     return ready().then(function () {
+      var d = get(id);
+      return d && d.needs.length && LE.lazy && global.document ? Promise.all(d.needs.map(function (s) { return LE.lazy(rootPath() + s); })) : null;
+    }).then(function () {
       var m = get(id);
       if (!m) throw new Error('There is no maker called ' + String(id).slice(0, 40) + '.');
       var v = validate(id, values);

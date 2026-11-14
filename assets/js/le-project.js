@@ -610,7 +610,7 @@
       Object.keys(p).slice(0, 16).forEach(function (k) {
         if (BAD_KEYS[k] || !/^[a-zA-Z]{1,24}$/.test(k)) return;
         if (typeof p[k] === 'number' && isFinite(p[k])) l.params[k] = clamp(p[k], -100000, 100000);
-        else if (Array.isArray(p[k])) l.params[k] = p[k].slice(0, 64).map(function (pt) { return [clamp(num(pt && pt[0], 0), -100000, 100000), clamp(num(pt && pt[1], 0), -100000, 100000)]; });
+        else if (Array.isArray(p[k])) l.params[k] = p[k].slice(0, 256).map(function (pt) { return [clamp(num(pt && pt[0], 0), -100000, 100000), clamp(num(pt && pt[1], 0), -100000, 100000)]; });
       });
       l.radius = clamp(num(src.radius, 0), 0, 100000);
       l.fill = fillSpec(src.fill) || { type: 'none' };
@@ -635,6 +635,7 @@
       l.color = safeColor(src.color) || '#17131F';
       l.mode = oneOf(src.mode, ['pen', 'marker', 'highlighter'], 'pen');
     } else if (l.type === 'adjust') l.clip = bool(src.clip);
+    if (l.type === 'group' && src.chart && LE.Scene && LE.Scene.chartOf) { var chart = LE.Scene.chartOf(src.chart); if (chart) l.chart = chart; }   /* docs/CHARTS.md */
     /* Expert fields (fx, layerMask, transform, retouch, maps, raw): the same shape check LE.Scene applies; LE.fx validates entries before they run. */
     if (LE.Scene && LE.Scene.expertOf) LE.Scene.expertOf(src, l);
     if (LE.Scene && LE.Scene.bindOf) LE.Scene.bindOf(src, l);   /* template fields: bind, overflow, minSize (docs/VARIABLES.md) */
