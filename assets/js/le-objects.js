@@ -445,31 +445,26 @@
     var paper = typeof p.paper === 'string' ? p.paper.replace(/[^\w.:-]/g, '').slice(0, 24) : '';
     return { v: 1, paper: paper, w: Math.round(clamp(w, 10, 2000) * 100) / 100, h: Math.round(clamp(h, 10, 2000) * 100) / 100, dpi: Math.round(clamp(isFinite(dpi) && dpi > 0 ? dpi : 300, 72, 1200)) };
   }
-  /* A chart on a group layer (docs/CHARTS.md): plain data only, at most 5,000 cells. The group's children are ordinary
-     layers drawn from it by LE.charts (le-charts.js, loaded only to edit a chart); nothing here is ever run. */
+  /* A chart on a group layer (docs/CHARTS.md): plain data, at most 5,000 cells; its drawn parts are the group's ordinary layers. */
   function chartPlain(v, d) {
-    if (typeof v === 'number') return isFinite(v) ? v : null;
-    if (typeof v === 'boolean') return v;
-    if (typeof v === 'string') return varText(v, 300);
-    if (!v || typeof v !== 'object' || d > 3) return null;
+    var t = typeof v;
+    if (t === 'number') return isFinite(v) ? v : null;
+    if (t === 'boolean') return v;
+    if (t === 'string') return varText(v, 300);
+    if (!v || t !== 'object' || d > 3) return null;
     if (Array.isArray(v)) return v.slice(0, 60).map(function (x) { return chartPlain(x, d + 1); });
     var o = {};
     Object.keys(v).slice(0, 40).forEach(function (k) { if (/^[a-zA-Z][\w-]{0,31}$/.test(k) && k !== 'constructor' && k !== 'prototype') o[k] = chartPlain(v[k], d + 1); });
     return o;
   }
   function chartOf(c) {
-    if (!c || typeof c !== 'object' || Array.isArray(c) || typeof c.type !== 'string' || !/^[a-z][a-z0-9-]{1,23}$/.test(c.type)) return null;
-    var d = c.data && typeof c.data === 'object' ? c.data : {}, cells = 0, rows = [];
-    var cols = (Array.isArray(d.columns) ? d.columns : []).slice(0, 60).map(function (v) { return varText(v == null ? '' : v, 80); });
-    (Array.isArray(d.rows) ? d.rows : []).some(function (r) {
-      if (!Array.isArray(r)) return false;
-      r = r.slice(0, cols.length || 60).map(function (v) { return typeof v === 'number' ? (isFinite(v) ? v : '') : varText(v == null ? '' : v, 200); });
-      cells += Math.max(1, r.length);
-      if (cells > 5000) return true;
-      rows.push(r);
-      return false;
+    if (!c || typeof c.type !== 'string' || !/^[a-z][a-z0-9-]{1,23}$/.test(c.type)) return null;
+    var d = c.data || {}, n = 0, list = function (a) { return Array.isArray(a) ? a : []; }, obj = function (o) { return o && !Array.isArray(o) && chartPlain(o, 0) || {}; };
+    var cols = list(d.columns).slice(0, 60).map(function (v) { return varText(v == null ? '' : v, 80); });
+    var rows = list(d.rows).filter(function (r) { return Array.isArray(r) && (n += Math.max(1, Math.min(r.length, cols.length || 60))) <= 5000; }).map(function (r) {
+      return r.slice(0, cols.length || 60).map(function (v) { return typeof v === 'number' ? (isFinite(v) ? v : '') : varText(v == null ? '' : v, 200); });
     });
-    return { v: 1, type: c.type, data: { columns: cols, rows: rows }, map: chartPlain(c.map, 0) || {}, theme: typeof c.theme === 'string' && /^[a-z][a-z0-9-]{0,23}$/.test(c.theme) ? c.theme : 'clean', options: chartPlain(c.options, 0) || {} };
+    return { v: 1, type: c.type, data: { columns: cols, rows: rows }, map: obj(c.map), theme: typeof c.theme === 'string' && /^[a-z][a-z0-9-]{0,23}$/.test(c.theme) ? c.theme : 'clean', options: obj(c.options) };
   }
   /* Template fields (docs/VARIABLES.md). layer.bind { content, color, show, fit } and text overflow / minSize on layers;
      doc.values (the page's filled-in values) on pages; the document's variable list (meta.studio.variables). Plain data. */
