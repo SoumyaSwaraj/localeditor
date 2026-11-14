@@ -167,6 +167,36 @@
     return page;
   }
 
+  /* Copies of a piece's layers moved by dx, dy for a print sheet (guides are left out; ids stay unique). */
+  function copy(layers, dx, dy, n) {
+    return layers.filter(function (l) { return l.type !== 'group' && !l.groupId; }).map(function (l) {
+      var c = JSON.parse(JSON.stringify(l));
+      c.id = String(l.id).slice(0, 34) + '-c' + n;
+      c.x = r2(l.x + dx); c.y = r2(l.y + dy);
+      return c;
+    });
+  }
+  /* A column of up to three stacks in a box: top, bottom, and middle in what is left between them. */
+  function column(env, box, align, parts, vals, gap) {
+    var out = [], y0 = box.y, y1 = box.y + box.h;
+    gap = gap == null ? box.h * 0.05 : gap;
+    function run(items, b, valign) { return stack(env, b, items, { align: align, valign: valign, values: vals }); }
+    if (parts.top && parts.top.filter(Boolean).length) { var a = run(parts.top, box, 'top'); out = out.concat(a.layers); if (a.layers.length) y0 = Math.min(y1, a.bottom + gap); }
+    if (parts.bottom && parts.bottom.filter(Boolean).length) { var c = run(parts.bottom, { x: box.x, y: y0, w: box.w, h: y1 - y0 }, 'bottom'); out = out.concat(c.layers); if (c.layers.length) y1 = Math.max(y0, c.top - gap); }
+    if (parts.mid && parts.mid.filter(Boolean).length) out = out.concat(run(parts.mid, { x: box.x, y: y0, w: box.w, h: y1 - y0 }, 'middle').layers);
+    return out;
+  }
+  /* A QR code on a white tile (so it scans on any background), as two layers. key binds it to a field. */
+  function qrTile(env, text, x, y, q, o) {
+    o = o || {};
+    var pad = q * 0.06, id = o.id || 'qr';
+    var code = env.qr(text, { id: id, name: 'QR code', x: x + pad, y: y + pad, w: q - 2 * pad, h: q - 2 * pad, color: '#111111', background: '#FFFFFF', quiet: 2, level: 'M' });
+    if (o.key) bind(code, o.key);
+    return [env.rect({ id: id + '-tile', name: 'Code tile', x: x, y: y, w: q, h: q, radius: q * 0.05, fill: '#FFFFFF', stroke: o.stroke ? { width: Math.max(1.5, q * 0.006), color: o.stroke } : null }), code];
+  }
+  /* A typed web address as a link a phone opens: adds https:// when there is no scheme. */
+  function link(s) { s = String(s || '').trim(); return !s ? '' : /^[a-z][a-z0-9+.-]*:/i.test(s) ? s : 'https://' + s; }
+
   /* ---------- A contact card for a QR code (vCard 3.0), pure ---------- */
   function vesc(s) { return String(s || '').replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/([;,])/g, '\\$1').trim(); }
   function vcard(v) {
@@ -232,7 +262,7 @@
   }
 
   M.kit = { px: px, size: size, paper: paper, field: field, bind: bind, stack: stack, logo: logo, initials: initials, starPath: starPath, seal: seal,
-    trimMarks: trimMarks, grid: grid, sheet: sheet, vcard: vcard, csv: csv, openMany: openMany, manyUi: manyUi, many: many };
+    trimMarks: trimMarks, grid: grid, sheet: sheet, copy: copy, column: column, qrTile: qrTile, link: link, vcard: vcard, csv: csv, openMany: openMany, manyUi: manyUi, many: many };
   M.vcardPayload = vcard;
   /* Makers that arrived first wait in M.kitWait (see the two lines at the foot of each file). */
   (M.kitWait || []).splice(0).forEach(function (fn) { fn(M.kit); });
