@@ -140,7 +140,18 @@
   /* target: a canvas or image, ImageData, a LE.Scene (the whole page), or { scene, layer: id } (one layer). */
   FX._analyze = function (target, opts) {
     opts = opts || {};
-    function done(c) { if (!c) throw new Error('Nothing to analyse.'); return FX._stats(c, opts); }
+    var wantLight = Array.isArray(opts.kinds) && opts.kinds.indexOf('light') >= 0, lightIn = { depth: opts.depth || null, mask: opts.mask || null };
+    function done(c) {
+      if (!c) throw new Error('Nothing to analyse.');
+      var out = FX._stats(c, opts);
+      if (wantLight) {
+        /* The light estimate is the relight pack's; this file only hands it the picture and the maps. */
+        var R = FX.relight;
+        try { out.light = R && typeof R.estimate === 'function' ? R.estimate(c, lightIn) : null; } catch (e) { out.light = null; }
+      }
+      return out;
+    }
+    function mapOf(scene, id) { var rec = id && scene._assets ? scene._assets[id] : null; return rec ? rec.canvas || rec.img || rec.image || null : null; }
     try {
       if (target && target.data && target.width && typeof ImageData !== 'undefined' && target instanceof ImageData) {
         var ic = document.createElement('canvas'); ic.width = target.width; ic.height = target.height; ic.getContext('2d').putImageData(target, 0, 0);
@@ -152,6 +163,10 @@
         if (layerId) {
           var l = scene.layer(layerId);
           if (!l) return Promise.reject(new Error('No layer with the id "' + String(layerId).slice(0, 48) + '".'));
+          if (wantLight && !l.crop) {
+            if (!lightIn.depth && l.maps && l.maps.depth) lightIn.depth = mapOf(scene, l.maps.depth.asset);
+            if (!lightIn.mask && l.cutout) lightIn.mask = mapOf(scene, l.cutout.asset);
+          }
           return scene.exportLayer(layerId, Math.min(2, 1024 / Math.max(l.w, l.h))).then(done);
         }
         return scene.render(Math.min(2, 1024 / Math.max(doc.width, doc.height))).then(done);

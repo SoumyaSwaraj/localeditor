@@ -1346,7 +1346,12 @@
     var memo = {};
     return function (entry) {
       var idx = list.indexOf(entry);
-      if (idx < 0 || !FX._stats) return null;
+      if (idx < 0) return null;
+      if (!FX._stats) {
+        /* The analysis code is loaded per need (LE.fx.needs): this render goes without, the next has it. */
+        if (!statsFn.asked) { statsFn.asked = true; FX._load('analyze').then(function () { if (FX.touch) FX.touch(); }, function () { statsFn.asked = false; }); }
+        return null;
+      }
       if (memo[idx]) return memo[idx];
       var W = source.naturalWidth || source.width, H = source.naturalHeight || source.height, k = Math.min(1, 256 / Math.max(W, H));
       var small;
@@ -1817,6 +1822,7 @@
   FX.prepare = function (scene) {
     var jobs = [];
     (scene._doc.layers || []).forEach(function (l) {
+      if (!FX._stats && FX.needsStats(l.fx)) jobs.push(FX.needs(l.fx).catch(function () { return null; }));
       FX.assetsOf(l).forEach(function (id) { var rec = scene._assets[id]; if (rec && rec.ready) jobs.push(Promise.resolve(rec.ready).catch(function () { return null; })); });
       /* Data assets (LUT text): from the scene when it holds the blob, else from the project store. */
       (Array.isArray(l.fx) ? l.fx : []).forEach(function (e) {

@@ -453,11 +453,19 @@ cases['studio: nothing under assets/js/fx/ loads until a document needs it, and 
   await page.waitForFunction(() => performance.getEntriesByType('resource').some((e) => /\/assets\/js\/fx\/le-fx-basic\.js/.test(e.name)), null, { timeout: 20000 }).catch(() => {});
   const got = await fetched();
   ['le-fx.js', 'le-fx-gl.js', 'le-fx-basic.js'].forEach((f) => h.assert(got.indexOf(f) >= 0, f + ' loads on demand: ' + got));
-  /* docs/FX-AUTHORING.md: the statistics code loads with the renderer when a registered effect declares needs: ['stats'] (dehaze does). */
-  const statsAtLoad = await page.evaluate(() => window.LE.fx.list().some((id) => window.LE.fx.get(id).needs.indexOf('stats') >= 0));
-  h.assert(statsAtLoad || got.indexOf('le-fx-analyze.js') < 0, 'analysis waits for its first call');
-  await page.evaluate(() => window.LE.fx.analyze(window.LEStudio.scene));
-  h.assert((await fetched()).indexOf('le-fx-analyze.js') >= 0, 'analysis loaded on first use');
+  /* docs/FX-AUTHORING.md: the statistics code loads per document need, not because a registered effect declares needs: ['stats'] (dehaze does). */
+  const statsEffect = await page.evaluate(() => window.LE.fx.list().filter((id) => window.LE.fx.get(id).needs.indexOf('stats') >= 0)[0] || null);
+  h.assert(got.indexOf('le-fx-analyze.js') < 0, 'analysis waits until a document or a call needs it: ' + got);
+  if (statsEffect) {
+    /* a stack with an effect that reads statistics brings it in, and the layer is drawn with them */
+    await page.evaluate((id) => { const s = window.LEStudio.scene; s.update(s.layers()[0].id, { fx: [{ type: id, p: {} }] }); }, statsEffect);
+    await h.waitForAsync(page, () => !!window.LE.fx._stats, null, 20000);
+    h.assert((await fetched()).indexOf('le-fx-analyze.js') >= 0, 'a stack with ' + statsEffect + ' loads the analysis code');
+    h.assert(await page.evaluate((id) => window.LE.fx.needsStats([{ type: id }]) && !window.LE.fx.needsStats([{ type: 'exposure' }]) && !window.LE.fx.needsStats([{ type: id, on: false }]), statsEffect), 'needsStats tells which stacks do');
+  } else {
+    await page.evaluate(() => window.LE.fx.analyze(window.LEStudio.scene));
+    h.assert((await fetched()).indexOf('le-fx-analyze.js') >= 0, 'analysis loaded on first use');
+  }
   h.assert.noErrors(page);
 };
 

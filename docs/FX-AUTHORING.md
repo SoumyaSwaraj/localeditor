@@ -11,7 +11,7 @@ The contract for step X0a of `docs/EXPERT-MODE.md`, as built. Feature teams (X1â
 | `assets/js/fx/curves.js` | by `le-fx.js`, and by the workspace | `LE.curves`: the one monotone spline (`clean`, `monotone`, `sample`, `lut`, presets). The curve editor draws with it and the renderer samples it |
 | `assets/js/fx/le-fx-gl.js` | by `le-fx.js` | WebGL2 renderer, pass builder, masks, tiling, colour management, the scene hooks |
 | `assets/js/fx/le-fx-basic.js` | by `le-fx.js` | the starter effects |
-| `assets/js/fx/le-fx-analyze.js` | first `LE.fx.analyze` call (or at load when an effect declares `needs: ['stats']`) | image statistics |
+| `assets/js/fx/le-fx-analyze.js` | first `LE.fx.analyze` call, or when a document's stack has an effect that declares `needs: ['stats']` (`LE.fx.needs(stack)`, which `LE.fx.prepare` and the layer stage wait for) | image statistics |
 | `assets/js/fx/le-fx-<pack>.js` | by `le-fx.js` | your effects: add the pack name to `PACKS` at the top of `le-fx.js` |
 
 ```js
@@ -349,7 +349,9 @@ An effect joins the **source stage** by declaring `source: { order, required }` 
   alpha: { coverage } }
 ```
 
-`target` is a canvas, an image, `ImageData`, a `LE.Scene` (the page) or `{ scene, layer }`; `region` is `{ x, y, w, h }` in fractions. `histogram.l` is the same list as `histogram.luma`. The scopes' form, `LE.fx.analyze({ source: canvas, kinds: ['histogram'] })`, returns the object at once when the statistics code is already loaded (a promise the first time); with `kinds` given and no `'sharpness'` in it, the sharpness pass is skipped (`sharpness: null`). `whiteBalance.suggest` is in `white-balance` effect units. For "average skin hue against the skin-tone line", pass a region on skin and read `hue.vectorscope.offsetFromSkinLine`. Light direction and anything that needs a model are not here.
+`target` is a canvas, an image, `ImageData`, a `LE.Scene` (the page) or `{ scene, layer }`; `region` is `{ x, y, w, h }` in fractions. `histogram.l` is the same list as `histogram.luma`. The scopes' form, `LE.fx.analyze({ source: canvas, kinds: ['histogram'] })`, returns the object at once when the statistics code is already loaded (a promise the first time); with `kinds` given and no `'sharpness'` in it, the sharpness pass is skipped (`sharpness: null`). `whiteBalance.suggest` is in `white-balance` effect units. For "average skin hue against the skin-tone line", pass a region on skin and read `hue.vectorscope.offsetFromSkinLine`. `kinds: ['light']` adds `light`, the relight pack's estimate (`LE.fx.relight.estimate`: direction, azimuth, elevation, softness, temperature, `words`, a `suggest`ed relight entry) from `opts.depth` and `opts.mask`, or from the layer's own depth map and cut-out when the target is `{ scene, layer }`; `null` without that pack. Anything that needs a model is not here.
+
+`g.stats()` in a synchronous render (`LE.fx.apply`) is `null` until the analysis code is in; the renderer asks for it and draws again. Tools that call `LE.fx.apply` with such a stack wait for `LE.fx.needs(stack)` first (`LE.fx.needsStats(stack)` says whether there is anything to wait for).
 
 Wiring in `le-agent.js` (owned by the agent-mode engineer):
 

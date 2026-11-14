@@ -882,13 +882,19 @@
   }).then(function () {
     var mock = global.LE_FX_MOCK;   /* test pages only: the mock's call log keeps working */
     if (mock && typeof mock.interactive === 'function') { var real = FX.interactive; FX.interactive = function (on) { if (on !== undefined) { try { mock.interactive(on); } catch (x) { /* test helper */ } } return real(on); }; }
-    /* Effects that read whole-image statistics need the analysis code before the first render. */
-    return order.some(function (id) { return defs[id].needs.indexOf('stats') >= 0; }) ? load('analyze') : null;
   }).then(function () { return FX; });
+  /* The analysis code (le-fx-analyze.js) is loaded when a document needs it: a stack with an entry whose effect reads
+     whole-image statistics. LE.fx.prepare and the layer stage wait for LE.fx.needs(stack); a synchronous render that finds the
+     code missing draws without statistics, asks for it and draws again when it is in. */
+  FX.needsStats = function (fx) { return (Array.isArray(fx) ? fx : []).some(function (e) { var d = e && e.on !== false && typeof e.type === 'string' ? FX.get(e.type) : null; return !!d && d.needs.indexOf('stats') >= 0; }); };
+  FX.needs = function (fx) { return FX._stats || !FX.needsStats(fx) ? Promise.resolve(FX) : load('analyze').then(function () { return FX; }); };
 
   /* Statistics load on first use. analyze(target, { region, kinds }) → a promise of the numbers.
      The scopes' form, analyze({ source, kinds: ['histogram'] }), answers at once when the code is already in
-     (histogram.l is luminance), and with a promise the first time. */
+     (histogram.l is luminance), and with a promise the first time.
+     kinds: ['light'] adds `light`: direction, softness and colour of the picture's light, estimated by the relight pack
+     (LE.fx.relight.estimate) from opts.depth and opts.mask, or from the layer's own depth map and cut-out when the target is
+     { scene, layer }; null without that pack. */
   FX.analyze = function (target, opts) {
     if (isObj(target) && target.source && !target.scene && typeof target.render !== 'function') {
       var o = { region: target.region, kinds: target.kinds, layer: target.layer };

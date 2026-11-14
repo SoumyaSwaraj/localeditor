@@ -298,8 +298,12 @@ cases['estimate: light direction, softness and colour of a lit sphere'] = async 
       x.putImageData(im, 0, 0);
       return LE.fx.relight.estimate(c, { mask: m });
     };
-    return { ul: run([-1, 1, 0.8], [1, 0.62, 0.3]), r: run([1, 0, 0.3], [0.8, 0.9, 1.1]) };
+    const ul = run([-1, 1, 0.8], [1, 0.62, 0.3]), rr = run([1, 0, 0.3], [0.8, 0.9, 1.1]);
+    /* the same through LE.fx.analyze(target, { kinds: ['light'], mask }) (the picture is still the second one) */
+    return LE.fx.analyze(c, { kinds: ['light'], mask: m }).then((a) => LE.fx.analyze(c, { kinds: ['histogram'] }).then((plain) => ({ ul, r: rr, viaAnalyze: a.light, stats: !!a.histogram && a.sharpness === null, plain: 'light' in plain })));
   });
+  h.assert.equal(JSON.stringify(r.viaAnalyze), JSON.stringify(r.r), 'analyze with kinds: ["light"] hands back the relight estimate');
+  h.assert(r.stats && !r.plain, 'beside the statistics, and only when asked');
   h.assert(r.ul.ok && Math.abs(r.ul.azimuth - 135) <= 25, 'upper-left light found: ' + JSON.stringify(r.ul));
   h.assert(/upper left/.test(r.ul.words) && /warm/.test(r.ul.words) && r.ul.temperature < 4300, 'described as upper left and warm: ' + r.ul.words + ' ' + r.ul.temperature);
   h.assert(Math.abs(r.r.azimuth) <= 25 && /right/.test(r.r.words) && r.r.temperature > 6500, 'a cool light from the right: ' + JSON.stringify(r.r));
