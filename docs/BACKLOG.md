@@ -167,3 +167,18 @@ Tests:
 - First load: split `le-studio-panels.js` and `le-pwa.js`; Expert looks as recipes (workflow version 2.0).
 - After these merge: one cross-pack test pass (X7) and a full `tests/run-all.sh`.
 - Camera RAW source-request contact is set: hello@withevergrow.com.
+
+## After the wrap-up builds (14 Nov)
+
+Done: Expert workspace tools and handles, renderer and pack clean-ups, brand file, design as code, embed viewer, consent prompt, first-load splits (studio 240 KB), Expert looks as recipes, cross-pack tests (`tests/fx-cross.test.js`).
+
+Still open, small:
+- Fill on photo layers still fades the layer's shadow (shadows are part of the cached bitmap); clipped layers inside a group that has effects draw unclipped.
+- A RAW or HDR layer with legacy adjustments, a filter or background removal still passes through 8 bits.
+- `?tool=share` opens the Download panel, not the share options (the File menu modal has no deep link); the `template-links` site entry has the same mismatch.
+- `floor-reflection` at a `distance` much larger than the layer is slow on software rendering (padded area); fine for normal photo sizes, unmeasured on GPUs.
+- Recipes 2.0: looks that need a depth or face map, and looks carrying a LUT, are written but not exercised by a test. An agent cannot apply a look by recipe id (it uses `fx.add` or `fx.call`).
+- PDF studio first load unchanged (about 290 KB): deferring its fonts and graphics needs awaits in seven PDF files. The start-screen makers row still loads the maker files when idle.
+- Consent prompt reaches only tabs already connected to the running local server. The GitHub Action has not run on a hosted runner.
+- Embed viewer cannot be framed until the `/embed/*` CloudFront behaviour exists (`docs/DEPLOY.md` 4d-2).
+- Patch and Red-eye tools were driven with mouse events only; handles on rotated or flipped layers are untested.

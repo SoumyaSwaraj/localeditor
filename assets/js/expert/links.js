@@ -52,6 +52,7 @@
       if (photo()) { run(); return; }
       wait();
       if (d && c && c.toast) c.toast('Open a photo: “' + (d.name || d.id) + '” will be added to it.', { ms: 7000 });
+      else if (tool && c && c.toast) c.toast('Open a photo: the ' + ((X.tools.get(tool) || {}).label || (X.tools.get(tool) || {}).name || tool) + ' tool will be ready on it.', { ms: 7000 });
     });
   };
   X.on('leave', function () { pending = null; });

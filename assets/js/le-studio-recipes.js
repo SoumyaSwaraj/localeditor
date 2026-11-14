@@ -192,7 +192,12 @@
   function usable(rec) { return rec.entries.filter(function (e) { return !Object.keys(rec.declined).some(function (m) { return R2.needsMap(e, m); }); }); }
   /* The layer's stack without this recipe's entries, then with them at a strength. */
   function fxNext(layer, rec, strength) {
-    var keep = ((layer && layer.fx) || []).filter(function (e) { return !ours(e); });
+    /* Entries are this recipe's only while the layer carries a recipe marker. Without one, an entry that happens to be named
+       "rcp.N" (an agent or a pasted layer may use any id) is the person's own: it is kept and given another id, so removing
+       the look later takes out exactly what the look added. */
+    var marked = !!(layer && layer.adjust && layer.adjust.recipe);
+    var keep = ((layer && layer.fx) || []).filter(function (e) { return !(marked && ours(e)); });
+    if (!marked) keep = keep.map(function (e, i) { return ours(e) ? Object.assign({}, e, { id: 'own.' + i + '.' + e.id.slice(4) }) : e; });
     if (!rec) return keep;
     var add = R2.scale(usable(rec).slice(0, Math.max(0, 32 - keep.length)), strength).map(function (e, i) { e.id = 'rcp.' + i; return e; });
     return keep.concat(add);

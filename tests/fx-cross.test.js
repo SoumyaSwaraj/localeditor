@@ -212,7 +212,7 @@ cases['Expert looks over a layer that already has the person\'s effects: every b
   h.assert.noErrors(pg);
 };
 
-cases['KNOWN-BUG: removing an Expert look also removes the person\'s own entry whose id reads rcp.N (le-studio-recipes.js ours() matches the id prefix only)'] = async ({ browser, base, h }) => {
+cases['removing an Expert look keeps the person\'s own entry even when its id reads rcp.N'] = async ({ browser, base, h }) => {
   const pg = await h.studioWithSample(browser, base, 'desktop');
   await h.need(pg, ['recipes']);
   const r = await pg.evaluate(async () => {
@@ -224,9 +224,9 @@ cases['KNOWN-BUG: removing an Expert look also removes the person\'s own entry w
     const wf = window.LE.recipes2.builtins[0];
     await window.LEStudioRecipes.apply(S, img.id, wf, 100, { maps: false });
     await window.LEStudioRecipes.remove(S, img.id);
-    return (S.L(img.id).fx || []).map((e) => e.id + ':' + (e.p && e.p.amount)).join();
+    return (S.L(img.id).fx || []).map((e) => e.type + ':' + (e.p && e.p.amount)).join();
   });
-  h.assert.equal(r, 'rcp.0:33', 'the person\'s own entry survives apply and remove');
+  h.assert.equal(r, 'contrast:33', 'the person\'s own entry survives apply and remove (it is given another id)');
 };
 
 /* ---- the agent ---- */
