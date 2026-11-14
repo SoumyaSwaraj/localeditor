@@ -192,3 +192,15 @@ Still open, small:
 - **Chart maker**: charts as plain data on a group of ordinary layers; bar and column families, line and area, pie and donut, scatter and histogram, combo, waterfall, funnel, radar, gauge and more; at least eight themes; import CSV or Excel and suggest the chart type; a "Chart poster" quick maker; agent operations.
 - **Print and identity makers, each with its own quick page**: certificate, business card, ID badge, letterhead, gift voucher, ticket, loyalty card, menu, flyer, CV, greeting card. Each opens in the editor, exports print-ready files, and supports "make one for each row" from Excel, CSV or a pasted list where that makes sense.
 - **Styled QR code maker**: colours and gradients, dot and eye shapes, a picture in the centre, frames with a call to action, a scannability check before download, bulk codes from a list, hand-over to the editor.
+
+## 14 Nov, after the chart, QR and print makers
+
+Merged: chart maker (23 types, 9 themes, CSV and Excel import, Chart poster), styled QR maker (looks, logo, frames, scan check, many from a list), ten print and identity makers with a quick page each (36 quick makers, 74 feature pages).
+
+Full suite (`tests/run-all.sh 2`): 1,253 passed, 1 known, 2 failed. Both failures were waits in offline-worker tests (pack removal, a new version taking over) that pass alone and time out when two test files share the machine; the waits are longer now and both files passed with two other files running beside them. The full suite was not re-run after that.
+
+Open, small:
+- Charts: a resized chart stretches until the next chart edit; each option change is its own undo step; dates use the given labels as ticks; no rail entry for the Chart panel; the poster maker has no Story size.
+- QR: a code filled from a list column in Create many draws plain (no style); a maker's QR style is not kept when "Edit details" remakes it; only eight corner-shape pairs pass the software scan check; PDF export turns a see-through background white; never tried with a real phone camera.
+- Print makers: no menu maker (the catalogue maker has a menu layout, without a table-tent fold or QR); Create many fills one page per run, so card backs need a second run; sample photos are not headshots; no printed proof was made.
+- The offline file list is 313 files; the two worker tests above are the first to feel it.

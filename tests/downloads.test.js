@@ -347,7 +347,7 @@ cases['packs download through the worker, survive a page change, verify, work of
     await page.waitForSelector('[data-lp-downloads] [data-ld-rm="basic+models"]', { timeout: 15000 });
     await page.click('[data-lp-downloads] [data-ld-rm="basic+models"]');
     await page.click('[data-lp-downloads] [data-ld-rm="basic+models"]');
-    await until(page, () => LE.downloads.refresh().then((l) => l.find((p) => p.id === 'basic+models').state === 'none'), 15000, 'pack removed');
+    await until(page, () => LE.downloads.refresh().then((l) => l.find((p) => p.id === 'basic+models').state === 'none'), 45000, 'pack removed');   /* removing a pack walks the whole file list; slow when another test file shares the machine */
     const gone = await page.evaluate(async () => !(await caches.match(location.origin + '/assets/models/u2netp.onnx')));
     h.assert(gone, 'removed from the device');
     h.assert(await page.evaluate(() => LE.downloads.log().every((x) => x.id !== 'pack:basic+models')), 'and from the list');

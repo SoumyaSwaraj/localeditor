@@ -4,7 +4,7 @@ Written 12 November 2026 by the lead architect. This supersedes the "Plans after
 
 ## Status (lead architect, 13 November 2026)
 
-Integration branch: `evergrow/focused-pasteur-t84h3j`. Everything listed as merged is on that branch and pushed. Last full run (14 November, `tests/run-all.sh`): 1,184 passed, 1 known, 1 failed; that one (a collage settings bug after undo) is fixed. What is still open is in `docs/BACKLOG.md`.
+Integration branch: `evergrow/focused-pasteur-t84h3j`. Everything listed as merged is on that branch and pushed. Last full run (14 November, `tests/run-all.sh`, with the chart, QR and print makers in): 1,253 passed, 1 known, 2 failed; both were load-sensitive waits in offline-worker tests, since lengthened. What is still open is in `docs/BACKLOG.md`.
 
 **Merged**
 - Phase 1: landing and design system, photo backgrounds, collage, recipes, stock (Pixabay, Pexels, Openverse, Unsplash), install and storage manager, QA suite.
