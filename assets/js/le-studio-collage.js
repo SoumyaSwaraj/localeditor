@@ -685,7 +685,12 @@
     function live(prop, max) {
       return c.ui.slider({
         label: prop[1], min: 0, max: max, value: Math.round(prop[2]() / k), reset: prop[3],
-        onInput: function (v, key) { sliding = true; prop[0](v * k); relayout(c, m, key); },
+        onInput: function (v, key) {
+          /* At the start of a drag, take the settings from the document as it is now: after undo or redo the panel may not
+             have been redrawn yet, and writing its older copy back would undo the other settings. */
+          if (!sliding) { var now = meta(c); if (now) ['spacing', 'margin', 'radius', 'border', 'layout', 'cells', 'order', 'aspect'].forEach(function (f) { if (now[f] !== undefined) m[f] = now[f]; }); }
+          sliding = true; prop[0](v * k); relayout(c, m, key);
+        },
         onEnd: function () { sliding = false; c.scene._endHist && c.scene._endHist(); c.markDirty(); }
       });
     }

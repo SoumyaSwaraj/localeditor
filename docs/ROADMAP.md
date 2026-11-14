@@ -4,7 +4,7 @@ Written 12 November 2026 by the lead architect. This supersedes the "Plans after
 
 ## Status (lead architect, 13 November 2026)
 
-Integration branch: `evergrow/focused-pasteur-t84h3j`. Everything listed as merged is on that branch and pushed. Last full run (13 November, `tests/run-all.sh`): 1,125 passed, 1 known, 0 failed. What is still open is in `docs/BACKLOG.md`.
+Integration branch: `evergrow/focused-pasteur-t84h3j`. Everything listed as merged is on that branch and pushed. Last full run (14 November, `tests/run-all.sh`): 1,184 passed, 1 known, 1 failed; that one (a collage settings bug after undo) is fixed. What is still open is in `docs/BACKLOG.md`.
 
 **Merged**
 - Phase 1: landing and design system, photo backgrounds, collage, recipes, stock (Pixabay, Pexels, Openverse, Unsplash), install and storage manager, QA suite.
@@ -16,9 +16,7 @@ Integration branch: `evergrow/focused-pasteur-t84h3j`. Everything listed as merg
 - Expert mode: workspace, renderer (`docs/FX-AUTHORING.md`), seven effect packs with about 120 effects (`docs/FX-REFERENCE.md`), RAW develop and HDR (`docs/RAW-HDR.md`), depth, face and segment maps.
 - Design: five themes with Clear as the default (`docs/DESIGN.md`).
 
-**Paused by the owner:** cross-pack Expert tests and Expert looks as recipes (X7); on-canvas tools for patch and red-eye; the Wave 3 remainder (brand file, design as code, embed viewer, consent handshake).
-
-**Deferred to keep cost down (not started):** renderer items P6 to P9 and the remaining pack clean-ups, Expert deep links beyond `?mode=expert`, splitting `le-studio-panels.js` and `le-pwa.js` for a lighter first load. Details in `docs/BACKLOG.md`.
+**Wrap-up (14 November), all merged:** on-canvas Patch and Red-eye tools, effect handles and Expert deep links; full precision after RAW develop and the packs on the hardened renderer; brand file, design as code with a GitHub Action, embed viewer, consent prompt for the command-line tool; first-load splits (studio 240 KB); Expert looks as recipes (workflow 2.0); cross-pack tests. What is still open is short and listed in `docs/BACKLOG.md` ("After the wrap-up builds").
 
 **Cannot be checked in the build sandbox:** speed on real GPUs and phones, cameras, install on iOS, Android and Safari, real RAW files beyond two samples.
 

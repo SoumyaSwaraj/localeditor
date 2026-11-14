@@ -182,3 +182,7 @@ Still open, small:
 - Consent prompt reaches only tabs already connected to the running local server. The GitHub Action has not run on a hosted runner.
 - Embed viewer cannot be framed until the `/embed/*` CloudFront behaviour exists (`docs/DEPLOY.md` 4d-2).
 - Patch and Red-eye tools were driven with mouse events only; handles on rotated or flipped layers are untested.
+
+## Full suite, 14 Nov, after the wrap-up builds
+
+`tests/run-all.sh 2`: 1,184 passed, 1 known, 1 failed. The failure was real: after undo or redo, a collage slider could write the panel's older copy of the settings back (spacing reverted when the margin was dragged next). Fixed in `le-studio-collage.js` (a drag starts from the document's current settings); the case then passed 8 times in a row and the whole collage file passes. The full suite was not re-run after this one-file fix.
