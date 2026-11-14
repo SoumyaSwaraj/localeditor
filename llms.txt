@@ -145,6 +145,9 @@ The photo studio has a second workspace, Expert mode (https://localeditor.net/st
 - [Catalogue and price list maker](https://localeditor.net/catalogue-maker/): Product pages, price lists and menus from a spreadsheet.
 - [QR signs and posters](https://localeditor.net/qr-posters/): Wi-Fi sign, pay poster and invitation with a code.
 - [Printables](https://localeditor.net/printables/): Calendars, charts, labels, stickers, photo books and zines.
+- [Flyer maker](https://localeditor.net/flyer-maker/): Flyers for print and social, with an optional QR code.
+- [CV maker](https://localeditor.net/resume-maker/): A one-page CV or résumé, saved as a PDF.
+- [Greeting card maker](https://localeditor.net/greeting-card-maker/): Folded or flat cards for thanks, birthdays and congratulations.
 - [Certificate maker](https://localeditor.net/certificate-maker/): Award and completion certificates, one or one per name.
 - [Business card maker](https://localeditor.net/business-card-maker/): Front and back with bleed, a QR contact card and a print sheet.
 - [ID badge maker](https://localeditor.net/id-badge-maker/): Staff, visitor, student and event badges, one or many.

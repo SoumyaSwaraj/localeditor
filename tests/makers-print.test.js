@@ -5,7 +5,9 @@
 const path = require('path');
 const fs = require('fs');
 
-const MAKERS = ['certificate', 'businesscard', 'idbadge', 'letterhead', 'voucher', 'ticket', 'loyaltycard'];
+const MAKERS = ['certificate', 'businesscard', 'idbadge', 'letterhead', 'voucher', 'ticket', 'loyaltycard', 'flyer', 'resume', 'greetingcard'];
+/* A flyer and a CV are single documents: no list button, no fields. */
+const SINGLE = ['flyer', 'resume'];
 /* maker → the fields its template page must offer Create many, and the page of the make that carries them. */
 const FIELDS = {
   certificate: { keys: ['name', 'reason', 'awarded'], page: 0 },
@@ -14,7 +16,8 @@ const FIELDS = {
   letterhead: { keys: ['name', 'address'], page: 0 },
   voucher: { keys: ['to', 'from', 'value', 'code'], page: 0, qr: 'code' },
   ticket: { keys: ['no', 'seat'], page: 0, qr: 'no' },
-  loyaltycard: { keys: ['name', 'no'], page: 1, values: { holder: 'Amara Okafor', number: '0001' } }
+  loyaltycard: { keys: ['name', 'no'], page: 1, values: { holder: 'Amara Okafor', number: '0001' } },
+  greetingcard: { keys: ['name', 'note'], page: 1 }
 };
 
 async function studio(h, browser, base, vp, url) {
@@ -45,10 +48,11 @@ cases['print makers are registered with physical sizes at 300 dpi and the right 
     ids.forEach((id) => { const m = LE.makers.get(id); out[id] = m ? m.sizes.map((s) => s.id + ':' + s.w + 'x' + s.h + (s.print ? '@' + s.print.w + 'x' + s.print.h + '/' + s.print.dpi : '')) : null; });
     out.styles = ids.map((id) => LE.makers.get(id).styles.length).join(',');
     out.kit = !!LE.makers.kit && !LE.makers.get('printkit');
+    out.lists = Object.keys(LE.makers.lists).sort().join(',');
     return out;
   }, MAKERS);
   h.assert(r.kit, 'the kit is loaded and is not a maker');
-  h.assert.equal(r.styles, '6,8,5,5,5,4,4');
+  h.assert.equal(r.styles, '6,8,5,5,5,4,4,6,4,6');
   h.assert.equal(r.certificate.join(' '), 'a4-landscape:3508x2480@297x210/300 letter-landscape:3300x2550@279.4x215.9/300 a4:2480x3508@210x297/300 letter:2550x3300@215.9x279.4/300 screen:1600x1131');
   /* 85 × 55 mm plus 3 mm bleed a side is 91 × 61 mm; 3.5 × 2 in plus 0.125 in a side is 3.75 × 2.25 in. */
   h.assert.equal(r.businesscard.slice(0, 2).join(' '), 'card-85x55:1075x720@91x61/300 card-us:1125x675@95.25x57.15/300');
@@ -57,6 +61,10 @@ cases['print makers are registered with physical sizes at 300 dpi and the right 
   h.assert.equal(r.voucher.join(' '), 'dl:2480x1169@210x99/300 a6-wide:1748x1240@148x105/300 share:1600x900');
   h.assert.equal(r.ticket[0], 'ticket-140:1654x650@140x55/300');
   h.assert.equal(r.loyaltycard.join(' '), 'card-85x55:1075x720@91x61/300 card-us:1125x675@95.25x57.15/300');
+  h.assert.equal(r.flyer.join(' '), 'a5:1748x2480@148x210/300 a4:2480x3508@210x297/300 letter:2550x3300@215.9x279.4/300 portrait:1080x1350');
+  h.assert.equal(r.resume.join(' '), 'a4:2480x3508@210x297/300 letter:2550x3300@215.9x279.4/300');
+  h.assert.equal(r.greetingcard.join(' '), 'fold-a5:3508x2480@297x210/300 fold-a6:2480x1748@210x148/300 flat-5x7:1500x2100@127x177.8/300');
+  h.assert.equal(r.lists, 'businesscard,certificate,greetingcard,idbadge,letterhead,loyaltycard,ticket,voucher', 'makers with an example list');
   h.assert.noErrors(page);
 };
 
@@ -129,7 +137,11 @@ cases['badges, tickets, vouchers, letterheads and loyalty cards: guides, extra p
     const letter = await B('letterhead', { slip: true, envelope: true });
     const usLetter = await B('letterhead', { slip: true, envelope: true }, { size: 'letter' });
     const loyal = await Promise.all(['5', '8', '10'].map((n) => B('loyaltycard', { stamps: n, paper: 'a4' })));
-    const all = [badge, ticket, dl, a6, share, letter, usLetter].concat(loyal);
+    const card = await B('greetingcard', {}), flat = await B('greetingcard', {}, { size: 'flat-5x7' });
+    const flyer = await B('flyer', {}, { style: 'clean', size: 'a5' }), noLink = await B('flyer', { link: '' }, { size: 'a5' });
+    const cv = await B('resume', {}), worst = LE.makers.cases('resume', []).worst; delete worst.photo;
+    const longs = await Promise.all(LE.makers.get('resume').styles.map((st) => LE.makers.build('resume', worst, { style: st.id, size: 'letter' })));
+    const all = [badge, ticket, dl, a6, share, letter, usLetter, card, flat, flyer, cv].concat(loyal, longs);
     return {
       badge: badge.pages.map((p) => p.width + 'x' + p.height + ':' + groups(p)).join(' / '),
       badgeCells: badge.pages.slice(2).map((p) => count(p, /^(piece|card)-bg(-\d+)?-c\d+$/)).join(','),
@@ -140,6 +152,11 @@ cases['badges, tickets, vouchers, letterheads and loyalty cards: guides, extra p
       usLetter: usLetter.pages.map((p) => p.print.paper + ' ' + p.print.w + 'x' + p.print.h).join(' / '),
       body: letter.pages[0].layers.find((l) => l.id === 'body').text.slice(0, 22),
       slots: loyal.map((b) => count(b.pages[1], /^slot-\d+$/)).join(','),
+      card: card.pages.map((p) => p.width + 'x' + p.height + ':' + groups(p)).join(' / ') + ' | ' + flat.pages.map((p) => p.width + 'x' + p.height + ':' + groups(p)).join(' / '),
+      cardHalves: card.pages.every((p) => p.layers.filter((l) => l.type === 'text').every((l) => l.x >= p.width / 2)),
+      flyerQr: count(flyer.pages[0], /^qr$/) + ',' + count(noLink.pages[0], /^qr$/),
+      cvFits: cv.warnings.length + ',' + cv.pages[0].layers.every((l) => l.y + l.h <= cv.pages[0].height),
+      cvLong: longs.map((b) => b.warnings.length + ':' + b.pages[0].layers.filter((l) => l.type === 'text').every((l) => l.y + l.h <= b.pages[0].height - 150)).join(' '),
       loyalPages: loyal[2].pages.map((p) => p.width + 'x' + p.height + ':' + groups(p)).join(' / '),
       problems: all.reduce((a, b) => a.concat(...b.pages.map((p) => LE.makers.check(p))), []).map((p) => p.message).slice(0, 4).join('; ')
     };
@@ -153,6 +170,11 @@ cases['badges, tickets, vouchers, letterheads and loyalty cards: guides, extra p
   h.assert.equal(r.usLetter, 'letter 215.9x279.4 / slip 215.9x93.1 / envelope-10 241.3x104.8');
   h.assert.equal(r.body, 'Write your letter here');
   h.assert.equal(r.slots, '5,8,10');
+  h.assert.equal(r.card, '3508x2480:Fold line / 3508x2480:Fold line | 1500x2100: / 1500x2100:', 'a folded card is two sheets with a fold line; a flat card has none');
+  h.assert(r.cardHalves, 'front and message sit on the right half, so they are right once folded');
+  h.assert.equal(r.flyerQr, '1,0', 'a flyer has a code only with a link');
+  h.assert.equal(r.cvFits, '0,true', 'the sample CV fits its page');
+  h.assert.equal(r.cvLong, '0:true 0:true 0:true 0:true', 'the longest CV the form accepts still fits one page in every style, inside the margins');
   h.assert.equal(r.loyalPages, '1075x720:Crop marks / 1075x720:Crop marks / 3508x2480:Cut marks / 3508x2480:Cut marks');
   h.assert.equal(r.problems, '');
   h.assert.noErrors(page);
@@ -161,7 +183,7 @@ cases['badges, tickets, vouchers, letterheads and loyalty cards: guides, extra p
 cases['template fields are found, the example lists match them, and a 12-row list makes 12 designs with each row in place'] = async ({ browser, base, h }) => {
   const page = await studio(h, browser, base);
   await withDecoder(page);
-  for (const id of MAKERS) {
+  for (const id of MAKERS.filter((m) => SINGLE.indexOf(m) < 0)) {
     const csv = fs.readFileSync(path.join(h.ROOT, 'assets', 'samples', id + '-list.csv'), 'utf8');
     const r = await page.evaluate(async ([id, spec, csv]) => {
       const V = LE.variables, m = LE.makers.get(id);
@@ -303,17 +325,20 @@ cases['forms at 390 and 360 px: no sideways scroll, no small targets, the list b
     const page = await studio(h, browser, base, vp);
     for (const id of MAKERS) {
       await page.evaluate((id) => LEStudioMakers.open(id), id);
-      await page.waitForFunction(() => document.querySelector('.mk-render') && document.querySelector('.mk-foot .mk-many'));
+      const single = SINGLE.indexOf(id) >= 0;
+      await page.waitForFunction((s) => document.querySelector('.mk-render') && (s || document.querySelector('.mk-foot .mk-many')), single);
+      await page.waitForTimeout(350);   /* the sheet slides in */
       h.assert(await h.noOverflow(page), vp + ' ' + id + ' form overflow');
       const r = await page.evaluate(() => {
         const sheet = document.querySelector('.mk-sheet'), W = window.innerWidth;
         const small = [...sheet.querySelectorAll('button, input:not([type=checkbox]):not([type=file]):not([type=color]), select')].filter((n) => n.offsetParent && n.getBoundingClientRect().height < 40).map((n) => (n.className || n.tagName) + ':' + Math.round(n.getBoundingClientRect().height));
-        const many = sheet.querySelector('.mk-many').getBoundingClientRect(), make = sheet.querySelector('.mk-make').getBoundingClientRect();
+        const mb = sheet.querySelector('.mk-many'), make = sheet.querySelector('.mk-make').getBoundingClientRect(), many = mb ? mb.getBoundingClientRect() : make;
         const wide = [...sheet.querySelectorAll('.mk-form *')].filter((n) => n.getBoundingClientRect().right > W + 1 && !n.closest('.is-scroll')).length;
-        return { small: small.slice(0, 4).join(','), many: many.height >= 44 && many.left >= 0 && many.right <= W && many.bottom <= window.innerHeight, make: make.height >= 44 && make.right <= W, wide };
+        return { hasMany: !!mb, small: small.slice(0, 4).join(','), many: many.height >= 44 && many.left >= 0 && many.right <= W && many.bottom <= window.innerHeight, make: make.height >= 44 && make.right <= W, wide };
       });
       h.assert.equal(r.small, '', vp + ' ' + id + ' small targets');
-      h.assert(r.many && r.make, vp + ' ' + id + ': both buttons are on screen and 44 px tall');
+      h.assert(r.many && r.make, vp + ' ' + id + ': both buttons are on screen and 44 px tall ' + JSON.stringify(r));
+      h.assert.equal(r.hasMany, !single, id + (single ? ' is one document: no list button' : ' offers the list button'));
       h.assert.equal(r.wide, 0, vp + ' ' + id + ': nothing runs off the side');
       await page.evaluate(() => LEStudioMakers.close());
     }

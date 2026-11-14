@@ -259,6 +259,9 @@ Not expressible as a maker today: an "original" aspect for the beautifier (a pag
 | Gift voucher | `voucher` | 1 + sheet | DL, A6, 1600 × 900 | `to`, `from`, `value`, `code` (text and QR) |
 | Event ticket | `ticket` | 1 + sheet | 140 × 55 mm, 5.5 × 2 in, 180 × 70 mm | `no` (text and QR), `seat` |
 | Loyalty card | `loyaltycard` | front, back, + 2 sheets | 85 × 55 mm, 3.5 × 2 in, with bleed | `name`, `no` (on the back) |
+| Flyer | `flyer` | 1 | A5, A4, US Letter, 1080 × 1350 | none: one design, no list button |
+| CV on one page | `resume` | 1 | A4, US Letter | none: one document |
+| Greeting card | `greetingcard` | outside, inside | A4 or A5 turned sideways (folds to A5 / A6), flat 5 × 7 in | `name`, `note` (on the inside page) |
 
 A menu maker was not added: `catalogue` already lays out a menu (sections, items, descriptions and prices from pasted
 rows or a table, five styles, A4, Letter and A5).
@@ -286,7 +289,7 @@ Rules this set adds:
 
 - **Fields.** Only the parts that change per person are fields. Keys are plain words a column would be called. Avoid keys that
   `LE.variables` reads as another type: anything starting with `is`, `has` or `show` is a yes / no field, `date` a date,
-  `price` a number. `LE.makers.check` measures a field as it is drawn (its page value, else its default).
+  `price` a number, and anything ending in `age` (so not `message`). `LE.makers.check` measures a field as it is drawn (its page value, else its default).
 - **Bleed.** A card page is the trim size plus the bleed, so the PDF is print-ready as it is; text keeps 5 mm from the trim.
 - **Into the editor.** Make it places the pages in the editor (after the current run when a design is open, never over it),
   and the toast offers Edit details. There is no "start a new design instead" choice in the form.
