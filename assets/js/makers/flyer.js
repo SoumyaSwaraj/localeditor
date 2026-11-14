@@ -8,7 +8,7 @@
 
   var S = {
     clean: { bg: '#FFFFFF', ink: '#15171C', muted: '#555B66', accent: '#2450D8', head: 'Plus Jakarta Sans', headW: 800, body: 'Inter', photo: 'top' },
-    bold: { bg: '#D8402B', ink: '#FFFFFF', muted: '#FFE7E0', accent: '#16131C', head: 'Anton', headW: 400, caps: 1, headK: 1.3, body: 'Work Sans', photo: 'mid' },
+    bold: { bg: '#C93A27', ink: '#FFFFFF', muted: '#FFE7E0', accent: '#16131C', head: 'Anton', headW: 400, caps: 1, headK: 1.3, body: 'Work Sans', photo: 'mid' },
     poster: { bg: '#15171D', ink: '#FFFFFF', muted: '#D4D0C8', accent: '#F2C46D', head: 'Bebas Neue', headW: 400, caps: 1, headK: 1.45, body: 'Inter', photo: 'full' },
     editorial: { bg: '#F6F1E8', ink: '#22201C', muted: '#5F5A52', accent: '#9B2C2C', head: 'Playfair Display', headW: 800, body: 'Lora', photo: 'mid', centre: 1 },
     minimal: { bg: '#FFFFFF', ink: '#111111', muted: '#555555', accent: '#111111', head: 'Inter Tight', headW: 800, headK: 1.1, body: 'Inter', photo: 'none' },

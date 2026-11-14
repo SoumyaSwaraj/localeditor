@@ -2484,7 +2484,7 @@
         ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
       ],
       "related": ["event-kit", "invitations-qr", "qr-posters", "ticket-maker"],
-      "keywords": ["flyer", "flyer maker", "leaflet", "poster maker", "event flyer", "sale flyer", "a5 flyer", "handout", "flyer with qr code", "printable flyer"]
+      "keywords": ["leaflet", "poster", "event flyer", "sale", "handout", "a5", "qr code"]
     },
     {
       "id": "resume-maker",
@@ -2515,7 +2515,7 @@
         ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
       ],
       "related": ["letterhead-maker", "pdf-editor", "quick-makers", "business-card-maker"],
-      "keywords": ["cv", "cv maker", "resume", "resume maker", "curriculum vitae", "one page cv", "cv template", "job application", "cv pdf", "simple resume"]
+      "keywords": ["cv", "resume", "résumé", "curriculum vitae", "job application", "one page"]
     },
     {
       "id": "greeting-card-maker",
@@ -2547,7 +2547,7 @@
         ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
       ],
       "related": ["invitations-qr", "printables", "certificate-maker", "photo-books"],
-      "keywords": ["greeting card", "card maker", "thank you card", "birthday card", "congratulations card", "folded card", "printable card", "holiday card", "cards from a list", "note card"]
+      "keywords": ["thank you card", "birthday card", "congratulations", "folded card", "holiday card", "note card"]
     },
     {
       "id": "certificate-maker",
@@ -2579,7 +2579,7 @@
         ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
       ],
       "related": ["quick-makers", "printables", "id-badge-maker", "ticket-maker"],
-      "keywords": ["certificate", "certificate maker", "award certificate", "diploma", "certificate of completion", "certificate of participation", "attendance certificate", "class award", "employee of the month", "certificates from a list", "printable certificate"]
+      "keywords": ["award certificate", "diploma", "completion", "participation", "attendance", "class award", "employee of the month", "from a list"]
     },
     {
       "id": "business-card-maker",
@@ -2611,7 +2611,7 @@
         ["What does the QR code contain?", "A standard contact card with the name, role, company, phone, email, website and address you typed, or only your website address. Nothing is looked up or sent anywhere. The code is drawn on your device."]
       ],
       "related": ["brand-kit", "loyalty-card-maker", "letterhead-maker", "id-badge-maker"],
-      "keywords": ["business card", "business card maker", "visiting card", "name card", "contact card", "qr business card", "vcard", "card with bleed", "print business cards at home", "double sided card", "cards from a spreadsheet"]
+      "keywords": ["visiting card", "name card", "contact card", "vcard", "qr", "bleed", "double sided", "spreadsheet"]
     },
     {
       "id": "id-badge-maker",
@@ -2643,7 +2643,7 @@
         ["Is this a secure ID?", "No. It is a printed badge with a photo and a number. It has no chip or hologram and is not checked against any register."]
       ],
       "related": ["certificate-maker", "event-kit", "business-card-maker", "ticket-maker"],
-      "keywords": ["id badge", "id card maker", "staff badge", "visitor pass", "student id", "event badge", "lanyard badge", "name badge with photo", "photo id", "badges from a spreadsheet", "conference badge"]
+      "keywords": ["id card", "staff badge", "visitor pass", "student id", "event badge", "lanyard", "photo id", "conference"]
     },
     {
       "id": "letterhead-maker",
@@ -2675,7 +2675,7 @@
         ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
       ],
       "related": ["business-card-maker", "brand-kit", "pdf-editor", "quick-makers"],
-      "keywords": ["letterhead", "letterhead maker", "company letterhead", "letter template", "business stationery", "compliment slip", "envelope", "letter with logo", "headed paper", "mail merge letters"]
+      "keywords": ["letter template", "stationery", "compliment slip", "envelope", "headed paper", "mail merge"]
     },
     {
       "id": "gift-voucher-maker",
@@ -2707,7 +2707,7 @@
         ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
       ],
       "related": ["loyalty-card-maker", "ticket-maker", "business-card-maker", "pay-poster"],
-      "keywords": ["gift voucher", "gift certificate", "gift card maker", "coupon maker", "voucher template", "discount coupon", "voucher with code", "printable voucher", "vouchers from a list", "salon voucher"]
+      "keywords": ["gift certificate", "gift card", "coupon", "discount", "voucher code", "salon"]
     },
     {
       "id": "ticket-maker",
@@ -2739,7 +2739,7 @@
         ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
       ],
       "related": ["event-kit", "invitations-qr", "certificate-maker", "gift-voucher-maker"],
-      "keywords": ["ticket", "ticket maker", "event ticket", "raffle tickets", "numbered tickets", "concert ticket", "school play tickets", "admission ticket", "tickets with qr code", "printable tickets"]
+      "keywords": ["event ticket", "raffle tickets", "numbered tickets", "concert", "school play", "admission", "stub"]
     },
     {
       "id": "loyalty-card-maker",
@@ -2770,7 +2770,7 @@
         ["Can I change the stamps or the wording?", "Yes. The card opens in the editor as an ordinary design, so every slot, picture and line of text can be moved, recoloured or replaced. Edit details reopens the form."]
       ],
       "related": ["business-card-maker", "gift-voucher-maker", "pay-poster", "labels-tags"],
-      "keywords": ["loyalty card", "stamp card", "punch card", "reward card", "coffee card", "loyalty card maker", "buy nine get one free", "cafe stamp card", "salon loyalty card", "printable loyalty card"]
+      "keywords": ["stamp card", "punch card", "reward card", "coffee card", "cafe", "salon"]
     },
     {
       "kind": "feature",
