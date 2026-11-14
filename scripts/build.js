@@ -77,7 +77,7 @@ const TOOLS = [
   ['text', 'case-converter', 'Case Converter', 'UPPER, lower, Title, camelCase, snake_case and more.', 'case'],
   ['text', 'text-diff', 'Text Compare (Diff)', 'Highlight differences between two texts line by line.', 'diff'],
   ['text', 'lorem-ipsum-generator', 'Lorem Ipsum Generator', 'Generate placeholder paragraphs, sentences or words.', 'para'],
-  ['dev', 'qr-code-generator', 'QR Code Generator', 'Make QR codes for URLs, Wi-Fi, contacts — PNG & SVG.', 'qr'],
+  ['dev', 'qr-code-generator', 'QR Code Generator', 'Styled QR codes with your colours, logo and a Scan me frame — PNG, SVG, PDF.', 'qr'],
   ['dev', 'password-generator', 'Password Generator', 'Create strong random passwords and passphrases.', 'key'],
   ['dev', 'json-formatter', 'JSON Formatter', 'Beautify, minify and validate JSON with error hints.', 'braces'],
   ['dev', 'base64-encoder', 'Base64 Encode / Decode', 'Encode and decode Base64 text and files with UTF-8.', 'binary'],

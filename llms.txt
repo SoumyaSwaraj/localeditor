@@ -45,7 +45,7 @@ Key facts:
 
 ## Developer & everyday utilities
 
-- [QR Code Generator](https://localeditor.net/qr-code-generator/): Make QR codes for URLs, Wi-Fi, contacts — PNG & SVG.
+- [QR Code Generator](https://localeditor.net/qr-code-generator/): Styled QR codes with your colours, logo and a Scan me frame — PNG, SVG, PDF.
 - [Password Generator](https://localeditor.net/password-generator/): Create strong random passwords and passphrases.
 - [JSON Formatter](https://localeditor.net/json-formatter/): Beautify, minify and validate JSON with error hints.
 - [Base64 Encode / Decode](https://localeditor.net/base64-encoder/): Encode and decode Base64 text and files with UTF-8.
