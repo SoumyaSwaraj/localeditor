@@ -42,7 +42,7 @@
   /* Stacks items top to bottom inside box and scales them down together until they fit.
      Items: text specs for env.text ({ text, size, min, gap, w, field, fallback, input, … }) or blocks
      ({ h, gap, fixed, make(x, y, w, h, s) → layer(s), drawn with y from 0 }). Falsy items and empty texts are skipped.
-     o: { align, valign (top | middle | bottom), minScale, values (collects field values), scale }.
+     o: { align, valign (top | middle | bottom), minScale, values (collects field values), scale, clip }.
      Returns { layers, h, top, bottom, s }. When even the smallest scale is too tall, the longest text's input is flagged. */
   function stack(env, box, items, o) {
     o = o || {};
@@ -84,6 +84,8 @@
     }
     var top = box.y + (o.valign === 'middle' ? Math.max(0, (box.h - out.h) / 2) : o.valign === 'bottom' ? Math.max(0, box.h - out.h) : 0);
     out.layers.forEach(function (l) { l.y = r2(l.y + top); });
+    /* clip: what still runs past the box is left out (the form has said what to shorten), never drawn off the page. */
+    if (o.clip && out.h > box.h + 2) out.layers = out.layers.filter(function (l) { return l.y + l.h <= box.y + box.h + 2; });
     return { layers: out.layers, h: out.h, top: top, bottom: top + out.h, s: s };
   }
   /* A logo in a box without cropping it: the slot takes the picture's shape when the picture is known. */
