@@ -57,10 +57,10 @@ Then add `'badge'` to `FILES` in `le-makers.js`, run `node tests/run.js makers`,
 |---|---|
 | `id` | `^[a-z][a-z0-9-]{1,39}$`. Also the file name and the `?make=` id. |
 | `name`, `category`, `summary`, `keywords` | Gallery card, category chips and search. Categories in use: Social, Business, Life, Photo, Print, Events. Keywords are generic words, not brand names. |
-| `sizes` | `[{ id, name, w, h, print }]` or ids from `LE.makers.SIZES` (`square` 1080×1080, `portrait` 1080×1350, `story` 1080×1920) or paper ids from `LE.makers.PAPER` (see Print below). First is the default. Keep names short: the size buttons share one row at 360 px. |
+| `sizes` | `[{ id, name, w, h, print }]` or ids from `LE.makers.SIZES` (`square` 1080×1080, `portrait` 1080×1350, `story` 1080×1920) or paper ids from `LE.makers.PAPER` (see Print below). First is the default. At most five, with short names: the size buttons share one row at 360 px. |
 | `maxPages` | Most pages one build may return (default 8, at most 50, the project's page limit). Multi-page makes land as consecutive pages; Edit details on any of them remakes the whole run (see Multi-page makers). |
 | `inputs` | `{ key, label, type, required, max, placeholder, options, default, hint }`. See types below. |
-| `styles` | `[{ id, name }]`, 4–6 genuinely different looks. First is the default. |
+| `styles` | `[{ id, name }]`, 4–6 genuinely different looks (up to 8 when the formats truly differ, as on business cards). First is the default. |
 | `sample.values` | What the gallery card and a fresh form show. Use `sample:<name>` photo ids from `assets/photos/collage/` (they are ingested into the design when the person makes it). |
 | `build(values, env)` | Returns `{ name, pages: [sceneDoc] }`. Synchronous and deterministic. `values` are validated and cleaned; empty required text arrives as its placeholder; `default`s are filled in. |
 
@@ -247,3 +247,49 @@ Everything in the main quality bar, plus: real sizes in mm (`env.print.mm`), bod
 Code in `beautify` is drawn as one text layer per colour (grouped as "Code"), all on the same grid in JetBrains Mono, each row starting with a zero-width space so indentation survives text wrapping. The highlighter is `LE.makers.highlight(code, lang)` → `{ lang, lines: [[{ t, c }]] }` with classes `plain punct comment keyword string number func type`; languages: JS, TS, Python, HTML/XML, CSS, JSON, shell, SQL, Go, Rust, C/C++, Java/Kotlin, Swift, PHP, Ruby, plain, and detection. Other pure helpers for tests and agents: `LE.makers.recapRange(from, to, period)`, `LE.makers.photoboothFrames(sizeId)`.
 
 Not expressible as a maker today: an "original" aspect for the beautifier (a page always takes the chosen size id's fixed pixels), so the four fixed sizes are offered and the person can use Resize afterwards.
+
+## Print and identity set: cards, certificates, badges, stationery
+
+| Maker | id | Pages | Sizes | Fields for Create many |
+|---|---|---|---|---|
+| Certificate | `certificate` | 1 | A4 and US Letter, wide and tall, 1600 × 1131 screen | `name`, `reason`, `awarded` |
+| Business card | `businesscard` | front, back, + 2 print sheets | 85 × 55, 3.5 × 2 in, 90 × 54, 65 × 65, 55 × 85 mm, each with 3 mm bleed (0.125 in on the US size) | `name`, `role`, `phone`, `email`; `qr` on the back (and on the Large QR front) |
+| ID badge | `idbadge` | front, optional back, + sheets | 85.6 × 54 mm tall or wide, A6, 4 × 3 in | `name`, `role`, `id` (text and QR), `photo` |
+| Letterhead | `letterhead` | letter, optional slip and envelope front | A4, US Letter | `name`, `address` (letter and envelope) |
+| Gift voucher | `voucher` | 1 + sheet | DL, A6, 1600 × 900 | `to`, `from`, `value`, `code` (text and QR) |
+| Event ticket | `ticket` | 1 + sheet | 140 × 55 mm, 5.5 × 2 in, 180 × 70 mm | `no` (text and QR), `seat` |
+| Loyalty card | `loyaltycard` | front, back, + 2 sheets | 85 × 55 mm, 3.5 × 2 in, with bleed | `name`, `no` (on the back) |
+
+A menu maker was not added: `catalogue` already lays out a menu (sections, items, descriptions and prices from pasted
+rows or a table, five styles, A4, Letter and A5).
+
+They share `assets/js/makers/printkit.js` (`LE.makers.kit`), which is listed in `FILES` but registers nothing. Maker files
+load in any order, so a maker that needs the kit registers through it:
+
+```js
+function go(K) { M.register({ … }); }
+if (M.kit) go(M.kit); else (M.kitWait = M.kitWait || []).push(go);
+```
+
+| Kit helper | Notes |
+|---|---|
+| `size(id, name, wMm, hMm, bleedMm)`, `paper(id, name)` | A physical size at 300 dpi with its `doc.print` (bleed added on every side), and a paper size under a shorter button name. |
+| `stack(env, box, items, o)` | Text specs and blocks top to bottom, scaled down together until they fit `box` (trial passes only measure, so layer ids are stable). An item with `field: 'key'` becomes a template field; `fallback: true` keeps its words as the token's default. When even the smallest scale is too tall, the longest text's `input` gets a note in the form. |
+| `column(env, box, align, { top, mid, bottom }, vals, gap)` | Up to three stacks in one box: top, bottom, and the middle in what is left. |
+| `field(layer, key, vals, o)`, `bind(layer, key, fit)` | A fitted text layer becomes `{{key}}` (`overflow: 'shrink'`, `minSize`), its text the page value; a QR layer or photo slot follows a field. Put `vals` in `page.values`. |
+| `trimMarks(env, bleedPx, { color, guides, safe })` | Crop ticks in the four corners of the bleed (group "Crop marks"), and with `guides` dashed trim and safe-area outlines (group "Trim and safe guides"). |
+| `grid(paper, w, h, gap, margin)` (pure), `sheet`, `sheets(env, o)`, `copy` | Pieces n-up on A4 or Letter, upright or turned, whichever holds more; `back` is where each piece lands when the sheet is turned over (`flip`: `long` for a tall sheet, `short` for a wide one). `sheets` returns one sheet page per side, with cut marks outside the bleed and a note in the margin that names the flip edge. |
+| `qrTile`, `vcard` (`LE.makers.vcardPayload`), `link`, `logo`, `seal`, `initials` | A code on a white tile; a vCard 3.0 payload; a typed address as a link; a logo slot that takes the picture's shape; a rosette seal as one SVG layer. |
+| `many(id, rows, fill, page)` | The maker's `ui`: adds **Make one for each row of a list** beside Make it. It makes the design, moves to the page that carries the fields (`page`), opens Create many (`?tool=bulk`) with `rows` (the example list, first row the column names) loaded and its columns matched. `fill` names form inputs that are only fields when filled in; left empty they take the first example row. The lists are `LE.makers.lists[id]`, published as `assets/samples/<id>-list.csv` for the quick pages (`tests/makers-print.test.js` checks they are the same). |
+
+Rules this set adds:
+
+- **Fields.** Only the parts that change per person are fields. Keys are plain words a column would be called. Avoid keys that
+  `LE.variables` reads as another type: anything starting with `is`, `has` or `show` is a yes / no field, `date` a date,
+  `price` a number. `LE.makers.check` measures a field as it is drawn (its page value, else its default).
+- **Bleed.** A card page is the trim size plus the bleed, so the PDF is print-ready as it is; text keeps 5 mm from the trim.
+- **Into the editor.** Make it places the pages in the editor (after the current run when a design is open, never over it),
+  and the toast offers Edit details. There is no "start a new design instead" choice in the form.
+- **Exports** come from the Download panel, which reads `doc.print`: PNG / JPG / WebP, PDF at the physical size (this page or
+  all pages) and Print. Print sheets are ordinary pages of the make. Create many adds a zip of images, one PDF, print sheets
+  with cut marks or pages in the design, one per row.

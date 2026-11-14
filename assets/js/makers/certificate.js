@@ -33,7 +33,7 @@
     M.register({
       id: 'certificate',
       name: 'Certificate',
-      category: 'Print',
+      category: 'Business',
       summary: 'An award or completion certificate with signature lines and a seal, ready to print.',
       keywords: ['certificate', 'award', 'diploma', 'completion', 'participation', 'appreciation', 'attendance', 'school', 'class award', 'employee', 'course', 'print'],
       sizes: [K.paper('a4-landscape', 'A4 wide'), K.paper('letter-landscape', 'US wide'), K.paper('a4', 'A4 tall'), K.paper('letter', 'US tall'),
