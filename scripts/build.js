@@ -424,7 +424,7 @@ function buildMeta() {
   const today = new Date().toISOString().slice(0, 10);
   const urls = [''];
   for (const entry of fs.readdirSync(ROOT)) {
-    if (fs.existsSync(path.join(ROOT, entry, 'index.html'))) urls.push(entry + '/');
+    if (entry !== 'embed' && fs.existsSync(path.join(ROOT, entry, 'index.html'))) urls.push(entry + '/');   /* the embed viewer is noindex */
   }
   fs.writeFileSync(path.join(ROOT, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${SITE}${u}</loc><lastmod>${today}</lastmod><priority>${u === '' ? '1.0' : u === 'about/' ? '0.5' : '0.8'}</priority></url>`).join('\n')}\n</urlset>\n`);
   fs.writeFileSync(path.join(ROOT, 'robots.txt'), `User-agent: *\nAllow: /\n\n# AI / answer engines are welcome\nUser-agent: GPTBot\nAllow: /\nUser-agent: OAI-SearchBot\nAllow: /\nUser-agent: ClaudeBot\nAllow: /\nUser-agent: PerplexityBot\nAllow: /\nUser-agent: Google-Extended\nAllow: /\n\nSitemap: ${SITE}sitemap.xml\n`);
@@ -504,7 +504,7 @@ function walk(dir, out = []) {
   return out;
 }
 /* Downloaded on request and owned by a runtime cache (listed in the storage manager), never precached. */
-const ON_DEMAND = /^assets\/js\/expert\/mock-fx\.js$|^tools\/(?!index\.html$)|^agent-kit\/|^examples\/|^assets\/vendor\/raw-decoder\/|^assets\/js\/raw\/(?!le-raw-studio\.js$)|^assets\/fonts\/originals\/|^assets\/vendor\/tesseract\/|^assets\/vendor\/pdf-lib-crypt|^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/fonts\/(cjk|previews)\/|^assets\/data\/fonts-(cjk|details)\.json$|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
+const ON_DEMAND = /^embed\/|^assets\/js\/le-embed\.js$|^assets\/css\/embed\.css$|^assets\/js\/expert\/mock-fx\.js$|^tools\/(?!index\.html$)|^agent-kit\/|^examples\/|^assets\/vendor\/raw-decoder\/|^assets\/js\/raw\/(?!le-raw-studio\.js$)|^assets\/fonts\/originals\/|^assets\/vendor\/tesseract\/|^assets\/vendor\/pdf-lib-crypt|^assets\/vendor\/ort|^labs\/|^assets\/fonts\/library\/|^assets\/fonts\/(cjk|previews)\/|^assets\/data\/fonts-(cjk|details)\.json$|^assets\/data\/(lucide|phosphor|emoji)\.json$|^assets\/data\/withicons\/|^assets\/photos\/|^assets\/data\/collages\/|^assets\/models\/|^assets\/screenshots\//;
 /* If one of these fails to download, the new version is not installed (the old one keeps working). */
 const CRITICAL = ['./', './offline.html', './studio/', './assets/js/app.js', './assets/css/app.css', './assets/js/le-pwa.js', './assets/css/le-pwa.css', './manifest.webmanifest'];
 

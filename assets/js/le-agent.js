@@ -883,7 +883,7 @@
     var before = clone(p.pages), beforeActive = p.activePage || 0;
     var structural = final.pages.length !== before.length || final.active !== beforeActive;
     Object.keys(final.assets || {}).forEach(function (id) { if (!p.assets[id]) p.assets[id] = c.S.mem[id] ? c.S.mem[id].meta : final.assets[id]; });
-    if (final.studio) ['icons', 'qr', 'fx', 'pageIds', 'variables', 'remix'].forEach(function (k) { if (final.studio[k] != null) p.meta.studio[k] = final.studio[k]; else if (k === 'variables' || k === 'remix' || k === 'pageIds') delete p.meta.studio[k]; });
+    if (final.studio) ['icons', 'qr', 'fx', 'pageIds', 'variables', 'remix', 'brand'].forEach(function (k) { if (final.studio[k] != null) p.meta.studio[k] = final.studio[k]; else if (k === 'variables' || k === 'remix' || k === 'pageIds') delete p.meta.studio[k]; });
     if (final.name && final.name !== p.name) p.name = final.name;
     A.committing = true;
     try {

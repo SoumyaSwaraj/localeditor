@@ -120,6 +120,15 @@ What the CSP allows, and why:
 - `img-src 'self' data: blob: https:` because stock thumbnails are shown straight from the providers.
 - `frame-ancestors 'none'`: nobody can embed the site in a frame.
 
+### 4d-2. The embed viewer needs its own headers
+
+The site-wide policy sends `X-Frame-Options: DENY` and `frame-ancestors 'none'`, so no other site can frame any page. That is right for everything except `/embed/` (the read-only design viewer, `docs/EMBED.md`), which exists to be framed.
+
+1. Create a second response headers policy from `infra/cloudfront/response-headers-policy-embed.json`. It is the same policy without `X-Frame-Options` and with `frame-ancestors *`. To allow only certain sites, replace `*` with their origins.
+2. Add a cache behaviour for the path pattern `/embed/*` on the same origin, with the same settings as the default behaviour, and attach this policy to it.
+
+The viewer's script and styles (`assets/js/le-embed.js`, `assets/css/embed.css`) are loaded by the framed page, so they need no change. Until this is done, "Copy embed code" produces a frame that browsers refuse to show.
+
 ### 4e. COOP / COEP and multi-threaded AI
 
 Some on-device AI libraries run faster with several threads, which needs `SharedArrayBuffer`, which needs the page to be "cross-origin isolated": `Cross-Origin-Opener-Policy: same-origin` **and** `Cross-Origin-Embedder-Policy: require-corp` (or `credentialless`).
