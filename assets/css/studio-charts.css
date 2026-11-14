@@ -56,8 +56,9 @@
 
 .cx-field { display: grid; gap: 5px; margin: 10px 0 0; font-size: 12.5px; font-weight: 650; color: var(--muted); }
 .cx-field .sx-input { min-height: 44px; }
-.sx-sec-body > .sx-seg, .sx-sec-body > .sx-toggle { margin-top: 8px; }
-.sx-sec-body > .sx-seg button { min-height: 44px; }
+.cx .sx-sec-body > .sx-seg, .cx .sx-sec-body > .sx-toggle { margin-top: 8px; }
+.cx .sx-sec-body > .sx-seg button { min-height: 44px; }
+.cx .sx-toggle { min-height: 44px; }
 
 /* The typing grid: a table when there is room, one card per row on a phone. */
 .cx-gridwrap { overflow-x: auto; margin: 0 -2px; padding: 2px; }

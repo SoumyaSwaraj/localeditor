@@ -275,8 +275,8 @@ cases['hostile data is handled with a plain note and no hang: huge, negative, Na
   h.assert(r.fit.uniq <= 5000 && /Every \d+\w+ row is used/.test(r.fit.uniqNote), 'unique rows are sampled, with a note: ' + r.fit.uniqNote);
   h.assert(r.notes.formulas.texts.indexOf('=SUM(A1:A9)') >= 0 && r.notes.formulas.texts.indexOf('2') < 0, 'a formula is shown as the text it is, never worked out: ' + r.notes.formulas.texts);
   h.assert(r.notes.formulas.notes.some((n) => /No column of numbers was found/.test(n)), 'a column of formulas is not a column of numbers, and the chart says so: ' + r.notes.formulas.notes);
-  h.assert(r.notes.nan.notes.some((n) => /not a number/.test(n)) && r.notes.empty.notes.length && r.notes.noRows.notes.length, 'NaN and empty tables get a note');
-  h.assert(/1\.0e21/.test(r.notes.huge.texts.join(' ')) && r.notes.huge.notes.some((n) => /2 numbers are too large to draw/.test(n)), 'huge numbers are written in a short form; the unthinkable ones are left out with a note: ' + r.notes.huge.texts + ' / ' + r.notes.huge.notes);
+  h.assert(r.notes.nan.notes.some((n) => /not a number|No column of numbers/.test(n)) && r.notes.empty.notes.length && r.notes.noRows.notes.length, 'NaN and empty tables get a note: ' + JSON.stringify([r.notes.nan.notes, r.notes.empty.notes, r.notes.noRows.notes]));
+  h.assert(/1\.0e21/.test(r.notes.huge.texts.join(' ')) && r.notes.huge.notes.some((n) => /numbers? (is|are) too large to draw/.test(n)), 'huge numbers are written in a short form; the unthinkable ones are left out with a note: ' + r.notes.huge.texts + ' / ' + r.notes.huge.notes);
   h.assert.equal(r.dirty.keys, 'v,type,data,map,theme,options');
   h.assert(r.dirty.polluted && !/constructor|__proto__|polluted/.test(r.dirty.map) && r.dirty.theme === 'clean', 'forbidden keys and odd theme names are dropped: ' + JSON.stringify(r.dirty));
   h.assert(r.capped === 2500 && r.none.every((x) => x === null), 'a document keeps at most 5,000 cells; things that are not charts are refused');

@@ -371,8 +371,10 @@
     body.appendChild(foot);
   }
 
-  function render(c, body, o) {
+  function render(c, host, o) {
     ST.job++;
+    var body = el('<div class="cx"></div>');
+    host.appendChild(body);
     var g = c.scene ? current(c) : null;
     if (ST.view === 'grid' && ST.grid) return viewGrid(c, body);
     if (g && ST.view !== 'suggest') { ST.view = 'edit'; return viewEdit(c, body, g); }
