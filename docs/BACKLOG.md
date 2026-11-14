@@ -186,3 +186,9 @@ Still open, small:
 ## Full suite, 14 Nov, after the wrap-up builds
 
 `tests/run-all.sh 2`: 1,184 passed, 1 known, 1 failed. The failure was real: after undo or redo, a collage slider could write the panel's older copy of the settings back (spacing reverted when the margin was dragged next). Fixed in `le-studio-collage.js` (a drag starts from the document's current settings); the case then passed 8 times in a row and the whole collage file passes. The full suite was not re-run after this one-file fix.
+
+## Owner requests, 14 Nov (building)
+
+- **Chart maker**: charts as plain data on a group of ordinary layers; bar and column families, line and area, pie and donut, scatter and histogram, combo, waterfall, funnel, radar, gauge and more; at least eight themes; import CSV or Excel and suggest the chart type; a "Chart poster" quick maker; agent operations.
+- **Print and identity makers, each with its own quick page**: certificate, business card, ID badge, letterhead, gift voucher, ticket, loyalty card, menu, flyer, CV, greeting card. Each opens in the editor, exports print-ready files, and supports "make one for each row" from Excel, CSV or a pasted list where that makes sense.
+- **Styled QR code maker**: colours and gradients, dot and eye shapes, a picture in the centre, frames with a call to action, a scannability check before download, bulk codes from a list, hand-over to the editor.
