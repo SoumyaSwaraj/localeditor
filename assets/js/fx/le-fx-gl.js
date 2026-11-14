@@ -882,6 +882,9 @@
       mask: function (maskDef) { var r = FX.cleanMask(maskDef); return run.mask(r.mask, g.source) || run.constant(1); },
       alpha: function () { var out = run.handle(1, def.space === 'oklab' ? 'linear' : def.space); return run.pass('vec4 fx(){ return vec4(texture(u_src, v_uv).a); }', { u_src: g.source }, out, 'alpha'); },
       scene: function () { return env.scene || null; },
+      /* The layer directly below this one, drawn alone (premultiplied, display-referred) and aligned with the working rectangle:
+         .a is its alpha, .rgb its colour. Null unless the effect declares `below` in needs and there is such a layer. */
+      below: function () { return env.below || null; },
       stats: function () { return env.stats ? env.stats(entry) : null; },
       /* A map of the layer as a handle: 'depth', 'subject', 'face' ({ part }), 'segments'. handle.missing says the layer has none. */
       map: function (kind, opts) { return run.mapHandle(kind, opts); },
@@ -1009,7 +1012,7 @@
     var src = job.source, W0 = src.naturalWidth || src.width, H0 = src.naturalHeight || src.height;
     var res = FX.resolve(job.fx);
     var stageA = res.entries.filter(function (e) { return !e.def.silhouette; });
-    var stageB = res.entries.filter(function (e) { return e.def.silhouette && e.def.needs.indexOf('scene') < 0; });
+    var stageB = res.entries.filter(function (e) { return e.def.silhouette && !e.def.drawTime; });
     var floatSrc = isData(src);
     if (!floatSrc && !res.entries.length && !job.cut && !job.clip && !job.mask && !job.quad && !job.pad && !job.colorSpace && !job.outline) {
       /* Nothing to do (an empty stack, or only entries that are off or unknown): the same pixels back, without a round trip. */
@@ -1087,6 +1090,11 @@
      which the texture's own edge clamp continues; a border wider than the picture itself adds work and no information, so a
      small picture under a very wide stack stays small. */
   function nearOf(reach, grid, OW, OH) { return Math.min(reach, 2 * grid, Math.max(64, OW, OH)); }
+  /* Whether one rectangle can hold the whole picture and its border (the same test as eachTile). */
+  function fitsOne(W, H, pad, reach) {
+    var OW = W + 2 * pad, OH = H + 2 * pad, grid = gridFor(reach, OW, OH), near = nearOf(reach, grid, OW, OH), sw = OW + 2 * near + 2 * grid, sh = OH + 2 * near + 2 * grid;
+    return !S.cfg.tile && sw <= S.caps.maxTex && sh <= S.caps.maxTex && sw * sh <= maxArea();
+  }
   /* Rectangle pixels a render will touch, summed over its tiles (the same arithmetic as eachTile). */
   function workOf(W, H, pad, reach, spatial) {
     var grid = gridFor(reach, W + 2 * pad, H + 2 * pad), OW = W + 2 * pad, OH = H + 2 * pad;
@@ -1165,8 +1173,14 @@
     var mask = o.alpha && job.mask ? FX.cleanMask(job.mask).mask : null;
     var cut = o.alpha ? job.cut : null;
     var cutSigma = cut && cut.feather > 0 ? cut.feather / 2 : 0;
-    var reach = capReach(reachOf(listA.concat(listB), sc, mask ? [mask] : [], { w: o.box[0], h: o.box[1] }) + (cutSigma ? M.blurReach(cutSigma * sc) : 0));
-    if (reach > 0 && !isData(source) && Math.max(W, H) > 96 && workOf(W, H, pad, reach, true) > workMax(job.preview)) {
+    var asked = reachOf(listA.concat(listB), sc, mask ? [mask] : [], { w: o.box[0], h: o.box[1] }) + (cutSigma ? M.blurReach(cutSigma * sc) : 0), reach = capReach(asked);
+    /* A preview that has to be tiled and whose stack reads further than a tile can carry is rendered smaller until the reach
+       fits: clamping it would cost the most work for a picture with seams. (An export keeps its size and the clamp, with the note.) */
+    var tiled = !!job.preview && reach > 0 && !fitsOne(W, H, pad, reach), tooFar = tiled && asked > reach;
+    /* The same when tiling it would be mostly overlap: tiles whose borders are many times their core cost more than twelve
+       times the picture's own area, where a smaller single rectangle shows the same preview for a fraction of the work. */
+    var wasteful = tiled && workOf(W, H, pad, reach, true) > 12 * (W + 2 * pad) * (H + 2 * pad);
+    if (reach > 0 && !isData(source) && Math.max(W, H) > 96 && (tooFar || wasteful || workOf(W, H, pad, reach, true) > workMax(job.preview))) {
       note('work', 'This stack is very wide for the picture size; it is rendered at reduced resolution to stay responsive.');
       var small = halve(source), o2 = {};
       Object.keys(o).forEach(function (k) { o2[k] = o[k]; });
@@ -1434,6 +1448,7 @@
     }
     var out = makeCanvas(W, H), octx = out.getContext('2d');
     var needScene = !!o.scene && res.entries.some(function (e) { return e.def.needs.indexOf('scene') >= 0; });
+    var needBelow = !!o.below && res.entries.some(function (e) { return e.def.needs.indexOf('below') >= 0; });
     var f8 = S.caps.float ? 'f16' : '8', wholes = [], whole2 = wholeFn(o.source, listA, { box: { w: o.box[0], h: o.box[1] }, assets: o.assets, layer: o.layer, matrix: m, scale: sc }, wholes, listB, false);
     if (S.prof) S.profAt = performance.now();
     S.stats.renders++;
@@ -1443,8 +1458,15 @@
         rw: t.rw, rh: t.rh, sx: sc, sy: sc, dm: [m[0], m[2], m[1], m[3]], dt: [m[0] * t.x0 + m[2] * t.y0 + m[4], m[1] * t.x0 + m[3] * t.y0 + m[5]], box: o.box, abs: [t.x0 + o.abs[0], t.y0 + o.abs[1]], grid: t.grid,
         img: t.img, draft: !!o.draft, crop: [0, 0, 1, 1], hinv: null, assets: o.assets, layer: o.layer, subjectCanvas: null, scene: null, stats: null, whole: o.wholeOff ? null : whole2
       };
-      var run = ingest(env, o.source, t, false, !o.adjust && listA.length ? listA[0].def.space : 'display'), scTex = null, base = null;
+      var run = ingest(env, o.source, t, false, !o.adjust && listA.length ? listA[0].def.space : 'display'), scTex = null, base = null, blTex = null;
       try {
+        if (needBelow) {
+          blTex = upload(o.below, t.whole ? { fresh: true } : { rect: t.up, fresh: true });
+          var bh = run.handle(1, 'display');
+          run.pass(INGEST, { u_src: { t: blTex }, u_map: t.whole && blTex.w === t.rw && blTex.h === t.rh ? [0, 0, 1, 1] : t.map, u_lin: 0 }, bh, 'below');
+          bh.hold = true;
+          env.below = bh;
+        }
         if (needScene) {
           scTex = upload(o.scene, t.whole ? { fresh: true } : { rect: t.up, fresh: true });
           var sh = run.handle(1, 'display');
@@ -1479,6 +1501,7 @@
         run.done();
         if (run.tex) kill(run.tex);
         if (scTex) kill(scTex);
+        if (blTex) kill(blTex);
       }
     });
     wholes.forEach(kill);
@@ -1626,7 +1649,7 @@
     /* A group with expert data draws its members together, once, where its first member sits. */
     var top = null, g = layer.groupId ? scene._find(layer.groupId) : null, guard = 0;
     while (g && guard++ < 16) { if (expert(g)) top = g; g = g.groupId ? scene._find(g.groupId) : null; }
-    var members, owner, stack, lmask, clipped = [];
+    var members, owner, stack, lmask, followers = [], idx = layers.indexOf(layer);
     if (top) {
       if (st.done[top.id]) return true;
       st.done[top.id] = 1;
@@ -1635,33 +1658,39 @@
       members.sort(function (a, b) { return layers.indexOf(a) - layers.indexOf(b); });
       owner = top; stack = top.fx || []; lmask = top.layerMask || null;
     } else {
+      if (clipKind(layer)) {
+        /* A clipped layer is drawn with its base. Without a base, or when the base did not take it (it is being edited, or sits
+           in a group with effects), it is drawn as an ordinary layer; with a hidden base it is hidden too. */
+        if (st.done[layer.id]) return true;
+        var base = baseOf(layers, idx);
+        if (base && (base.visible === false || scene._hidden(base))) return true;
+      }
       if (layer.visible === false || scene._hidden(layer) || (opts.preview && scene._editing === layer.id)) return false;
-      for (i = layers.indexOf(layer) + 1; i < layers.length && layers[i].type === 'adjust' && layers[i].clip; i++) if (layers[i].visible !== false && Array.isArray(layers[i].fx) && layers[i].fx.length) clipped.push(layers[i]);
+      if (!clipKind(layer)) {
+        for (i = idx + 1; i < layers.length; i++) {
+          var f = layers[i], on = f.visible !== false && !scene._hidden(f);
+          if (f.type === 'adjust' && f.clip) { if (on && Array.isArray(f.fx) && f.fx.length) followers.push({ l: f, kind: 'adjust' }); }
+          else if (clipKind(f)) { if (!(opts.preview && scene._editing === f.id)) followers.push({ l: f, kind: on && scene._opacity(f) > 0 ? clipKind(f) : 'off' }); }
+          else break;
+        }
+      }
       var res = FX.resolve(layer.fx);
-      if (layer.type === 'image') { stack = plainEntries(res.entries.filter(function (e) { return e.def.needs.indexOf('scene') >= 0; })); lmask = null; }
+      if (layer.type === 'image') { stack = plainEntries(res.entries.filter(function (e) { return e.def.drawTime; })); lmask = null; }
       else { stack = layer.fx || []; lmask = layer.layerMask || null; }
-      if (!stack.length && !lmask && !clipped.length) return false;
+      if (!stack.length && !lmask && !followers.length) return false;
       members = [layer]; owner = layer;
     }
     try {
       var blend = !top && BLEND2D[layer.blend] ? layer.blend : 'source-over';
-      var last = Math.max.apply(null, members.map(function (l) { return layers.indexOf(l); })) + clipped.length;
+      var last = Math.max.apply(null, members.map(function (l) { return layers.indexOf(l); }));
+      followers.forEach(function (q) { last = Math.max(last, layers.indexOf(q.l)); if (q.kind !== 'adjust') st.done[q.l.id] = 1; });
       var dkey = sceneKey(scene, last, ctx, opts, 'draw:' + owner.id), dhit = cacheGet(dkey);
       if (dhit) { put(ctx, dhit.canvas, dhit.x, dhit.y, blend, false); return true; }
-      var iso = isolate(scene, ctx, members, opts, stack.length ? growDoc({ fx: stack, w: owner.w, h: owner.h }) : 0);
+      var under = { canvas: ctx.canvas, x: 0, y: 0 };
+      var iso = solo(scene, ctx, members, owner, stack, lmask, opts, under);
       if (!iso) return true;
-      var canvas = iso.canvas;
-      if (stack.length || lmask) {
-        var needScene = FX.resolve(stack).entries.some(function (e) { return e.def.needs.indexOf('scene') >= 0; }), behind = null;
-        if (needScene) { behind = makeCanvas(canvas.width, canvas.height); behind.getContext('2d').drawImage(ctx.canvas, iso.x, iso.y, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height); }
-        var outC = renderRegion({ source: canvas, scene: behind, fx: stack, layerMask: lmask, scale: iso.scale, matrix: toBox(iso.m, owner, iso.x, iso.y), box: [owner.w, owner.h], abs: [iso.x, iso.y], assets: sceneAsset(scene), layer: owner, draft: !!(opts.preview && S.interactive) });
-        if (outC) canvas = outC;
-      }
-      if (clipped.length) {
-        var cx = canvas.getContext('2d');
-        cx.setTransform(iso.m.a, iso.m.b, iso.m.c, iso.m.d, iso.m.e - iso.x, iso.m.f - iso.y);
-        clipped.forEach(function (adj) { adjustOnto(scene, cx, adj, opts); });
-      }
+      var canvas = iso.out;
+      if (followers.length) clipOnto(scene, ctx, iso, layer, stack, lmask, followers, opts, under);
       put(ctx, canvas, iso.x, iso.y, blend, false);
       cachePut(dkey, canvas, iso.x, iso.y);
     } catch (e2) {
@@ -1670,6 +1699,78 @@
     }
     return true;
   };
+  /* clip on an ordinary layer: true (drawn only inside the layer below) or 'knockout' (its shape is cut out of that layer). */
+  function clipKind(l) { return l && l.type !== 'adjust' && l.type !== 'group' ? (l.clip === true ? 'clip' : l.clip === 'knockout' ? 'knockout' : null) : null; }
+  /* The layer a clipped layer belongs to: the first layer below it that is not itself clipped. */
+  function baseOf(layers, i) {
+    for (var j = i - 1; j >= 0; j--) { var l = layers[j]; if (l.type === 'adjust' && l.clip) continue; if (clipKind(l)) continue; return l.type === 'group' || l.type === 'adjust' ? null : l; }
+    return null;
+  }
+  /* The nearest drawable layer below one, for g.below(). */
+  function belowOf(scene, layers, i) {
+    for (var j = i - 1; j >= 0; j--) { var l = layers[j]; if (l.type === 'adjust' || l.type === 'group' || l.visible === false || scene._hidden(l)) continue; return l; }
+    return null;
+  }
+  /* Layers alone on a device canvas, through their draw-time stack. under: { canvas, x, y }, what scene-reading effects see.
+     Returns the isolate record with .out, the finished canvas. */
+  function solo(scene, ctx, members, owner, stack, lmask, opts, under) {
+    var iso = isolate(scene, ctx, members, opts, stack.length ? growDoc({ fx: stack, w: owner.w, h: owner.h }) : 0);
+    if (!iso) return null;
+    var canvas = iso.canvas, w = canvas.width, h = canvas.height;
+    if (stack.length || lmask) {
+      var ents = FX.resolve(stack).entries, behind = null, below = null;
+      if (under && ents.some(function (e) { return e.def.needs.indexOf('scene') >= 0; })) { behind = makeCanvas(w, h); behind.getContext('2d').drawImage(under.canvas, iso.x - under.x, iso.y - under.y, w, h, 0, 0, w, h); }
+      if (ents.some(function (e) { return e.def.needs.indexOf('below') >= 0; })) {
+        var layers = scene._doc.layers, at = Math.min.apply(null, members.map(function (l) { var k = layers.indexOf(scene._find ? scene._find(l.id) || l : l); return k < 0 ? Infinity : k; }));
+        var bl = isFinite(at) ? belowOf(scene, layers, at) : null, bi = bl ? isolate(scene, ctx, [bl], opts, 0) : null;
+        below = makeCanvas(w, h);
+        if (bi) below.getContext('2d').drawImage(bi.canvas, bi.x - iso.x, bi.y - iso.y);
+      }
+      var outC = renderRegion({ source: canvas, scene: behind, below: below, fx: stack, layerMask: lmask, scale: iso.scale, matrix: toBox(iso.m, owner, iso.x, iso.y), box: [owner.w, owner.h], abs: [iso.x, iso.y], assets: sceneAsset(scene), layer: owner, draft: !!(opts.preview && S.interactive) });
+      if (outC) canvas = outC;
+    }
+    iso.out = canvas;
+    return iso;
+  }
+  /* The layers clipped to a base, composed onto the base's canvas: clipped adjustment layers change it in place; a clipped
+     layer is drawn only where the base is (its own alpha, without its drop shadow), blended as the layer asks, and reads the
+     base as its scene; a knockout layer removes its shape from the base. */
+  function clipOnto(scene, ctx, iso, layer, stack, lmask, followers, opts, under) {
+    var canvas = iso.out, cx = canvas.getContext('2d'), mask = null;
+    if (followers.some(function (q) { return q.kind === 'clip'; })) {
+      if (layer.shadow) {
+        var bare = {};
+        Object.keys(layer).forEach(function (k) { bare[k] = layer[k]; });
+        bare.shadow = null;
+        var ms = solo(scene, ctx, [bare], bare, stack, lmask, opts, under);
+        if (ms) mask = { canvas: ms.out, x: ms.x, y: ms.y };
+      }
+      if (!mask) mask = { canvas: canvas, x: iso.x, y: iso.y, same: true };
+    }
+    function flat(c) { c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.shadowColor = 'transparent'; c.filter = 'none'; }
+    followers.forEach(function (q) {
+      var fl = q.l;
+      if (q.kind === 'off') return;
+      if (q.kind === 'adjust') { cx.globalCompositeOperation = 'source-over'; cx.setTransform(iso.m.a, iso.m.b, iso.m.c, iso.m.d, iso.m.e - iso.x, iso.m.f - iso.y); adjustOnto(scene, cx, fl, opts); return; }
+      var fres = FX.resolve(fl.fx), fstack = fl.type === 'image' ? plainEntries(fres.entries.filter(function (e) { return e.def.drawTime; })) : (fl.fx || []);
+      var fs = solo(scene, ctx, [fl], fl, fstack, fl.type === 'image' ? null : fl.layerMask || null, opts, { canvas: canvas, x: iso.x, y: iso.y });
+      if (!fs) return;
+      flat(cx);
+      if (q.kind === 'knockout') {
+        cx.globalCompositeOperation = 'destination-out';
+        cx.drawImage(fs.out, fs.x - iso.x, fs.y - iso.y);
+        if (mask && !mask.same) { var mx = mask.canvas.getContext('2d'); flat(mx); mx.globalCompositeOperation = 'destination-out'; mx.drawImage(fs.out, fs.x - mask.x, fs.y - mask.y); }
+      } else {
+        var fc = fs.out.getContext('2d');
+        flat(fc);
+        fc.globalCompositeOperation = 'destination-in';
+        fc.drawImage(mask.canvas, mask.x - fs.x, mask.y - fs.y);
+        cx.globalCompositeOperation = BLEND2D[fl.blend] ? fl.blend : 'source-over';
+        cx.drawImage(fs.out, fs.x - iso.x, fs.y - iso.y);
+      }
+      cx.globalCompositeOperation = 'source-over';
+    });
+  }
 
   /* LE.Scene.exportLayer draws one layer alone, unrotated, into a canvas the size of its box. A photo layer's effects are already in
      its bitmap. For any other layer the stack and the layer mask run here, on the layer by itself: there is no scene behind it, so
@@ -1679,7 +1780,7 @@
     var alone = {};
     Object.keys(layer).forEach(function (k) { alone[k] = layer[k]; });
     alone.x = 0; alone.y = 0; alone.rotation = 0; alone.groupId = null; alone.opacity = scene._opacity(layer);
-    var stack = plainEntries(FX.resolve(layer.fx).entries.filter(function (e) { return e.def.needs.indexOf('scene') < 0; }));
+    var stack = plainEntries(FX.resolve(layer.fx).entries.filter(function (e) { return !e.def.drawTime; }));
     try {
       var inner = {};
       Object.keys(opts).forEach(function (k) { inner[k] = opts[k]; });

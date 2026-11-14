@@ -1518,12 +1518,12 @@
      fx as a list, layerMask (a "mask" object means the same), transform, retouch, maps, raw and the adjustment layer type.
      They are read and checked by LE.fx.design, which loads only when a file carries them. */
   TYPES.push('adjust');
-  COMMON.push('fx', 'layerMask', 'transform', 'retouch', 'maps', 'raw');
+  COMMON.push('fx', 'layerMask', 'transform', 'retouch', 'maps', 'raw', 'clip');
   BY_TYPE.adjust = ['clip'];
   BY_TYPE.image.push('fxBaked');
   function readExpert(src, l, d, page, type) {
     if (type === 'adjust') { l.clip = src.clip === true; if (d.w == null && d.h == null) { d.w = page.width; d.h = page.height; } }
-    var raw = { fx: type === 'image' && !Array.isArray(src.fx) ? null : src.fx, fxBaked: src.fxBaked, layerMask: src.layerMask != null ? src.layerMask : isObj(src.mask) ? src.mask : null, transform: src.transform, retouch: src.retouch, maps: src.maps, raw: src.raw };
+    var raw = { fx: type === 'image' && !Array.isArray(src.fx) ? null : src.fx, fxBaked: src.fxBaked, layerMask: src.layerMask != null ? src.layerMask : isObj(src.mask) ? src.mask : null, transform: src.transform, retouch: src.retouch, maps: src.maps, raw: src.raw, clip: type !== 'adjust' && type !== 'group' && (src.clip === true || src.clip === 'knockout') ? src.clip : null };
     if (Object.keys(raw).some(function (k) { return raw[k] != null; })) d.expert = { raw: raw, type: type, page: page.index };
   }
   /* Before the images resolve: asset references join them. Returns what to run once they have. */
@@ -1540,7 +1540,7 @@
     });
   }
   function expertOut(l, o, ctx) {
-    if (l.type === 'adjust' && l.clip) o.clip = true;
+    if (l.type === 'adjust' ? l.clip : l.type !== 'group' && (l.clip === true || l.clip === 'knockout')) o.clip = l.type === 'adjust' ? true : l.clip;
     var lost = false;
     /* Keys sorted; every "asset" inside is written the way an image src is. */
     function out(v) {

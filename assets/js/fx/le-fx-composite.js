@@ -880,14 +880,23 @@
       var sc = g.scene();
       if (!sc) return;
       var lo = Math.min(p.thisLo0, p.thisLo1), hi = Math.max(p.thisHi0, p.thisHi1), ulo = Math.min(p.underLo0, p.underLo1), uhi = Math.max(p.underHi0, p.underHi1);
-      return g.pass(BLEND_COMP, { u_sc: sc, u_mode: MODES.indexOf(p.mode), u_fill: p.fill / 100, u_ch: ['gray', 'red', 'green', 'blue'].indexOf(p.channel), u_seed: p.seed % 65536,
+      /* Fill is for the layer's own pixels, not for what its styles drew (shadows, glows, an inner shadow): with the layer as
+         it entered the silhouette stage in hand, (1 − fill) of it is taken out of the styled picture and the rest is blended at
+         full strength. The shadow under the layer stays knocked out by it, as the usual default has it. */
+      var src = g.source, own = p.fill < 100 && typeof g.subject === 'function' ? g.subject() : null, fill = p.fill / 100;
+      if (own && own !== src) {
+        src = g.pass('uniform sampler2D u_l; uniform vec2 u_k;\nvec4 fx(){ vec4 s = texture(u_src, v_uv), l = texture(u_l, v_uv); if (u_k.y > 0.5 && l.a > 0.0) l.rgb = (u_k.y > 1.5 ? toLinear(l.rgb / l.a) : toDisplay(l.rgb / l.a)) * l.a; return max(s - l * u_k.x, vec4(0.0)); }',
+          { u_l: own, u_k: [1 - fill, own.space === src.space ? 0 : src.space === 'linear' ? 2 : 1] });
+        fill = 1;
+      }
+      return g.pass(BLEND_COMP, { u_src: src, u_sc: sc, u_mode: MODES.indexOf(p.mode), u_fill: fill, u_ch: ['gray', 'red', 'green', 'blue'].indexOf(p.channel), u_seed: p.seed % 65536,
         u_this: [lo, Math.max(lo, p.thisLo1), Math.min(hi, p.thisHi0), hi], u_under: [ulo, Math.max(ulo, p.underLo1), Math.min(uhi, p.underHi0), uhi] });
     },
     support: GPU,
     ui: { section: 'Compositing', order: 50, controls: ['mode', 'fill', { heading: 'Blend if' }, 'channel', { heading: 'This layer' }, 'thisLo0', 'thisLo1', 'thisHi0', 'thisHi1', { heading: 'Underlying layer' }, 'underLo0', 'underLo1', 'underHi0', 'underHi1', { param: 'seed', when: { mode: 'dissolve' } }] },
     agent: {
       summary: 'The full professional blend-mode set (27 modes, including vivid, linear and pin light, hard mix, subtract, divide, darker/lighter colour) blended onto the pixels behind the layer, with fill opacity and blend-if ranges for this layer and the underlying pixels (0–255, split for a soft transition). Draw time.',
-      tips: ['Leave the layer\'s own blend at normal when using this, or the two blends stack.', 'Drop a texture only into the dark parts of the background: underLo0 0, underLo1 0, underHi0 90, underHi1 150.', 'Remove a white backdrop from a scanned logo: mode multiply, or thisHi0 200, thisHi1 250.', 'Fill applies to the layer pixels and its layer-stage effects together here (see the report on fill vs opacity).'],
+      tips: ['Leave the layer\'s own blend at normal when using this, or the two blends stack.', 'Drop a texture only into the dark parts of the background: underLo0 0, underLo1 0, underHi0 90, underHi1 150.', 'Remove a white backdrop from a scanned logo: mode multiply, or thisHi0 200, thisHi1 250.', 'Fill fades the layer\'s own pixels and leaves what its styles drew (shadows, glows) at full strength on text, shapes and groups; on a photo layer its shadows are part of the picture and fade with it.'],
       example: { type: 'blend-options', p: { mode: 'linear-light', fill: 60, underHi0: 180, underHi1: 240 } }
     }
   });

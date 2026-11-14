@@ -31,6 +31,7 @@ layer.transform = { quad: [[x,y],[x,y],[x,y],[x,y]] }                           
 layer.retouch  = { asset, version }                                                          // reserved: a baked-overlay cache only. Strokes, spots and meshes live in effect parameters of type `data`
 layer.maps     = { depth: { asset, model, version }, normals: {…}, face: [packed faces], segments: { asset, clothes: { asset }, model, version } }
 layer.raw      = { profile, wb: { temp, tint }, exposure, … }                                   // kept as data until the RAW step
+layer.clip     = true | 'knockout'                                                               // ordinary layers (not groups): see "Clipped layers"
 ```
 
 - Entry `blend`: `normal multiply screen overlay soft-light hard-light darken lighten difference color luminosity`.
@@ -76,6 +77,8 @@ Draw-time results are kept between redraws in preview: an adjustment layer or a 
 
 `LE.Scene.exportLayer` draws a non-photo layer with its effects and its layer mask (`LE.fx.local`): the layer alone on a transparent ground, the result cut at its box. Entries that read the `scene` are left out there, because the layer is exported without one.
 
+**Clipped layers.** `clip: true` on an ordinary layer draws it only inside the layer below it; several clipped layers in a row share that one base (the first layer below that is not itself clipped), each blended onto it with its own blend mode and opacity, and each reads the base as its scene (`g.scene()`), so `blend-options` on a clipped layer blends against its base. `clip: 'knockout'` cuts the layer's shape (times its opacity) out of the base instead of drawing it. The base's alpha is what it draws without its drop shadow, effects included. Clipped adjustment layers sit in the same chain. A hidden base hides its clipped layers; a clipped layer with nothing below it, or whose base is being edited or sits in a group with effects, is drawn as an ordinary layer; groups never clip. The field is sanitised in `LE.Scene.expertOf` (anything but `true` or `'knockout'` is dropped), kept by `.leproject` and written and read by the open format (`"clip": true | "knockout"`, schema `design-1.json`). A document that has one loads the renderer like any other expert data; a clipped photo layer's own bitmap takes the ordinary path.
+
 Not done at draw time: `transform.quad` on non-photo layers.
 
 ## Registering an effect
@@ -84,7 +87,7 @@ Not done at draw time: `transform.quad` on non-photo layers.
 (window.LE_FX_DEFS = window.LE_FX_DEFS || []).push({      // or LE.fx.register(def) once le-fx.js is loaded
   id: 'bloom', name: 'Bloom', group: 'effects', version: 1,
   space: 'linear',                    // 'linear' | 'display' | 'oklab': the space g.source is handed over in and expected back in (oklab: colour operations only)
-  needs: [],                          // 'alpha' 'scene' 'depth' 'normals' 'face' 'stats'
+  needs: [],                          // 'alpha' 'scene' 'below' 'depth' 'normals' 'face' 'stats'
   params: { threshold: { type: 'number', min: 0, max: 4, default: 1, step: 0.01, label: 'Threshold' } },
   radius: function (p, scale, box) { return 0; },   // target pixels of neighbourhood read; drives tile overlap. box: { w, h } of the layer in document pixels
   grow: function (p, scale, box) { return 0; },     // optional: target pixels the result extends beyond the layer box
@@ -101,7 +104,8 @@ Rules:
 
 - `id` matches `^[a-z][a-z0-9-]{1,39}$`. A second registration with the same id replaces the first unless its `version` is lower. Bump `version` whenever the pixels change: it is part of every cache key.
 - `passes` is a pure function of `(g, p)`: no globals, no clocks, no `Math.random`. It either calls `g.color()` (one or more times) and returns nothing, or builds passes and returns a handle. Mixing the two throws.
-- An effect with `alpha` or `scene` in `needs` is a **silhouette effect**: it runs after the cut-out and the layer mask whatever its position in the stack, and may declare `grow`.
+- An effect with `alpha`, `scene` or `below` in `needs` is a **silhouette effect**: it runs after the cut-out and the layer mask whatever its position in the stack, and may declare `grow`. With `scene` or `below` it runs when the page is composed (draw time), also on photo layers.
+- **Fill against opacity.** In the silhouette stage `g.subject()` is the layer's own pixels and `g.source` is what the styles before this entry have made of them. `blend-options` uses the two to apply `fill` to the pixels only (it takes `(1 − fill)` of the subject out of the styled picture), so shadows, glows and inner shadows keep their strength while the layer fades; layer opacity fades everything. This holds where styles are draw-time work (text, shapes, groups). A photo layer's silhouette effects are part of its cached bitmap, so there fill still fades them with the picture.
 - `radius` and `grow` receive target pixels per document pixel and the layer box in document pixels (`box.w`, `box.h`), so an effect whose data is stored in fractions of the box can state its reach exactly: `Math.ceil(p.r * Math.max(box.w, box.h) * scale)`. Use `LE.fx.math.blurReach(sigmaInTargetPixels)` for anything built on `g.blur`.
 - An effect has at most 48 parameters. Records that do not fit a fixed set of parameters (strokes, spots, mesh points) go in one parameter of type `data`.
 - `aliases: ['old-id']` names earlier effect ids this registration replaces (same parameter names). An entry of such a type is read as this effect and written back under the new id by validation; the old id is not listed or described. `selective-color` replaces `selective-color-tones` this way.
@@ -209,6 +213,7 @@ Every image handle is premultiplied RGBA in the effect's declared `space`, in a 
 | `g.subject()` | silhouette stage only: the layer as it entered the stage, at working resolution (premultiplied; its `space` is on the handle). Read `.a` for the silhouette. Later silhouette entries do not change it, so a reflection does not cast a shadow and their order stops mattering. `null` before that stage |
 | `g.map(kind, { part })` | a map of the layer as a handle over the working rectangle, full precision, computed once per run: `'depth'` (`r` = stored depth, near 1, edge-extended), `'subject'` (`r` = the cut-out), `'face'` (`r` = the area `part`), `'segments'` (`r` person, `g` hair, `b` skin, `a` clothes). `handle.missing` is `true` when the layer has no such map; the handle is then constant (depth 0, the others 1) and no warning is raised. With `{ whole: true, maxSide: 512 }` the handle covers the whole layer box instead (sample it with `boxUV()`), the same for every tile: for following a map further than a tile reaches (a long relight shadow) |
 | `g.scene()` | what is behind the layer, aligned with the working rectangle; `null` unless the effect declares `scene` |
+| `g.below()` | the layer directly below this one, drawn alone (premultiplied, display-referred, aligned with the working rectangle): `.a` its alpha, `.rgb` its colour. `null` unless the effect declares `below` in `needs` and such a layer exists. Like `scene`, `below` makes the effect run at draw time |
 | `g.stats()` | whole-image statistics of the input (`needs: ['stats']`), the same object `LE.fx.analyze` returns, measured once on a ≤ 256-pixel copy run through the entries before yours |
 | `g.rgb(color)` | `[r, g, b, a]` of a `color` parameter in the effect's space, not premultiplied |
 | `g.release(handle)` | gives an intermediate back to the pool early (optional; everything is released when the stack ends) |

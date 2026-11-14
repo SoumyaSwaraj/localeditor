@@ -421,6 +421,8 @@
     var mask = layerMaskOf(src.layerMask || (typeof src.mask === 'object' ? src.mask : null));
     var q = src.transform && src.transform.quad, rt = src.retouch, maps = fxObj(src.maps, 0, 12000), raw = fxObj(src.raw, 2);   /* maps hold packed face landmarks (about 4 KB of base64 per face) */
     ['fx', 'layerMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { delete layer[k]; });
+    /* clip on an ordinary layer: true draws it only inside the layer below, 'knockout' cuts its shape out of that layer. */
+    if (layer.type !== 'adjust' && layer.type !== 'group') { if (src.clip === true || src.clip === 'knockout') layer.clip = src.clip; else delete layer.clip; }
     if (fx.length) layer.fx = fx;
     if (mask) layer.layerMask = mask;
     if (Array.isArray(q) && q.length === 4 && q.every(function (c) { return Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number' && isFinite(c[0] + c[1]); })) {

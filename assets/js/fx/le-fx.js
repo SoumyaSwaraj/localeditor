@@ -29,7 +29,7 @@
 
   var BAD = { __proto__: 1, constructor: 1, prototype: 1 };
   var BLENDS = ['normal', 'multiply', 'screen', 'overlay', 'soft-light', 'hard-light', 'darken', 'lighten', 'difference', 'color', 'luminosity'];
-  var NEEDS = ['alpha', 'scene', 'depth', 'normals', 'face', 'stats'];
+  var NEEDS = ['alpha', 'scene', 'below', 'depth', 'normals', 'face', 'stats'];
   var PARAM_TYPES = ['number', 'bool', 'choice', 'color', 'point', 'angle', 'curve', 'wheel', 'bands', 'lut', 'seed', 'data'];
   var MASK_KINDS = {
     asset: {}, subject: {},
@@ -196,7 +196,8 @@
       ui: isObj(def.ui) ? clone(def.ui) : { section: 'Effects' },
       agent: isObj(def.agent) ? clone(def.agent) : { summary: '' }
     };
-    d.silhouette = d.needs.indexOf('alpha') >= 0 || d.needs.indexOf('scene') >= 0;
+    d.drawTime = d.needs.indexOf('scene') >= 0 || d.needs.indexOf('below') >= 0;   /* reads other layers: runs when the page is composed */
+    d.silhouette = d.needs.indexOf('alpha') >= 0 || d.drawTime;
     if (!defs[d.id]) order.push(d.id);
     defs[d.id] = d;
     (Array.isArray(def.aliases) ? def.aliases : []).slice(0, 8).forEach(function (a) { if (typeof a === 'string' && /^[a-z][a-z0-9.-]{1,39}$/.test(a) && !own(defs, a)) aliases[a] = d.id; });
@@ -724,7 +725,7 @@
         }
         if (raw.fx != null && !Array.isArray(raw.fx)) { rep.err(path + '/fx', 'fx is a list of effect entries: [{ "type": "exposure", "p": { "ev": 0.5 } }].'); raw.fx = null; }
         ['layerMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { if (raw[k] != null && !isObj(raw[k])) { rep.err(path + '/' + k, k + ' must be an object.'); raw[k] = null; } });
-        try { raw = clone({ fx: raw.fx, layerMask: raw.layerMask, transform: raw.transform, retouch: raw.retouch, maps: raw.maps, raw: raw.raw }); } catch (e) { rep.err(path, 'The expert fields of this layer could not be read.'); return; }
+        try { raw = clone({ fx: raw.fx, layerMask: raw.layerMask, transform: raw.transform, retouch: raw.retouch, maps: raw.maps, raw: raw.raw, clip: raw.clip === true || raw.clip === 'knockout' ? raw.clip : null }); } catch (e) { rep.err(path, 'The expert fields of this layer could not be read.'); return; }
         /* A data asset written into a parameter (LUT text as a data: URI) is taken out before the shape check, which keeps strings
            short, and stored as a project asset afterwards; the parameter then holds its id. */
         var datas = [];
