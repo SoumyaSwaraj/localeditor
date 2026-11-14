@@ -217,3 +217,4 @@ The PDF studio's layout shift is the same before and after this work; it was not
 - **The start screen's makers row still loads the makers when idle.** Its thumbnails are drawn at runtime: each card runs its
   maker with sample values and paints the result (`thumb()` in `le-studio-makers.js`). A static list needs shipped thumbnail
   images first (25 small files from `scripts/`), then the row can be data in the map and a maker loads on tap.
+- 14 Nov 2026: studio JS 201 → 204 KB and total 242 → 246 KB. The chart maker and the styled QR maker each added under 1 KB to the core (document sanitisers and loader map entries); the engines themselves load on use. The studio blocks on about 243 KB against the 250 KB target.

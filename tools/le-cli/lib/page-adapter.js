@@ -420,6 +420,8 @@
     var lim = input.limit || 60;
     /* Expert effects: the index, one effect in full by id, "schema" or "actions" (LEAgent.catalog("fx")). */
     if (kind === 'fx' || kind === 'effects') return Promise.resolve(window.LEAgent.catalog('fx', q, { limit: lim }));
+    /* Charts: types, options and themes (LEAgent.catalog("charts")). */
+    if (kind === 'charts' || kind === 'chart') return Promise.resolve(window.LEAgent.catalog('charts'));
     if (kind === 'fonts') return Promise.resolve({ ok: true, items: LE.fonts.list().filter(function (f) { return match(q, [f.family, f.category]); }).map(function (f) { return { family: f.family, category: f.category, weights: f.weights, italic: !!f.italic }; }) });
     if (kind === 'shapes') return Promise.resolve({ ok: true, items: LE.assets.shapes().filter(function (s) { return match(q, [s.id, s.name, s.group]); }).map(function (s) { return { id: s.id, name: s.name, params: s.params ? Object.keys(s.params) : undefined }; }) });
     if (kind === 'recipes') return Promise.resolve({ ok: true, items: (LE.recipes.builtins || []).map(function (r) { return { id: r.metadata.id, name: r.metadata.name, description: r.metadata.description || '', tags: r.metadata.tags || [] }; }).filter(function (r) { return match(q, [r.id, r.name, r.description, (r.tags || []).join(' ')]); }) });

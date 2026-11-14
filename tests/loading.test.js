@@ -14,7 +14,7 @@ const KB = 1024;
    the page is interactive. Measured 12 November 2026 (docs/LOADING.md): studio 208 KB JS + 42 KB CSS = 250 KB (it was
    551 + 72); PDF studio 242 + 41 = 283 KB (490 + 59); home 14 + 30 = 44 KB. Raise one only with a reason in docs/LOADING.md. */
 const BUDGET = {
-  'studio/index.html': { js: 201 * KB, css: 44 * KB, all: 242 * KB },   /* 13 Nov: measured 198.3 + 41.4 = 239.7 KB after le-studio-panels-more.js left the core (it was 215.6 + 42.8 = 258.4) */
+  'studio/index.html': { js: 204 * KB, css: 44 * KB, all: 246 * KB },   /* 14 Nov: +3 KB for the chart and QR seams in the core (sanitisers, loader map entries); still under the 250 KB target */  //   /* 13 Nov: measured 198.3 + 41.4 = 239.7 KB after le-studio-panels-more.js left the core (it was 215.6 + 42.8 = 258.4) */
   'pdf-studio/index.html': { js: 250 * KB, css: 44 * KB, all: 292 * KB },
   'index.html': { js: 20 * KB, css: 34 * KB, all: 90 * KB }
 };

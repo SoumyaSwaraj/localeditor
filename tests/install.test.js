@@ -276,7 +276,8 @@ cases['a Design-only install works offline for the studio, a PDF link degrades p
     h.assert(v2.studio && v2.studioJs && !v2.pdf && !v2.pdfJs && !v2.tool, 'the update follows the choice: ' + JSON.stringify(v2));
     /* Apply the update (no work open), reload, then go offline. */
     await page.evaluate(() => navigator.serviceWorker.getRegistration().then((r) => r.waiting && r.waiting.postMessage({ type: 'le-skip-waiting' })));
-    await until(page, async () => { const c = navigator.serviceWorker.controller; return c && /sw\.js/.test(c.scriptURL) && (await caches.keys()).indexOf('le-app-inst-1') < 0; }, 20000, 'the new version took over');
+    /* The new worker may still be installing when the first request is sent (the list of files is long), so ask again until it has taken over. */
+    await until(page, async () => { const r = await navigator.serviceWorker.getRegistration(); if (r && r.waiting) r.waiting.postMessage({ type: 'le-skip-waiting' }); const c = navigator.serviceWorker.controller; return c && /sw\.js/.test(c.scriptURL) && (await caches.keys()).indexOf('le-app-inst-1') < 0; }, 30000, 'the new version took over');
     await page.reload({ waitUntil: 'load' });
     await ready(page);
     h.assert.equal(await page.evaluate(() => LE.downloads.keep().keep.join()), 'design', 'the choice survives the update');
