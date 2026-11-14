@@ -21,7 +21,7 @@
     playful: { bg: '#FFF7DC', ink: '#2B2340', muted: '#5A5070', accent: '#E8553D', head: 'Fredoka', headW: 700, name: 'Baloo 2', nameW: 800, nameK: 0.95, body: 'Nunito', frame: 15 },
     dark: { bg: '#15171D', ink: '#F5F0E6', muted: '#C9C2B4', accent: '#D2AB62', head: 'Cormorant Garamond', headW: 600, caps: true, name: 'Playfair Display', nameW: 400, nameItalic: true, nameK: 0.92, body: 'Cormorant Garamond', bodyK: 1.18, italic: true, frame: 13 }
   };
-  var LIST = [['name', 'reason', 'issued'],
+  var LIST = [['name', 'reason', 'awarded'],
     ['Amara Okafor', 'for outstanding work in the science fair', '12 November 2026'], ['Leo Fernandes', 'for reading forty books this term', '12 November 2026'],
     ['Mei Tanaka', 'for kindness to every new classmate', '12 November 2026'], ['Yusuf Rahman', 'for the most improved handwriting', '12 November 2026'],
     ['Sofia Petrova', 'for leading the school choir', '12 November 2026'], ['Noah Williams', 'for full attendance all year', '12 November 2026'],
@@ -36,7 +36,7 @@
       category: 'Print',
       summary: 'An award or completion certificate with signature lines and a seal, ready to print.',
       keywords: ['certificate', 'award', 'diploma', 'completion', 'participation', 'appreciation', 'attendance', 'school', 'class award', 'employee', 'course', 'print'],
-      sizes: [K.paper('a4-landscape', 'A4 wide'), K.paper('letter-landscape', 'Letter wide'), K.paper('a4', 'A4 tall'), K.paper('letter', 'Letter tall'),
+      sizes: [K.paper('a4-landscape', 'A4 wide'), K.paper('letter-landscape', 'US wide'), K.paper('a4', 'A4 tall'), K.paper('letter', 'US tall'),
         { id: 'screen', name: 'Screen', w: 1600, h: 1131 }],
       inputs: [
         { key: 'kind', label: 'Certificate of', type: 'choice', default: 'award', options: [{ id: 'award', name: 'Achievement' }, { id: 'completion', name: 'Completion' }, { id: 'participation', name: 'Participation' }, { id: 'appreciation', name: 'Appreciation' }, { id: 'attendance', name: 'Attendance' }] },
@@ -139,7 +139,7 @@
           { id: 'name', name: 'Recipient', text: v.name, font: T.name, weight: T.nameW, italic: !!T.nameItalic, size: 9.6 * u * T.nameK, min: 3.4 * u, maxLines: wide ? 1 : 2, lineHeight: 1.14, color: style === 'playful' || style === 'bold' ? accText : ink, gap: 1.3 * u, field: 'name', input: 'name' },
           { h: Math.max(2, 0.22 * u), fixed: true, gap: 2.6 * u, make: function (x, y, w) { var rw = Math.min(w, (wide ? 52 : 46) * u); return env.line({ id: 'rule', name: 'Rule', x: left ? x : x + (w - rw) / 2, y: y, w: rw, width: Math.max(2, 0.22 * u), color: acc }); } },
           v.reason ? { id: 'reason', name: 'Reason', text: v.reason, font: T.body, weight: 400, size: 2.55 * u * bk, min: 1.6 * u, maxLines: 6, lineHeight: 1.42, w: (wide ? 86 : 68) * u, color: ink, gap: 2.6 * u, field: 'reason', fallback: true, input: 'reason' } : null,
-          v.date ? { id: 'date', name: 'Date', text: env.date.format(v.date, 'D MMMM YYYY'), font: T.body, weight: 700, size: 1.85 * u * bk, min: 1.4 * u, maxLines: 1, uppercase: true, tracking: 0.14, color: muted, field: 'issued', fallback: true } : null
+          v.date ? { id: 'date', name: 'Date', text: env.date.format(v.date, 'D MMMM YYYY'), font: T.body, weight: 700, size: 1.85 * u * bk, min: 1.4 * u, maxLines: 1, uppercase: true, tracking: 0.14, color: muted, field: 'awarded', fallback: true } : null
         ];
         /* A name stays on one line while it can shrink to 60 %; only then, on tall pages, it takes two. */
         var sc0 = wide ? 1.14 : 1.3, nm = bodyItems[1];

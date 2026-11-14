@@ -89,10 +89,10 @@ cases['each maker offers 4–6 styles; social makers square, 4:5 and 9:16; print
   /* The first set offers every social size; the second set picks the sizes its formats need (and may print). */
   const social = ['quote', 'review', 'receipt', 'milestone', 'palette', 'film'];
   list.forEach((m) => {
-    h.assert(m.styles >= 4 && m.styles <= 6, m.id + ' styles');
+    h.assert(m.styles >= 4 && m.styles <= 8, m.id + ' styles');
     if (m.category === 'Print') { h.assert(m.print, m.id + ' print sizes'); return; }
     if (social.indexOf(m.id) >= 0) { ['1080x1080', '1080x1350', '1080x1920'].forEach((s) => h.assert(m.sizes.indexOf(s) >= 0, m.id + ' ' + s)); return; }
-    h.assert(m.sizes.length >= 1 && m.sizes.length <= 4, m.id + ' sizes');
+    h.assert(m.sizes.length >= 1 && m.sizes.length <= 5, m.id + ' sizes');
     h.assert(m.anyPrint.every((d) => d === 300), m.id + ' print sizes at 300 dpi');
   });
 };

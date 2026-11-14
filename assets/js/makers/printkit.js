@@ -54,7 +54,7 @@
         gap = (it.gap || 0) * s;
         if (it.make) {
           var bh = it.fixed ? it.h : it.h * s;
-          [].concat(it.make(box.x, y, box.w, bh, s) || []).forEach(function (l) { if (l) L.push(l); });
+          if (last) [].concat(it.make(box.x, y, box.w, bh, s) || []).forEach(function (l) { if (l) L.push(l); });
           y += bh + gap;
           return;
         }
@@ -62,6 +62,8 @@
         var spec = Object.assign({}, it, { x: box.x + (al === 'center' ? (box.w - w) / 2 : al === 'right' ? box.w - w : 0) + (it.dx || 0), y: y, w: w,
           size: it.size * s, min: Math.min(it.size * s, it.min || it.size * 0.55), align: al, balance: !!(last && it.balance && !it.field) });
         delete spec.h;
+        /* Trial passes only measure, so layer ids do not depend on how many passes the fit took. */
+        if (!last) { var f = env.fit(spec); y += Math.ceil(f.height + 1) + gap; rows.push({ it: it, lines: f.lineCount }); return; }
         var l = env.text(spec);
         if (last && it.field && o.values) field(l, it.field, o.values, { fallback: it.fallback, min: spec.min * 0.8 });
         L.push(l);
@@ -235,7 +237,9 @@
     return rows.map(function (r) { return r.map(function (c) { c = String(c == null ? '' : c); return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(','); }).join('\n') + '\n';
   }
   /* Opens Create many on the design just made, with the maker's example list loaded and its columns matched. */
-  function openMany(c, rows) {
+  function openMany(c, rows, page) {
+    /* Create many fills the page in view: move to the page of the make that carries the fields (a card's back). */
+    if (page && c.S && c.S.project && c.switchPage) c.switchPage(Math.min(c.S.project.pages.length - 1, c.S.project.activePage + page));
     c.openPanel('bulk');
     var tries = 0;
     (function wait() {
@@ -253,7 +257,7 @@
   /* A maker's ui hook: adds the button next to Make it. rows: the example list, first row the column names.
      fill: { formKey: column } for parts that are only fields when filled in; left empty, they take the first example
      row, so the design made for a list always has its fields. */
-  function manyUi(rows, fill) {
+  function manyUi(rows, fill, page) {
     return function (form, api) {
       var foot = form.node && form.node.querySelector('.mk-foot');
       if (!foot || !form.c) return null;
@@ -267,16 +271,16 @@
         var c = form.c;
         b.disabled = true;
         Object.keys(fill || {}).forEach(function (k) { if (form.values[k] == null || form.values[k] === '') form.values[k] = rows[1][fill[k]]; });
-        Promise.resolve(api.make()).then(function (pg) { if (pg) openMany(c, rows); else b.disabled = false; });
+        Promise.resolve(api.make()).then(function (pg) { if (pg) openMany(c, rows, page); else b.disabled = false; });
       };
       return function () { b.remove(); };
     };
   }
   /* Registers a maker's example list (for the form button, the tests and the sample CSV on its page). */
-  function many(id, rows, fill) {
+  function many(id, rows, fill, page) {
     M.lists = M.lists || {};
     M.lists[id] = rows;
-    return manyUi(rows, fill);
+    return manyUi(rows, fill, page);
   }
 
   M.kit = { px: px, size: size, paper: paper, field: field, bind: bind, stack: stack, logo: logo, initials: initials, starPath: starPath, seal: seal,

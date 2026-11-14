@@ -145,6 +145,13 @@ The photo studio has a second workspace, Expert mode (https://localeditor.net/st
 - [Catalogue and price list maker](https://localeditor.net/catalogue-maker/): Product pages, price lists and menus from a spreadsheet.
 - [QR signs and posters](https://localeditor.net/qr-posters/): Wi-Fi sign, pay poster and invitation with a code.
 - [Printables](https://localeditor.net/printables/): Calendars, charts, labels, stickers, photo books and zines.
+- [Certificate maker](https://localeditor.net/certificate-maker/): Award and completion certificates, one or one per name.
+- [Business card maker](https://localeditor.net/business-card-maker/): Front and back with bleed, a QR contact card and a print sheet.
+- [ID badge maker](https://localeditor.net/id-badge-maker/): Staff, visitor, student and event badges, one or many.
+- [Letterhead maker](https://localeditor.net/letterhead-maker/): A4 or Letter letterhead, compliment slip and envelope.
+- [Gift voucher maker](https://localeditor.net/gift-voucher-maker/): Gift vouchers and coupons with a code, one or a numbered run.
+- [Ticket maker](https://localeditor.net/ticket-maker/): Event tickets with a stub, a number and a QR code.
+- [Loyalty card maker](https://localeditor.net/loyalty-card-maker/): Stamp cards with 5, 8 or 10 stamps and a reward.
 - [Compare two PDFs](https://localeditor.net/compare-pdfs/): Every changed word, amount and date, plus a picture view.
 - [Build a PDF pack](https://localeditor.net/pdf-bundle/): A cover, contents, bookmarks and page numbers.
 - [Stamps and comment summary](https://localeditor.net/pdf-stamps/): Office stamps with name and date, and a comment list.

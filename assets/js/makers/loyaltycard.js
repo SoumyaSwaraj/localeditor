@@ -40,7 +40,7 @@
       ],
       styles: [{ id: 'cafe', name: 'Café' }, { id: 'fresh', name: 'Fresh' }, { id: 'bold', name: 'Bold' }, { id: 'soft', name: 'Soft' }],
       sample: { values: { business: 'Harbour Coffee', tagline: 'Roasted here every morning', stamps: '10', reward: 'Your 10th coffee is free', icon: 'coffee', contact: '8 Quay Street · harbourcoffee.example', paper: 'none' } },
-      ui: K.many('loyaltycard', LIST, { holder: 0, number: 1 }),
+      ui: K.many('loyaltycard', LIST, { holder: 0, number: 1 }, 1),
       build: function (v, env) {
         var W = env.W, H = env.H, C = env.color, mm = env.print.mm, style = env.style;
         var T = Object.assign({}, S[style] || S.cafe);
