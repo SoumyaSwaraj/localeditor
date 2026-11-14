@@ -233,7 +233,7 @@
     if (!cur) return Promise.resolve({ ok: false, code: 'no-session', errors: [{ path: '', message: 'No design is open.' }] });
     return expandMakes(input.ops).then(function (ops) {
       /* Expert operations need the effect registry, which loads on first use. */
-      var expert = [].concat(isObj(ops) && Array.isArray(ops.ops) ? ops.ops : ops).some(function (o) { return isObj(o) && /^(fx\.|mask\.set$|adjust\.add$|transform\.set$)/.test(String(o.op)); });
+      var expert = [].concat(isObj(ops) && Array.isArray(ops.ops) ? ops.ops : ops).some(function (o) { return isObj(o) && /^(fx\.|mask\.set$|adjust\.add$|transform\.set$|page\.resize$)/.test(String(o.op)); });
       return (expert && LE.fxBoot ? LE.fxBoot.load().catch(function () {}) : Promise.resolve()).then(function () { return expandCalls(ops); }).then(function (list) { return applyExpanded(Object.assign({}, input, { ops: list, original: input.ops })); });
     });
   }
