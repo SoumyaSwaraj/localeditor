@@ -14,7 +14,9 @@
     /* Weekly-use set: screenshot and code beautifier, photobooth strips, recap collages. */
     'beautify', 'photobooth', 'recap',
     /* Data: a headline, a chart drawn to scale, a note and a source line (docs/CHARTS.md). */
-    'chartposter'];
+    'chartposter',
+    /* Print and identity set (printkit is their shared helper, not a maker). */
+    'printkit', 'certificate', 'businesscard', 'idbadge', 'letterhead', 'voucher', 'ticket', 'loyaltycard', 'flyer', 'resume', 'greetingcard'];
 
   var SIZES = {
     square: { id: 'square', name: 'Square', w: 1080, h: 1080 },
@@ -1231,6 +1233,14 @@
     if (bg.type === 'color' && bg.color) return { color: toHex(parseColor(bg.color)) };
     return null;
   }
+  /* Text with template fields is measured as it is drawn: {{key}} filled from the page's values, else its default. */
+  function shownText(text, values) {
+    return String(text == null ? '' : text).replace(/\{\{\s*([A-Za-z_][\w.-]*)\s*((?:\|[^{}]*)?)\}\}/g, function (raw, key, pipes) {
+      if (values && own(values, key) && values[key] !== '') return String(values[key]);
+      var d = /\|\s*default:([^|]*)/.exec(pipes || '');
+      return d ? d[1].trim() : raw;
+    });
+  }
   /* Problems in a built page: overflow (text taller or wider than its box), offpage, contrast (< ratio where the
      background under the text is a known solid colour), font (not a shipped family). */
   function check(doc, opts) {
@@ -1243,7 +1253,7 @@
       if (l.x + l.w <= 0 || l.y + l.h <= 0 || l.x >= doc.width || l.y >= doc.height) out.push({ layer: l.id, kind: 'offpage', message: l.name + ' is off the page.' });
       if (l.type !== 'text') return;
       if (families.length && families.indexOf(l.font) < 0) out.push({ layer: l.id, kind: 'font', message: l.name + ' uses ' + l.font + ', which is not shipped.' });
-      var L = layout({ text: l.text, font: l.font, weight: l.weight, italic: l.italic, size: l.size, lineHeight: l.lineHeight, letterSpacing: l.letterSpacing, uppercase: l.uppercase, w: l.w });
+      var L = layout({ text: shownText(l.text, doc.values), font: l.font, weight: l.weight, italic: l.italic, size: l.size, lineHeight: l.lineHeight, letterSpacing: l.letterSpacing, uppercase: l.uppercase, w: l.w });
       if (L.height > l.h + 0.5 || L.width > l.w + 0.5) out.push({ layer: l.id, kind: 'overflow', message: l.name + ' does not fit its box.', need: { w: L.width, h: L.height } });
       if (!/[A-Za-z0-9À-ɏ]/.test(l.text || '')) return;
       var under = l.background ? { color: toHex(parseColor(l.background.color)) } : solidUnder(doc, i, bbox(l));

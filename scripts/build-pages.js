@@ -488,8 +488,12 @@ function appIndex(site) {
   /* Entries of kind tool that live in site.json (quick makers, studio tools, guides) are not in scripts/build.js TOOLS; search finds them too. */
   const built = new Set(site.tools.map((t) => t.slug + '/'));
   site.entries.filter((e) => e.kind === 'tool' && site.visible(e) && e.launch && !built.has(e.launch)).forEach((e) => pages.push([e.title, e.launch, e.tagline, (e.keywords || []).join(' ')]));
-  return '\n  var HUBS = ' + JSON.stringify(hubs) + ';\n  var PAGES = ' + JSON.stringify(pages) + ';\n  ';
+  /* The page list is long (one row per feature page and maker), so it is a data file the header search fetches the first time
+     it opens; only the short hub list rides in app.js, which every page loads. */
+  searchPages = pages;
+  return '\n  var HUBS = ' + JSON.stringify(hubs) + ';\n  var PAGES = [];   /* filled from assets/data/search.json when the search first opens */\n  ';
 }
+let searchPages = [];
 
 function homeHubs(site) {
   return '\n            ' + site.hubs.map((h) => hubCard(h, '')).join('\n            ') + '\n          ';
@@ -548,6 +552,7 @@ function build(opts) {
   const appFile = path.join(ROOT, 'assets/js/app.js');
   const app = fs.readFileSync(appFile, 'utf8');
   if (write(appFile, replaceBlock(app, '/* BEGIN site index */', '/* END site index */', appIndex(site), 'app.js'))) changed.push('assets/js/app.js');
+  if (write(path.join(ROOT, 'assets/data/search.json'), JSON.stringify(searchPages))) changed.push('assets/data/search.json');
   const homeFile = path.join(ROOT, 'index.html');
   let home = fs.readFileSync(homeFile, 'utf8');
   home = replaceBlock(home, '<!-- BEGIN hubs -->', '<!-- END hubs -->', homeHubs(site), 'index.html');

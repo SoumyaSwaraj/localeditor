@@ -14,7 +14,7 @@
       "metaTitle": "Free photo editor and design studio, private and offline",
       "description": "Edit photos, make collages, add text and size posts for every platform in your browser. Nothing is uploaded, no account, works offline.",
       "tagline": "Edit photos, make collages and posts",
-      "summary": "A photo studio with layers, text, collages, filters, cut-outs, 25 quick makers and every social size, an Expert mode for studio-level editing, and one-step tools for quick fixes. Everything runs in your browser.",
+      "summary": "A photo studio with layers, text, collages, filters, cut-outs, 35 quick makers and every social size, an Expert mode for studio-level editing, and one-step tools for quick fixes. Everything runs in your browser.",
       "audience": "For anyone with a photo to fix or a post to make, on a phone or a computer, who would rather not hand their pictures to a website.",
       "launch": "studio/",
       "launchLabel": "Open the photo studio",
@@ -157,7 +157,7 @@
       "sections": [
         {"title": "Make the post", "items": ["social-sizes", "collage-maker", "text-on-photos", "photo-editor", "photo-backgrounds", "carousel-maker", "thumbnail-maker", "background-remover", "font-library", "recap-collage", "screenshot-beautifier", "creative-effects"]},
         {"title": "Keep your look", "items": ["batch-edit", "brand-kit", "template-links", "export-every-size", "process-replay"]},
-        {"title": "Make something quick", "items": ["quote-cards", "review-cards", "receipt-lists", "milestone-cards", "palette-poster", "film-looks", "photobooth-strip", "movie-poster", "album-cover", "front-page", "quick-makers"]},
+        {"title": "Make something quick", "items": ["quote-cards", "review-cards", "receipt-lists", "milestone-cards", "palette-poster", "film-looks", "photobooth-strip", "movie-poster", "album-cover", "front-page", "quick-makers", "ticket-maker", "flyer-maker", "greeting-card-maker"]},
         {"title": "Quick extras", "items": ["meme", "frames", "tool:image-compressor", "tool:qr-code-generator"]}
       ],
       "privacy": "Drafts and unposted photos stay on your device until you choose to post them. Nothing is uploaded while you edit, there is no account to link, and no watermark is added to what you export.",
@@ -189,7 +189,7 @@
       "art": "shop",
       "sections": [
         {"title": "Product photos", "items": ["background-remover", "product-shadows", "photo-backgrounds", "compositing", "batch-edit", "export-every-size"]},
-        {"title": "Catalogue, labels and signs", "items": ["catalogue-maker", "printables", "labels-tags", "sticker-sheets", "qr-posters", "pay-poster", "wifi-sign"]},
+        {"title": "Catalogue, labels and signs", "items": ["catalogue-maker", "printables", "labels-tags", "sticker-sheets", "qr-posters", "pay-poster", "wifi-sign", "business-card-maker", "gift-voucher-maker", "loyalty-card-maker"]},
         {"title": "Sell and post", "items": ["social-sizes", "collage-maker", "brand-kit", "thumbnail-maker", "review-cards", "quote-cards"]},
         {"title": "Paperwork", "items": ["invoice-maker", "pdf-editor", "compress-to-size", "tool:qr-code-generator"]}
       ],
@@ -220,6 +220,7 @@
       "art": "shop",
       "sections": [
         {"title": "Your look, every time", "items": ["brand-kit", "background-remover", "product-shadows", "catalogue-maker", "batch-edit", "social-sizes", "review-cards", "qr-posters", "text-on-photos", "collage-maker", "quick-makers", "template-links"]},
+        {"title": "Cards, certificates and print", "items": ["certificate-maker", "business-card-maker", "id-badge-maker", "letterhead-maker", "gift-voucher-maker", "ticket-maker", "loyalty-card-maker", "flyer-maker", "greeting-card-maker"]},
         {"title": "Paperwork", "items": ["invoice-maker", "pdf-editor", "word-to-pdf", "compare-pdfs", "pdf-bundle", "tool:merge-pdf", "tool:watermark-pdf", "mail-merge", "compress-to-size"]},
         {"title": "Handy tools", "items": ["tool:qr-code-generator", "tool:watermark-image", "tool:image-compressor", "tool:color-picker"]}
       ],
@@ -254,7 +255,7 @@
         {"title": "Confidential files", "items": ["tool:watermark-pdf", "pdf-redaction", "pdf-reveal", "pdf-safety", "find-sensitive", "safe-to-send", "pdf-password", "fingerprint-receipt"]},
         {"title": "Many files at once", "items": ["mail-merge", "split-by-text", "bulk-watermarks", "compress-to-size", "pdf-workflows"]},
         {"title": "Scans and records", "items": ["camera-scan", "searchable-scans", "pdf-tables-to-excel", "invoice-maker", "pdf-stamps"]},
-        {"title": "Everyday tools", "items": ["tool:text-diff", "tool:pdf-to-jpg", "tool:image-compressor", "tool:password-generator", "tool:hash-generator"]}
+        {"title": "Everyday tools", "items": ["tool:text-diff", "tool:pdf-to-jpg", "tool:image-compressor", "tool:password-generator", "tool:hash-generator", "letterhead-maker", "id-badge-maker", "certificate-maker", "business-card-maker", "resume-maker"]}
       ],
       "privacy": "Contracts, payslips and personal records are processed by your browser on this computer. They are not uploaded, logged or kept by us. That removes one place a file can leak, but it does not by itself make your process compliant with any law or policy; follow your organisation's rules on handling personal data.",
       "faq": [
@@ -284,7 +285,7 @@
       "art": "class",
       "sections": [
         {"title": "Worksheets and handouts", "items": ["word-to-pdf", "pdf-editor", "camera-scan", "searchable-scans", "tool:merge-pdf", "tool:split-pdf", "tool:organize-pdf", "tool:add-page-numbers", "tool:jpg-to-pdf", "split-by-text", "pdf-stamps"]},
-        {"title": "Classroom displays and printables", "items": ["printables", "chore-charts", "sticker-sheets", "labels-tags", "calendar-planner", "mini-zines", "collage-maker", "text-on-photos", "social-sizes", "quick-makers", "tool:qr-code-generator"]},
+        {"title": "Classroom displays and printables", "items": ["printables", "chore-charts", "sticker-sheets", "labels-tags", "calendar-planner", "mini-zines", "collage-maker", "text-on-photos", "social-sizes", "quick-makers", "tool:qr-code-generator", "certificate-maker", "id-badge-maker", "ticket-maker", "flyer-maker", "greeting-card-maker"]},
         {"title": "Before you share", "items": ["metadata", "photo-privacy", "pdf-redaction", "find-sensitive"]},
         {"title": "Marking and writing", "items": ["tool:word-counter", "tool:text-diff"]}
       ],
@@ -1015,16 +1016,16 @@
       "audiences": ["social", "business", "teachers"],
       "headline": "Fill in a form, {get an editable design.}",
       "metaTitle": "Quick makers: posters, invitations, calendars and more",
-      "description": "Fill in a short form and get a finished, editable design: 25 makers from quote cards and invitations to calendars, labels and photo books.",
+      "description": "Fill in a short form and get a finished, editable design: 36 makers, from quote cards and invitations to certificates, business cards and calendars.",
       "tagline": "A short form in, an editable design out",
-      "summary": "Pick a maker, fill in a few fields, add photos if it asks for them, and get a finished design made of ordinary layers that you can keep editing in the studio. There are 25, from quote cards and movie posters to calendars, labels and photo books.",
+      "summary": "Pick a maker, fill in a few fields, add photos if it asks for them, and get a finished design made of ordinary layers that you can keep editing in the studio. There are 36, from quote cards and movie posters to certificates, business cards, calendars and photo books.",
       "launch": "studio/?tool=make",
       "launchLabel": "Open the makers",
       "panel": "apps",
       "panelOpts": { "app": "make" },
       "art": "brand",
-      "items": ["quote-cards", "review-cards", "receipt-lists", "milestone-cards", "palette-poster", "film-looks", "movie-poster", "album-cover", "front-page", "event-kit", "invitations-qr", "wifi-sign", "pay-poster", "app-store-screenshots", "link-preview-cards", "calendar-planner", "chore-charts", "labels-tags", "sticker-sheets", "photo-books", "mini-zines", "screenshot-beautifier", "photobooth-strip", "recap-collage", "catalogue-maker"],
-      "does": ["25 makers in six groups: Social, Business, Life, Photo, Print and Events", "Four to six styles each, in square, portrait and story sizes, or real paper sizes for printables", "A live preview while you fill in the form", "The result is a normal design: tap any part to edit it, and Edit details reopens the form to remake the page", "Print makers come at real paper sizes with cut and fold guides where they are needed"],
+      "items": ["quote-cards", "review-cards", "receipt-lists", "milestone-cards", "palette-poster", "film-looks", "movie-poster", "album-cover", "front-page", "event-kit", "invitations-qr", "wifi-sign", "pay-poster", "app-store-screenshots", "link-preview-cards", "calendar-planner", "chore-charts", "labels-tags", "sticker-sheets", "photo-books", "mini-zines", "screenshot-beautifier", "photobooth-strip", "recap-collage", "catalogue-maker", "certificate-maker", "business-card-maker", "id-badge-maker", "letterhead-maker", "gift-voucher-maker", "ticket-maker", "loyalty-card-maker", "flyer-maker", "resume-maker", "greeting-card-maker"],
+      "does": ["36 makers in six groups: Social, Business, Life, Photo, Print and Events", "Four to eight styles each, in square, portrait and story sizes, or real paper sizes for printables", "A live preview while you fill in the form", "The result is a normal design: tap any part to edit it, and Edit details reopens the form to remake the page", "Print makers come at real paper sizes with cut and fold guides where they are needed"],
       "steps": ["Pick a maker from the gallery.", "Fill in the fields, add a photo if you like, and choose a style and size.", "Tap Make it, then edit any part or download."],
       "privacy": "What you type and the photos you add stay on this device. The preview and the finished design are drawn in your browser.",
       "faq": [
@@ -2274,6 +2275,168 @@
       ]
     },
     {
+      "id": "chart-maker",
+      "kind": "feature",
+      "status": "live",
+      "url": "chart-maker/",
+      "title": "Chart maker",
+      "icon": "stack",
+      "parents": [
+        "business",
+        "office",
+        "teachers",
+        "social",
+        "photo"
+      ],
+      "audiences": [
+        "business",
+        "office",
+        "teachers"
+      ],
+      "headline": "Turn a spreadsheet into {a clear chart.}",
+      "metaTitle": "Chart maker: bar, line and pie charts from CSV or Excel",
+      "description": "Import a CSV or Excel file, or paste your numbers, and get a clear chart you can still edit. 23 chart types and 9 themes. Your data stays on your device.",
+      "tagline": "A spreadsheet in, an editable chart out",
+      "summary": "Bring your numbers, pick one of the suggested charts and highlight the bar that matters. Every bar and label stays an ordinary layer, so the chart fits into any design.",
+      "launch": "studio/?tool=chart",
+      "launchLabel": "Make a chart",
+      "panel": "chart",
+      "art": "edit",
+      "does": [
+        "Import CSV, TSV or Excel, paste cells from a spreadsheet, or type the numbers in",
+        "Suggests fitting charts as live previews, each with a one-line reason",
+        "23 chart types: bar and column, line and area, pie and donut, scatter, combo, waterfall, funnel, radar, gauge, heatmap, treemap and more",
+        "9 themes, including one that takes its colours and fonts from your brand kit",
+        "Highlight one bar or line with a tap; bars are always drawn to scale"
+      ],
+      "steps": [
+        "Open the chart maker and bring your numbers.",
+        "Pick a suggested chart, or choose the type yourself.",
+        "Highlight what matters, pick a theme, then download or keep designing around it."
+      ],
+      "privacy": "Files are read by your browser on this device and nothing is uploaded. Cells are treated as text and numbers; formulas are never run.",
+      "faq": [
+        [
+          "Which files work?",
+          "CSV, TSV and Excel files, or cells pasted from any spreadsheet. The first row is read as the column names."
+        ],
+        [
+          "Can I edit the chart afterwards?",
+          "Yes. Edit chart changes the data, the type or the look in one step. Each part is also an ordinary layer you can move or restyle, though a later chart edit redraws it."
+        ],
+        [
+          "How much data can it take?",
+          "A chart in a design holds up to 5,000 cells. A larger import is added up or sampled, and the panel says which."
+        ],
+        [
+          "Can I make a poster with a headline and a source line?",
+          "Yes. The Chart poster maker adds a headline, a note and a source line around the chart in four sizes."
+        ],
+        [
+          "What happens when I resize a chart?",
+          "It stretches like any group. Open Edit chart to lay the labels out again at the new size."
+        ]
+      ],
+      "related": [
+        "bulk-create",
+        "quick-makers",
+        "printables"
+      ],
+      "keywords": [
+        "chart maker",
+        "graph maker",
+        "bar chart",
+        "line graph",
+        "pie chart",
+        "donut chart",
+        "csv to chart",
+        "excel to graph",
+        "infographic",
+        "data poster",
+        "histogram",
+        "scatter plot"
+      ]
+    },
+    {
+      "id": "qr-code-maker",
+      "kind": "feature",
+      "status": "live",
+      "url": "qr-code-maker/",
+      "title": "QR code maker with logo and colours",
+      "icon": "qr",
+      "parents": [
+        "business",
+        "sellers",
+        "social",
+        "tools"
+      ],
+      "audiences": [
+        "business",
+        "sellers",
+        "office"
+      ],
+      "headline": "A QR code that looks like yours {and still scans.}",
+      "metaTitle": "QR code maker with logo, colours and frames",
+      "description": "Make a QR code with your colours, dot shapes, a logo in the middle and a Scan me frame. Every code is test-scanned before you download. Made on your device.",
+      "tagline": "Coloured QR codes with a logo, checked before download",
+      "summary": "Pick what the code holds, tap a look, add a picture or a frame, and download a code that has already been read back. Make one, or one for each row of a list.",
+      "launch": "qr-code-generator/",
+      "launchLabel": "Make a QR code",
+      "launchCheck": "page",
+      "art": "edit",
+      "does": [
+        "11 kinds of content: link, text, Wi-Fi, contact card, email, phone, message, location, calendar event and payment",
+        "20 ready looks, 7 dot shapes, gradients and styled corners",
+        "A logo or photo in the middle, and frames with a call to action",
+        "Every change is test-scanned, with a one-tap fix when a code would not read",
+        "PNG, SVG and PDF; open it in the editor; or make many from a spreadsheet"
+      ],
+      "steps": [
+        "Pick what the code holds and type it in.",
+        "Tap a look, then adjust the colours, picture and frame.",
+        "Download it, or open it in the editor to design around it."
+      ],
+      "privacy": "The code is drawn by your browser. It holds exactly what you typed, with no redirect, tracking or account, and nothing is sent anywhere.",
+      "faq": [
+        [
+          "Will a coloured code still scan?",
+          "Yes, while the dots stay clearly darker than the background. Contrast, margin and picture size are checked and the code is read back before you download. Try it with your own phone as well: the check uses a software reader, not a camera."
+        ],
+        [
+          "Do my links go anywhere?",
+          "No. The code holds exactly what you typed. There is no redirect, no tracking and no account."
+        ],
+        [
+          "Can I add a logo?",
+          "Yes. The code switches to its strongest repair setting and the picture is kept to at most 30 per cent of the width so it still reads."
+        ],
+        [
+          "Can I make many at once?",
+          "Yes. Paste rows or open a CSV or Excel file and get a zip of codes or a labelled print sheet. Formulas are never run."
+        ],
+        [
+          "Can I use it in a design?",
+          "Yes. Open it in the editor, or copy it and paste it into the studio, and it stays an editable code."
+        ]
+      ],
+      "related": [
+        "qr-posters",
+        "bulk-create",
+        "quick-makers"
+      ],
+      "keywords": [
+        "qr code maker",
+        "qr code with logo",
+        "coloured qr code",
+        "wifi qr code",
+        "upi qr code",
+        "bulk qr codes from excel",
+        "qr code svg",
+        "qr code with frame",
+        "scan me"
+      ]
+    },
+    {
       "id": "screenshot-beautifier",
       "kind": "feature",
       "status": "live",
@@ -2453,6 +2616,323 @@
       ],
       "related": ["quick-makers", "photo-books", "catalogue-maker", "collage-maker"],
       "keywords": ["printable", "calendar", "planner", "weekly planner", "chore chart", "reward chart", "sticker sheet", "labels", "gift tags", "photo book", "zine", "mini zine", "print at home", "worksheet"]
+    },
+    {
+      "id": "flyer-maker",
+      "kind": "feature",
+      "status": "live",
+      "url": "flyer-maker/",
+      "title": "Flyer maker",
+      "icon": "print",
+      "parents": ["photo"],
+      "audiences": ["business", "teachers", "social"],
+      "headline": "A flyer in a minute, {for the wall or the feed.}",
+      "metaTitle": "Flyer maker for A5, A4, Letter and social",
+      "description": "Make a flyer with a headline, three points, when and where, a call to action and a QR code, on A5, A4, US Letter or a social size. Made on your device.",
+      "tagline": "Flyers for print and social, with an optional QR code",
+      "summary": "A headline, a line under it, up to three points, when and where, a button-style call to action and your photo, laid out in six styles. Add a link and the flyer carries a QR code for it.",
+      "launch": "studio/?make=flyer",
+      "launchLabel": "Make a flyer in the editor",
+      "maker": "flyer",
+      "art": "sizes",
+      "does": ["Six styles: clean, bold, photo poster, editorial, minimal and bright", "A5, A4 and US Letter at print resolution, and a 1080 × 1350 size for social posts", "Headline, a line under it, up to three points, when, where, a call to action and a contact line", "A photo through the studio's normal import, and a QR code when you paste a link", "Exports: PNG or JPG for sharing, or a PDF at the real paper size"],
+      "steps": ["Type the headline, the points, and when and where.", "Add a photo and a link if you want a QR code, choose a style and a size, then tap Make it.", "The flyer opens in the editor. Change anything, then download a PDF to print or an image to post."],
+      "privacy": "What you type, the photos you add and any list you bring stay on this device. The design, the QR codes and the exported files are made by your browser, and nothing is uploaded.",
+      "faq": [
+        ["Which sizes are there?", "A5, A4 and US Letter at 300 dots per inch, and 1080 × 1350 pixels for social posts. There is no bleed, so on a home printer expect a white edge of a few millimetres around photos and colour that run to the edge."],
+        ["What does the QR code open?", "The link you paste, exactly as typed, with https:// added if you leave it off. Nothing is looked up. Very long links make dense codes that scan badly from paper, and the form says so."],
+        ["What if my text is too long?", "Everything shrinks together to fit. Past a point the form says which field to shorten, and lines that still do not fit are left off the page so nothing overlaps."],
+        ["Can I make these from a spreadsheet?", "A flyer is one design, so this maker has no list button. For many versions with different names, numbers or codes, use the certificate, ticket or voucher makers, or add fields to the finished flyer with the Fields panel and use Create many."],
+        ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
+      ],
+      "related": ["event-kit", "invitations-qr", "qr-posters", "ticket-maker"],
+      "keywords": ["leaflet", "poster", "event flyer", "sale", "handout", "a5", "qr code"]
+    },
+    {
+      "id": "resume-maker",
+      "kind": "feature",
+      "status": "live",
+      "url": "resume-maker/",
+      "title": "CV maker",
+      "icon": "text",
+      "parents": ["photo"],
+      "audiences": ["office", "teachers"],
+      "headline": "Your CV on one page, {clear and easy to read.}",
+      "metaTitle": "CV and résumé maker: one page, export as PDF",
+      "description": "Make a one-page CV or résumé with experience, education and skills in four restrained styles on A4 or US Letter, and save it as a PDF. Made on your device.",
+      "tagline": "A one-page CV or résumé, saved as a PDF",
+      "summary": "Fill in your name, contact details, a short summary, your experience, education and skills. The maker sets them on one page in a quiet, readable layout, and shrinks the text together when there is a lot of it.",
+      "launch": "studio/?make=resume",
+      "launchLabel": "Make a CV in the editor",
+      "maker": "resume",
+      "art": "doc",
+      "does": ["One page on A4 or US Letter in four restrained styles: classic, side column, compact and accent", "Name, job title, contact details, a summary, up to five jobs, three courses and ten skills", "The form limits how long each part can be and the text shrinks together, so a full form still fits on the page", "An optional photo, and an accent colour of your own", "Exports as a PDF at the real paper size, or as an image"],
+      "steps": ["Fill in your details, your experience with the newest job first, your education and your skills.", "Choose a style and a paper size, then tap Make it. The CV opens in the editor.", "Read it through, change any wording on the page, then download it as a PDF."],
+      "privacy": "What you type, the photos you add and any list you bring stay on this device. The design, the QR codes and the exported files are made by your browser, and nothing is uploaded.",
+      "faq": [
+        ["Is the PDF text selectable?", "No. The page is exported as an image inside the PDF at print resolution, so it looks the same everywhere, but the text cannot be selected or read by software that scans CVs for keywords. If an employer asks for a text CV, send a word-processor file as well."],
+        ["How much fits?", "One page: up to five jobs, three courses and ten skills. The form limits how long each part can be, and the text shrinks together to fit, to about three quarters of its size at most, so even a full form stays on one page."],
+        ["Can I make these from a spreadsheet?", "No. A CV is a single document, so this maker has no list button."],
+        ["Is my CV stored anywhere?", "Only on this device, as a saved design in your browser, until you delete it. Nothing is uploaded."],
+        ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
+      ],
+      "related": ["letterhead-maker", "pdf-editor", "quick-makers", "business-card-maker"],
+      "keywords": ["cv", "resume", "résumé", "curriculum vitae", "job application", "one page"]
+    },
+    {
+      "id": "greeting-card-maker",
+      "kind": "feature",
+      "status": "live",
+      "url": "greeting-card-maker/",
+      "title": "Greeting card maker",
+      "icon": "star",
+      "parents": ["photo"],
+      "audiences": ["social", "teachers", "business"],
+      "headline": "A card to fold, {with your words inside.}",
+      "metaTitle": "Greeting card maker: thank you, birthday and more",
+      "description": "Make a folded or flat greeting card for thanks, birthdays and congratulations, with your message inside, one or one per person from a list. Made on your device.",
+      "tagline": "Folded or flat cards for thanks, birthdays and congratulations",
+      "summary": "Pick the occasion, write the message and choose a style. A folded card comes as two sheets, the outside and the inside, with a fold line. The name and the message are fields, so a list writes a card for each person.",
+      "launch": "studio/?make=greetingcard",
+      "launchLabel": "Make a card in the editor",
+      "maker": "greetingcard",
+      "art": "class",
+      "secondary": {"href": "assets/samples/greetingcard-list.csv", "label": "Sample list (CSV)"},
+      "does": ["Thank you, birthday, congratulations and season's greetings, or your own words on the front", "A card that folds to A5 or A6, or a flat 5 × 7 in card, in six styles", "Two pages: the outside (front and back) and the inside with Dear, your message and who it is from", "A dashed fold line you can switch off, and an optional photo on the front", "One card per person from a list. Exports as a PDF at the real paper size, or as images"],
+      "steps": ["Choose the occasion and write the message.", "Choose a style and a size, then tap Make it. The outside and the inside open in the editor as two pages.", "Print the outside, turn the sheet over and print the inside on the back, then fold along the line."],
+      "privacy": "What you type, the photos you add and any list you bring stay on this device. The design, the QR codes and the exported files are made by your browser, and nothing is uploaded.",
+      "faq": [
+        ["How do I print a folded card?", "The card that folds to A5 is A4 turned sideways, and the one that folds to A6 is A5 turned sideways. Print the first page, put the sheet back in and print the second page on the other side, flipping on the short edge, at 100 percent. The front is on the right half of the first page and the message on the right half of the second, so they sit correctly once folded."],
+        ["Can I make one for each person from a spreadsheet?", "Yes. Tap Make one for each row of a list. Columns called name and note fill the inside of each card, and the button opens Create many on the inside page for you. Save one PDF or a zip of images. The front is the same on every card, so print it as many times as you have rows."],
+        ["Will colour print to the edge?", "Only on a printer that prints without borders. Most home printers leave a few millimetres white around the sheet. The Simple and Script styles look right with that edge."],
+        ["What paper should I use?", "Card of about 200 to 250 grams per square metre folds well and takes ink on both sides. Score the fold with a ruler and a blunt edge first for a clean crease."],
+        ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
+      ],
+      "related": ["invitations-qr", "printables", "certificate-maker", "photo-books"],
+      "keywords": ["thank you card", "birthday card", "congratulations", "folded card", "holiday card", "note card"]
+    },
+    {
+      "id": "certificate-maker",
+      "kind": "feature",
+      "status": "live",
+      "url": "certificate-maker/",
+      "title": "Certificate maker",
+      "icon": "star",
+      "parents": ["photo"],
+      "audiences": ["teachers", "business", "office"],
+      "headline": "Make a certificate, {one or a whole class.}",
+      "metaTitle": "Certificate maker: awards, completion and attendance",
+      "description": "Make award, completion, participation and attendance certificates on A4 or US Letter, one at a time or one for each name in a list. Made on your device.",
+      "tagline": "Award and completion certificates, one or one per name",
+      "summary": "Fill in a short form and get a certificate with signature lines and a seal, ready to print. The recipient's name, the reason and the date are fields, so one more step fills a certificate for every row of a class or staff list.",
+      "launch": "studio/?make=certificate",
+      "launchLabel": "Make a certificate in the editor",
+      "maker": "certificate",
+      "art": "class",
+      "secondary": {"href": "assets/samples/certificate-list.csv", "label": "Sample list (CSV)"},
+      "does": ["Achievement, completion, participation, appreciation and attendance certificates in six styles", "A4 and US Letter, wide or tall, at print resolution, plus a screen size for sharing", "Up to two signature lines with names and roles, an optional logo, and a seal or ribbon", "The name shrinks to fit its line. Name, reason and date are fields you can fill from a list", "Exports: PNG or JPG, a PDF at the real paper size, or one certificate per row as a zip, one PDF or print sheets"],
+      "steps": ["Fill in the recipient, the reason, the date and who signs.", "Choose a style and a paper size, then tap Make it. The certificate opens in the editor, where every part can be changed.", "Download a PDF or an image, or tap Make one for each row of a list to fill it from a class list."],
+      "privacy": "What you type, the photos you add and any list you bring stay on this device. The design, the QR codes and the exported files are made by your browser, and nothing is uploaded.",
+      "faq": [
+        ["Can I make one for each person from a spreadsheet?", "Yes. In the form, tap Make one for each row of a list. It makes the certificate and opens Create many, where you paste cells from a spreadsheet or choose a CSV, TSV or Excel file. A column called name fills the recipient, and columns called reason and awarded fill the reason and the date. You get a zip of images, one PDF, print sheets or pages in the design."],
+        ["Which sizes are there?", "A4 and US Letter, each wide or tall, at 300 dots per inch (A4 wide is 3508 × 2480 pixels), and a 1600 × 1131 screen size for messages and email."],
+        ["What happens with a very long name?", "The name shrinks to stay on its line. On tall pages a long name may take two lines instead."],
+        ["Will it print at the right size?", "Yes, if you choose actual size or 100 percent in the print dialog. The PDF page is the paper size. Most home printers leave a white edge of a few millimetres, so the borders sit well inside the page."],
+        ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
+      ],
+      "related": ["quick-makers", "printables", "id-badge-maker", "ticket-maker"],
+      "keywords": ["award certificate", "diploma", "completion", "participation", "attendance", "class award", "employee of the month", "from a list"]
+    },
+    {
+      "id": "business-card-maker",
+      "kind": "feature",
+      "status": "live",
+      "url": "business-card-maker/",
+      "title": "Business card maker",
+      "icon": "briefcase",
+      "parents": ["photo"],
+      "audiences": ["business", "sellers", "office"],
+      "headline": "Business cards, {front, back and ready for the printer.}",
+      "metaTitle": "Business card maker with bleed, QR and print sheet",
+      "description": "Make a business card, front and back, with 3 mm bleed, crop marks, a QR contact card and a print sheet for both sides. Made on your device.",
+      "tagline": "Front and back with bleed, a QR contact card and a print sheet",
+      "summary": "Type your details once and get a front and a back as two pages, at real card sizes with bleed and crop marks. Add a QR code that saves your contact details to a phone, and print sheets that line up on both sides.",
+      "launch": "studio/?make=businesscard",
+      "launchLabel": "Make a business card in the editor",
+      "maker": "businesscard",
+      "art": "brand",
+      "secondary": {"href": "assets/samples/businesscard-list.csv", "label": "Sample list (CSV)"},
+      "does": ["Front and back as two pages, in eight styles, at 85 × 55 mm, 3.5 × 2 in, 90 × 54 mm, square or tall", "3 mm (0.125 in) bleed on every side with crop marks, and dashed trim and safe-area guides you can switch on to check", "An optional QR code on the back that saves your contact details to a phone, or opens your website", "Print sheets on A4 or US Letter with cut marks: a sheet of fronts and a sheet of backs that line up when printed on both sides", "Exports: PNG or JPG, a PDF at the real size with bleed, or one card per row of a staff list"],
+      "steps": ["Fill in your name, role, company and contact details, and add a logo or a photo if you have one.", "Choose a style and a card size, then tap Make it. The front and the back open in the editor as two pages.", "Download a PDF for a print shop, or add print sheets and print them yourself at 100 percent."],
+      "privacy": "What you type, the photos you add and any list you bring stay on this device. The design, the QR codes and the exported files are made by your browser, and nothing is uploaded.",
+      "faq": [
+        ["How do I print both sides so they line up?", "Choose A4 or US Letter under Print sheets. You get a sheet of fronts and a sheet of backs with the cards in mirrored places. Print the fronts, put the paper back in and print the backs. The note at the top of the back sheet says which edge to flip on: the short edge when the sheet is wide, the long edge when it is tall. Print at 100 percent. Printers shift the paper a little, and the bleed gives room for that."],
+        ["What are bleed and the safe area?", "Bleed is 3 mm of background beyond the cut line (0.125 in for the 3.5 × 2 in size), so a cut that is slightly off leaves no white edge. The card page includes it: an 85 × 55 mm card is a 91 × 61 mm page. Text stays at least 5 mm inside the cut line."],
+        ["How many cards fit on a sheet?", "Nine 85 × 55 mm cards on A4 and eight 3.5 × 2 in cards on US Letter. That is fewer than on a pre-cut sheet, because each card keeps its bleed and the sheet keeps a margin for the printer."],
+        ["Can I make cards for a whole team from a spreadsheet?", "Yes. Tap Make one for each row of a list. Create many reads pasted cells or a CSV, TSV or Excel file and matches columns called name, role, phone and email. It fills the page you are looking at, so run it on the front, then on the back if the back carries a code. The QR code only changes per person when your list has a column for it, such as a profile link. Without one, every card carries the code from the form."],
+        ["What does the QR code contain?", "A standard contact card with the name, role, company, phone, email, website and address you typed, or only your website address. Nothing is looked up or sent anywhere. The code is drawn on your device."]
+      ],
+      "related": ["brand-kit", "loyalty-card-maker", "letterhead-maker", "id-badge-maker"],
+      "keywords": ["visiting card", "name card", "contact card", "vcard", "qr", "bleed", "double sided", "spreadsheet"]
+    },
+    {
+      "id": "id-badge-maker",
+      "kind": "feature",
+      "status": "live",
+      "url": "id-badge-maker/",
+      "title": "ID badge maker",
+      "icon": "frame",
+      "parents": ["photo"],
+      "audiences": ["business", "office", "teachers"],
+      "headline": "ID badges with a photo, {one or a whole team.}",
+      "metaTitle": "ID badge maker: staff, visitor, student and event",
+      "description": "Make staff, visitor, student and event badges with a photo, an ID number as a QR code and a print sheet. Fill a whole team from a list. Made on your device.",
+      "tagline": "Staff, visitor, student and event badges, one or many",
+      "summary": "A badge with a photo, a name, a role and an ID number, at card or lanyard size. Name, role, ID number and photo are fields, so a list and a folder of photos make a badge for everyone.",
+      "launch": "studio/?make=idbadge",
+      "launchLabel": "Make an ID badge in the editor",
+      "maker": "idbadge",
+      "art": "office",
+      "secondary": {"href": "assets/samples/idbadge-list.csv", "label": "Sample list (CSV)"},
+      "does": ["Staff, visitor, student and event badges in five styles, colour-coded by type", "Card size (85.6 × 54 mm, tall or wide) and two lanyard sizes, A6 and 4 × 3 in", "Photo, name, role, ID number and a valid-until date, with the ID number as a QR code", "A dashed guide for the lanyard slot, an optional back with a signature line, and a print sheet with cut marks", "One badge per row of a list, with photos matched by file name. Export images, one PDF or print sheets"],
+      "steps": ["Choose who the badge is for, then fill in the name, role and ID number and add a photo.", "Choose a style and a size, then tap Make it. The badge opens in the editor.", "Download it, add a print sheet, or tap Make one for each row of a list to make the whole team."],
+      "privacy": "What you type, the photos you add and any list you bring stay on this device. The design, the QR codes and the exported files are made by your browser, and nothing is uploaded.",
+      "faq": [
+        ["Can I make badges for everyone from a spreadsheet?", "Yes. Tap Make one for each row of a list, then paste your list or choose a CSV, TSV or Excel file. Columns called name, role and id fill the badge, and the QR code follows the id column. Put each person's photo file name in a column called photo and choose the photos in the Photos step. The match ignores capitals and the file ending, so amara.jpg matches Amara.JPG or amara."],
+        ["What is in the QR code?", "Only the ID number you typed, as plain text. It is not linked to any system. What a scan does depends on the reader you use."],
+        ["Which sizes are there?", "The standard card, 85.6 × 54 mm, tall or wide, and two lanyard sizes, A6 (105 × 148 mm) and 4 × 3 in. Nine cards fit on an A4 print sheet."],
+        ["Can I print on a plastic card printer?", "The page is exactly card size with no bleed, which suits printing on paper or card and cutting, or a badge holder. Card printers differ, so switch off the slot guide and check your printer's own template before a large run."],
+        ["Is this a secure ID?", "No. It is a printed badge with a photo and a number. It has no chip or hologram and is not checked against any register."]
+      ],
+      "related": ["certificate-maker", "event-kit", "business-card-maker", "ticket-maker"],
+      "keywords": ["id card", "staff badge", "visitor pass", "student id", "event badge", "lanyard", "photo id", "conference"]
+    },
+    {
+      "id": "letterhead-maker",
+      "kind": "feature",
+      "status": "live",
+      "url": "letterhead-maker/",
+      "title": "Letterhead maker",
+      "icon": "stamp",
+      "parents": ["photo"],
+      "audiences": ["business", "office"],
+      "headline": "A letterhead, {with a slip and an envelope to match.}",
+      "metaTitle": "Letterhead maker with compliment slip and envelope",
+      "description": "Make a letterhead on A4 or US Letter with your logo and details, plus a matching compliment slip and envelope front. Export as PDF. Made on your device.",
+      "tagline": "A4 or Letter letterhead, compliment slip and envelope",
+      "summary": "Your name or logo and your details in the header and footer, the body left clear for the letter, and a compliment slip and envelope front in the same style as extra pages.",
+      "launch": "studio/?make=letterhead",
+      "launchLabel": "Make a letterhead in the editor",
+      "maker": "letterhead",
+      "art": "doc",
+      "secondary": {"href": "assets/samples/letterhead-list.csv", "label": "Sample list (CSV)"},
+      "does": ["A4 and US Letter in five styles, with your logo or name, address, phone, email and website in the header and footer", "The body is left clear, with a light sample paragraph to type over", "A matching compliment slip and envelope front as extra pages", "An optional faint watermark, made from your logo when you add one", "Exports as a PDF at the real paper size or as images, and one addressed letter per row of a list"],
+      "steps": ["Fill in your company details and add a logo if you have one.", "Choose a style and a paper size, switch on the slip and the envelope if you want them, then tap Make it.", "Type your letter over the sample paragraph in the editor, then download a PDF or print."],
+      "privacy": "What you type, the photos you add and any list you bring stay on this device. The design, the QR codes and the exported files are made by your browser, and nothing is uploaded.",
+      "faq": [
+        ["Can I address letters to a whole list from a spreadsheet?", "Yes. Tap Make one for each row of a list. Columns called name and address fill the recipient block and the greeting, and you get one PDF with a page per letter, or a zip of images. The body text is the same on every letter. Create many fills the page you are looking at, so open the envelope page and run it again to address the envelopes."],
+        ["Can I use it in a word processor?", "Export the page as a PDF or PNG and set it as the page background in your word processor, or print a stack of letterheads and feed them through the printer again. The maker itself is for the design and for short letters typed on the page."],
+        ["Which sizes are the slip and the envelope?", "With A4, the slip is 210 × 99 mm and the envelope front is DL, 220 × 110 mm. With US Letter, the slip is 8.5 × 3.67 in and the envelope is a No. 10, 9.5 × 4.125 in."],
+        ["Will the colour band print to the edge?", "Only on a printer that prints without borders, or at a print shop. Most home printers leave a few millimetres white. The Classic and Minimal styles keep everything inside the margins."],
+        ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
+      ],
+      "related": ["business-card-maker", "brand-kit", "pdf-editor", "quick-makers"],
+      "keywords": ["letter template", "stationery", "compliment slip", "envelope", "headed paper", "mail merge"]
+    },
+    {
+      "id": "gift-voucher-maker",
+      "kind": "feature",
+      "status": "live",
+      "url": "gift-voucher-maker/",
+      "title": "Gift voucher maker",
+      "icon": "shop",
+      "parents": ["photo"],
+      "audiences": ["business", "sellers"],
+      "headline": "Gift vouchers, {with a code and your terms.}",
+      "metaTitle": "Gift voucher and coupon maker with codes and QR",
+      "description": "Make gift vouchers and coupons with a value, a code, a QR code and your terms, to print or send. Make a numbered run from a list. Made on your device.",
+      "tagline": "Gift vouchers and coupons with a code, one or a numbered run",
+      "summary": "A voucher with a value or an offer, to and from, a code and your terms, to print or to send as an image. To, from, value and code are fields, so a list gives every voucher its own code.",
+      "launch": "studio/?make=voucher",
+      "launchLabel": "Make a gift voucher in the editor",
+      "maker": "voucher",
+      "art": "shop",
+      "secondary": {"href": "assets/samples/voucher-list.csv", "label": "Sample list (CSV)"},
+      "does": ["A value or an offer, to and from, a code, a valid-until date and your terms, in five styles", "DL (210 × 99 mm) and A6 for print, and a 1600 × 900 size to send by message or email", "The code as a QR code as well, for a quick check at the till", "A print sheet with cut marks on A4 or US Letter", "A numbered run from a list: one voucher per row with its own name, value and code"],
+      "steps": ["Fill in the value or offer, your business, the code and the terms.", "Choose a style and a size, then tap Make it. The voucher opens in the editor.", "Download an image to send or a PDF to print, or tap Make one for each row of a list for a numbered run."],
+      "privacy": "What you type, the photos you add and any list you bring stay on this device. The design, the QR codes and the exported files are made by your browser, and nothing is uploaded.",
+      "faq": [
+        ["Can I make these from a spreadsheet?", "Yes. Tap Make one for each row of a list. Columns called to, from, value and code fill each voucher, and the QR code follows the code column. Paste cells or choose a CSV, TSV or Excel file, then save a zip of images, one PDF or print sheets."],
+        ["Does the code do anything?", "No. The maker prints the code you give it and draws it as a QR code. Keeping track of which codes are issued and used is up to you, for example in the same spreadsheet."],
+        ["How many print on a sheet?", "One DL voucher on a sheet turned sideways, and two A6 vouchers. Vouchers print at full size with a margin for the printer, so a DL voucher, which is as wide as A4, cannot share the sheet."],
+        ["Can I leave To and From blank?", "Yes. Leave them empty and the voucher has two lines to write on by hand."],
+        ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
+      ],
+      "related": ["loyalty-card-maker", "ticket-maker", "business-card-maker", "pay-poster"],
+      "keywords": ["gift certificate", "gift card", "coupon", "discount", "voucher code", "salon"]
+    },
+    {
+      "id": "ticket-maker",
+      "kind": "feature",
+      "status": "live",
+      "url": "ticket-maker/",
+      "title": "Ticket maker",
+      "icon": "calendar",
+      "parents": ["photo"],
+      "audiences": ["business", "teachers", "social"],
+      "headline": "Event tickets, {numbered and ready to tear.}",
+      "metaTitle": "Event ticket maker with stub, numbers and QR",
+      "description": "Make event tickets with a tear-off stub, a ticket number and a QR code, then a numbered run from a list with print sheets. Made on your device.",
+      "tagline": "Event tickets with a stub, a number and a QR code",
+      "summary": "A ticket with the event, date, time, venue, seat and price, and a stub with the number again as a QR code. The number and the seat are fields, so a list makes the whole run.",
+      "launch": "studio/?make=ticket",
+      "launchLabel": "Make a ticket in the editor",
+      "maker": "ticket",
+      "art": "class",
+      "secondary": {"href": "assets/samples/ticket-list.csv", "label": "Sample list (CSV)"},
+      "does": ["A ticket with a tear-off stub and a dashed perforation line, in four styles", "Event, date, time, venue, seat or zone, price and a ticket number", "The number as a QR code on the stub", "Three sizes: 140 × 55 mm, 5.5 × 2 in and 180 × 70 mm, with a print sheet and cut marks", "A numbered run from a list: one ticket per row, each with its own number, code and seat"],
+      "steps": ["Fill in the event, the date and time, the venue and the price.", "Choose a style and a size, then tap Make it. The ticket opens in the editor.", "Tap Make one for each row of a list for a numbered run, then save print sheets or one PDF."],
+      "privacy": "What you type, the photos you add and any list you bring stay on this device. The design, the QR codes and the exported files are made by your browser, and nothing is uploaded.",
+      "faq": [
+        ["Can I make a numbered run from a spreadsheet?", "Yes. Tap Make one for each row of a list. Create many takes a list with a column called no for the ticket number and, if you like, one called seat. Type the first numbers in a spreadsheet, fill them down, then paste the cells or choose the CSV or Excel file. The QR code on each ticket holds that ticket's number. Save print sheets with cut marks, one PDF or a zip of images."],
+        ["Is the perforation real?", "No. The dashed line shows where the stub comes off. Fold and tear along it, cut it, or ask a print shop to perforate there."],
+        ["Does the QR code check people in?", "The code holds only the ticket number as text. Any QR reader shows it, which is enough to tick numbers off a list. It is not tied to a ticketing system and does not stop a copied ticket."],
+        ["How many tickets fit on a sheet?", "Four 140 × 55 mm tickets on A4, at full size with a margin for the printer."],
+        ["Can I change the result?", "Yes. It opens in the editor as an ordinary design. Tap any part to change it, or use Edit details to reopen the form and remake it in one undo step. If a design is already open, the new pages are added after the page you are on."]
+      ],
+      "related": ["event-kit", "invitations-qr", "certificate-maker", "gift-voucher-maker"],
+      "keywords": ["event ticket", "raffle tickets", "numbered tickets", "concert", "school play", "admission", "stub"]
+    },
+    {
+      "id": "loyalty-card-maker",
+      "kind": "feature",
+      "status": "live",
+      "url": "loyalty-card-maker/",
+      "title": "Loyalty card maker",
+      "icon": "check",
+      "parents": ["photo"],
+      "audiences": ["business", "sellers"],
+      "headline": "A stamp card, {front, back and a sheet to print.}",
+      "metaTitle": "Loyalty stamp card maker for cafés, salons and shops",
+      "description": "Make a loyalty stamp card with 5, 8 or 10 stamps and a reward, front and back at business-card size, with a print sheet. Made on your device.",
+      "tagline": "Stamp cards with 5, 8 or 10 stamps and a reward",
+      "summary": "A stamp card at business-card size: your name on the front, the stamp slots and the reward on the back, and print sheets that line up on both sides.",
+      "launch": "studio/?make=loyaltycard",
+      "launchLabel": "Make a loyalty card in the editor",
+      "maker": "loyaltycard",
+      "art": "shop",
+      "secondary": {"href": "assets/samples/loyaltycard-list.csv", "label": "Sample list (CSV)"},
+      "does": ["A stamp card with 5, 8 or 10 stamps and your reward, in four styles", "Business-card size, front and back, with 3 mm bleed and crop marks", "Stamp slots with numbers or a small picture: cup, star, heart, scissors, paw or pizza", "A line for the holder's name, or names and card numbers filled from a list", "Print sheets of fronts and backs with cut marks that line up when printed on both sides"],
+      "steps": ["Fill in your business name, the number of stamps and the reward.", "Choose a style and a size, then tap Make it. The front and the back open in the editor as two pages.", "Add print sheets and print both sides at 100 percent, or download a PDF for a print shop."],
+      "privacy": "What you type, the photos you add and any list you bring stay on this device. The design, the QR codes and the exported files are made by your browser, and nothing is uploaded.",
+      "faq": [
+        ["How do I print both sides so they line up?", "Choose A4 or US Letter under Print sheets. You get a sheet of fronts and a sheet of backs. Print the fronts, put the paper back in and print the backs, flipping on the edge named in the note at the top of the back sheet. Print at 100 percent. The 3 mm bleed gives room for the small shift every printer has."],
+        ["How many cards fit on a sheet?", "Nine 85 × 55 mm cards on A4, or eight 3.5 × 2 in cards on US Letter."],
+        ["Can I make named cards from a spreadsheet?", "Yes. Tap Make one for each row of a list. Columns called name and no fill the holder's name and the card number on the back, and the button opens Create many on the back page for you. For most shops a blank name line is enough: leave the name empty and print one sheet."],
+        ["Can I change the stamps or the wording?", "Yes. The card opens in the editor as an ordinary design, so every slot, picture and line of text can be moved, recoloured or replaced. Edit details reopens the form."]
+      ],
+      "related": ["business-card-maker", "gift-voucher-maker", "pay-poster", "labels-tags"],
+      "keywords": ["stamp card", "punch card", "reward card", "coffee card", "cafe", "salon"]
     },
     {
       "kind": "feature",

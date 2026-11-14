@@ -431,7 +431,7 @@ function buildMeta() {
 
   const llms = `# LocalEditor
 
-> LocalEditor is a private photo studio (with an Expert mode for colour grading, RAW and HDR, retouching, relighting and over 110 effects), a PDF studio, 25 quick makers and ${TOOLS.length} browser tools for images, PDFs, text and everyday tasks. Editing runs on the device. Files are not uploaded, no account is required, and the site can be installed for offline use.
+> LocalEditor is a private photo studio (with an Expert mode for colour grading, RAW and HDR, retouching, relighting and over 110 effects), a PDF studio, 36 quick makers and ${TOOLS.length} browser tools for images, PDFs, text and everyday tasks. Editing runs on the device. Files are not uploaded, no account is required, and the site can be installed for offline use.
 
 Key facts:
 - Price: free, unlimited, no watermarks, no sign-up.

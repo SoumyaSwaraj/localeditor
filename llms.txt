@@ -1,6 +1,6 @@
 # LocalEditor
 
-> LocalEditor is a private photo studio (with an Expert mode for colour grading, RAW and HDR, retouching, relighting and over 110 effects), a PDF studio, 25 quick makers and 33 browser tools for images, PDFs, text and everyday tasks. Editing runs on the device. Files are not uploaded, no account is required, and the site can be installed for offline use.
+> LocalEditor is a private photo studio (with an Expert mode for colour grading, RAW and HDR, retouching, relighting and over 110 effects), a PDF studio, 36 quick makers and 33 browser tools for images, PDFs, text and everyday tasks. Editing runs on the device. Files are not uploaded, no account is required, and the site can be installed for offline use.
 
 Key facts:
 - Price: free, unlimited, no watermarks, no sign-up.
@@ -139,12 +139,24 @@ The photo studio has a second workspace, Expert mode (https://localeditor.net/st
 - [Font library](https://localeditor.net/font-library/): 257 families and 20 originals, loaded only when used.
 - [Themes and appearance](https://localeditor.net/themes/): Five themes, light, dark or automatic.
 - [Fill-in templates and bulk create](https://localeditor.net/bulk-create/): A spreadsheet in, finished designs out.
+- [Chart maker](https://localeditor.net/chart-maker/): A spreadsheet in, an editable chart out.
+- [QR code maker with logo and colours](https://localeditor.net/qr-code-maker/): Coloured QR codes with a logo, checked before download.
 - [Screenshot beautifier](https://localeditor.net/screenshot-beautifier/): A framed screenshot or code image on a soft backdrop.
 - [Photobooth strip](https://localeditor.net/photobooth-strip/): A strip, grid or wide strip, from your camera or photos.
 - [Recap collage](https://localeditor.net/recap-collage/): Up to 30 photos, a title, dates and a line of stats.
 - [Catalogue and price list maker](https://localeditor.net/catalogue-maker/): Product pages, price lists and menus from a spreadsheet.
 - [QR signs and posters](https://localeditor.net/qr-posters/): Wi-Fi sign, pay poster and invitation with a code.
 - [Printables](https://localeditor.net/printables/): Calendars, charts, labels, stickers, photo books and zines.
+- [Flyer maker](https://localeditor.net/flyer-maker/): Flyers for print and social, with an optional QR code.
+- [CV maker](https://localeditor.net/resume-maker/): A one-page CV or résumé, saved as a PDF.
+- [Greeting card maker](https://localeditor.net/greeting-card-maker/): Folded or flat cards for thanks, birthdays and congratulations.
+- [Certificate maker](https://localeditor.net/certificate-maker/): Award and completion certificates, one or one per name.
+- [Business card maker](https://localeditor.net/business-card-maker/): Front and back with bleed, a QR contact card and a print sheet.
+- [ID badge maker](https://localeditor.net/id-badge-maker/): Staff, visitor, student and event badges, one or many.
+- [Letterhead maker](https://localeditor.net/letterhead-maker/): A4 or Letter letterhead, compliment slip and envelope.
+- [Gift voucher maker](https://localeditor.net/gift-voucher-maker/): Gift vouchers and coupons with a code, one or a numbered run.
+- [Ticket maker](https://localeditor.net/ticket-maker/): Event tickets with a stub, a number and a QR code.
+- [Loyalty card maker](https://localeditor.net/loyalty-card-maker/): Stamp cards with 5, 8 or 10 stamps and a reward.
 - [Compare two PDFs](https://localeditor.net/compare-pdfs/): Every changed word, amount and date, plus a picture view.
 - [Build a PDF pack](https://localeditor.net/pdf-bundle/): A cover, contents, bookmarks and page numbers.
 - [Stamps and comment summary](https://localeditor.net/pdf-stamps/): Office stamps with name and date, and a comment list.

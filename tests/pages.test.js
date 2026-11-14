@@ -38,7 +38,8 @@ cases['the generator is idempotent and only live or beta entries get a page'] = 
 
 cases['no soon feature is mentioned on a generated page, the homepage or in search'] = async ({ h }) => {
   const app = fs.readFileSync(path.join(ROOT, 'assets/js/app.js'), 'utf8');
-  const index = app.slice(app.indexOf('/* BEGIN site index */'), app.indexOf('/* END site index */'));
+  /* The hub list is in app.js; the page list is the data file the search fetches (assets/data/search.json). */
+  const index = app.slice(app.indexOf('/* BEGIN site index */'), app.indexOf('/* END site index */')) + fs.readFileSync(path.join(ROOT, 'assets/data/search.json'), 'utf8');
   const docs = site.pages.map((e) => [e.url, read(e.url)]).concat([['index.html', fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')]]);
   for (const [url, html] of docs) {
     const head = (html.match(/<title>([^<]*)/) || [])[1] + ' ' + (html.match(/name="description" content="([^"]*)/) || [])[1];
@@ -63,7 +64,8 @@ cases['every live feature, tool page and hub is registered: llms.txt, header sea
   const app = fs.readFileSync(path.join(ROOT, 'assets/js/app.js'), 'utf8');
   const home = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const tools = read('tools');
-  const index = app.slice(app.indexOf('/* BEGIN site index */'), app.indexOf('/* END site index */'));
+  /* The hub list is in app.js; the page list is the data file the search fetches (assets/data/search.json). */
+  const index = app.slice(app.indexOf('/* BEGIN site index */'), app.indexOf('/* END site index */')) + fs.readFileSync(path.join(ROOT, 'assets/data/search.json'), 'utf8');
   ['photo-privacy/', 'device-check/'].forEach((u) => {
     h.assert(llms.includes('https://localeditor.net/' + u), 'llms.txt lists ' + u);
     h.assert(app.includes("'" + u + "'"), 'header search tools list has ' + u);
