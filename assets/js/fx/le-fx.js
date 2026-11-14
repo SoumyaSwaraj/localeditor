@@ -29,7 +29,7 @@
 
   var BAD = { __proto__: 1, constructor: 1, prototype: 1 };
   var BLENDS = ['normal', 'multiply', 'screen', 'overlay', 'soft-light', 'hard-light', 'darken', 'lighten', 'difference', 'color', 'luminosity'];
-  var NEEDS = ['alpha', 'scene', 'depth', 'normals', 'face', 'stats'];
+  var NEEDS = ['alpha', 'scene', 'below', 'depth', 'normals', 'face', 'stats'];
   var PARAM_TYPES = ['number', 'bool', 'choice', 'color', 'point', 'angle', 'curve', 'wheel', 'bands', 'lut', 'seed', 'data'];
   var MASK_KINDS = {
     asset: {}, subject: {},
@@ -186,14 +186,21 @@
       grow: typeof def.grow === 'function' ? def.grow : null,
       draft: typeof def.draft === 'function' ? def.draft : null,
       passes: def.passes, inert: def.inert === true,   /* inert: described and validated, never drawn */
+      /* source: { order, required } puts the effect in the source stage of a layer drawn from float data (RAW, HDR): it runs on
+         the uncropped scene-referred picture, in that order, before everything else. inject(p, ctx) fills in what only the
+         layer's source knows (a camera matrix, the picture's extent); its result is never written to the document. */
+      source: isObj(def.source) || def.source === true ? { order: isNum(def.source.order) ? def.source.order : 50, required: def.source.required === true } : null,
+      inject: typeof def.inject === 'function' ? def.inject : null,
       cpu: typeof def.cpu === 'function' ? def.cpu : null,
       support: { needs: Array.isArray(sup.needs) ? sup.needs.slice() : ['webgl2'], wants: Array.isArray(sup.wants) ? sup.wants.slice() : [], memoryMB: isNum(sup.memoryMB) ? sup.memoryMB : 0 },
       ui: isObj(def.ui) ? clone(def.ui) : { section: 'Effects' },
       agent: isObj(def.agent) ? clone(def.agent) : { summary: '' }
     };
-    d.silhouette = d.needs.indexOf('alpha') >= 0 || d.needs.indexOf('scene') >= 0;
+    d.drawTime = d.needs.indexOf('scene') >= 0 || d.needs.indexOf('below') >= 0;   /* reads other layers: runs when the page is composed */
+    d.silhouette = d.needs.indexOf('alpha') >= 0 || d.drawTime;
     if (!defs[d.id]) order.push(d.id);
     defs[d.id] = d;
+    (Array.isArray(def.aliases) ? def.aliases : []).slice(0, 8).forEach(function (a) { if (typeof a === 'string' && /^[a-z][a-z0-9.-]{1,39}$/.test(a) && !own(defs, a)) aliases[a] = d.id; });
     resolveMemo = {};
     revision++; shared = null;
     /* E7: every effect says what a device needs. Works whether le-support.js has loaded or not. */
@@ -202,7 +209,10 @@
     return d;
   };
   FX.list = function () { return order.slice(); };
-  FX.get = function (id) { return own(defs, id) ? defs[id] : null; };
+  /* An effect may name earlier ids it replaces (`aliases`): an entry of such a type is read as this effect (same parameter
+     names) and written back under the new id by validation, so documents made before a fold keep working. */
+  var aliases = {};
+  FX.get = function (id) { return own(defs, id) ? defs[id] : own(aliases, id) && own(defs, aliases[id]) ? defs[aliases[id]] : null; };
   FX.defaults = function (id) {
     var d = FX.get(id);
     if (!d) return null;
@@ -300,7 +310,11 @@
         var dl = isObj(r.download) && typeof r.download.text === 'string' ? { name: String(r.download.name || 'download.txt').replace(/[^\w .()-]/g, '').slice(0, 80) || 'download.txt', text: r.download.text, type: /^[\w.+-]+\/[\w.+-]+$/.test(r.download.type || '') ? r.download.type : 'text/plain' } : null;
         var data = null;
         if (isObj(r.data)) { try { var js = JSON.stringify(r.data); if (js.length <= 20000) data = JSON.parse(js); } catch (e2) { data = null; } }
-        var out = { ok: true, ops: ops, download: dl, message: typeof r.message === 'string' ? r.message.slice(0, 300) : '' };
+        /* What a helper could not do fully (no depth map, no face found) travels with its result: as warnings, and in words
+           when it gave no message of its own, so an agent that only reads the message still hears it. */
+        var warns = (Array.isArray(r.warnings) ? r.warnings : []).filter(function (w) { return isObj(w) && typeof w.message === 'string'; }).slice(0, 8).map(function (w) { return { code: String(w.code || 'note').slice(0, 40), message: w.message.slice(0, 300) }; });
+        var out = { ok: true, ops: ops, download: dl, message: (typeof r.message === 'string' && r.message ? r.message : warns.map(function (w) { return w.message; }).join(' ')).slice(0, 300) };
+        if (warns.length) out.warnings = warns;
         if (data) out.data = data;
         return out;
       }, function (e) { return { ok: false, ops: [], message: String(e && e.message || e).slice(0, 300) }; });
@@ -715,7 +729,7 @@
         }
         if (raw.fx != null && !Array.isArray(raw.fx)) { rep.err(path + '/fx', 'fx is a list of effect entries: [{ "type": "exposure", "p": { "ev": 0.5 } }].'); raw.fx = null; }
         ['layerMask', 'transform', 'retouch', 'maps', 'raw'].forEach(function (k) { if (raw[k] != null && !isObj(raw[k])) { rep.err(path + '/' + k, k + ' must be an object.'); raw[k] = null; } });
-        try { raw = clone({ fx: raw.fx, layerMask: raw.layerMask, transform: raw.transform, retouch: raw.retouch, maps: raw.maps, raw: raw.raw }); } catch (e) { rep.err(path, 'The expert fields of this layer could not be read.'); return; }
+        try { raw = clone({ fx: raw.fx, layerMask: raw.layerMask, transform: raw.transform, retouch: raw.retouch, maps: raw.maps, raw: raw.raw, clip: raw.clip === true || raw.clip === 'knockout' ? raw.clip : null }); } catch (e) { rep.err(path, 'The expert fields of this layer could not be read.'); return; }
         /* A data asset written into a parameter (LUT text as a data: URI) is taken out before the shape check, which keeps strings
            short, and stored as a project asset afterwards; the parameter then holds its id. */
         var datas = [];
@@ -798,6 +812,51 @@
     }
   };
 
+  /* ---------- Float sources (the seam for RAW and HDR) ----------
+     LE.fx.sources.register(kind, provider)   kind: layer.raw.kind ('raw' when absent)
+       provider(layer, { targetMax, preview, draft, scene, entries }) → a promise of null or
+         { source: { data: Float32Array, width, height, channels: 3 | 4, space: 'linear' | 'display' }   upright, uncropped
+           box: { w, h }     the full-resolution size: the document pixels of the source stage, so radii mean the same in preview and export
+           key: string       identifies the pixels
+           ctx: { … }        handed to each source-stage effect's inject(p, ctx) }
+     LE.fx.sources.lazy(kind, load)   load() → a promise; called once when a layer of that kind is drawn and nothing is registered.
+     A layer is drawn from its float source when layer.raw.source.asset is set and a provider answers; otherwise from its 8-bit
+     picture, exactly as before. */
+  var providers = {}, lazies = {};
+  FX.sources = {
+    register: function (kind, fn) { if (typeof fn === 'function' && /^[a-z][\w-]{0,20}$/.test(kind)) providers[kind] = fn; },
+    lazy: function (kind, fn) { if (typeof fn === 'function' && /^[a-z][\w-]{0,20}$/.test(kind)) lazies[kind] = fn; },
+    get: function (kind) { return providers[kind] || null; },
+    provider: function (kind) {
+      if (providers[kind]) return Promise.resolve(providers[kind]);
+      return Promise.resolve(lazies[kind] ? lazies[kind](kind) : null).then(function () {
+        if (!providers[kind]) throw new Error('No source for "' + kind + '" layers.');
+        return providers[kind];
+      });
+    },
+    is: function (l) { return !!(l && l.type === 'image' && isObj(l.raw) && isObj(l.raw.source) && typeof l.raw.source.asset === 'string'); },
+    /* A stack split into the source stage (effects that declare `source`, in their fixed order, with a default entry for each
+       required one that is missing) and the rest. */
+    split: function (fx) {
+      var dev = [], rest = [];
+      (Array.isArray(fx) ? fx : []).forEach(function (e) { var d = e && defs[e.type]; if (d && d.source) dev.push(e); else if (e) rest.push(e); });
+      order.forEach(function (id) {
+        var d = defs[id];
+        if (d.source && d.source.required && !dev.some(function (e) { return e.type === id; })) dev.push({ id: 'src-' + id, type: id, on: true, amount: 1, blend: 'normal', p: {} });
+      });
+      dev = dev.map(function (e, i) { return [e, i]; }).sort(function (a, b) { return (defs[a[0].type].source.order - defs[b[0].type].source.order) || (a[1] - b[1]); }).map(function (q) { return q[0]; });
+      return { dev: dev, rest: rest };
+    },
+    inject: function (dev, ctx) {
+      return (dev || []).map(function (e) {
+        var o = clone(e), d = defs[o.type];
+        o.p = isObj(o.p) ? o.p : {};
+        if (d && d.inject) { var full = FX.defaults(o.type); Object.keys(o.p).forEach(function (k) { full[k] = o.p[k]; }); o.p = d.inject(full, ctx || {}) || full; }
+        return o;
+      });
+    }
+  };
+
   /* ---------- Loader ---------- */
   var base = (function () {
     var s = document.currentScript && document.currentScript.src;
@@ -827,13 +886,19 @@
   }).then(function () {
     var mock = global.LE_FX_MOCK;   /* test pages only: the mock's call log keeps working */
     if (mock && typeof mock.interactive === 'function') { var real = FX.interactive; FX.interactive = function (on) { if (on !== undefined) { try { mock.interactive(on); } catch (x) { /* test helper */ } } return real(on); }; }
-    /* Effects that read whole-image statistics need the analysis code before the first render. */
-    return order.some(function (id) { return defs[id].needs.indexOf('stats') >= 0; }) ? load('analyze') : null;
   }).then(function () { return FX; });
+  /* The analysis code (le-fx-analyze.js) is loaded when a document needs it: a stack with an entry whose effect reads
+     whole-image statistics. LE.fx.prepare and the layer stage wait for LE.fx.needs(stack); a synchronous render that finds the
+     code missing draws without statistics, asks for it and draws again when it is in. */
+  FX.needsStats = function (fx) { return (Array.isArray(fx) ? fx : []).some(function (e) { var d = e && e.on !== false && typeof e.type === 'string' ? FX.get(e.type) : null; return !!d && d.needs.indexOf('stats') >= 0; }); };
+  FX.needs = function (fx) { return FX._stats || !FX.needsStats(fx) ? Promise.resolve(FX) : load('analyze').then(function () { return FX; }); };
 
   /* Statistics load on first use. analyze(target, { region, kinds }) → a promise of the numbers.
      The scopes' form, analyze({ source, kinds: ['histogram'] }), answers at once when the code is already in
-     (histogram.l is luminance), and with a promise the first time. */
+     (histogram.l is luminance), and with a promise the first time.
+     kinds: ['light'] adds `light`: direction, softness and colour of the picture's light, estimated by the relight pack
+     (LE.fx.relight.estimate) from opts.depth and opts.mask, or from the layer's own depth map and cut-out when the target is
+     { scene, layer }; null without that pack. */
   FX.analyze = function (target, opts) {
     if (isObj(target) && target.source && !target.scene && typeof target.render !== 'function') {
       var o = { region: target.region, kinds: target.kinds, layer: target.layer };

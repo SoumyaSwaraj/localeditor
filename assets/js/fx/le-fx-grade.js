@@ -35,18 +35,7 @@
   function toLin(c) { return [lin1(c[0]), lin1(c[1]), lin1(c[2])]; }
   function toDsp(c) { return [dsp1(c[0]), dsp1(c[1]), dsp1(c[2])]; }
   function luma(c) { return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; }
-  function cbrt(x) { return x < 0 ? -Math.pow(-x, 1 / 3) : Math.pow(x, 1 / 3); }
-  function oklab(c) {
-    var l = cbrt(0.4122214708 * c[0] + 0.5363325363 * c[1] + 0.0514459929 * c[2]);
-    var m = cbrt(0.2119034982 * c[0] + 0.6806995451 * c[1] + 0.1073969566 * c[2]);
-    var s = cbrt(0.0883024619 * c[0] + 0.2817188376 * c[1] + 0.6299787005 * c[2]);
-    return [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s, 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s];
-  }
-  function oklabInv(L) {
-    var l = L[0] + 0.3963377774 * L[1] + 0.2158037573 * L[2], m = L[0] - 0.1055613458 * L[1] - 0.0638541728 * L[2], s = L[0] - 0.0894841775 * L[1] - 1.2914855480 * L[2];
-    l = l * l * l; m = m * m * m; s = s * s * s;
-    return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s];
-  }
+  var oklab = FX.math.oklab, oklabInv = FX.math.oklabInv;   /* the central helpers (le-fx.js); fx_oklab and fx_oklab_inv in shaders */
   /* HSV hue in degrees (0 for greys). */
   function hueOf(c) {
     var mx = Math.max(c[0], c[1], c[2]), mn = Math.min(c[0], c[1], c[2]), d = mx - mn, h;
@@ -100,11 +89,7 @@
   /* GLSL twins. `$` is replaced per entry by the renderer. */
   var GL = {
     hue: 'float $hue(vec3 c){ float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b)), d = mx - mn; if (d < 1e-6) return 0.0; float h = mx == c.r ? mod((c.g - c.b) / d, 6.0) : (mx == c.g ? (c.b - c.r) / d + 2.0 : (c.r - c.g) / d + 4.0); return h * 60.0; }\n',
-    lab: 'float $cbrt(float x){ return sign(x) * pow(abs(x), 1.0 / 3.0); }\n' +
-      'vec3 $lab(vec3 c){ float l = $cbrt(0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b); float m = $cbrt(0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b); float s = $cbrt(0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b);\n' +
-      '  return vec3(0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s, 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s); }\n' +
-      'vec3 $rgb(vec3 L){ float l = L.x + 0.3963377774 * L.y + 0.2158037573 * L.z, m = L.x - 0.1055613458 * L.y - 0.0638541728 * L.z, s = L.x - 0.0894841775 * L.y - 1.2914855480 * L.z; l = l * l * l; m = m * m * m; s = s * s * s;\n' +
-      '  return vec3(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s); }\n',
+    lab: 'vec3 $lab(vec3 c){ return fx_oklab(c); } vec3 $rgb(vec3 L){ return fx_oklab_inv(L); }\n',
     gamut: 'vec3 $gamut(vec3 c, float g, vec3 base){ vec3 lo = min(vec3(0.0), base); float t = 1.0; for (int k = 0; k < 3; k++) { if (c[k] < lo[k]) t = min(t, (g - lo[k]) / max(g - c[k], 1e-6)); } t = clamp(t, 0.0, 1.0); return g + (c - g) * t; }\n'
   };
 
@@ -370,60 +355,57 @@
   }
   function inkVec(p, f) { return INKS.map(function (k) { return p[f + k[0]] / 100; }); }
   function inkZero(p, fams) { return fams.every(function (f) { return INKS.every(function (k) { return !p[f + k[0]]; }); }); }
+  /* One effect for all nine families (36 inks + method = 37 parameters). The colour families are always relative; `method` is
+     for whites, neutrals and blacks. Until the registry allowed 48 parameters the tones were a second effect,
+     "selective-color-tones": that id is an alias now, so its entries read here with the same parameter names and pixels. */
+  var selParams = inkParams(FAM.concat(TONES));
+  selParams.method = { type: 'choice', options: [{ value: 'relative', label: 'Relative' }, { value: 'absolute', label: 'Absolute' }], default: 'relative', label: 'Method (whites, neutrals, blacks)' };
+  function selFamRef(p) {
+    if (inkZero(p, FAM)) return null;
+    var v = FAM.map(function (f) { return inkVec(p, f); });
+    return function (c) {
+      var x = c.map(function (q) { return clamp(q, 0, 1); }), mx = Math.max(x[0], x[1], x[2]), mn = Math.min(x[0], x[1], x[2]), md = x[0] + x[1] + x[2] - mx - mn;
+      var P = x[0] >= x[1] && x[0] >= x[2] ? v[0] : x[1] >= x[2] ? v[2] : v[4], S = x[2] <= x[0] && x[2] <= x[1] ? v[1] : x[0] <= x[1] ? v[3] : v[5];
+      var ink = selFamily(selFamily([1 - x[0], 1 - x[1], 1 - x[2]], P, mx - md, true), S, md - mn, true);
+      return [0, 1, 2].map(function (k) { return 1 - ink[k] + (c[k] - x[k]); });
+    };
+  }
+  function selToneRef(p) {
+    if (inkZero(p, TONES)) return null;
+    var w = inkVec(p, 'whites'), n = inkVec(p, 'neutrals'), b = inkVec(p, 'blacks'), rel = p.method === 'relative';
+    return function (c) {
+      var x = c.map(function (q) { return clamp(q, 0, 1); }), mx = Math.max(x[0], x[1], x[2]), mn = Math.min(x[0], x[1], x[2]);
+      var ink = selFamily([1 - x[0], 1 - x[1], 1 - x[2]], w, clamp((mn - 0.5) * 2, 0, 1), rel);
+      ink = selFamily(ink, n, clamp(1 - (Math.abs(mx - 0.5) + Math.abs(mn - 0.5)), 0, 1), rel);
+      ink = selFamily(ink, b, clamp((0.5 - mx) * 2, 0, 1), rel);
+      return [0, 1, 2].map(function (k) { return 1 - ink[k] + (c[k] - x[k]); });
+    };
+  }
   reg({
-    id: 'selective-color', name: 'Selective colour', group: 'color', version: 1, space: 'display',
-    params: inkParams(FAM),
+    id: 'selective-color', name: 'Selective colour', group: 'color', version: 1, space: 'display', aliases: ['selective-color-tones'],
+    params: selParams,
     passes: function (g, p) {
-      if (inkZero(p, FAM)) return;
-      var u = {}; FAM.forEach(function (f, i) { u['f' + i] = inkVec(p, f); });
-      g.color(SEL_GL + 'uniform vec4 $f0, $f1, $f2, $f3, $f4, $f5;\nvec3 $fx(vec3 c){ vec3 x = clamp(c, 0.0, 1.0); float mx = max(x.r, max(x.g, x.b)), mn = min(x.r, min(x.g, x.b)), md = x.r + x.g + x.b - mx - mn;\n' +
-        '  vec4 P = x.r >= x.g && x.r >= x.b ? $f0 : (x.g >= x.b ? $f2 : $f4); vec4 S = x.b <= x.r && x.b <= x.g ? $f1 : (x.r <= x.g ? $f3 : $f5);\n' +
-        '  vec3 ink = $adj($adj(1.0 - x, P, mx - md, 1.0), S, md - mn, 1.0); return 1.0 - ink + (c - x); }', u);
+      if (!inkZero(p, FAM)) {
+        var u = {}; FAM.forEach(function (f, i) { u['f' + i] = inkVec(p, f); });
+        g.color(SEL_GL + 'uniform vec4 $f0, $f1, $f2, $f3, $f4, $f5;\nvec3 $fx(vec3 c){ vec3 x = clamp(c, 0.0, 1.0); float mx = max(x.r, max(x.g, x.b)), mn = min(x.r, min(x.g, x.b)), md = x.r + x.g + x.b - mx - mn;\n' +
+          '  vec4 P = x.r >= x.g && x.r >= x.b ? $f0 : (x.g >= x.b ? $f2 : $f4); vec4 S = x.b <= x.r && x.b <= x.g ? $f1 : (x.r <= x.g ? $f3 : $f5);\n' +
+          '  vec3 ink = $adj($adj(1.0 - x, P, mx - md, 1.0), S, md - mn, 1.0); return 1.0 - ink + (c - x); }', u);
+      }
+      if (!inkZero(p, TONES)) {
+        g.color(SEL_GL + 'uniform vec4 $w, $n, $b; uniform float $r;\nvec3 $fx(vec3 c){ vec3 x = clamp(c, 0.0, 1.0); float mx = max(x.r, max(x.g, x.b)), mn = min(x.r, min(x.g, x.b));\n' +
+          '  vec3 ink = 1.0 - x; ink = $adj(ink, $w, clamp((mn - 0.5) * 2.0, 0.0, 1.0), $r); ink = $adj(ink, $n, clamp(1.0 - (abs(mx - 0.5) + abs(mn - 0.5)), 0.0, 1.0), $r); ink = $adj(ink, $b, clamp((0.5 - mx) * 2.0, 0.0, 1.0), $r);\n' +
+          '  return 1.0 - ink + (c - x); }', { w: inkVec(p, 'whites'), n: inkVec(p, 'neutrals'), b: inkVec(p, 'blacks'), r: p.method === 'relative' ? 1 : 0 });
+      }
     },
     ref: function (p) {
-      if (inkZero(p, FAM)) return null;
-      var v = FAM.map(function (f) { return inkVec(p, f); });
-      return function (c) {
-        var x = c.map(function (q) { return clamp(q, 0, 1); }), mx = Math.max(x[0], x[1], x[2]), mn = Math.min(x[0], x[1], x[2]), md = x[0] + x[1] + x[2] - mx - mn;
-        var P = x[0] >= x[1] && x[0] >= x[2] ? v[0] : x[1] >= x[2] ? v[2] : v[4], S = x[2] <= x[0] && x[2] <= x[1] ? v[1] : x[0] <= x[1] ? v[3] : v[5];
-        var ink = selFamily(selFamily([1 - x[0], 1 - x[1], 1 - x[2]], P, mx - md, true), S, md - mn, true);
-        return [0, 1, 2].map(function (k) { return 1 - ink[k] + (c[k] - x[k]); });
-      };
+      var a = selFamRef(p), b = selToneRef(p);
+      return a && b ? function (c) { return b(a(c)); } : a || b;
     },
-    ui: { section: 'Colour mixer', order: 30, controls: inkUi(FAM) },
+    ui: { section: 'Colour mixer', order: 30, controls: inkUi(FAM).concat(['method'], inkUi(TONES)) },
     agent: {
-      summary: 'Selective colour for the six colour families (reds, yellows, greens, cyans, blues, magentas): add or remove cyan, magenta, yellow and black ink, −100…100 %, relative to the ink already there (the usual default method). Params are <family><C|M|Y|K>, e.g. redsC. Whites, neutrals and blacks are the companion effect "selective-color-tones".',
-      tips: ['Warmer, cleaner skin: redsC -15, redsY +8, yellowsC -10, yellowsK -5.', 'Teal and orange: yellowsC -10, yellowsM +5, cyansC +20, bluesY -15.', 'Deeper sky: cyansK +15, bluesK +20, bluesC +10.', 'Richer greens without neon: greensC +10, greensM +10, greensK +10.', 'Because it is relative, a pure white or black does not change here; use selective-color-tones with method "absolute" for that.'],
-      example: { type: 'selective-color', p: { redsC: -15, redsY: 8, yellowsC: -10, cyansC: 20, bluesK: 15 } }
-    }
-  });
-  var tonesParams = inkParams(TONES);
-  tonesParams.method = { type: 'choice', options: [{ value: 'relative', label: 'Relative' }, { value: 'absolute', label: 'Absolute' }], default: 'relative', label: 'Method' };
-  reg({
-    id: 'selective-color-tones', name: 'Selective colour (whites, neutrals, blacks)', group: 'color', version: 1, space: 'display',
-    params: tonesParams,
-    passes: function (g, p) {
-      if (inkZero(p, TONES)) return;
-      g.color(SEL_GL + 'uniform vec4 $w, $n, $b; uniform float $r;\nvec3 $fx(vec3 c){ vec3 x = clamp(c, 0.0, 1.0); float mx = max(x.r, max(x.g, x.b)), mn = min(x.r, min(x.g, x.b));\n' +
-        '  vec3 ink = 1.0 - x; ink = $adj(ink, $w, clamp((mn - 0.5) * 2.0, 0.0, 1.0), $r); ink = $adj(ink, $n, clamp(1.0 - (abs(mx - 0.5) + abs(mn - 0.5)), 0.0, 1.0), $r); ink = $adj(ink, $b, clamp((0.5 - mx) * 2.0, 0.0, 1.0), $r);\n' +
-        '  return 1.0 - ink + (c - x); }', { w: inkVec(p, 'whites'), n: inkVec(p, 'neutrals'), b: inkVec(p, 'blacks'), r: p.method === 'relative' ? 1 : 0 });
-    },
-    ref: function (p) {
-      if (inkZero(p, TONES)) return null;
-      var w = inkVec(p, 'whites'), n = inkVec(p, 'neutrals'), b = inkVec(p, 'blacks'), rel = p.method === 'relative';
-      return function (c) {
-        var x = c.map(function (q) { return clamp(q, 0, 1); }), mx = Math.max(x[0], x[1], x[2]), mn = Math.min(x[0], x[1], x[2]);
-        var ink = selFamily([1 - x[0], 1 - x[1], 1 - x[2]], w, clamp((mn - 0.5) * 2, 0, 1), rel);
-        ink = selFamily(ink, n, clamp(1 - (Math.abs(mx - 0.5) + Math.abs(mn - 0.5)), 0, 1), rel);
-        ink = selFamily(ink, b, clamp((0.5 - mx) * 2, 0, 1), rel);
-        return [0, 1, 2].map(function (k) { return 1 - ink[k] + (c[k] - x[k]); });
-      };
-    },
-    ui: { section: 'Colour mixer', order: 31, controls: ['method'].concat(inkUi(TONES)) },
-    agent: {
-      summary: 'Selective colour for whites, neutrals and blacks (whitesC … blacksK, −100…100 %), with the relative or absolute method. Neutrals is the classic tool for removing a mid-tone cast or toning a grade.',
-      tips: ['Remove a yellow cast in mid-tones: neutralsY -8, neutralsM +2.', 'Clean product white: method "absolute", whitesY -6, whitesK -10.', 'Cool, inky blacks: method "absolute", blacksC +8, blacksK +10.', 'Warm highlights / cool shadows (split): whitesY +6, blacksC +6, blacksY -4 with method "absolute".'],
-      example: { type: 'selective-color-tones', p: { method: 'absolute', whitesY: -6, neutralsY: -5, blacksC: 6, blacksK: 8 } }
+      summary: 'Selective colour: add or remove cyan, magenta, yellow and black ink, −100…100 %, in the six colour families (reds, yellows, greens, cyans, blues, magentas; always relative to the ink already there) and in whites, neutrals and blacks (relative or absolute, by "method"). Params are <family><C|M|Y|K>, e.g. redsC, neutralsY.',
+      tips: ['Warmer, cleaner skin: redsC -15, redsY +8, yellowsC -10, yellowsK -5.', 'Teal and orange: yellowsC -10, yellowsM +5, cyansC +20, bluesY -15.', 'Deeper sky: cyansK +15, bluesK +20, bluesC +10.', 'Remove a yellow cast in mid-tones: neutralsY -8, neutralsM +2.', 'Clean product white: method "absolute", whitesY -6, whitesK -10. Cool, inky blacks: method "absolute", blacksC +8, blacksK +10.', 'Relative leaves a pure white or black alone; use method "absolute" with the whites or blacks to tint those.', 'The type "selective-color-tones" of older documents is read as this effect.'],
+      example: { type: 'selective-color', p: { redsC: -15, redsY: 8, yellowsC: -10, cyansC: 20, bluesK: 15, method: 'absolute', whitesY: -6, neutralsY: -5 } }
     }
   });
 
@@ -964,28 +946,25 @@
     return out;
   };
   /* LUTs by asset id (64-hex content hash, as LE.project.putAsset makes them). Looked up here, then in the workspace's cache
-     (LE.expert.luts), then read from the project store in the background; the render shows no LUT until it arrives and then
-     redraws (LE.fx.touch). */
-  var LUTS = G.luts = G.luts || {}, pending = {};
+     (LE.expert.luts), then asked from the core's data assets (g.asset / LE.fx.data): the scene, a .leproject and the project store
+     are its sources, an export waits for them (LE.fx.prepare), and a render that finds none yet draws again when it arrives. */
+  var LUTS = G.luts = G.luts || {}, badLut = {};
   function normLut(l) {
     if (!l) return null;
     if (l.kind) return l;
     if (l.data && l.size) return { kind: '3d', size: l.size, size3: l.size, data3: l.data instanceof Float32Array ? l.data : new Float32Array(l.data), domain3: { min: l.domainMin || [0, 0, 0], max: l.domainMax || [1, 1, 1] }, title: l.title || '' };
     return null;
   }
-  G.getLut = function (id) {
+  G.getLut = function (id, g) {
     if (!id) return null;
     if (LUTS[id]) return LUTS[id];
     var X = LE.expert && LE.expert.luts && LE.expert.luts[id];
     if (X && X.lut) { var n = normLut(X.lut); if (n) return (LUTS[id] = n); }
-    if (!pending[id] && LE.project && LE.project.getAsset) {
-      pending[id] = LE.project.getAsset(id).then(function (blob) { return blob && blob.size <= CUBE_MAX ? blob.text() : null; }).then(function (text) {
-        if (text == null) return;
-        LUTS[id] = G.parseCube(text);
-        if (FX.touch) FX.touch();
-      }).catch(function (e) { if (global.console) console.warn('LE.fx.grade: LUT ' + String(id).slice(0, 12) + ' could not be read: ' + (e && e.message)); });
-    }
-    return null;
+    if (badLut[id]) return null;
+    var a = g && typeof g.asset === 'function' ? g.asset(id) : FX.data ? FX.data(id) : null;
+    if (!a || typeof a.text !== 'string') return null;
+    try { return (LUTS[id] = G.parseCube(a.text)); }
+    catch (e) { badLut[id] = true; if (global.console) console.warn('LE.fx.grade: LUT ' + String(id).slice(0, 12) + ' could not be read: ' + (e && e.message)); return null; }
   };
   function sha256hex(text) {
     var C = global.crypto && global.crypto.subtle;
@@ -1048,7 +1027,7 @@
     if (!LOOKS[id]) return null;
     return lookCache[id] || (lookCache[id] = { kind: '3d', size3: 33, data3: G.bake(LOOKS[id], 33).data, domain3: { min: [0, 0, 0], max: [1, 1, 1] }, title: LOOK_NAMES[id] });
   }
-  function lutFor(p) { return p.lut ? G.getLut(p.lut) : (p.look !== 'none' ? lookLut(p.look) : null); }
+  function lutFor(p, g) { return p.lut ? G.getLut(p.lut, g) : (p.look !== 'none' ? lookLut(p.look) : null); }
   reg({
     id: 'lut', name: 'LUT', group: 'color', version: 1, space: 'display',
     params: {
@@ -1058,7 +1037,7 @@
       input: { type: 'choice', options: [{ value: 'display', label: 'sRGB / Rec. 709' }, { value: 'linear', label: 'Linear' }], default: 'display', label: 'Input space' }
     },
     passes: function (g, p) {
-      var L = lutFor(p);
+      var L = lutFor(p, g);
       if (!L || !p.intensity) return;
       var has3 = !!L.data3, has1 = !!L.data1, d3 = L.domain3 || { min: [0, 0, 0], max: [1, 1, 1] }, d1 = L.domain1 || d3;
       var t3 = has3 ? g.lut3d(L.data3, L.size3) : g.lut3d(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1]), 2);
@@ -1223,7 +1202,7 @@
       { type: 'color-grading', p: { shadows: { h: 215, a: 0.12, l: 0 }, highlights: { h: 42, a: 0.12, l: 0 }, blending: 70 } },
       { type: 'hue-curves', p: { lumSat: { master: [[0, 0.3], [0.35, 0.5], [1, 0.48]] } } }, { type: 'vibrance', p: { amount: -15 } }] },
     { id: 'clean-product-white', name: 'Clean product white', summary: 'Neutral, bright, cast-free whites with crisp but natural colour.', fx: [
-      { type: 'selective-color-tones', p: { method: 'absolute', whitesY: -5, whitesK: -8, neutralsY: -3 } },
+      { type: 'selective-color', p: { method: 'absolute', whitesY: -5, whitesK: -8, neutralsY: -3 } },
       { type: 'tone-curve', p: { highlights: 12, lights: 8, darks: -4 } }, { type: 'vibrance', p: { amount: 10, protect: 50 } }] },
     { id: 'warm-portrait', name: 'Warm portrait', summary: 'Flattering warm skin, even tones, gentle contrast.', fx: [
       { type: 'temperature', p: { temp: 6900, tint: 3 } }, { type: 'skin-tone', p: { uniformity: 35, evenness: 20, hue: 4 } },
@@ -1243,7 +1222,7 @@
     { id: 'nordic-matte', name: 'Nordic matte', summary: 'Pale, airy, cool and low contrast.', fx: [
       { type: 'tone-curve', p: { curve: { master: [[0, 0.1], [0.5, 0.53], [1, 0.95]] } } }, { type: 'temperature', p: { temp: 6000, tint: 0 } }, { type: 'vibrance', p: { amount: -35 } }] },
     { id: 'high-key-airy', name: 'High-key airy', summary: 'Bright, soft and clean with lifted mid-tones.', fx: [
-      { type: 'tone-curve', p: { lights: 18, darks: 10, shadows: 15, mode: 'luminosity' } }, { type: 'selective-color-tones', p: { method: 'absolute', whitesY: -4 } }, { type: 'vibrance', p: { amount: -10 } }] },
+      { type: 'tone-curve', p: { lights: 18, darks: 10, shadows: 15, mode: 'luminosity' } }, { type: 'selective-color', p: { method: 'absolute', whitesY: -4 } }, { type: 'vibrance', p: { amount: -10 } }] },
     { id: 'noir', name: 'Noir', summary: 'Contrasty black and white with deep blacks.', fx: [
       { type: 'bw-mix', p: { convert: true, reds: 60, yellows: 90, greens: 30, cyans: 20, blues: -20, magentas: 50 } }, { type: 'tone-curve', p: { lights: 25, darks: -30, shadows: -10 } }] },
     { id: 'vintage-cross', name: 'Vintage cross-process', summary: 'Yellow-green highlights, blue blacks, punchy colour.', fx: [

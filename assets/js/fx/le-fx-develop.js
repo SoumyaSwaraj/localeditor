@@ -23,8 +23,8 @@
  * lens -> detail -> tonemap -> basic, whatever their place in layer.fx (the render order of docs/EXPERT-MODE.md: source -> RAW develop ->
  * ... -> fx stack). On other layers they run where they are, as ordinary effects.
  *
- * Also in this file, behind a clearly marked seam: the float-source provider registry (LE.fx.sources) and the wrapper of LE.fx.layer
- * that draws RAW and HDR layers from their decoded data instead of their 8-bit fallback picture.
+ * The float-source registry (LE.fx.sources) and the source stage that draws RAW and HDR layers from their decoded data are in the
+ * core; the four effects here declare `source` (their fixed order) and `inject` (what only the layer's source knows).
  */
 (function (global) {
   'use strict';
@@ -184,18 +184,26 @@
   var RGC = { t: 0.8, l: 1.25, p: 1.2 };
   RGC.s = (RGC.l - RGC.t) / Math.pow(Math.pow((1 - RGC.t) / (RGC.l - RGC.t), -RGC.p) - 1, 1 / RGC.p);
   function rgcD(d) { if (d < RGC.t) return d; var x = (d - RGC.t) / RGC.s; return RGC.t + RGC.s * x / Math.pow(1 + Math.pow(x, RGC.p), 1 / RGC.p); }
+  /* Display P3 as the target (plan.gamut, g.gamut): the gamut-dependent steps run in linear P3 and the result goes back to linear
+     sRGB primaries, where a colour sRGB cannot show has a component below 0 or above 1. Half-float stages carry that to the output. */
+  var TO_P3 = [0.8224621, 0.1775380, 0, 0.0331941, 0.9668058, 0, 0.0170827, 0.0723974, 0.9105199];
+  var FROM_P3 = [1.2249401, -0.2249404, 0, -0.0420569, 1.0420571, 0, -0.0196376, -0.0786361, 1.0982735];
+  var LUMA_P3 = [0.2289746, 0.6917385, 0.0792869];
+  function colMajor(m) { return [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]].map(function (v) { return v.toFixed(7); }).join(', '); }
   /* CPU reference of develop.basic for one pixel: linear scene RGB in, display-referred linear RGB (0..1) out. */
   function basicPixel(c, plan) {
     if (!plan) return c.slice();
     c = vec3(plan.W, c);
+    var p3 = plan.gamut === 'display-p3', L = p3 ? LUMA_P3 : LUMA;
+    if (p3) c = vec3(TO_P3, c);
     if (plan.rgc) { var ach = Math.max(c[0], c[1], c[2]); if (ach > 0) c = c.map(function (v) { return ach - rgcD((ach - v) / ach) * ach; }); }
     var o = c;
     if (plan.tone) {
-      var Y = Math.max(LUMA[0] * c[0] + LUMA[1] * c[1] + LUMA[2] * c[2], 1e-10), y = toneAt(plan.tone, Y), k = y / Y;
+      var Y = Math.max(L[0] * c[0] + L[1] * c[1] + L[2] * c[2], 1e-10), y = toneAt(plan.tone, Y), k = y / Y;
       o = [c[0] * k, c[1] * k, c[2] * k];
       if (plan.desat) { var v = encode(y), d = smooth(0.78, 1.0, v) * plan.desat; o = o.map(function (q) { return q + (y - q) * d; }); }
     }
-    var Yo = LUMA[0] * o[0] + LUMA[1] * o[1] + LUMA[2] * o[2];
+    var Yo = L[0] * o[0] + L[1] * o[1] + L[2] * o[2];
     if (plan.mono) o = [Yo, Yo, Yo];
     else if (Math.abs(plan.sat - 1) > 1e-6 || plan.vib) {
       var mx = Math.max(o[0], o[1], o[2]), mn = Math.min(o[0], o[1], o[2]), s = mx > 1e-6 ? (mx - mn) / mx : 0, kk = Math.max(0, plan.sat * (1 + plan.vib * (1 - clamp(s * 1.4, 0, 1))));
@@ -206,25 +214,27 @@
       if (m2 > 1) { var t = clamp((m2 - 1) / Math.max(m2 - Yc, 1e-6), 0, 1); o = o.map(function (q) { return q + (Yc - q) * t; }); }
       o = o.map(function (q) { return clamp(q, 0, 1); });
     }
-    return o;
+    return p3 ? vec3(FROM_P3, o) : o;
   }
   var BASIC_GLSL = [
-    'uniform mat3 $w; uniform sampler2D $t; uniform vec4 $a; uniform vec4 $b; uniform vec2 $c;',
+    'uniform mat3 $w; uniform sampler2D $t; uniform vec4 $a; uniform vec4 $b; uniform vec2 $c; uniform vec3 $l; uniform float $g;',
     'float $d(float d){ if (d < ' + RGC.t.toFixed(6) + ') return d; float x = (d - ' + RGC.t.toFixed(6) + ') / ' + RGC.s.toFixed(6) + '; return ' + RGC.t.toFixed(6) + ' + ' + RGC.s.toFixed(6) + ' * x / pow(1.0 + pow(x, ' + RGC.p.toFixed(6) + '), ' + (1 / RGC.p).toFixed(6) + '); }',
     'vec3 $fx(vec3 c){',
     '  c = $w * c;',
+    '  if ($g > 0.5) c = mat3(' + colMajor(TO_P3) + ') * c;',
     '  if ($b.x > 0.5) { float ach = max(c.r, max(c.g, c.b)); if (ach > 0.0) c = vec3(ach) - vec3($d((ach - c.r) / ach), $d((ach - c.g) / ach), $d((ach - c.b) / ach)) * ach; }',
     '  vec3 o = c;',
     '  if ($b.w > 0.5) {',
-    '    float Y = max(dot(c, vec3(0.2126, 0.7152, 0.0722)), 1e-10); float x = log2(Y / 0.18); float y;',
+    '    float Y = max(dot(c, $l), 1e-10); float x = log2(Y / 0.18); float y;',
     '    if (x < $a.x) y = $c.x * Y; else { float v0 = lut1($t, clamp((x - $a.x) * $a.y, 0.0, 1.0)); y = toLinear(vec3(v0)).x; }',
     '    o = c * (y / Y);',
     '    if ($b.z > 0.0) { float v = toDisplay(vec3(y)).x; o = mix(o, vec3(y), smoothstep(0.78, 1.0, v) * $b.z); }',
     '  }',
-    '  float Yo = dot(o, vec3(0.2126, 0.7152, 0.0722));',
+    '  float Yo = dot(o, $l);',
     '  if ($b.y > 0.5) o = vec3(Yo);',
     '  else if ($c.y > 0.5) { float mx = max(o.r, max(o.g, o.b)), mn = min(o.r, min(o.g, o.b)); float s = mx > 1e-6 ? (mx - mn) / mx : 0.0; float kk = max(0.0, $a.z * (1.0 + $a.w * (1.0 - clamp(s * 1.4, 0.0, 1.0)))); o = vec3(Yo) + (o - vec3(Yo)) * kk; }',
     '  if ($b.w > 0.5 || $b.x > 0.5) { float m2 = max(o.r, max(o.g, o.b)); float Yc = clamp(Yo, 0.0, 1.0); if (m2 > 1.0) o = mix(o, vec3(Yc), clamp((m2 - 1.0) / max(m2 - Yc, 1e-6), 0.0, 1.0)); o = clamp(o, 0.0, 1.0); }',
+    '  if ($g > 0.5) o = mat3(' + colMajor(FROM_P3) + ') * o;',
     '  return o;',
     '}'
   ].join('\n');
@@ -232,13 +242,24 @@
   FX.register({
     id: 'develop.basic', name: 'Develop', group: 'light', version: 1, space: 'linear',
     params: BASIC_PARAMS,
+    source: { order: 40, required: true },
+    /* On a RAW/HDR layer: the profile for a scene-referred source and the camera's white-balance matrix. */
+    inject: function (p, ctx) {
+      if (p.profile === 'auto' || !p.profile) p.profile = 'standard';
+      var m = ctx.wb ? ctx.wb(p) : null;
+      if (m) { for (var i = 0; i < 9; i++) p['m' + i] = m[i]; p.wb = 'as-shot'; }   /* the camera matrix says it all */
+      else if (p.wb === 'auto' && ctx.auto) { p.wb = 'custom'; p.temp = ctx.auto[0]; p.tint = ctx.auto[1]; }
+      return p;
+    },
     passes: function (g, p) {
       var plan = basicPlan(p);
       if (!plan) return;
+      var p3 = g.gamut === 'display-p3';   /* a Display P3 export: gamut compression and the final clip aim at P3, not sRGB */
       g.color(BASIC_GLSL, {
         w: plan.W, t: plan.tone ? g.lut1d(plan.tone.lut, 1) : g.lut1d(new Float32Array([0, 1]), 1),
         a: [X0, 1 / (X1 - X0), plan.sat, plan.vib], b: [plan.rgc ? 1 : 0, plan.mono ? 1 : 0, plan.desat, plan.tone ? 1 : 0],
-        c: [plan.tone ? plan.tone.k0 : 1, plan.mono || Math.abs(plan.sat - 1) > 1e-6 || plan.vib ? 1 : 0]
+        c: [plan.tone ? plan.tone.k0 : 1, plan.mono || Math.abs(plan.sat - 1) > 1e-6 || plan.vib ? 1 : 0],
+        l: p3 ? LUMA_P3 : LUMA, g: p3 ? 1 : 0
       });
     },
     support: GPU,
@@ -299,6 +320,7 @@
   }
   FX.register({
     id: 'develop.detail', name: 'Detail (RAW)', group: 'detail', version: 1, space: 'linear',
+    source: { order: 20 },
     params: {
       sharpen: { type: 'number', min: 0, max: 150, default: 0, step: 1, label: 'Sharpening amount' },
       radius: { type: 'number', min: 0.5, max: 3, default: 1, step: 0.1, unit: 'px', label: 'Radius' },
@@ -373,6 +395,8 @@
   }
   FX.register({
     id: 'develop.lens', name: 'Lens corrections', group: 'optics', version: 1, space: 'linear',
+    source: { order: 10 },
+    inject: function (p, ctx) { if (p.autoCA && ctx.ca) { p.autoR = ctx.ca.r; p.autoB = ctx.ca.b; } if (ctx.extent) p.extent = ctx.extent; return p; },
     params: {
       distortion: { type: 'number', min: -100, max: 100, default: 0, step: 1, label: 'Distortion' },
       vignette: { type: 'number', min: -100, max: 100, default: 0, step: 1, label: 'Vignetting' },
@@ -448,6 +472,8 @@
   }
   FX.register({
     id: 'develop.tonemap', name: 'HDR tone mapping', group: 'light', version: 1, space: 'linear',
+    source: { order: 30 },
+    inject: function (p, ctx) { if (ctx.extent) p.extent = ctx.extent; return p; },
     params: {
       method: { type: 'choice', default: 'local', label: 'Method', options: [{ value: 'local', label: 'Local' }, { value: 'fusion', label: 'Exposure fusion' }, { value: 'global', label: 'Global' }] },
       strength: { type: 'number', min: 0, max: 100, default: 0, step: 1, label: 'Strength' },
@@ -492,112 +518,25 @@
     }
   });
 
-  /* ================================================================== the RAW / HDR seam: float sources for LE.Scene layers */
-  /* Proposed home: LE.fx.layer in le-fx-gl.js (see the X5 report). Kept here so no shared file changes.
-   *
-   * LE.fx.sources.register(kind, provider)  kind 'raw' | 'hdr' (layer.raw.kind, default 'raw').
-   *   provider(layer, { targetMax, preview, draft, scene }) -> Promise<null | {
-   *       source:  { data: Float32Array, width, height, channels: 3, space: 'linear' }  scene-linear, upright, uncropped,
-   *       box:     { w, h }            the full-resolution size in document pixels (so radii mean the same in preview and export),
-   *       key:     string              identifies the pixels (asset, variant, size),
-   *       ctx:     { asShot:[T,tint], auto:[T,tint], wb(p) -> 3x3, ca: { r, b }, scene: true },
-   *       fallback: canvas|null }>
-   * A layer is drawn from its float source when layer.raw.source.asset is set and a provider for its kind answers; otherwise exactly
-   * as before (its 8-bit src picture, which is the default development, so Simple mode and devices without WebGL2 still look right). */
+  /* ================================================================== the RAW / HDR seam */
+  /* The float-source registry (LE.fx.sources) and the source stage of LE.fx.layer live in the core (le-fx.js, le-fx-gl.js). This
+     pack only says which effects form that stage (`source` and `inject` on the four registrations above) and where the module
+     that provides RAW and HDR pictures is, so that a document with such a layer loads it on first draw. */
   var DEV_TYPES = ['develop.lens', 'develop.detail', 'develop.tonemap', 'develop.basic'];
-  var providers = {};
-  FX.sources = {
-    register: function (kind, fn) { if (typeof fn === 'function' && /^[a-z][\w-]{0,20}$/.test(kind)) providers[kind] = fn; },
-    get: function (kind) { return providers[kind] || null; }
-  };
-  function isSceneLayer(l) { return !!(l && l.type === 'image' && l.raw && l.raw.source && typeof l.raw.source.asset === 'string'); }
-  /* Splits a stack: the develop stage (fixed order) and the rest. Adds a default develop.basic when there is none. */
-  function splitStack(fx) {
-    var dev = [], rest = [];
-    (Array.isArray(fx) ? fx : []).forEach(function (e) { if (e && DEV_TYPES.indexOf(e.type) >= 0) dev.push(e); else rest.push(e); });
-    dev.sort(function (a, b) { return DEV_TYPES.indexOf(a.type) - DEV_TYPES.indexOf(b.type); });
-    if (!dev.some(function (e) { return e.type === 'develop.basic'; })) dev.push({ id: 'dev-default', type: 'develop.basic', on: true, amount: 1, blend: 'normal', p: {} });
-    return { dev: dev, rest: rest };
-  }
-  /* The develop entries with what only the layer knows filled in: the profile for a scene-referred source, the camera WB matrix,
-     the automatic CA estimate. Never written to the document. */
-  function inject(dev, ctx) {
-    return dev.map(function (e) {
-      var o = JSON.parse(JSON.stringify(e)), p = o.p = o.p || {};
-      if (o.type === 'develop.basic') {
-        var full = FX.defaults('develop.basic'); Object.keys(p).forEach(function (k) { full[k] = p[k]; }); p = o.p = full;
-        if (p.profile === 'auto' || !p.profile) p.profile = 'standard';
-        var m = ctx && ctx.wb ? ctx.wb(p) : null;
-        if (m) { for (var i = 0; i < 9; i++) p['m' + i] = m[i]; p.wb = 'as-shot'; }   /* the camera matrix says it all */
-        else if (p.wb === 'auto' && ctx && ctx.auto) { p.wb = 'custom'; p.temp = ctx.auto[0]; p.tint = ctx.auto[1]; }
-      }
-      if (o.type === 'develop.lens' && p.autoCA && ctx && ctx.ca) { p.autoR = ctx.ca.r; p.autoB = ctx.ca.b; }
-      if ((o.type === 'develop.lens' || o.type === 'develop.tonemap') && ctx && ctx.extent) p.extent = ctx.extent;
-      return o;
-    });
-  }
   function script(src) { return new Promise(function (res, rej) { var el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = function () { rej(new Error('Could not load ' + src)); }; document.head.appendChild(el); }); }
   function rawModule() {
-    if (LE.rawLayer) return LE.rawLayer.ready();
+    var reg = function () { ['raw', 'hdr'].forEach(function (k) { if (!FX.sources.get(k) && LE.rawLayer && LE.rawLayer.provide) FX.sources.register(k, LE.rawLayer.provide); }); };
+    if (LE.rawLayer) return LE.rawLayer.ready().then(reg);
     var base = PACK_BASE ? PACK_BASE.replace(/fx\/$/, 'raw/') : (global.LE_RAW_BASE || '../assets/js/raw/');
-    if (!rawModule.p) rawModule.p = (LE.lazy ? LE.lazy(base + 'le-raw-layer.js') : script(base + 'le-raw-layer.js')).then(function () { return LE.rawLayer.ready(); }).catch(function (e) { rawModule.p = null; throw e; });
+    if (!rawModule.p) rawModule.p = (LE.lazy ? LE.lazy(base + 'le-raw-layer.js') : script(base + 'le-raw-layer.js')).then(function () { return LE.rawLayer.ready(); }).then(reg).catch(function (e) { rawModule.p = null; throw e; });
     return rawModule.p;
   }
-  function provider(kind) {
-    if (providers[kind]) return Promise.resolve(providers[kind]);
-    return rawModule().then(function () {
-      if (!providers[kind] && LE.rawLayer && LE.rawLayer.provide && (kind === 'raw' || kind === 'hdr')) FX.sources.register(kind, LE.rawLayer.provide);
-      if (!providers[kind]) throw new Error('No source for "' + kind + '" layers.');
-      return providers[kind];
-    });
-  }
-  /* Phase 1: the develop stage on the float source, to an 8-bit display canvas (cached per layer while its inputs do not change). */
-  var devCache = {};
-  function developCanvas(scene, layer, targetMax, preview) {
-    var kind = layer.raw.kind || 'raw', st = splitStack(layer.fx);
-    var draft = !!(preview && FX.interactive());
-    return provider(kind).then(function (fn) {
-      return fn(layer, { targetMax: targetMax, preview: preview, draft: draft, scene: scene, entries: st.dev });
-    }).then(function (src) {
-      if (!src || !src.source) return null;
-      var dev = inject(st.dev, src.ctx);
-      var key = M.hash(JSON.stringify([src.key, dev, preview ? 1 : 0, FX.stamp()]));
-      var hit = devCache[layer.id];
-      if (hit && hit.key === key) return { canvas: hit.canvas, rest: st.rest, key: key };
-      var canvas = FX.apply(src.source, { fx: dev, box: src.box, preview: !!preview, key: preview ? 'dev|' + layer.id + '|' + src.key : null });
-      if (preview) devCache[layer.id] = { key: key, canvas: canvas };
-      return { canvas: canvas, rest: st.rest, key: key };
-    });
-  }
+  FX.sources.lazy('raw', rawModule);
+  FX.sources.lazy('hdr', rawModule);
   FX.develop = {
     PROFILES: PROFILES, WB_PRESETS: WB_PRESETS, types: DEV_TYPES.slice(), X0: X0, X1: X1,
-    toneTable: toneTable, toneAt: toneAt, basicPlan: basicPlan, basicPixel: basicPixel, genericWB: genericWB, whiteXY: whiteXY, rgc: rgcD,
-    split: splitStack, inject: inject, isSceneLayer: isSceneLayer, developCanvas: developCanvas,
-    forget: function (layerId) { if (layerId) delete devCache[layerId]; else devCache = {}; }
+    toneTable: toneTable, toneAt: toneAt, basicPlan: basicPlan, basicPixel: basicPixel, genericWB: genericWB, whiteXY: whiteXY, rgc: rgcD, P3: { to: TO_P3.slice(), from: FROM_P3.slice() },
+    split: FX.sources.split, inject: FX.sources.inject, isSceneLayer: FX.sources.is,
+    forget: function (layerId) { if (FX.sources.forget) FX.sources.forget(layerId); }
   };
-
-  /* ---- The wrapper of LE.fx.layer (SEAM, see above). Phase 2 is the unchanged pipeline on the developed picture: crop, legacy
-     adjust and filters, retouch, cut-out, the rest of the stack, masks. ---- */
-  var origLayer = FX.layer;
-  if (origLayer && !origLayer._develop) {
-    FX.layer = function (scene, layer, targetMax, preview) {
-      if (!isSceneLayer(layer) || !(FX.status().float)) return origLayer.apply(this, arguments);
-      return developCanvas(scene, layer, targetMax, preview).then(function (dev) {
-        if (!dev || !dev.canvas) return origLayer(scene, layer, targetMax, preview);
-        /* The developed picture stands in for the layer's photo (keyed by what made it, so the original path's caches follow). */
-        var pre = 'le-dev:' + layer.id + ':', tmpKey = pre + dev.key, rec = { key: tmpKey, canvas: dev.canvas };
-        rec.ready = Promise.resolve(rec);
-        Object.keys(scene._assets).forEach(function (k) { if (k.indexOf(pre) === 0 && k !== tmpKey) delete scene._assets[k]; });
-        scene._assets[tmpKey] = rec;
-        var l2 = {}; Object.keys(layer).forEach(function (k) { l2[k] = layer[k]; });
-        l2.src = tmpKey; l2.fx = dev.rest; delete l2.raw;
-        if (!l2.fx.length) delete l2.fx;
-        return (LE.fxBoot && LE.fxBoot.needs(l2)) ? origLayer(scene, l2, targetMax, preview) : scene._processImage(Object.assign(l2, { _fxRaw: true }), targetMax, preview);
-      }).catch(function (err) {
-        try { console.warn('LE.fx develop: ' + (err && err.message || err)); } catch (e) { }
-        return origLayer(scene, layer, targetMax, preview);
-      });
-    };
-    FX.layer._develop = true;
-  }
 })(window);

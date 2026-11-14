@@ -398,4 +398,101 @@ cases['settings copy/paste, presets and auto tone are plain data'] = async ({ br
   h.assert.noErrors(pg);
 };
 
+/* ---- The source stage in the core (P6): float after develop, masks in layer coordinates, Display P3 ---- */
+const SEAM = `
+  window.__scene = function () { return { _assets: {}, _imageClip: function () { return null; }, _level: function () { return 'high'; }, _processImage: function () { return Promise.reject(new Error('the 8-bit path was taken')); } }; };
+  /* a provider for layers of kind 'ramp': a smooth scene-linear ramp from raw.lo to raw.hi, left to right */
+  window.__ramp = function (w, h) {
+    LE.fx.sources.register('ramp', function (layer) {
+      var d = new Float32Array(w * h * 3), lo = layer.raw.lo, hi = layer.raw.hi;
+      for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) { var v = lo + (hi - lo) * x / (w - 1), o = (y * w + x) * 3; d[o] = d[o + 1] = d[o + 2] = v; }
+      window.__last = { data: d, width: w, height: h, channels: 3, space: 'linear' };
+      return Promise.resolve({ source: window.__last, box: { w: w, h: h }, key: 'ramp|' + lo + '|' + hi + '|' + w + 'x' + h, ctx: {} });
+    });
+  };
+  window.__row = function (c, y) { var d = c.getContext('2d').getImageData(0, y, c.width, 1).data, out = []; for (var i = 0; i < c.width; i++) out.push(d[i * 4 + 1]); return out; };
+`;
+cases['source stage: a develop -> grade stack stays float (no 8-bit step in between); g.whole and the registry work on float layers'] = async ({ browser, base, h }) => {
+  const pg = await page(browser, base);
+  await pg.evaluate(SEAM);
+  const r = await pg.evaluate(async () => {
+    const FX = window.LE.fx, W = 512, H = 16;
+    __ramp(W, H);
+    FX.register({ id: 't-whole', passes: function (g) { const w = g.whole({ maxSide: 64 }); window.__whole = w ? [w.w, w.h, w.space] : null; } });
+    const grade = [{ id: 'g1', type: 'levels', p: { inBlack: 0.42, inWhite: 0.52 } }, { id: 'w1', type: 't-whole', p: {} }];
+    const layer = { id: 'r1', type: 'image', src: 'x', x: 0, y: 0, w: W, h: H, raw: { kind: 'ramp', lo: 0.16, hi: 0.2, source: { asset: 'x' } }, fx: grade };
+    const st = FX.sources.split(layer.fx);
+    const out = await FX.layer(__scene(), layer, 4000, false);
+    /* what the 8-bit hand-off produced: the develop stage to a canvas, then the rest on that canvas */
+    const dev8 = FX.apply(window.__last, { fx: FX.sources.inject(st.dev, {}) }), old = FX.apply(dev8, { fx: st.rest });
+    const stat = (row) => { let step = 0; const seen = {}; for (let i = 0; i < row.length; i++) { seen[row[i]] = 1; if (i) step = Math.max(step, Math.abs(row[i] - row[i - 1])); } return { step, levels: Object.keys(seen).length, lo: Math.min.apply(null, row), hi: Math.max.apply(null, row) }; };
+    return { now: stat(__row(out, 8)), old: stat(__row(old, 8)), size: [out.width, out.height], split: [st.dev.map((e) => e.type), st.rest.map((e) => e.type)], whole: window.__whole, lazy: typeof FX.sources.lazy, is: [FX.sources.is(layer), FX.sources.is({ type: 'image', src: 'x' })] };
+  });
+  h.assert.equal(JSON.stringify(r.split), JSON.stringify([['develop.basic'], ['levels', 't-whole']]), 'the stack splits into the source stage (with the required develop entry) and the rest');
+  h.assert(r.size[0] === 512 && r.size[1] === 16 && r.is[0] === true && r.is[1] === false, 'the layer is drawn from its float source at the provider size');
+  h.assert(r.now.hi - r.now.lo > 100, 'the grade stretches the ramp: ' + JSON.stringify(r.now));
+  h.assert(r.old.step >= 4 && r.now.step <= 2, 'largest step between neighbours on a smooth ramp: 8-bit hand-off ' + r.old.step + ', float ' + r.now.step);
+  h.assert(r.now.levels > r.old.levels * 2, 'distinct output levels: float ' + r.now.levels + ', 8-bit hand-off ' + r.old.levels);
+  h.assert(r.whole && r.whole[0] === 64 && r.whole[2] === 'display', 'g.whole() answers on a float layer: ' + JSON.stringify(r.whole));
+  h.assert.noErrors(pg);
+};
+
+cases['source stage: a mask on a develop entry is in layer-box fractions on a cropped layer, and the crop is taken from the float picture'] = async ({ browser, base, h }) => {
+  const pg = await page(browser, base);
+  await pg.evaluate(SEAM);
+  const r = await pg.evaluate(async () => {
+    const FX = window.LE.fx, W = 256, H = 32;
+    __ramp(W, H);
+    const mk = (fxList, crop) => ({ id: 'r2', type: 'image', src: 'x', x: 0, y: 0, w: crop ? 128 : 256, h: 32, crop: crop || undefined, raw: { kind: 'ramp', lo: 0.05, hi: 0.3, source: { asset: 'x' } }, fx: fxList });
+    const crop = { x: 0.5, y: 0, w: 0.5, h: 1 }, dev = { id: 'd', type: 'develop.basic', p: { exposure: 2 } };
+    const mask = { on: true, parts: [{ kind: 'linear', mode: 'add', x0: 0, y0: 0.5, x1: 1, y1: 0.5, feather: 0 }] };
+    const full = await FX.layer(__scene(), mk([dev]), 4000, false);
+    const cut = await FX.layer(__scene(), mk([dev], crop), 4000, false);
+    const off = await FX.layer(__scene(), mk([Object.assign({}, dev, { amount: 0 })], crop), 4000, false);
+    const masked = await FX.layer(__scene(), mk([Object.assign({}, dev, { mask })], crop), 4000, false);
+    return { size: [cut.width, cut.height], full: __row(full, 16), cut: __row(cut, 16), off: __row(off, 16), masked: __row(masked, 16) };
+  });
+  h.assert(r.size[0] === 128 && r.size[1] === 32, 'the cropped layer is the right half of the picture: ' + r.size);
+  let worst = 0; for (let i = 0; i < 128; i++) worst = Math.max(worst, Math.abs(r.cut[i] - r.full[128 + i]));
+  h.assert(worst <= 1, 'cropped pixels equal the same pixels of the uncropped render (worst ' + worst + ')');
+  /* the mask is 1 at the layer's left edge and 0 at its right edge; in photo fractions it would be 0.5 at the left edge */
+  h.assert(Math.abs(r.masked[1] - r.cut[1]) <= 3 && Math.abs(r.masked[126] - r.off[126]) <= 3, 'mask ends: left ' + r.masked[1] + ' (developed ' + r.cut[1] + '), right ' + r.masked[126] + ' (undeveloped ' + r.off[126] + ')');
+  h.assert(Math.abs(r.cut[1] - r.off[1]) > 20, 'the two ends differ enough to tell: ' + r.cut[1] + ' against ' + r.off[1]);
+  h.assert.noErrors(pg);
+};
+
+cases['Display P3: develop.basic aims its gamut compression at P3 when that is exported, and matches the CPU reference'] = async ({ browser, base, h }) => {
+  const pg = await page(browser, base);
+  const r = await pg.evaluate(() => {
+    const FX = window.LE.fx, D = FX.develop, w = 96, hh = 24, d = new Float32Array(w * hh * 3);
+    /* rows: a green and a red outside sRGB (a negative component) over 8 stops; a neutral ramp */
+    for (let y = 0; y < hh; y++) for (let x = 0; x < w; x++) {
+      const v = Math.pow(2, -6 + 8 * x / (w - 1)), col = [[-0.12, 0.9, 0.04], [1.25, -0.1, 0.02], [1, 1, 1]][Math.floor(y / 8)], o = (y * w + x) * 3;
+      d[o] = v * col[0]; d[o + 1] = v * col[1]; d[o + 2] = v * col[2];
+    }
+    const src = { data: d, width: w, height: hh, channels: 3, space: 'linear' }, p = Object.assign(FX.defaults('develop.basic'), { profile: 'standard' }), stack = [{ type: 'develop.basic', p }];
+    const s = FX.apply(src, { fx: stack }), q = FX.apply(src, { fx: stack, colorSpace: 'display-p3' });
+    const attrs = q.getContext('2d').getContextAttributes ? q.getContext('2d').getContextAttributes() : {};
+    const A = s.getContext('2d').getImageData(0, 0, w, hh).data, B = q.getContext('2d').getImageData(0, 0, w, hh).data;
+    const plan = D.basicPlan(p); plan.gamut = 'display-p3';
+    const M = D.P3.to, mul = (c) => [M[0] * c[0] + M[1] * c[1] + M[2] * c[2], M[3] * c[0] + M[4] * c[1] + M[5] * c[2], M[6] * c[0] + M[7] * c[1] + M[8] * c[2]];
+    let ref = 0, at = null, differ = 0, neutral = 0;
+    for (let i = 0; i < w * hh; i++) {
+      const o = mul(D.basicPixel([d[i * 3], d[i * 3 + 1], d[i * 3 + 2]], plan));
+      for (let c = 0; c < 3; c++) {
+        const e = Math.abs(__srgb(o[c]) - B[i * 4 + c]); if (e > ref) { ref = e; at = [i % w, i / w | 0, c]; }
+        const dd = Math.abs(A[i * 4 + c] - B[i * 4 + c]); if (i < w * 16) differ = Math.max(differ, dd); else neutral = Math.max(neutral, dd);
+      }
+    }
+    return { supported: FX.status().p3, space: attrs.colorSpace || 'srgb', ref, at, differ, neutral, again: FX.apply(src, { fx: stack }).getContext('2d').getImageData(40, 4, 1, 1).data.join(), first: Array.from(A.slice((4 * w + 40) * 4, (4 * w + 40) * 4 + 4)).join() };
+  });
+  h.assert.equal(r.again, r.first, 'a P3 render does not change later sRGB renders');
+  if (r.supported && r.space === 'display-p3') {
+    h.assert(r.ref <= 3, 'the P3 canvas matches the CPU reference aimed at P3 (worst ' + r.ref + ' at ' + r.at + ')');
+    h.assert(r.differ >= 8, 'saturated patches differ between the sRGB and the P3 export (largest difference ' + r.differ + ')');
+    h.assert(r.neutral <= 2, 'neutrals are the same in both (largest difference ' + r.neutral + ')');
+  } else h.assert(r.differ <= 1, 'without P3 the output is the sRGB one');
+  h.assert.noErrors(pg);
+};
+
 module.exports = cases;

@@ -11,7 +11,7 @@ The contract for step X0a of `docs/EXPERT-MODE.md`, as built. Feature teams (X1�
 | `assets/js/fx/curves.js` | by `le-fx.js`, and by the workspace | `LE.curves`: the one monotone spline (`clean`, `monotone`, `sample`, `lut`, presets). The curve editor draws with it and the renderer samples it |
 | `assets/js/fx/le-fx-gl.js` | by `le-fx.js` | WebGL2 renderer, pass builder, masks, tiling, colour management, the scene hooks |
 | `assets/js/fx/le-fx-basic.js` | by `le-fx.js` | the starter effects |
-| `assets/js/fx/le-fx-analyze.js` | first `LE.fx.analyze` call (or at load when an effect declares `needs: ['stats']`) | image statistics |
+| `assets/js/fx/le-fx-analyze.js` | first `LE.fx.analyze` call, or when a document's stack has an effect that declares `needs: ['stats']` (`LE.fx.needs(stack)`, which `LE.fx.prepare` and the layer stage wait for) | image statistics |
 | `assets/js/fx/le-fx-<pack>.js` | by `le-fx.js` | your effects: add the pack name to `PACKS` at the top of `le-fx.js` |
 
 ```js
@@ -31,6 +31,7 @@ layer.transform = { quad: [[x,y],[x,y],[x,y],[x,y]] }                           
 layer.retouch  = { asset, version }                                                          // reserved: a baked-overlay cache only. Strokes, spots and meshes live in effect parameters of type `data`
 layer.maps     = { depth: { asset, model, version }, normals: {…}, face: [packed faces], segments: { asset, clothes: { asset }, model, version } }
 layer.raw      = { profile, wb: { temp, tint }, exposure, … }                                   // kept as data until the RAW step
+layer.clip     = true | 'knockout'                                                               // ordinary layers (not groups): see "Clipped layers"
 ```
 
 - Entry `blend`: `normal multiply screen overlay soft-light hard-light darken lighten difference color luminosity`.
@@ -76,6 +77,8 @@ Draw-time results are kept between redraws in preview: an adjustment layer or a 
 
 `LE.Scene.exportLayer` draws a non-photo layer with its effects and its layer mask (`LE.fx.local`): the layer alone on a transparent ground, the result cut at its box. Entries that read the `scene` are left out there, because the layer is exported without one.
 
+**Clipped layers.** `clip: true` on an ordinary layer draws it only inside the layer below it; several clipped layers in a row share that one base (the first layer below that is not itself clipped), each blended onto it with its own blend mode and opacity, and each reads the base as its scene (`g.scene()`), so `blend-options` on a clipped layer blends against its base. `clip: 'knockout'` cuts the layer's shape (times its opacity) out of the base instead of drawing it. The base's alpha is what it draws without its drop shadow, effects included. Clipped adjustment layers sit in the same chain. A hidden base hides its clipped layers; a clipped layer with nothing below it, or whose base is being edited or sits in a group with effects, is drawn as an ordinary layer; groups never clip. The field is sanitised in `LE.Scene.expertOf` (anything but `true` or `'knockout'` is dropped), kept by `.leproject` and written and read by the open format (`"clip": true | "knockout"`, schema `design-1.json`). A document that has one loads the renderer like any other expert data; a clipped photo layer's own bitmap takes the ordinary path.
+
 Not done at draw time: `transform.quad` on non-photo layers.
 
 ## Registering an effect
@@ -84,7 +87,7 @@ Not done at draw time: `transform.quad` on non-photo layers.
 (window.LE_FX_DEFS = window.LE_FX_DEFS || []).push({      // or LE.fx.register(def) once le-fx.js is loaded
   id: 'bloom', name: 'Bloom', group: 'effects', version: 1,
   space: 'linear',                    // 'linear' | 'display' | 'oklab': the space g.source is handed over in and expected back in (oklab: colour operations only)
-  needs: [],                          // 'alpha' 'scene' 'depth' 'normals' 'face' 'stats'
+  needs: [],                          // 'alpha' 'scene' 'below' 'depth' 'normals' 'face' 'stats'
   params: { threshold: { type: 'number', min: 0, max: 4, default: 1, step: 0.01, label: 'Threshold' } },
   radius: function (p, scale, box) { return 0; },   // target pixels of neighbourhood read; drives tile overlap. box: { w, h } of the layer in document pixels
   grow: function (p, scale, box) { return 0; },     // optional: target pixels the result extends beyond the layer box
@@ -101,9 +104,12 @@ Rules:
 
 - `id` matches `^[a-z][a-z0-9-]{1,39}$`. A second registration with the same id replaces the first unless its `version` is lower. Bump `version` whenever the pixels change: it is part of every cache key.
 - `passes` is a pure function of `(g, p)`: no globals, no clocks, no `Math.random`. It either calls `g.color()` (one or more times) and returns nothing, or builds passes and returns a handle. Mixing the two throws.
-- An effect with `alpha` or `scene` in `needs` is a **silhouette effect**: it runs after the cut-out and the layer mask whatever its position in the stack, and may declare `grow`.
+- An effect with `alpha`, `scene` or `below` in `needs` is a **silhouette effect**: it runs after the cut-out and the layer mask whatever its position in the stack, and may declare `grow`. With `scene` or `below` it runs when the page is composed (draw time), also on photo layers.
+- **Fill against opacity.** In the silhouette stage `g.subject()` is the layer's own pixels and `g.source` is what the styles before this entry have made of them. `blend-options` uses the two to apply `fill` to the pixels only (it takes `(1 − fill)` of the subject out of the styled picture), so shadows, glows and inner shadows keep their strength while the layer fades; layer opacity fades everything. This holds where styles are draw-time work (text, shapes, groups). A photo layer's silhouette effects are part of its cached bitmap, so there fill still fades them with the picture.
 - `radius` and `grow` receive target pixels per document pixel and the layer box in document pixels (`box.w`, `box.h`), so an effect whose data is stored in fractions of the box can state its reach exactly: `Math.ceil(p.r * Math.max(box.w, box.h) * scale)`. Use `LE.fx.math.blurReach(sigmaInTargetPixels)` for anything built on `g.blur`.
 - An effect has at most 48 parameters. Records that do not fit a fixed set of parameters (strokes, spots, mesh points) go in one parameter of type `data`.
+- `aliases: ['old-id']` names earlier effect ids this registration replaces (same parameter names). An entry of such a type is read as this effect and written back under the new id by validation; the old id is not listed or described. `selective-color` replaces `selective-color-tones` this way.
+- `radius` and `grow` should take lengths the layer box implies from their `box` argument; a parameter that used to carry such a length (`cast-shadow.height`, `floating-shadow.width`, `mesh-warp.size`) defaults to 0, meaning "from the box".
 - `cpu(imageData, p, { scale, box, width, height })` changes 8-bit display-referred pixels in place. Give one only where it is a table lookup or as simple; masks and blends are not applied on that path.
 - Each registration is also declared to `LE.support` as `fx.<id>` (E7).
 
@@ -201,10 +207,13 @@ Every image handle is premultiplied RGBA in the effect's declared `space`, in a 
 | `g.mask(maskDef)` | the mask as a handle (value in every channel) |
 | `g.alpha()` | the layer's alpha as a handle (after cut-out and mask in the silhouette stage) |
 | `g.asset(id)` | a data asset: `{ id, text, bytes }`, or `null` until it has loaded |
-| `g.whole({ maxSide: 512 })` or `({ scale })` | the whole picture as it enters this effect, small (8-bit, display-referred, premultiplied), **the same for every tile**; sample it with `boxUV()`. In the silhouette stage it is the layer as it enters that stage (after cut-out, frame and layer mask, before any silhouette entry), so `.a` is the whole silhouette: a cast shadow or a ray can read it however long its reach. `null` for float sources |
+| `g.whole({ maxSide: 512 })` or `({ scale })` | the whole picture as it enters this effect, small (8-bit, display-referred, premultiplied), **the same for every tile**; sample it with `boxUV()`. In the silhouette stage it is the layer as it enters that stage (after cut-out, frame and layer mask, before any silhouette entry), so `.a` is the whole silhouette: a cast shadow or a ray can read it however long its reach. Float sources answer too |
+| `g.gamut` | `'srgb'` or `'display-p3'`: the gamut this render is for (see "Float sources") |
+| `g.far({ maxSide: 512 }, function (w) { … return handle; })` | builds passes over the **whole layer box** instead of the working rectangle: `w` is a builder like `g` (`w.pass`, `w.blur`, `w.downsample`, `w.scale`, `w.width` …) whose target is the box reduced to `maxSide` and whose `w.source` is `g.whole()` at that size in the effect's space. The handle it returns is the same for every tile; sample it with `boxUV()`. For rays, streaks and flares, whose `radius()` then need not cover the distance. `null` when there is no whole picture |
 | `g.subject()` | silhouette stage only: the layer as it entered the stage, at working resolution (premultiplied; its `space` is on the handle). Read `.a` for the silhouette. Later silhouette entries do not change it, so a reflection does not cast a shadow and their order stops mattering. `null` before that stage |
-| `g.map(kind, { part })` | a map of the layer as a handle over the working rectangle, full precision, computed once per run: `'depth'` (`r` = stored depth, near 1, edge-extended), `'subject'` (`r` = the cut-out), `'face'` (`r` = the area `part`), `'segments'` (`r` person, `g` hair, `b` skin, `a` clothes). `handle.missing` is `true` when the layer has no such map; the handle is then constant (depth 0, the others 1) and no warning is raised |
+| `g.map(kind, { part })` | a map of the layer as a handle over the working rectangle, full precision, computed once per run: `'depth'` (`r` = stored depth, near 1, edge-extended), `'subject'` (`r` = the cut-out), `'face'` (`r` = the area `part`), `'segments'` (`r` person, `g` hair, `b` skin, `a` clothes). `handle.missing` is `true` when the layer has no such map; the handle is then constant (depth 0, the others 1) and no warning is raised. With `{ whole: true, maxSide: 512 }` the handle covers the whole layer box instead (sample it with `boxUV()`), the same for every tile: for following a map further than a tile reaches (a long relight shadow) |
 | `g.scene()` | what is behind the layer, aligned with the working rectangle; `null` unless the effect declares `scene` |
+| `g.below()` | the layer directly below this one, drawn alone (premultiplied, display-referred, aligned with the working rectangle): `.a` its alpha, `.rgb` its colour. `null` unless the effect declares `below` in `needs` and such a layer exists. Like `scene`, `below` makes the effect run at draw time |
 | `g.stats()` | whole-image statistics of the input (`needs: ['stats']`), the same object `LE.fx.analyze` returns, measured once on a ≤ 256-pixel copy run through the entries before yours |
 | `g.rgb(color)` | `[r, g, b, a]` of a `color` parameter in the effect's space, not premultiplied |
 | `g.release(handle)` | gives an intermediate back to the pool early (optional; everything is released when the stack ends) |
@@ -265,7 +274,7 @@ The same in JavaScript: `LE.fx.math.oklab(lin)`, `LE.fx.math.oklabInv(lab)`, `sr
 - Colour: 8-bit sRGB in, linear or display-referred floating point inside, 8-bit out with ordered dithering. `LE.fx.apply(canvas, { colorSpace: 'display-p3' })` returns a Display-P3 canvas where the browser supports it; the studio's compositor is sRGB, so the scene path stays sRGB.
 - A lost WebGL context: renders fall back to the picture without GPU effects, `LE.fx.stamp()` changes, and scenes redraw with effects when the context returns.
 
-**Effects that reach far.** A tile carries a border as wide as the stack's reach, up to what the device can hold; beyond that the reach is clamped (with a note) and tiles could show seams. An effect that needs the far side of the picture (a blur wider than a few hundred pixels at export size, a flare, a glow from the whole frame) should not read it from the tile: ask for `g.whole()`, a reduced copy of the entire input rendered once through the entries before this one and handed identically to every tile, and build the wide part from that. `gaussian-blur` itself still reads its tile, so radii beyond the clamp are approximate at very large export sizes.
+**Effects that reach far.** A tile carries a border as wide as the stack's reach, up to what the device can hold; beyond that the reach is clamped (with a note) and tiles could show seams. An effect that needs the far side of the picture (a blur wider than a few hundred pixels at export size, a flare, a glow from the whole frame) should not read it from the tile: ask for `g.whole()`, a reduced copy of the entire input rendered once through the entries before this one and handed identically to every tile, and build the wide part from that, with `g.far()` when it takes passes of its own. `sun-rays` and `anamorphic-streaks` (built with `g.far`), `cast-shadow` (projects `g.whole().a`) and `relight` (long shadows on `g.map('depth', { whole: true })`) work this way and declare only their blur as reach. At draw time (shapes, text, groups, adjustment layers) the whole picture is the layer box as far as the drawn region shows it. `gaussian-blur` itself still reads its tile, so radii beyond the clamp are approximate at very large export sizes.
 
 **One rectangle.** A picture that fits one working rectangle is not tiled: its border is the smallest of the stack's reach, twice the grid, and the picture's own longer side. The grid itself (64 pixels, or 256 for stacks that read further than 400) stays at 64 for pictures under 768 pixels, which are never cut into many tiles. Outside a picture there is only its extended edge, which the texture's edge clamp continues, so a 64-pixel picture under a stack that reads thousands of pixels is worked on in 512 pixels, not 1,280.
 
@@ -292,7 +301,20 @@ The memory budget is 384 MB on a `high` performance level, 192 on `mid`, 96 on `
 
 ### Float sources (the seam for RAW and HDR)
 
-Wherever a canvas is accepted as the picture, `{ data: Float32Array | Uint16Array, width, height, channels: 3 | 4, space: 'linear' | 'display' }` is too (top row first; alpha, if present, premultiplied). That is the shape `LE.raw.decode` returns, apart from the camera matrix, which X5 applies as a colour operation. The data goes into a half-float texture, tiles take their part with the unpack parameters (no copy), and the stack starts in the source's own space, so linear data is never squeezed through 8 bits. Not available for a float source yet: draft half resolution, the work limit's fallback, `needs: ['stats']`, the CPU path, mip-mapped quads. How a layer points at decoded data inside `LE.Scene` is X5's to add at the seam in `LE.fx.layer`.
+Wherever a canvas is accepted as the picture, `{ data: Float32Array | Uint16Array, width, height, channels: 3 | 4, space: 'linear' | 'display' }` is too (top row first; alpha, if present, premultiplied). That is the shape `LE.raw.decode` returns, apart from the camera matrix, which the develop pack applies as a colour operation. The data goes into a half-float texture, tiles take their part with the unpack parameters (no copy), and the stack starts in the source's own space, so linear data is never squeezed through 8 bits. `g.whole()` and `g.stats()` answer for a float source too (from a box-sampled 8-bit copy). Not available for a float source: draft half resolution (a provider hands over a smaller picture instead), the work limit's fallback, the CPU path, mip-mapped quads.
+
+**Layers drawn from float data.** The registry is in the core:
+
+```js
+LE.fx.sources.register(kind, provider)   // kind: layer.raw.kind ('raw' when absent)
+// provider(layer, { targetMax, preview, draft, scene, entries }) → Promise<null | { source, box: { w, h }, key, ctx }>
+LE.fx.sources.lazy(kind, load)           // load() is called once when such a layer is drawn and no provider is registered
+LE.fx.sources.split(fx) → { dev, rest }  // the source stage and the rest;  .inject(dev, ctx),  .is(layer),  .forget(layerId)
+```
+
+An effect joins the **source stage** by declaring `source: { order, required }` (`required`: a default entry is added when the stack has none) and, optionally, `inject: function (p, ctx) { … return p; }`, which fills in what only the layer's source knows (a camera matrix, the picture's extent) and is never written to the document. `LE.fx.layer` draws a layer whose `raw.source.asset` is set in two steps: the provider's uncropped picture through the source-stage entries and the cut-out, read back as **float pixels** already cropped (`job.out = { float: true, rect }` inside the renderer); then that float picture through the rest of the stack, frame, layer mask, quad and silhouette entries. Nothing is quantised to 8 bits between the two. Masks on source-stage entries are fractions of the layer box like every other mask (a `u_frame` uniform says where the layer box sits in the uncropped photo; `blur` is in the layer's document pixels); under a perspective quad they are in the coordinates before the warp. A layer with legacy adjustments, a legacy filter, background removal by colour or a baked retouch overlay keeps the older order, because those are 8-bit CPU steps: source stage to an 8-bit canvas, then the unchanged pipeline. Without a provider, without half-float targets, or on any error the layer's own 8-bit picture is drawn. The float picture of a preview is kept per layer (four layers at most); an export holds one float copy of the cropped picture (16 bytes a pixel) while it runs.
+
+**Gamut.** `g.gamut` is `'srgb'` or `'display-p3'`: what the render is for. An effect that compresses or clips to a gamut aims at that one and still returns linear sRGB primaries; a colour sRGB cannot show then has a component below 0 or above 1, which half-float stages carry to the output (`develop.basic` does this). The P3 canvas is filled by reading the shader's P3-encoded output back, never through the drawing buffer's colour space.
 
 ### Added in the hardening pass
 
@@ -327,7 +349,9 @@ Wherever a canvas is accepted as the picture, `{ data: Float32Array | Uint16Arra
   alpha: { coverage } }
 ```
 
-`target` is a canvas, an image, `ImageData`, a `LE.Scene` (the page) or `{ scene, layer }`; `region` is `{ x, y, w, h }` in fractions. `histogram.l` is the same list as `histogram.luma`. The scopes' form, `LE.fx.analyze({ source: canvas, kinds: ['histogram'] })`, returns the object at once when the statistics code is already loaded (a promise the first time); with `kinds` given and no `'sharpness'` in it, the sharpness pass is skipped (`sharpness: null`). `whiteBalance.suggest` is in `white-balance` effect units. For "average skin hue against the skin-tone line", pass a region on skin and read `hue.vectorscope.offsetFromSkinLine`. Light direction and anything that needs a model are not here.
+`target` is a canvas, an image, `ImageData`, a `LE.Scene` (the page) or `{ scene, layer }`; `region` is `{ x, y, w, h }` in fractions. `histogram.l` is the same list as `histogram.luma`. The scopes' form, `LE.fx.analyze({ source: canvas, kinds: ['histogram'] })`, returns the object at once when the statistics code is already loaded (a promise the first time); with `kinds` given and no `'sharpness'` in it, the sharpness pass is skipped (`sharpness: null`). `whiteBalance.suggest` is in `white-balance` effect units. For "average skin hue against the skin-tone line", pass a region on skin and read `hue.vectorscope.offsetFromSkinLine`. `kinds: ['light']` adds `light`, the relight pack's estimate (`LE.fx.relight.estimate`: direction, azimuth, elevation, softness, temperature, `words`, a `suggest`ed relight entry) from `opts.depth` and `opts.mask`, or from the layer's own depth map and cut-out when the target is `{ scene, layer }`; `null` without that pack. Anything that needs a model is not here.
+
+`g.stats()` in a synchronous render (`LE.fx.apply`) is `null` until the analysis code is in; the renderer asks for it and draws again. Tools that call `LE.fx.apply` with such a stack wait for `LE.fx.needs(stack)` first (`LE.fx.needsStats(stack)` says whether there is anything to wait for).
 
 Wiring in `le-agent.js` (owned by the agent-mode engineer):
 

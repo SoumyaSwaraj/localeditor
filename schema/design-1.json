@@ -277,6 +277,7 @@
         "opacity": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 },
         "blend": { "enum": ["source-over", "normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"] },
         "visible": { "type": "boolean", "default": true },
+        "clip": { "enum": [true, false, "knockout"], "default": false, "description": "On an ordinary layer: true draws it only inside the layer below (a clipping mask; several in a row share that layer), \"knockout\" cuts its shape out of the layer below instead of drawing it. Groups ignore it; on an adjustment layer it is a boolean (see adjustLayer)." },
         "locked": { "type": "boolean", "default": false },
         "flipX": { "type": "boolean", "default": false },
         "flipY": { "type": "boolean", "default": false },

@@ -512,4 +512,109 @@ cases['deep link: ?mode=expert opens Expert for this visit and does not change t
   h.assert(!/mode=/.test(r.query), 'the query is cleared from the address');
 };
 
+/* ---- Document model: clip on ordinary layers, g.below, fill against opacity ---- */
+const BG = { id: 'bg', type: 'shape', shape: 'rect', x: 0, y: 0, w: 200, h: 120, fill: { type: 'solid', color: '#ffffff' } };
+const docOf = (layers) => ({ v: 1, width: 200, height: 120, background: { type: 'color', color: '#ffffff' }, layers: [BG].concat(layers) });
+const PX = `window.__px = async (s, pts) => { await window.LE.fxBoot.load(s); const c = await s.render(1), x = c.getContext('2d'); return pts.map((p) => Array.from(x.getImageData(p[0], p[1], 1, 1).data).slice(0, 3)); };`;
+
+cases['clip: a layer is drawn only inside the layer below, several share that base, knockout cuts a hole, and the field survives save, .leproject and the open format'] = async ({ browser, base, h }) => {
+  const page = await h.studioWithSample(browser, base, 'desktop');
+  await page.evaluate(PX);
+  const r = await page.evaluate(async (doc) => {
+    const LE = window.LE, s = window.LEStudio.scene, out = {};
+    const disc = { id: 'disc', type: 'shape', shape: 'ellipse', x: 40, y: 20, w: 80, h: 80, fill: { type: 'solid', color: '#2040c0' }, shadow: { x: 30, y: 0, blur: 0, color: '#000000' } };
+    const bar = { id: 'bar', type: 'shape', shape: 'rect', x: 0, y: 50, w: 200, h: 20, fill: { type: 'solid', color: '#e02020' }, clip: true };
+    const dot = { id: 'dot', type: 'shape', shape: 'rect', x: 70, y: 25, w: 20, h: 20, fill: { type: 'solid', color: '#20c020' }, clip: true, blend: 'multiply' };
+    const hole = { id: 'hole', type: 'shape', shape: 'rect', x: 70, y: 80, w: 20, h: 12, fill: { type: 'solid', color: '#000000' }, clip: 'knockout' };
+    const top = { id: 'top', type: 'shape', shape: 'rect', x: 150, y: 0, w: 50, h: 10, fill: { type: 'solid', color: '#808080' } };
+    const pts = [[80, 60], [20, 60], [140, 60], [80, 35], [80, 86], [80, 110], [175, 5], [60, 40]];
+    s.load({ v: 1, width: 200, height: 120, background: { type: 'color', color: '#ffffff' }, layers: [doc, disc, bar, dot, hole, top] });
+    out.kept = [s.layer('bar').clip, s.layer('dot').clip, s.layer('hole').clip, s.layer('top').clip, s.layer('disc').clip];
+    out.px = await window.__px(s, pts);
+    /* hidden base: the clipped layers go with it; the unclipped one above stays */
+    s.update('disc', { visible: false });
+    out.hidden = await window.__px(s, [[80, 60], [80, 35], [175, 5]]);
+    s.update('disc', { visible: true });
+    /* nothing below to clip to: drawn as an ordinary layer */
+    s.load({ v: 1, width: 200, height: 120, background: { type: 'color', color: '#ffffff' }, layers: [Object.assign({}, bar)] });
+    out.alone = await window.__px(s, [[20, 60]]);
+    /* sanitiser: only true and 'knockout' on ordinary layers; a group never clips */
+    s.load({ v: 1, width: 200, height: 120, layers: [doc, disc, Object.assign({}, bar, { clip: 'yes' }), Object.assign({}, dot, { clip: 1 }), hole] });
+    out.clean = [s.layer('bar').clip, s.layer('dot').clip, s.layer('hole').clip];
+    /* round trips */
+    s.load({ v: 1, width: 200, height: 120, background: { type: 'color', color: '#ffffff' }, layers: [doc, disc, bar, dot, hole, top] });
+    const json = s.toJSON();
+    s.load(JSON.parse(JSON.stringify(json)));
+    out.json = s.toJSON().layers.map((l) => l.clip);
+    /* .leproject and the open format */
+    const c = window.LEStudio;
+    c.syncProject();
+    const project = c.S.project;
+    const file = await LE.project.exportFile(project, {}), back = await LE.project.readFile(new File([file.blob || file], 'x.leproject'));
+    out.project = back && back.project ? back.project.pages[0].layers.map((l) => l.clip) : 'readFile failed';
+    const text = await LE.design.exportText(project, {}), parsed = await LE.design.parse(text.text, {});
+    out.designText = (text.text.match(/"clip": (true|"knockout")/g) || []).length;
+    out.design = parsed && parsed.project ? parsed.project.pages[0].layers.map((l) => l.clip) : 'parse failed: ' + JSON.stringify(parsed && parsed.errors).slice(0, 300);
+    return out;
+  }, BG);
+  const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= 6);
+  h.assert.equal(JSON.stringify(r.kept), JSON.stringify([true, true, 'knockout', null, null].map((v) => v === null ? undefined : v)), 'clip is kept on ordinary layers');
+  h.assert(near(r.px[0], [224, 32, 32]), 'the bar shows inside the disc: ' + r.px[0]);
+  h.assert(near(r.px[1], [255, 255, 255]), 'and not beside it: ' + r.px[1]);
+  h.assert(near(r.px[2], [0, 0, 0]), 'nor on the disc\'s drop shadow: ' + r.px[2]);
+  h.assert(near(r.px[3], [4, 48, 24]), 'a second clipped layer shares the base and blends with it (multiply): ' + r.px[3]);
+  h.assert(near(r.px[4], [255, 255, 255]), 'the knockout layer cuts a hole in the disc: ' + r.px[4]);
+  h.assert(near(r.px[5], [255, 255, 255]) && near(r.px[7], [32, 64, 192]), 'outside the hole the disc is as it was: ' + JSON.stringify([r.px[5], r.px[7]]));
+  h.assert(near(r.px[6], [128, 128, 128]), 'the layer above the chain is not clipped: ' + r.px[6]);
+  h.assert(near(r.hidden[0], [255, 255, 255]) && near(r.hidden[1], [255, 255, 255]) && near(r.hidden[2], [128, 128, 128]), 'a hidden base hides its clipped layers: ' + JSON.stringify(r.hidden));
+  h.assert(near(r.alone[0], [224, 32, 32]), 'with nothing below, a clipped layer is an ordinary layer: ' + r.alone[0]);
+  h.assert.equal(JSON.stringify(r.clean), JSON.stringify([undefined, undefined, 'knockout']), 'anything but true or "knockout" is dropped');
+  const want = JSON.stringify([undefined, undefined, true, true, 'knockout', undefined]);
+  h.assert.equal(JSON.stringify(r.json), want, 'clip survives the scene document');
+  h.assert.equal(JSON.stringify(r.project), want, 'and a .leproject');
+  h.assert(r.designText === 3 && JSON.stringify(r.design) === want, 'and the open format (written ' + r.designText + ' times, read back ' + JSON.stringify(r.design) + ')');
+  h.assert.noErrors(page);
+};
+
+cases['g.below and fill: an effect reads the layer directly below; blend-options fill fades the layer\'s pixels and leaves its shadow alone'] = async ({ browser, base, h }) => {
+  const page = await h.studioWithSample(browser, base, 'desktop');
+  await page.evaluate(PX);
+  const r = await page.evaluate(async (doc) => {
+    const LE = window.LE, s = window.LEStudio.scene, out = {};
+    await LE.fxBoot.load(s);
+    const FX = LE.fx;
+    /* a test effect: where the layer below is opaque, show its colour; elsewhere keep the layer */
+    FX.register({ id: 't-below', space: 'display', needs: ['below'], passes: function (g) { const b = g.below(); window.__below = b ? [b.w === g.width, b.space] : null; if (!b) return; return g.pass('uniform sampler2D u_b; vec4 fx(){ vec4 s = texture(u_src, v_uv), b = texture(u_b, v_uv); return b.a > 0.5 ? vec4(b.rgb * s.a, s.a) : s; }', { u_b: b }); } });
+    const lower = { id: 'lower', type: 'shape', shape: 'rect', x: 20, y: 20, w: 60, h: 80, fill: { type: 'solid', color: '#20a040' } };
+    const upper = { id: 'upper', type: 'shape', shape: 'rect', x: 50, y: 40, w: 100, h: 40, fill: { type: 'solid', color: '#c02020' }, fx: [{ id: 'b1', type: 't-below', p: {} }] };
+    s.load({ v: 1, width: 200, height: 120, background: { type: 'color', color: '#ffffff' }, layers: [doc, lower, upper] });
+    out.below = await window.__px(s, [[65, 60], [120, 60], [30, 30]]);
+    out.seen = window.__below;
+    out.def = [FX.get('t-below').drawTime, FX.get('t-below').silhouette, FX.schema ? true : false];
+    /* fill: a grey square with a hard black drop shadow (studio-shadow), then blend-options at fill 0 and 50 */
+    const sq = (fill) => ({ id: 'sq', type: 'shape', shape: 'rect', x: 40, y: 30, w: 60, h: 60, fill: { type: 'solid', color: '#808080' },
+      fx: [{ id: 'sh', type: 'studio-shadow', p: { opacity: 1, angle: 180, distance: 40, size: 0, layers: 1, color: '#000000' } }].concat(fill == null ? [] : [{ id: 'bo', type: 'blend-options', p: { fill } }]) });
+    const probe = [[70, 60], [120, 60], [170, 60]];
+    s.load({ v: 1, width: 200, height: 120, background: { type: 'color', color: '#ffffff' }, layers: [doc, sq(null)] });
+    out.plain = await window.__px(s, probe);
+    s.load({ v: 1, width: 200, height: 120, background: { type: 'color', color: '#ffffff' }, layers: [doc, sq(50)] });
+    out.half = await window.__px(s, probe);
+    s.load({ v: 1, width: 200, height: 120, background: { type: 'color', color: '#ffffff' }, layers: [doc, sq(0)] });
+    out.zero = await window.__px(s, probe);
+    /* layer opacity, for contrast, fades both */
+    s.load({ v: 1, width: 200, height: 120, background: { type: 'color', color: '#ffffff' }, layers: [doc, Object.assign(sq(null), { opacity: 0.5 })] });
+    out.opacity = await window.__px(s, probe);
+    return out;
+  }, BG);
+  const near = (a, b, t) => a.every((v, i) => Math.abs(v - b[i]) <= (t || 6));
+  h.assert(r.seen && r.seen[0] && r.def[0] && r.def[1], 'an effect that needs `below` runs at draw time with a handle the size of its rectangle: ' + JSON.stringify([r.seen, r.def]));
+  h.assert(near(r.below[0], [32, 160, 64]) && near(r.below[1], [192, 32, 32]) && near(r.below[2], [32, 160, 64]), 'g.below() is the layer directly below, aligned: ' + JSON.stringify(r.below));
+  h.assert(near(r.plain[0], [128, 128, 128]) && near(r.plain[1], [0, 0, 0]) && near(r.plain[2], [255, 255, 255]), 'without fill: the square and its shadow beside it: ' + JSON.stringify(r.plain));
+  h.assert(near(r.half[0], [192, 192, 192], 8) && near(r.half[1], [0, 0, 0]), 'fill 50: the square fades to half, its shadow stays black: ' + JSON.stringify(r.half));
+  h.assert(near(r.zero[0], [255, 255, 255], 8) && near(r.zero[1], [0, 0, 0]), 'fill 0: only the shadow is left: ' + JSON.stringify(r.zero));
+  /* the shadow is laid down in linear light: half of black over white reads 186 there */
+  h.assert(near(r.opacity[0], [192, 192, 192], 8) && r.opacity[1][0] > 150 && r.opacity[1][0] < 215, 'layer opacity fades both: ' + JSON.stringify(r.opacity));
+  h.assert.noErrors(page);
+};
+
 module.exports = cases;

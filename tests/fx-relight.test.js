@@ -298,8 +298,12 @@ cases['estimate: light direction, softness and colour of a lit sphere'] = async 
       x.putImageData(im, 0, 0);
       return LE.fx.relight.estimate(c, { mask: m });
     };
-    return { ul: run([-1, 1, 0.8], [1, 0.62, 0.3]), r: run([1, 0, 0.3], [0.8, 0.9, 1.1]) };
+    const ul = run([-1, 1, 0.8], [1, 0.62, 0.3]), rr = run([1, 0, 0.3], [0.8, 0.9, 1.1]);
+    /* the same through LE.fx.analyze(target, { kinds: ['light'], mask }) (the picture is still the second one) */
+    return LE.fx.analyze(c, { kinds: ['light'], mask: m }).then((a) => LE.fx.analyze(c, { kinds: ['histogram'] }).then((plain) => ({ ul, r: rr, viaAnalyze: a.light, stats: !!a.histogram && a.sharpness === null, plain: 'light' in plain })));
   });
+  h.assert.equal(JSON.stringify(r.viaAnalyze), JSON.stringify(r.r), 'analyze with kinds: ["light"] hands back the relight estimate');
+  h.assert(r.stats && !r.plain, 'beside the statistics, and only when asked');
   h.assert(r.ul.ok && Math.abs(r.ul.azimuth - 135) <= 25, 'upper-left light found: ' + JSON.stringify(r.ul));
   h.assert(/upper left/.test(r.ul.words) && /warm/.test(r.ul.words) && r.ul.temperature < 4300, 'described as upper left and warm: ' + r.ul.words + ' ' + r.ul.temperature);
   h.assert(Math.abs(r.r.azimuth) <= 25 && /right/.test(r.r.words) && r.r.temperature > 6500, 'a cool light from the right: ' + JSON.stringify(r.r));
@@ -425,6 +429,30 @@ cases['real model (RELIGHT_REAL=1): map.generate makes a depth map for a pool ph
     return { ok: g.ok, d: layer.maps.depth, diff: RL.same(plain, lit), cached: await LE.maps.isCached('depth-small') };
   });
   h.assert(r.ok && r.d.width % 14 === 0 && r.diff > 20 && r.cached, 'real depth map made, stored and used: ' + JSON.stringify(r));
+  h.assert.noErrors(pg);
+};
+
+cases['relight: a shadow longer than 240 px follows the whole-layer depth (g.map whole), reaches further, and tiles agree'] = async ({ browser, base, h }) => {
+  const pg = await page(browser, base);
+  const r = await pg.evaluate(() => {
+    const W = 640, H = 128, s = RL.scene(W, H, { r: 28 }), FX = window.LE.fx;
+    const stack = (len) => [{ type: 'relight', p: { type: 'directional', position: { x: 1.4, y: 0.55 }, height: 0.3, intensity: 3, existing: 0.3, shadows: 1, shadowLength: len, softness: 0, specular: 0, relief: 1.2, subject: false, quality: 'high' } }];
+    const short = RL.apply(s, stack(150)), long = RL.apply(s, stack(600)), tiled = RL.apply(s, stack(600), { tile: 128 });
+    const g = (c, x) => RL.px(c, x, s.cy)[1], def = FX.get('relight'), v = (len) => FX.validate(stack(len)[0]).entry.p;
+    let whole = null;
+    FX.register({ id: 't-map', passes: function (gg) { const m = gg.map('depth', { whole: true, maxSide: 64 }); whole = [m.w, m.h, !!m.whole, !!m.missing]; } });
+    RL.apply(s, [{ type: 't-map', p: {} }], { tile: 128 });
+    return {
+      near: [g(short, s.cx - 120), g(long, s.cx - 120)], far: [g(short, s.cx - 300), g(long, s.cx - 300)], lit: g(long, s.cx + 200),
+      reach: [def.radius(v(150), 1, { w: W, h: H }), def.radius(v(240), 1, { w: W, h: H }), def.radius(v(600), 1, { w: W, h: H })], max: FX.describe('relight').params.shadowLength.max,
+      a: long.toDataURL(), b: tiled.toDataURL(), whole, fallback: /kind: 'depth', near: 1/.test(String(FX.get('relight').passes) + String(FX.get('depth-fog').passes))
+    };
+  });
+  h.assert(Math.abs(r.near[0] - r.near[1]) <= 3 && r.near[0] < r.lit - 20, 'within 150 px both lengths are in shadow: ' + r.near + ' (lit ' + r.lit + ')');
+  h.assert(r.far[1] < r.far[0] - 20 && Math.abs(r.far[0] - r.lit) <= 6, '300 px away only the long shadow reaches: short ' + r.far[0] + ', long ' + r.far[1]);
+  h.assert(r.max >= 2000 && r.reach[2] === r.reach[1] && r.reach[0] < r.reach[1], 'the tile reach stops growing at 240 px: ' + r.reach);
+  h.assert.equal(JSON.stringify(r.whole), JSON.stringify([64, 13, true, false]), 'g.map("depth", { whole }) covers the layer box at the asked size');
+  await fx.same(pg, png(r.a), png(r.b), 'a 600 px shadow, one rectangle against 128 px tiles', { max: 3, over: 0.002 });
   h.assert.noErrors(pg);
 };
 

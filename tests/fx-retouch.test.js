@@ -353,4 +353,45 @@ cases['tools at 390 px: heal works with a tap, the options fit, no sideways scro
   h.assert.noErrors(page);
 };
 
+cases['data parameters: records are one `data` list; a document from the first pack (hidden curve slots d0…) reads and draws the same'] = async ({ browser, base, h }) => {
+  const page = await open(browser, base);
+  const r = await page.evaluate(() => {
+    const FX = window.LE.fx, R = FX.retouch;
+    /* the first pack's encoding: values as the y of curve points, the first value the count / 10,000 */
+    const old = (values, n) => {
+      const all = [values.length / 10000].concat(values), o = {};
+      for (let k = 0; k < n; k++) { o['d' + k] = {}; ['master', 'r', 'g', 'b'].forEach((ch, c) => { const from = (k * 4 + c) * 64, pts = []; for (let j = 0; j < 64 && from + j < all.length; j++) pts.push([j / 100, all[from + j]]); if (pts.length === 1) pts.push([0.01, 0]); o['d' + k][ch] = pts.length ? pts : [[0, 0], [1, 1]]; }); }
+      return o;
+    };
+    let sp = FX.defaults('spot-heal');
+    sp = R.spots.add(sp, { kind: 'heal', r: 0.05, hardness: 0.3, dx: 0.2, dy: 0.1, points: [[0.3, 0.4, 1]] });
+    sp = R.spots.add(sp, { kind: 'clone', r: 0.04, dx: -0.15, dy: 0.2, points: [[0.6, 0.6, 1], [0.7, 0.65, 0.8], [0.75, 0.75, 0.6]] });
+    let lq = R.liquify.add(FX.defaults('liquify'), { tool: 'forward', size: 0.1, pressure: 1, points: [[0.3, 0.5], [0.45, 0.5], [0.6, 0.55]] });
+    const spOld = Object.assign({ blend: sp.blend }, old(sp.data, 8)), lqOld = old(lq.data, 12);
+    const vs = FX.validate({ type: 'spot-heal', p: spOld }), vl = FX.validate({ type: 'liquify', p: lqOld });
+    const c = fxT.card(256, 192), shot = (fx) => fxT.png(FX.apply(c, { fx }));
+    const added = R.spots.add(spOld, { kind: 'heal', r: 0.02, points: [[0.1, 0.1, 1]] });
+    const def = FX.describe('spot-heal'), rig = FX.describe('face-liquify').params.rig;
+    return {
+      params: Object.keys(def.params), type: def.params.data.type, max: [def.params.data.max, FX.describe('liquify').params.data.max], rig: [rig.type, rig.max],
+      same: [JSON.stringify(vs.entry.p.data) === JSON.stringify(sp.data), JSON.stringify(vl.entry.p.data) === JSON.stringify(lq.data)],
+      keys: [Object.keys(vs.entry.p).sort().join(), Object.keys(added).sort().join()], recs: [R.spots.read(spOld).length, R.spots.read(added).length, R.liquify.read(lqOld).length],
+      a: shot([{ type: 'spot-heal', p: sp }, { type: 'liquify', p: lq }]), b: shot([{ type: 'spot-heal', p: spOld }, { type: 'liquify', p: lqOld }]), none: shot([]),
+      hints: /HINTS/.test(String(FX.get('liquify').radius)), reach: FX.get('liquify').radius(vl.entry.p, 1, { w: 256, h: 192 })
+    };
+  });
+  h.assert.equal(r.params.join(), 'blend,data', 'spot-heal has one data parameter instead of eight hidden curves');
+  h.assert(r.type === 'data' && r.max.join() === '2047,3071' && r.rig.join() === 'data,255', 'data parameters with the old capacity: ' + JSON.stringify([r.type, r.max, r.rig]));
+  h.assert(r.same[0] && r.same[1], 'validation reads the hidden curve slots into the same list');
+  h.assert.equal(r.keys[0], 'blend,data', 'a validated legacy entry carries only the new parameter');
+  h.assert.equal(r.keys[1], 'blend,data', 'adding to a legacy entry drops the old slots');
+  h.assert.equal(r.recs.join(), '2,3,1', 'records read from the legacy form, and grow from it');
+  const png = (u) => Buffer.from(u.split(',')[1], 'base64');
+  await fx.same(page, png(r.a), png(r.b), 'a legacy document draws like its data-parameter form', { max: 0, over: 0 });
+  const d = await fx.diff(page, png(r.a), png(r.none));
+  h.assert(d.max > 20, 'and the entries do something: ' + JSON.stringify(d));
+  h.assert(r.reach > 3 && r.reach < 200, 'radius() reads the box it is given: ' + r.reach);
+  h.assert.noErrors(page);
+};
+
 module.exports = cases;

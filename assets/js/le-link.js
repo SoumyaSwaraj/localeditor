@@ -353,8 +353,13 @@
       ['width', 'height'].forEach(function (k) { if (typeof op[k] !== 'number' || op[k] < 16 || op[k] > 20000) throw new OpError('invalid', k + ' must be a number of pixels from 16 to 20000.', path + '/' + k); });
       var W0 = page.width || 1080, H0 = page.height || 1080;
       var sx = op.width / W0, sy = op.height / H0, k = (Math.abs(sx) + Math.abs(sy)) / 2;
+      var unscaled = 0;
       if (op.scaleContent !== false) {
+        /* Expert effects: lengths in document pixels (unit: 'px' parameters, mask blurs) follow the content, as the studio's
+           resize does. Which parameters those are is the effect registry's knowledge, so it has to be loaded (LE.fxBoot.load()). */
+        var G = typeof window !== 'undefined' ? window : null, rescale = G && G.LE && G.LE.fx && typeof G.LE.fx.rescale === 'function' ? G.LE.fx.rescale : null;
         (page.layers || []).forEach(function (l) {
+          if ((Array.isArray(l.fx) && l.fx.length) || l.layerMask) { if (rescale) rescale(l, k); else unscaled++; }
           ['x', 'w'].forEach(function (q) { if (typeof l[q] === 'number') l[q] = r2(l[q] * sx); });
           ['y', 'h'].forEach(function (q) { if (typeof l[q] === 'number') l[q] = r2(l[q] * sy); });
           if (l.type === 'text' && typeof l.size === 'number') l.size = Math.max(1, r2(l.size * k));
@@ -362,7 +367,7 @@
         });
       }
       page.width = Math.round(op.width); page.height = Math.round(op.height);
-      return { page: p };
+      return unscaled ? { page: p, unscaled: unscaled, note: 'Effect lengths on ' + unscaled + ' layer' + (unscaled > 1 ? 's were' : ' was') + ' not rescaled: the effect registry is not loaded here.' } : { page: p };
     },
     'page.background': function (doc, op, path, ctx) {
       var p = pageOf(doc, op, path, ctx);

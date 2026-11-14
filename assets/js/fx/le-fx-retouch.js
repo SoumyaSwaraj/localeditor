@@ -36,51 +36,51 @@
   }
 
   /* ======================================================================================================================
-     Data slots (the seam).
-     The registry has no list type, so records ride in `curve` parameters marked hidden: each curve parameter carries
-     4 channels x 64 points, and only the y of each point is data (x is the slot number / 100, which keeps the validator's
-     sort stable). Values are fractions 0–1 quantised to 1e-4. Slot 0 holds the count of values that follow, / 10000.
-     PROPOSAL (report): a `data` parameter type ({ type: 'data', max: 4096 }, value a list of numbers or a packed string,
-     validated for length and range only). When it lands, only R.data.read / R.data.write change.
+     Records (strokes, spots, face anchors) live in one parameter of type `data`: a flat list of numbers 0–1, each a multiple
+     of 1e-4. The first retouch pack kept them as the y of the points of hidden curve parameters d0…dN (the first value the
+     count / 10,000); the registry reads that form into the `data` parameter when it validates (`legacy`), and R.data.read
+     does the same for a parameter object that has not been through validation yet.
      ====================================================================================================================== */
   var SLOT = 64, CH = ['master', 'r', 'g', 'b'], Q = 10000;
   function q4(v) { return Math.round(clamp(v, 0, 1) * Q) / Q; }
+  function legacyRead(p, nParams, prefix) {
+    var flat = [], k;
+    for (k = 0; k < nParams; k++) {
+      var cv = p && p[prefix + k];
+      CH.forEach(function (ch) {
+        var pts = cv && Array.isArray(cv[ch]) ? cv[ch] : [];
+        for (var j = 0; j < SLOT; j++) flat.push(pts[j] ? Number(pts[j][1]) || 0 : 0);
+      });
+    }
+    var n = Math.round((flat[0] || 0) * Q);
+    return flat.slice(1, 1 + Math.max(0, Math.min(n, flat.length - 1)));
+  }
   R.data = {
-    perParam: SLOT * 4,
+    /* The capacity the hidden curve slots had, kept so that a full entry of then is a full entry now. */
     capacity: function (nParams) { return nParams * SLOT * 4 - 1; },
-    param: function (label) { return { type: 'curve', label: label || 'Data', help: 'Packed records written by LE.fx.retouch (R.ops.*, the tools). Not for editing by hand.', ui: { hidden: true } }; },
-    /* values: numbers 0–1 → { d0: curve, d1: curve, … } for nParams parameters named prefix0… */
-    write: function (values, nParams, prefix) {
-      prefix = prefix || 'd';
-      var cap = R.data.capacity(nParams), n = Math.min(values.length, cap), all = [n / Q], out = {}, i, k;
-      for (i = 0; i < n; i++) all.push(q4(values[i]));
-      for (k = 0; k < nParams; k++) {
-        var cv = {};
-        CH.forEach(function (ch, c) {
-          var from = (k * 4 + c) * SLOT, pts = [];
-          for (var j = 0; j < SLOT && from + j < all.length; j++) pts.push([j / 100, all[from + j]]);
-          if (pts.length === 1) pts.push([0.01, 0]);
-          cv[ch] = pts.length ? pts : [[0, 0], [1, 1]];
-        });
-        out[prefix + k] = cv;
-      }
+    /* A `data` parameter of `max` values; legacyParams: how many d0… curve parameters it replaces. */
+    param: function (label, max, legacyParams) {
+      var d = { type: 'data', max: max, range: [0, 1], step: 1 / Q, label: label || 'Data', help: 'Packed records written by LE.fx.retouch (R.ops.*, the tools). Not for editing by hand.', ui: { hidden: true } };
+      if (legacyParams) d.legacy = { prefix: 'd', params: legacyParams };
+      return d;
+    },
+    /* values: numbers 0–1 → { <name>: list }, cut at `max` and rounded to the step (a new list every time: lists are never changed in place). */
+    write: function (values, max, name) {
+      var n = Math.min(values.length, max), list = new Array(n), out = {};
+      for (var i = 0; i < n; i++) list[i] = q4(values[i]);
+      out[name || 'data'] = list;
       return out;
     },
-    read: function (p, nParams, prefix) {
-      prefix = prefix || 'd';
-      var flat = [], k;
-      for (k = 0; k < nParams; k++) {
-        var cv = p && p[prefix + k];
-        CH.forEach(function (ch) {
-          var pts = cv && Array.isArray(cv[ch]) ? cv[ch] : [[0, 0], [1, 1]];
-          for (var j = 0; j < SLOT; j++) flat.push(pts[j] ? Number(pts[j][1]) || 0 : 0);
-        });
-      }
-      var n = Math.round((flat[0] || 0) * Q);
-      return flat.slice(1, 1 + Math.min(n, flat.length - 1));
-    }
+    /* The list of a parameter object: its `data` parameter, or the hidden curve slots of the first pack. */
+    read: function (p, legacyParams, name) {
+      var v = p && p[name || 'data'];
+      if (Array.isArray(v)) return v;
+      if (v && Array.isArray(v.master)) return legacyRead({ x0: v }, 1, 'x');
+      return legacyParams && p && p.d0 ? legacyRead(p, legacyParams, 'd') : [];
+    },
+    /* A copy of p without the first pack's d0… parameters (written together with a new `data` list). */
+    strip: function (p) { var o = {}; Object.keys(p || {}).forEach(function (k) { if (!/^d\d+$/.test(k)) o[k] = p[k]; }); return o; }
   };
-  function dataParams(n, label) { var o = {}; for (var k = 0; k < n; k++) o['d' + k] = R.data.param(label); return o; }
 
   /* ======================================================================================================================
      Shared GLSL for g.pass shaders (display-referred unless stated).
@@ -583,12 +583,8 @@
     }
   });
 
-  /* The registry calls radius(p, scale) without the layer box, but strokes, offsets and meshes are stored as fractions of
-     the box. SEAM (proposal: radius(p, scale, box)): passes() records the box it saw for a parameter set, and radius() uses
-     it; before the first render it assumes a long side of 4,000 document px (generous: wider reach, never seams). */
-  var HINTS = {}, HINT_KEYS = [];
-  function hintSet(key, box) { if (!HINTS[key]) { HINT_KEYS.push(key); if (HINT_KEYS.length > 64) delete HINTS[HINT_KEYS.shift()]; } HINTS[key] = { w: box.w, h: box.h }; }
-  function hintGet(key, box) { return box && box.w ? box : HINTS[key] || { w: 4000, h: 4000 }; }   /* radius(p, scale, box) is given the box; the rest is for callers that give none */
+  /* Strokes, offsets and meshes are stored as fractions of the layer box; radius(p, scale, box) is given that box. */
+  function boxOf(box) { return box && box.w ? box : { w: 4000, h: 4000 }; }
 
   /* ======================================================================================================================
      Spot healing, clone and patch (one entry holds every stroke, click and polygon, replayed in order)
@@ -607,7 +603,7 @@
           gets a softer tone match, and a gradient across a large patch is matched only to its σ-blurred boundary.
        4. out = mix(D, clone ? S : heal, m). Passes: 3 for clone only, 9–13 with healing.
      ====================================================================================================================== */
-  var SPOT_PARAMS = 8, SPOT_CAP = { records: 256, points: 512 };
+  var SPOT_PARAMS = 8, SPOT_MAX = 8 * 256 - 1, SPOT_CAP = { records: 256, points: 512 };
   var KINDS = { 'heal': 1, 'clone': 2, 'heal-polygon': 3, 'clone-polygon': 4 };
   function rdp(pts, eps) {
     if (pts.length < 3) return pts.slice();
@@ -647,11 +643,11 @@
       var v = [];
       list.slice(0, SPOT_CAP.records).forEach(function (r) {
         var pts = ptsOf(r.points, SPOT_CAP.points);
-        if (!pts.length || v.length + 7 + pts.length * 3 > R.data.capacity(SPOT_PARAMS)) return;
+        if (!pts.length || v.length + 7 + pts.length * 3 > SPOT_MAX) return;
         v.push((KINDS[r.kind] || 1) / 8, pts.length / Q, clamp(r.r, 0.0005, 0.5), clamp(isNum(r.hardness) ? r.hardness : 0.5, 0, 1), clamp(isNum(r.opacity) ? r.opacity : 1, 0, 1), (clamp(r.dx || 0, -1, 1) + 1) / 2, (clamp(r.dy || 0, -1, 1) + 1) / 2);
         pts.forEach(function (q) { v.push(q[0], q[1], q[2]); });
       });
-      return R.data.write(v, SPOT_PARAMS);
+      return R.data.write(v, SPOT_MAX);
     },
     /* Adds a record (points simplified); returns the new full parameter object. */
     add: function (p, rec) {
@@ -659,11 +655,11 @@
       var pts = ptsOf(rec.points || [[rec.x, rec.y, 1]], 4096);
       if (!/polygon/.test(rec.kind || '')) pts = rdp(pts, Math.max(1e-4, (rec.r || 0.01) * 0.15));
       list.push({ kind: rec.kind || 'heal', r: rec.r, hardness: rec.hardness, opacity: rec.opacity, dx: rec.dx, dy: rec.dy, points: pts.slice(0, SPOT_CAP.points) });
-      return Object.assign({}, p, R.spots.write(list));
+      return Object.assign(R.data.strip(p), R.spots.write(list));
     },
-    used: function (p) { return R.data.read(p, SPOT_PARAMS).length / R.data.capacity(SPOT_PARAMS); }
+    used: function (p) { return R.data.read(p, SPOT_PARAMS).length / SPOT_MAX; }
   };
-  function spotKey(p) { var k = []; for (var i = 0; i < SPOT_PARAMS; i++) k.push(p['d' + i]); return JSON.stringify(k); }
+  function spotKey(p) { return FX.keyOf(R.data.read(p, SPOT_PARAMS)); }
   var spotMemo = memo(16);
   function spotDoc(p, w, h) {
     return spotMemo(spotKey(p) + '|' + w + 'x' + h, function () {
@@ -680,16 +676,16 @@
     'uniform sampler2D u_P, u_R; uniform float u_nr, u_ext, u_dmax;',
     'vec4 tP(int i){ return texelFetch(u_P, ivec2(i, 0), 0); }',
     'vec4 tR(int i){ return texelFetch(u_R, ivec2(i, 0), 0); }',
-    'vec2 pos(int i){ vec4 a = tP(2 * i), b = tP(2 * i + 1); return vec2(a.x + a.y, a.z + b.x); }',
-    'float rad(int i){ return tP(2 * i + 1).y; }',
+    'vec2 pos(int i){ vec4 a = tP(2 * i); return vec2(a.x + a.y, a.z + a.w); }',
+    'float rad(int i){ return tP(2 * i + 1).x; }',
     'vec4 fx(){',
     '  vec2 q = docPos(); float m = 0.0, best = 0.0, kind = 0.0; vec2 d = vec2(0.0);',
     '  int nr = int(u_nr + 0.5);',
     '  for (int i = 0; i < 1024; i++) { if (i >= nr) break;',
-    '    vec4 r3 = tR(5 * i + 3), r4 = tR(5 * i + 4);',
-    '    if (q.x < r3.x - u_ext || q.y < r3.y - u_ext || q.x > r3.z + u_ext || q.y > r4.x + u_ext) continue;',
-    '    vec4 r0 = tR(5 * i), r1 = tR(5 * i + 1), r2 = tR(5 * i + 2);',
-    '    int k = int(r0.x + 0.5), n = int(r0.y + 0.5), s0 = int(r0.z + 0.5); float hard = min(r2.y, 0.97), cov = 0.0, gap = 1e9;',
+    '    vec4 r3 = tR(4 * i + 3);',
+    '    if (q.x < r3.x - u_ext || q.y < r3.y - u_ext || q.x > r3.z + u_ext || q.y > r3.w + u_ext) continue;',
+    '    vec4 r0 = tR(4 * i), r1 = tR(4 * i + 1), r2 = tR(4 * i + 2);',
+    '    int k = int(r0.x + 0.5), n = int(r0.y + 0.5), s0 = int(r0.z + 0.5); float hard = min(r2.x, 0.97), cov = 0.0, gap = 1e9;',
     '    if (k <= 2) {',
     '      vec2 a = pos(s0); float ra = rad(s0), nd = 1e9;',
     '      if (n == 1) { float dd = length(q - a); nd = dd / max(ra, 1e-3); gap = dd - ra; }',
@@ -704,37 +700,37 @@
     '        vec2 ab = a - b; float t = clamp(dot(q - b, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0); dm = min(dm, length(q - b - ab * t)); a = b; }',
     '      cov = inside ? smoothstep(0.0, fe, dm) : 0.0; gap = inside ? -dm : dm;',
     '    }',
-    '    cov *= r2.z;',
+    '    cov *= r2.y;',
     '    float score = cov > 0.0 ? 1.0 + cov : (gap < u_ext ? 1.0 - max(gap, 0.0) / u_ext : 0.0);',
     '    if (cov > 0.0) m = 1.0 - (1.0 - m) * (1.0 - cov);',
-    '    if (score > 0.0 && score >= best) { best = score; d = vec2(r1.x + r1.y, r1.z + r2.x); kind = (k == 2 || k == 4) ? 1.0 : 0.0; }',
+    '    if (score > 0.0 && score >= best) { best = score; d = vec2(r1.x + r1.y, r1.z + r1.w); kind = (k == 2 || k == 4) ? 1.0 : 0.0; }',
     '  }',
     '  return vec4(m, kind, 0.5 + d / (2.0 * u_dmax));',
     '}'
   ].join('\n');
   FX.register({
     id: 'spot-heal', name: 'Healing and clone', group: 'retouch', version: 1, space: 'display',
-    params: Object.assign({ blend: { type: 'number', min: 0.2, max: 1.5, default: 0.6, step: 0.05, label: 'Blend radius', help: 'How far around a healed spot the tone and colour are matched, × the largest spot radius.' } }, dataParams(SPOT_PARAMS, 'Spots')),
+    params: Object.assign({ blend: { type: 'number', min: 0.2, max: 1.5, default: 0.6, step: 0.05, label: 'Blend radius', help: 'How far around a healed spot the tone and colour are matched, × the largest spot radius.' } }, { data: R.data.param('Spots', SPOT_MAX, SPOT_PARAMS) }),
     radius: function (p, scale, bx) {
-      var key = spotKey(p), box = hintGet(key, bx), recs = spotDoc(p, box.w, box.h), dm = 0, rm = 0;
+      var box = boxOf(bx), recs = spotDoc(p, box.w, box.h), dm = 0, rm = 0;
       recs.forEach(function (r) { dm = Math.max(dm, Math.hypot(r.dx, r.dy)); rm = Math.max(rm, r.rad); });
       return recs.length ? Math.ceil(dm * scale) + reach(clamp(p.blend * rm, 0.75, 150), scale) + 4 : 0;
     },
     passes: function (g, p) {
       var all = spotDoc(p, g.box.w, g.box.h);
       if (!all.length) return undefined;
-      hintSet(spotKey(p), g.box);
       var D = Math.hypot(g.width, g.height) / g.scale, ox = g.origin[0], oy = g.origin[1];
       var recs = all.filter(function (r) { return !(r.box[2] < ox - D || r.box[0] > ox + D || r.box[3] < oy - D || r.box[1] > oy + D); });
       if (!recs.length) return undefined;
       var rmax = 0, dmax = 1, npt = 0;
       recs.forEach(function (r) { rmax = Math.max(rmax, r.rad); dmax = Math.max(dmax, Math.abs(r.dx), Math.abs(r.dy)); npt += r.pts.length; });
       var sigma = clamp(p.blend * rmax, 0.75, 150), ext = 2.5 * sigma + 2, anyHeal = recs.some(function (r) { return !r.clone; });
-      var P = new Float32Array(Math.max(2, npt * 2) * 4), RR = new Float32Array(Math.max(2, recs.length * 5) * 4), at = 0;
+      /* Four texels a record (kind, points, first point | offset x hi lo, y hi lo | hardness, opacity | box), two a point (x hi lo, y hi lo | radius). */
+      var P = new Float32Array(Math.max(2, npt * 2) * 4), RR = new Float32Array(Math.max(2, recs.length * 4) * 4), at = 0;
       recs.forEach(function (r, i) {
-        var o = i * 20, dx = hiLo(r.dx), dy = hiLo(r.dy);
-        RR.set([r.kind, r.pts.length, at, 1, dx[0], dx[1], dy[0], 1, dy[1], r.hard, r.op, 1, r.box[0] - 2, r.box[1] - 2, r.box[2] + 2, 1, r.box[3] + 2, 0, 0, 1], o);
-        r.pts.forEach(function (q) { var x = hiLo(q[0]), y = hiLo(q[1]); P.set([x[0], x[1], y[0], 1, y[1], q[2], 0, 1], at * 8); at++; });
+        var o = i * 16, dx = hiLo(r.dx), dy = hiLo(r.dy);
+        RR.set([r.kind, r.pts.length, at, 0, dx[0], dx[1], dy[0], dy[1], r.hard, r.op, 0, 0, r.box[0] - 2, r.box[1] - 2, r.box[2] + 2, r.box[3] + 2], o);
+        r.pts.forEach(function (q) { var x = hiLo(q[0]), y = hiLo(q[1]); P.set([x[0], x[1], y[0], y[1], q[2], 0, 0, 0], at * 8); at++; });
       });
       var cov = g.pass(SPOT_COV, { u_P: g.lut1d(P, 4), u_R: g.lut1d(RR, 4), u_nr: recs.length, u_ext: ext, u_dmax: dmax });
       var S = g.pass('uniform sampler2D u_cov; uniform float u_dmax;\nvec4 fx(){ vec4 c = texture(u_cov, v_uv); vec2 d = (c.ba - 0.5) * 2.0 * u_dmax; d = floor(d * u_scale + 0.5) / u_scale; return texture(u_src, v_uv + docToUV(d)); }', { u_cov: cov, u_dmax: dmax });
@@ -823,7 +819,7 @@
      q + D. Reach = max |D| in target pixels + 3. One pass after the mesh upload (4 small data textures, hi/lo split for
      exact positions in half floats).
      ====================================================================================================================== */
-  var LIQ_PARAMS = 12, LIQ_TOOLS = ['', 'forward', 'twirl-cw', 'twirl-ccw', 'pucker', 'bloat', 'push-left', 'reconstruct', 'smooth', 'freeze', 'thaw'];
+  var LIQ_PARAMS = 12, LIQ_MAXV = 12 * 256 - 1, LIQ_TOOLS = ['', 'forward', 'twirl-cw', 'twirl-ccw', 'pucker', 'bloat', 'push-left', 'reconstruct', 'smooth', 'freeze', 'thaw'];
   var LIQ_NODES = 128, LIQ_MAX = 0.15;
   R.liquify = {
     params: LIQ_PARAMS, tools: LIQ_TOOLS.slice(1), nodes: LIQ_NODES, maxDisplacement: LIQ_MAX,
@@ -840,22 +836,22 @@
       return out;
     },
     write: function (list) {
-      var v = [], cap = R.data.capacity(LIQ_PARAMS);
+      var v = [], cap = LIQ_MAXV;
       list.slice(0, 256).forEach(function (r) {
         var pts = ptsOf(r.points, 1024);
         if (!pts.length || v.length + 6 + pts.length * 3 > cap) return;
         v.push(Math.max(1, LIQ_TOOLS.indexOf(r.tool)) / 16, pts.length / Q, clamp(r.size, 0.001, 0.5), clamp(isNum(r.pressure) ? r.pressure : 0.5, 0.01, 1), clamp(isNum(r.density) ? r.density : 0.5, 0, 1), 0);
         pts.forEach(function (q) { v.push(q[0], q[1], q[2]); });
       });
-      return R.data.write(v, LIQ_PARAMS);
+      return R.data.write(v, LIQ_MAXV);
     },
     add: function (p, rec) {
       var list = R.liquify.read(p), pts = ptsOf(rec.points, 4096);
       if (rec.tool === 'forward' || rec.tool === 'push-left') pts = rdp(pts, Math.max(1e-4, (rec.size || 0.05) * 0.08));
       list.push({ tool: rec.tool || 'forward', size: rec.size || 0.05, pressure: rec.pressure, density: rec.density, points: pts });
-      return Object.assign({}, p, R.liquify.write(list));
+      return Object.assign(R.data.strip(p), R.liquify.write(list));
     },
-    used: function (p) { return R.data.read(p, LIQ_PARAMS).length / R.data.capacity(LIQ_PARAMS); }
+    used: function (p) { return R.data.read(p, LIQ_PARAMS).length / LIQ_MAXV; }
   };
   function Mesh(w, h) {
     var L = Math.max(w, h), sp = L / (LIQ_NODES - 1), nx = Math.min(LIQ_NODES, Math.ceil(w / sp - 1e-9) + 1), ny = Math.min(LIQ_NODES, Math.ceil(h / sp - 1e-9) + 1);
@@ -939,7 +935,7 @@
       var d = new Float32Array(4096 * 4);
       for (var t = 0; t < 4096; t++) {
         var n = k * 4096 + t; if (n >= m.dx.length) break;
-        d[t * 4] = m.dx[n]; d[t * 4 + 1] = m.dy[n]; d[t * 4 + 3] = 1;
+        d[t * 4] = m.dx[n]; d[t * 4 + 1] = m.dy[n];
       }
       luts.push(g.lut1d(d, 4));
     }
@@ -974,17 +970,17 @@
   }
   R._gl = { WARP: WARP, CUBIC: CUBIC, meshLuts: meshLuts };
   var liqMemo = memo(8);
-  function liqKey(p) { var k = []; for (var i = 0; i < LIQ_PARAMS; i++) k.push(p['d' + i]); return JSON.stringify(k); }
+  function liqKey(p) { return FX.keyOf(R.data.read(p, LIQ_PARAMS)); }
   function liqMesh(p, w, h) { return liqMemo(liqKey(p) + '|' + w + 'x' + h, function () { return R.liquify.mesh(R.liquify.read(p), w, h); }); }
   FX.register({
     id: 'liquify', name: 'Liquify', group: 'geometry', version: 1, space: 'linear',
-    params: dataParams(LIQ_PARAMS, 'Strokes'),
+    params: { data: R.data.param('Strokes', LIQ_MAXV, LIQ_PARAMS) },
     radius: function (p, scale, bx) {
-      var key = liqKey(p); if (!R.liquify.read(p).length) return 0;
-      var box = hintGet(key, bx);
+      if (!R.liquify.read(p).length) return 0;
+      var box = boxOf(bx);
       return Math.ceil(liqMesh(p, box.w, box.h).max * scale) + 3;
     },
-    passes: function (g, p) { hintSet(liqKey(p), g.box); return warpPasses(g, liqMesh(p, g.box.w, g.box.h)); },
+    passes: function (g, p) { return warpPasses(g, liqMesh(p, g.box.w, g.box.h)); },
     support: GPU(80),
     ui: { section: 'Geometry', order: 60, controls: [] },
     agent: {
@@ -1044,10 +1040,10 @@
     rig: function (layer, index) {
       var a = R.face.anchors(layer, index); if (!a) return null;
       var v = [a.length / 100]; a.forEach(function (q) { v.push((clamp(q[0], -0.5, 1.5) + 0.5) / 2, (clamp(q[1], -0.5, 1.5) + 0.5) / 2); });
-      return { rig: R.data.write(v, 1, 'rig').rig0 };
+      return R.data.write(v, 255, 'rig');
     },
     readRig: function (p) {
-      var v = R.data.read({ rig0: p.rig }, 1, 'rig'), n = Math.round((v[0] || 0) * 100), out = [];
+      var v = R.data.read(p, 0, 'rig'), n = Math.round((v[0] || 0) * 100), out = [];
       for (var i = 0; i < n && 2 + i * 2 <= v.length; i++) out.push([v[1 + i * 2] * 2 - 0.5, v[2 + i * 2] * 2 - 0.5]);
       return out.length >= RIG_IDX.length ? out : null;
     },
@@ -1126,15 +1122,14 @@
   };
   var faceMemo = memo(8);
   function faceMesh(p, w, h) { return faceMemo(JSON.stringify(p) + '|' + w + 'x' + h, function () { return R.face.mesh(p, w, h); }); }
-  var FACE_PARAMS = { rig: R.data.param('Face anchors') };
+  var FACE_PARAMS = { rig: R.data.param('Face anchors', 255) };
   FACE_SLIDERS.forEach(function (d) { FACE_PARAMS[d[0]] = { type: 'number', min: -d[2], max: d[2], default: 0, step: d[3] === 'deg' ? 0.5 : 1, unit: d[3] === 'deg' ? 'deg' : '%', label: d[1] }; });
   FX.register({
     id: 'face-liquify', name: 'Face-aware liquify', group: 'geometry', version: 1, space: 'linear',
     params: FACE_PARAMS,
-    radius: function (p, scale, bx) { if (!faceOn(p)) return 0; var box = hintGet(JSON.stringify(p), bx); return Math.ceil(faceMesh(p, box.w, box.h).max * scale) + 3; },
+    radius: function (p, scale, bx) { if (!faceOn(p)) return 0; var box = boxOf(bx); return Math.ceil(faceMesh(p, box.w, box.h).max * scale) + 3; },
     passes: function (g, p) {
       if (!faceOn(p)) return undefined;
-      hintSet(JSON.stringify(p), g.box);
       return warpPasses(g, faceMesh(p, g.box.w, g.box.h));
     },
     support: GPU(80),
@@ -1177,10 +1172,9 @@
       rotation: { type: 'angle', default: 0, label: 'Rotation' },
       angle: { type: 'angle', default: 0, label: 'Shift direction' }
     },
-    radius: function (p, scale, bx) { if (!p.amount) return 0; var box = hintGet('shape|' + JSON.stringify(p), bx); return Math.ceil(Math.abs(p.amount) / 100 * Math.max(p.rx * box.w, p.ry * box.h) * scale) + 3; },
+    radius: function (p, scale, bx) { if (!p.amount) return 0; var box = boxOf(bx); return Math.ceil(Math.abs(p.amount) / 100 * Math.max(p.rx * box.w, p.ry * box.h) * scale) + 3; },
     passes: function (g, p) {
       if (!p.amount) return undefined;
-      hintSet('shape|' + JSON.stringify(p), g.box);
       var b = g.box, a = p.amount / 100 * 0.5, mode = ['scale', 'squeeze', 'shift'].indexOf(p.mode);
       return g.pass(CUBIC + [
         'uniform vec4 u_e; uniform vec4 u_k;',

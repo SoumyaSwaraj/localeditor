@@ -419,9 +419,10 @@
       u_im: [d / det, -b / det, -c / det, a / det],
       u_res: [tw, th], u_texel: [1 / tw, 1 / th], u_scale: [env.sx * kx, env.sy * ky], u_box: env.box,
       u_abs: [Math.round(env.abs[0] * kx), Math.round(env.abs[1] * ky)], u_dm: [env.dm[0] / kx, env.dm[1] / ky, env.dm[2] / kx, env.dm[3] / ky], u_dt: env.dt, u_origin: env.dt,
-      u_img: env.img, u_uvr: [0, 0, 1, 1], u_flip: 0, u_dither: 0, u_dsrgb: 0
+      u_img: env.img, u_uvr: [0, 0, 1, 1], u_flip: 0, u_dither: 0, u_dsrgb: 0, u_frame: env.frame || FRAME0
     };
   }
+  var FRAME0 = [0, 0, 1, 1];
   function Run(env, input) {
     this.env = env;
     this.cur = input;            /* { t, w, h, space, borrowed } */
@@ -621,18 +622,21 @@
      The numbers follow LE.expert.evalMask (assets/js/expert/controls/mask.js), the workspace's CPU reference; tests compare the two.
      Parts start from nothing: add is max(m, v), subtract m·(1 − v), intersect m·v (a first part that intersects sets the mask).
      feather (0–1) shapes linear and radial parts only; `blur` (document pixels) softens any part and is this renderer's own addition. */
-  var MASK_HEAD = 'uniform sampler2D u_prev, u_pre, u_map; uniform float u_first, u_usePre, u_inv, u_den, u_mode; uniform mat3 u_hinv; uniform vec4 u_crop; uniform float m_p[8];\n' +
-    'vec2 warpUV(){ vec3 q = u_hinv * vec3(boxUV(), 1.0); return q.z > 1e-6 ? q.xy / q.z : vec2(-1.0); }\n' +
+  var MASK_HEAD = 'uniform sampler2D u_prev, u_pre, u_map; uniform float u_first, u_usePre, u_inv, u_den, u_mode; uniform mat3 u_hinv; uniform vec4 u_crop, u_frame; uniform float m_p[8];\n' +
+    /* Mask coordinates are fractions of the layer box. In the source stage of a RAW/HDR layer the working box is the uncropped
+       photo; u_frame says where the layer box sits inside it, so masks there use the same coordinates as everywhere else. */
+    'vec2 maskUV(){ return (boxUV() - u_frame.xy) / u_frame.zw; }\n' +
+    'vec2 warpUV(){ vec3 q = u_hinv * vec3(maskUV(), 1.0); return q.z > 1e-6 ? q.xy / q.z : vec2(-1.0); }\n' +
     'vec2 srcUV(){ return u_crop.xy + warpUV() * u_crop.zw; }\n' +
     'float in01(vec2 u){ return step(0.0, u.x) * step(u.x, 1.0) * step(0.0, u.y) * step(u.y, 1.0); }\n' +
     'vec3 rgb2hsl(vec3 c){ float mx = max(max(c.r, c.g), c.b), mn = min(min(c.r, c.g), c.b), l = (mx + mn) * 0.5, d = mx - mn; if (d <= 1e-6) return vec3(0.0, 0.0, l); float s = l > 0.5 ? d / (2.0 - mx - mn) : d / (mx + mn); float h = mx == c.r ? (c.g - c.b) / d + (c.g < c.b ? 6.0 : 0.0) : mx == c.g ? (c.b - c.r) / d + 2.0 : (c.r - c.g) / d + 4.0; return vec3(h * 60.0, s, l); }\n' +
     'vec3 dispRGB(){ vec4 s = texture(u_src, v_uv); vec3 c = unpremul(s); return clamp(DISP(c), 0.0, 1.0); }\n';
   var MASK_KIND = {
-    linear: 'float part(){ vec2 a = vec2(m_p[0], m_p[1]), d = vec2(m_p[2], m_p[3]) - a; float t = clamp(dot(boxUV() - a, d) / max(dot(d, d), 1e-6), 0.0, 1.0); return 1.0 - (t + (t * t * (3.0 - 2.0 * t) - t) * m_p[4]); }',
-    radial: 'float part(){ vec2 u = boxUV() - vec2(m_p[0], m_p[1]); float r = radians(m_p[4]), cs = cos(r), sn = sin(r); vec2 q = vec2(u.x * cs + u.y * sn, -u.x * sn + u.y * cs) / max(vec2(m_p[2], m_p[3]), vec2(1e-4)); float d = length(q); float f = max(m_p[5], fwidth(d)); return 1.0 - smoothstep(1.0 - f, 1.0 + 1e-6, d); }',
+    linear: 'float part(){ vec2 a = vec2(m_p[0], m_p[1]), d = vec2(m_p[2], m_p[3]) - a; float t = clamp(dot(maskUV() - a, d) / max(dot(d, d), 1e-6), 0.0, 1.0); return 1.0 - (t + (t * t * (3.0 - 2.0 * t) - t) * m_p[4]); }',
+    radial: 'float part(){ vec2 u = maskUV() - vec2(m_p[0], m_p[1]); float r = radians(m_p[4]), cs = cos(r), sn = sin(r); vec2 q = vec2(u.x * cs + u.y * sn, -u.x * sn + u.y * cs) / max(vec2(m_p[2], m_p[3]), vec2(1e-4)); float d = length(q); float f = max(m_p[5], fwidth(d)); return 1.0 - smoothstep(1.0 - f, 1.0 + 1e-6, d); }',
     luma: 'float part(){ float l = luma(dispRGB()); float s = max(m_p[2], 1e-3); return smoothstep(m_p[0] - s, m_p[0], l) * (1.0 - smoothstep(m_p[1], m_p[1] + s, l)); }',
     color: 'float part(){ vec3 h = rgb2hsl(dispRGB()); float dh = abs(h.x - m_p[0]); dh = dh > 180.0 ? 360.0 - dh : dh; float k = min(1.0, h.y * 2.5); float d = dh / 180.0 * k + abs(h.y - m_p[1]) * 0.25 + abs(h.z - m_p[2]) * 0.25 + (1.0 - k) * 0.5; return 1.0 - smoothstep(m_p[3], m_p[3] + max(m_p[4], 1e-3), d); }',
-    asset: 'float part(){ vec2 u = boxUV(); vec4 m = texture(u_map, u); return (m.r + m.g + m.b) / 3.0 * in01(u); }',
+    asset: 'float part(){ vec2 u = maskUV(); vec4 m = texture(u_map, u); return (m.r + m.g + m.b) / 3.0 * in01(u); }',
     subject: 'float part(){ if (m_p[7] > 0.5) return 1.0; return texture(u_map, srcUV()).a * in01(warpUV()); }',
     segment: 'float part(){ if (m_p[7] > 0.5) return 1.0; vec4 m = texture(u_map, srcUV()); float v = m_p[0] < 0.5 ? m.r : m_p[0] < 1.5 ? m.g : m_p[0] < 2.5 ? m.b : m_p[0] < 3.5 ? m.r : 1.0 - m.r; return v * in01(warpUV()); }',
     depth: 'float part(){ if (m_p[7] > 0.5) return 1.0; float d = 1.0 - texture(u_map, srcUV()).r; float s = max(m_p[2], 1e-3); return smoothstep(m_p[0] - s, m_p[0], d) * (1.0 - smoothstep(m_p[1], m_p[1] + s, d)) * in01(warpUV()); }',
@@ -702,12 +706,30 @@
     face: 'vec4 fx(){ float v = texture(u_map, srcUV()).a * in01(warpUV()); return vec4(v, v, v, 1.0); }',
     segments: 'uniform sampler2D u_map2; uniform float u_has2;\nvec4 fx(){ vec2 u = srcUV(); float k = in01(warpUV()); vec3 m = texture(u_map, u).rgb; return vec4(m * k, (u_has2 > 0.5 ? texture(u_map2, u).r : 0.0) * k); }'
   };
+  /* An env whose working rectangle is the whole layer box at w × h: there v_uv and boxUV() are the same thing. */
+  function wholeEnv(env, w, h) {
+    var e = {};
+    Object.keys(env).forEach(function (q) { e[q] = env[q]; });
+    e.rw = w; e.rh = h; e.sx = w / env.box[0]; e.sy = h / env.box[1]; e.dm = [env.box[0] / w, 0, 0, env.box[1] / h]; e.dt = [0, 0]; e.abs = [0, 0]; e.img = [0, 0, 1, 1];
+    return e;
+  }
   RP.mapHandle = function (kind, o) {
     if (!Object.prototype.hasOwnProperty.call(MAP_BODY, kind)) return null;
     o = o || {};
     var env = this.env, layer = env.layer || {}, part = kind === 'face' ? String(o.part || 'skin').replace(/[A-Z]/g, function (c) { return '-' + c.toLowerCase(); }) : '';
-    var key = kind + ':' + part, hit = this.shared('map', this, key);
+    /* o.whole: the map over the whole layer box (sample it with boxUV()), reduced to o.maxSide (default 512) and the same for
+       every tile, for effects that follow the map further than a tile reaches. */
+    var whole = null;
+    if (o.whole) {
+      var side = Math.max(16, Math.min(2048, o.maxSide || 512)), wk = side / Math.max(1, env.box[0], env.box[1]);
+      whole = wholeEnv(env, Math.max(1, Math.round(env.box[0] * wk)), Math.max(1, Math.round(env.box[1] * wk)));
+    }
+    var key = kind + ':' + part + (whole ? '|whole' + whole.rw + 'x' + whole.rh : ''), hit = this.shared('map', this, key);
     if (hit) { hit.users = (hit.users || 0) + 1; return hit; }
+    if (whole) this.env = whole;
+    try { return this.mapMake(kind, part, key, env, layer); } finally { this.env = env; }
+  };
+  RP.mapMake = function (kind, part, key, env, layer) {
     var map = null, map2 = null, sg = layer.maps && layer.maps.segments;
     if (kind === 'segments') { map = sg && sg.asset && env.assets ? env.assets(sg.asset) : null; map2 = map && sg.clothes && sg.clothes.asset ? env.assets(sg.clothes.asset) : null; }
     else map = this.mapFor({ kind: kind, part: part });
@@ -715,6 +737,7 @@
     if (!map) { this.pass('uniform float u_v; vec4 fx(){ return vec4(u_v); }', { u_v: kind === 'depth' ? 0 : 1 }, out, 'map:none'); out.missing = true; }
     else this.pass(MASK_HEAD.replace('DISP(c)', 'c') + MAP_BODY[kind], { u_map: { t: upload(map) }, u_map2: map2 ? { t: upload(map2) } : null, u_has2: map2 ? 1 : 0, u_hinv: env.hinv || [1, 0, 0, 0, 1, 0, 0, 0, 1], u_crop: env.crop || [0, 0, 1, 1], m_p: new Float32Array(8) }, out, 'map:' + kind);
     out.users = 1;
+    if (this.env !== env) out.whole = true;
     return this.share('map', this, key, out);
   };
   RP.mapFor = function (part) {
@@ -785,6 +808,7 @@
     var g = {
       width: env.rw, height: env.rh, scale: Math.max(env.sx, env.sy), scaleXY: [env.sx, env.sy], box: { w: env.box[0], h: env.box[1] }, origin: env.dt.slice(),
       draft: !!env.draft, float: S.caps.float, space: def.space,
+      gamut: env.p3 ? 'display-p3' : 'srgb',   /* what the render is for: an effect that compresses or clips to a gamut aims at this one */
       px: function (v) { return v * Math.max(env.sx, env.sy); },
       rgb: function (color, space) {
         var c = M.parseColor(color) || [0, 0, 0, 1];
@@ -806,6 +830,24 @@
          opts: { maxSide (default 512) } or { scale }. Returns a handle (8-bit, display-referred, premultiplied) to sample with
          boxUV(), or null for float sources. In the silhouette stage it is the layer as it enters that stage, alpha included. */
       whole: function (opts) { return env.whole ? env.whole(entry, opts || {}) : null; },
+      /* g.far({ maxSide: 512 }, function (w) { … return handle; }): builds passes over the whole layer box instead of the
+         working rectangle. w is a builder like g (w.pass, w.blur, w.downsample, w.scale, w.width …) whose target is the box
+         reduced to maxSide and whose w.source is g.whole() at that size, in the effect's space. What it returns is the same
+         for every tile: sample it with boxUV(). For rays, streaks and anything else that reads far across the picture, so the
+         effect's radius() need not cover that distance. Null when there is no whole picture to read. */
+      far: function (opts, fn) {
+        var W = g.whole(opts || {});
+        if (!W || typeof fn !== 'function') return null;
+        var keep = run.env;
+        run.env = wholeEnv(keep, W.w, W.h);
+        try {
+          var gw = builder(run, entry), src = W;
+          if (def.space !== 'display') { src = run.handle(1, 'linear'); run.pass('vec4 fx(){ vec4 s = texture(u_src, v_uv); return vec4(toLinear(unpremul(s)) * s.a, s.a); }', { u_src: W }, src, 'whole:linear'); }
+          Object.defineProperty(gw, 'source', { enumerable: true, configurable: true, value: src });
+          gw.far = function () { return null; };
+          return fn(gw) || null;
+        } finally { run.env = keep; }
+      },
       pass: function (frag, uniforms, opts) {
         opts = opts || {};
         var values = {}, k;
@@ -840,6 +882,9 @@
       mask: function (maskDef) { var r = FX.cleanMask(maskDef); return run.mask(r.mask, g.source) || run.constant(1); },
       alpha: function () { var out = run.handle(1, def.space === 'oklab' ? 'linear' : def.space); return run.pass('vec4 fx(){ return vec4(texture(u_src, v_uv).a); }', { u_src: g.source }, out, 'alpha'); },
       scene: function () { return env.scene || null; },
+      /* The layer directly below this one, drawn alone (premultiplied, display-referred) and aligned with the working rectangle:
+         .a is its alpha, .rgb its colour. Null unless the effect declares `below` in needs and there is such a layer. */
+      below: function () { return env.below || null; },
       stats: function () { return env.stats ? env.stats(entry) : null; },
       /* A map of the layer as a handle: 'depth', 'subject', 'face' ({ part }), 'segments'. handle.missing says the layer has none. */
       map: function (kind, opts) { return run.mapHandle(kind, opts); },
@@ -848,7 +893,7 @@
       subject: function () { return env.subject ? env.subject(def.space === 'display' ? 'display' : 'linear') : null; },
       release: function (h) { run.free(h); }
     };
-    Object.defineProperty(g, 'source', { enumerable: true, get: function () {
+    Object.defineProperty(g, 'source', { enumerable: true, configurable: true, get: function () {
       if (ops.length) throw new Error('LE.fx: "' + def.id + '" mixes g.color with passes; an effect does one or the other.');
       usedSource = true;
       var srcH = run.flush(def.space === 'oklab' ? 'linear' : def.space);
@@ -967,7 +1012,7 @@
     var src = job.source, W0 = src.naturalWidth || src.width, H0 = src.naturalHeight || src.height;
     var res = FX.resolve(job.fx);
     var stageA = res.entries.filter(function (e) { return !e.def.silhouette; });
-    var stageB = res.entries.filter(function (e) { return e.def.silhouette && e.def.needs.indexOf('scene') < 0; });
+    var stageB = res.entries.filter(function (e) { return e.def.silhouette && !e.def.drawTime; });
     var floatSrc = isData(src);
     if (!floatSrc && !res.entries.length && !job.cut && !job.clip && !job.mask && !job.quad && !job.pad && !job.colorSpace && !job.outline) {
       /* Nothing to do (an empty stack, or only entries that are off or unknown): the same pixels back, without a round trip. */
@@ -1045,6 +1090,11 @@
      which the texture's own edge clamp continues; a border wider than the picture itself adds work and no information, so a
      small picture under a very wide stack stays small. */
   function nearOf(reach, grid, OW, OH) { return Math.min(reach, 2 * grid, Math.max(64, OW, OH)); }
+  /* Whether one rectangle can hold the whole picture and its border (the same test as eachTile). */
+  function fitsOne(W, H, pad, reach) {
+    var OW = W + 2 * pad, OH = H + 2 * pad, grid = gridFor(reach, OW, OH), near = nearOf(reach, grid, OW, OH), sw = OW + 2 * near + 2 * grid, sh = OH + 2 * near + 2 * grid;
+    return !S.cfg.tile && sw <= S.caps.maxTex && sh <= S.caps.maxTex && sw * sh <= maxArea();
+  }
   /* Rectangle pixels a render will touch, summed over its tiles (the same arithmetic as eachTile). */
   function workOf(W, H, pad, reach, spatial) {
     var grid = gridFor(reach, W + 2 * pad, H + 2 * pad), OW = W + 2 * pad, OH = H + 2 * pad;
@@ -1118,23 +1168,35 @@
   };
 
   function tiles(source, W, H, o) {
-    var job = o.job, sc = Math.max(o.sx, o.sy), pad = capPad(o.pad || 0, W, H);
+    var gl = S.gl, job = o.job, sc = Math.max(o.sx, o.sy), pad = capPad(o.pad || 0, W, H);
     var listA = o.entries || [], listB = o.entriesB || [];
     var mask = o.alpha && job.mask ? FX.cleanMask(job.mask).mask : null;
     var cut = o.alpha ? job.cut : null;
     var cutSigma = cut && cut.feather > 0 ? cut.feather / 2 : 0;
-    var reach = capReach(reachOf(listA.concat(listB), sc, mask ? [mask] : [], { w: o.box[0], h: o.box[1] }) + (cutSigma ? M.blurReach(cutSigma * sc) : 0));
-    if (reach > 0 && !isData(source) && Math.max(W, H) > 96 && workOf(W, H, pad, reach, true) > workMax(job.preview)) {
+    var asked = reachOf(listA.concat(listB), sc, mask ? [mask] : [], { w: o.box[0], h: o.box[1] }) + (cutSigma ? M.blurReach(cutSigma * sc) : 0), reach = capReach(asked);
+    /* A preview that has to be tiled and whose stack reads further than a tile can carry is rendered smaller until the reach
+       fits: clamping it would cost the most work for a picture with seams. (An export keeps its size and the clamp, with the note.) */
+    var tiled = !!job.preview && reach > 0 && !fitsOne(W, H, pad, reach), tooFar = tiled && asked > reach;
+    /* The same when tiling it would be mostly overlap: tiles whose borders are many times their core cost more than twelve
+       times the picture's own area, where a smaller single rectangle shows the same preview for a fraction of the work. */
+    var wasteful = tiled && workOf(W, H, pad, reach, true) > 12 * (W + 2 * pad) * (H + 2 * pad);
+    if (reach > 0 && !isData(source) && Math.max(W, H) > 96 && (tooFar || wasteful || workOf(W, H, pad, reach, true) > workMax(job.preview))) {
       note('work', 'This stack is very wide for the picture size; it is rendered at reduced resolution to stay responsive.');
       var small = halve(source), o2 = {};
       Object.keys(o).forEach(function (k) { o2[k] = o[k]; });
       o2.sx = o.sx * small.width / W; o2.sy = o.sy * small.height / H; o2.pad = (o.pad || 0) / 2; o2.key = o.key ? o.key + '|half' : null;
       return tiles(small, small.width, small.height, o2);
     }
-    var out = makeCanvas(W + 2 * pad, H + 2 * pad), octx;
-    try { octx = out.getContext('2d', job.colorSpace === 'display-p3' ? { colorSpace: 'display-p3' } : undefined); } catch (e) { octx = out.getContext('2d'); }
-    var p3 = job.colorSpace === 'display-p3' && S.caps.p3;
-    try { if (S.caps.p3) { var want = p3 ? 'display-p3' : 'srgb'; if (S.gl.drawingBufferColorSpace !== want) S.gl.drawingBufferColorSpace = want; } } catch (e2) { p3 = false; }
+    /* job.out.float: the result stays float (premultiplied RGBA, display-referred, unclamped) as a data source for a further
+       stage, instead of an 8-bit canvas. job.out.rect takes only that part of it (the crop of a RAW layer). */
+    var fo = job.out && job.out.float && S.caps.float && !pad ? (job.out.rect || [0, 0, W, H]) : null, fdata = fo ? new Float32Array(fo[2] * fo[3] * 4) : null;
+    var out = fo ? null : makeCanvas(W + 2 * pad, H + 2 * pad), octx = null;
+    if (out) { try { octx = out.getContext('2d', job.colorSpace === 'display-p3' ? { colorSpace: 'display-p3' } : undefined); } catch (e) { octx = out.getContext('2d'); } }
+    /* Display P3: the shader writes P3-encoded values and they are read back into the P3 canvas as they are. The drawing buffer
+       keeps its sRGB tag: once a context has presented in sRGB, the browser takes a P3 drawing buffer through sRGB on its way
+       to a 2D canvas, which clips exactly the colours P3 was asked for. */
+    var p3 = job.colorSpace === 'display-p3' && S.caps.p3 && !!octx;
+    try { if (p3) { var oa = octx.getContextAttributes ? octx.getContextAttributes() : null; p3 = !!oa && oa.colorSpace === 'display-p3'; } } catch (e2) { p3 = false; }
     var hinv = null, whole = null, ident = [1, 0, 0, 0, 1, 0, 0, 0, 1];
     if (job.quad) { var hm = Q.homography(job.quad); hinv = hm && Q.invert(hm); }
     var clipTex = o.alpha && job.clip ? upload(job.clip) : null;
@@ -1143,10 +1205,10 @@
     eachTile({ W: W, H: H, pad: pad, reach: reach, spatial: reach > 0 }, function (t) {
       var env = {
         rw: t.rw, rh: t.rh, sx: o.sx, sy: o.sy, dm: [1 / o.sx, 0, 0, 1 / o.sy], dt: [t.x0 / o.sx, t.y0 / o.sy], box: o.box, abs: [t.x0, t.y0], grid: t.grid,
-        img: t.img, draft: o.draft, crop: job.crop || [0, 0, 1, 1], hinv: hinv, assets: job.assets, layer: job.layer, subjectCanvas: job.subject || (job.cut ? job.cut.alpha : null), scene: null, stats: stats, whole: whole2
+        img: t.img, draft: o.draft, crop: job.crop || [0, 0, 1, 1], frame: job.frame || null, p3: p3, hinv: hinv, assets: job.assets, layer: job.layer, subjectCanvas: job.subject || (job.cut ? job.cut.alpha : null), scene: null, stats: stats, whole: whole2
       };
       var run;
-      var cacheKey = o.key && t.single && job.preview ? M.hash([o.key, W, H, t.x0, t.y0, t.rw, t.rh, o.draft ? 1 : 0, S.caps.float ? 1 : 0, job.quad ? JSON.stringify(job.quad) : ''].join('|')) : null;
+      var cacheKey = o.key && t.single && job.preview ? M.hash([o.key, W, H, t.x0, t.y0, t.rw, t.rh, o.draft ? 1 : 0, S.caps.float ? 1 : 0, job.quad ? JSON.stringify(job.quad) : '', p3 ? 'p3' : ''].join('|')) : null;
       if (hinv) {
         whole = whole || upload(source, { mips: !isData(source) });
         run = new Run(env, { t: whole, w: whole.w, h: whole.h, space: isData(source) && source.space !== 'display' ? 'linear' : 'display', borrowed: true });
@@ -1173,8 +1235,26 @@
           }
         }
         if (listB.length) stageB(run, env, listB);
-        run.flush('display', { uvr: t.uvr, w: t.cw, h: t.ch, p3: p3 });
-        octx.drawImage(S.canvas, 0, 0, t.cw, t.ch, t.tx + pad, t.ty + pad, t.cw, t.ch);
+        if (fo) {
+          var fh = run.flush('display');
+          if (fh.borrowed || fh.t.fmt !== 'f16' || fh.w !== t.rw || fh.h !== t.rh) { var fc = run.handle(1, 'display', 'f16'); run.pass('vec4 fx(){ return texture(u_src, v_uv); }', { u_src: fh }, fc, 'copy'); fh = fc; }
+          var ix0 = Math.max(t.tx, fo[0]), iy0 = Math.max(t.ty, fo[1]), ix1 = Math.min(t.tx + t.cw, fo[0] + fo[2]), iy1 = Math.min(t.ty + t.ch, fo[1] + fo[3]);
+          if (ix1 > ix0 && iy1 > iy0) {
+            fbo(fh.t);
+            gl.pixelStorei(gl.PACK_ROW_LENGTH, fo[2]);
+            gl.readPixels(ix0 - t.x0, iy0 - t.y0, ix1 - ix0, iy1 - iy0, gl.RGBA, gl.FLOAT, fdata, ((iy0 - fo[1]) * fo[2] + (ix0 - fo[0])) * 4);
+            gl.pixelStorei(gl.PACK_ROW_LENGTH, 0);
+          }
+        } else {
+          run.flush('display', { uvr: t.uvr, w: t.cw, h: t.ch, p3: p3 });
+          if (p3) {
+            var pb = new Uint8Array(t.cw * t.ch * 4), pid = octx.createImageData(t.cw, t.ch), pd = pid.data, py, pi, pa, row = t.cw * 4;
+            gl.readPixels(0, S.canvas.height - t.ch, t.cw, t.ch, gl.RGBA, gl.UNSIGNED_BYTE, pb);
+            for (py = 0; py < t.ch; py++) pd.set(pb.subarray((t.ch - 1 - py) * row, (t.ch - py) * row), py * row);
+            for (pi = 3; pi < pd.length; pi += 4) { pa = pd[pi]; if (pa > 0 && pa < 255) { pd[pi - 3] = pd[pi - 3] * 255 / pa; pd[pi - 2] = pd[pi - 2] * 255 / pa; pd[pi - 1] = pd[pi - 1] * 255 / pa; } }
+            octx.putImageData(pid, t.tx + pad, t.ty + pad);
+          } else octx.drawImage(S.canvas, 0, 0, t.cw, t.ch, t.tx + pad, t.ty + pad, t.cw, t.ch);
+        }
       } finally {
         run.done();
         if (run.tex && run.texFresh) kill(run.tex);
@@ -1183,6 +1263,7 @@
     if (whole && !job.preview) freeUpload(whole);
     wholes.forEach(kill);
     trim(0);
+    if (fo) out = { data: fdata, width: fo[2], height: fo[3], channels: 4, space: 'display' };
     out._fx = { pad: pad / sc, padX: pad / o.sx, padY: pad / o.sy, padPx: pad, w: W, h: H };
     return out;
   }
@@ -1203,17 +1284,24 @@
     return function (entry, o) {
       var idx = list.indexOf(entry), inB = idx < 0 && !!listB && listB.indexOf(entry) >= 0;
       if (inB) idx = list.length;
-      if (idx < 0 || isData(source)) return null;
-      var W = source.naturalWidth || source.width, H = source.naturalHeight || source.height;
+      if (idx < 0) return null;
+      var W = source.naturalWidth || source.width, H = source.naturalHeight || source.height, jm = job.matrix || null;
+      /* Draw time: the source is a region of device pixels; the whole picture is the layer box, as far as the region shows it. */
+      if (jm) { W = Math.max(1, Math.round(job.box.w * job.scale)); H = Math.max(1, Math.round(job.box.h * job.scale)); }
       var k = o.scale > 0 ? Math.min(1, Math.max(1 / 64, o.scale)) : Math.min(1, Math.max(16, Math.min(2048, o.maxSide || 512)) / Math.max(W, H));
       var w = Math.max(1, Math.round(W * k)), h = Math.max(1, Math.round(H * k)), key = idx + '|' + w + 'x' + h;
       if (memo[key]) return memo[key];
-      var small = makeCanvas(w, h), sx = small.getContext('2d');
-      sx.imageSmoothingQuality = 'high';
-      sx.drawImage(source, 0, 0, w, h);
+      var small;
+      if (jm) {
+        small = makeCanvas(w, h); var mx = small.getContext('2d'), kx = w / job.box.w, ky = h / job.box.h;
+        mx.imageSmoothingQuality = 'high';
+        mx.setTransform(jm[0] * kx, jm[1] * ky, jm[2] * kx, jm[3] * ky, jm[4] * kx, jm[5] * ky);
+        mx.drawImage(source, 0, 0);
+      } else if (isData(source)) small = dataCanvas(source, w, h);
+      else { small = makeCanvas(w, h); var sx = small.getContext('2d'); sx.imageSmoothingQuality = 'high'; sx.drawImage(source, 0, 0, w, h); }
       var before = list.slice(0, idx).map(function (e) { return { id: e.id, type: e.type, p: e.p, amount: e.amount, blend: e.blend, mask: e.mask }; });
       var gate = inB && alphaOn && (job.mask || job.cut || job.clip);
-      var img = before.length || job.quad || gate ? renderImage({ source: small, box: job.box, fx: before, quad: job.quad || null, crop: job.crop, assets: job.assets, layer: job.layer, subject: job.subject || null,
+      var img = before.length || job.quad || gate ? renderImage({ source: small, frame: job.frame || null, box: job.box, fx: before, quad: job.quad || null, crop: job.crop, assets: job.assets, layer: job.layer, subject: job.subject || null,
         mask: gate ? job.mask || null : null, cut: gate ? job.cut || null : null, clip: gate ? job.clip || null : null, nested: true }) : small;
       var tex = upload(img, { fresh: true });
       made.push(tex);
@@ -1221,16 +1309,54 @@
     };
   }
 
+  /* A float source reduced to a small 8-bit display-referred canvas (box-sampled), for g.whole() and statistics: both are
+     defined on such a copy whatever the source's precision. Kept with the source object. */
+  function dataCanvas(source, w, h) {
+    var memo = source._fxSmall || (source._fxSmall = {}), key = w + 'x' + h + '|' + (source._fxStamp || 0);
+    if (memo[key]) return memo[key];
+    var W = source.width, H = source.height, ch = source.channels === 3 ? 3 : 4, d = source.data, lin = source.space !== 'display';
+    var norm = d instanceof Float32Array ? 1 : d instanceof Uint16Array ? 1 / 65535 : 1 / 255;
+    var c = makeCanvas(w, h), x = c.getContext('2d'), img = x.createImageData(w, h), o = img.data;
+    var nx = Math.min(4, Math.max(1, Math.round(W / w))), ny = Math.min(4, Math.max(1, Math.round(H / h))), px, py, i, j, q = 0;
+    for (py = 0; py < h; py++) {
+      for (px = 0; px < w; px++, q += 4) {
+        var r = 0, g = 0, b = 0, a = 0;
+        for (j = 0; j < ny; j++) {
+          var sy = Math.min(H - 1, Math.floor((py + (j + 0.5) / ny) * H / h)) * W;
+          for (i = 0; i < nx; i++) {
+            var at = (sy + Math.min(W - 1, Math.floor((px + (i + 0.5) / nx) * W / w))) * ch;
+            r += d[at]; g += d[at + 1]; b += d[at + 2]; a += ch === 4 ? d[at + 3] : 1 / norm;
+          }
+        }
+        a *= norm;
+        if (a > 1e-6) {
+          r = r * norm / a; g = g * norm / a; b = b * norm / a;
+          o[q] = 255 * (lin ? M.linearToSrgb(Math.min(1, Math.max(0, r))) : r); o[q + 1] = 255 * (lin ? M.linearToSrgb(Math.min(1, Math.max(0, g))) : g); o[q + 2] = 255 * (lin ? M.linearToSrgb(Math.min(1, Math.max(0, b))) : b);
+        }
+        o[q + 3] = 255 * a / (nx * ny);
+      }
+    }
+    x.putImageData(img, 0, 0);
+    source._fxSmall = {}; source._fxSmall[key] = c;
+    return c;
+  }
+
   /* Whole-image statistics for entries that ask: the stack up to that entry, run once on a reduced copy. */
   function statsFn(source, list, o, job) {
     var memo = {};
     return function (entry) {
       var idx = list.indexOf(entry);
-      if (idx < 0 || !FX._stats || isData(source)) return null;
+      if (idx < 0) return null;
+      if (!FX._stats) {
+        /* The analysis code is loaded per need (LE.fx.needs): this render goes without, the next has it. */
+        if (!statsFn.asked) { statsFn.asked = true; FX._load('analyze').then(function () { if (FX.touch) FX.touch(); }, function () { statsFn.asked = false; }); }
+        return null;
+      }
       if (memo[idx]) return memo[idx];
       var W = source.naturalWidth || source.width, H = source.naturalHeight || source.height, k = Math.min(1, 256 / Math.max(W, H));
-      var small = makeCanvas(Math.max(1, Math.round(W * k)), Math.max(1, Math.round(H * k)));
-      small.getContext('2d').drawImage(source, 0, 0, small.width, small.height);
+      var small;
+      if (isData(source)) small = dataCanvas(source, Math.max(1, Math.round(W * k)), Math.max(1, Math.round(H * k)));
+      else { small = makeCanvas(Math.max(1, Math.round(W * k)), Math.max(1, Math.round(H * k))); small.getContext('2d').drawImage(source, 0, 0, small.width, small.height); }
       var before = list.slice(0, idx).map(function (e) { return { id: e.id, type: e.type, p: e.p, amount: e.amount, blend: e.blend, mask: e.mask }; });
       var img = before.length ? renderImage({ source: small, box: job.box, fx: before, assets: job.assets, layer: job.layer, nested: true }) : small;
       return (memo[idx] = FX._stats(img, {}));
@@ -1291,6 +1417,7 @@
     } catch (err) {
       /* A lost context or a broken effect must not blank the layer: fall back to the picture without expert effects. */
       note('render-' + (S.lost ? 'lost' : 'error'), S.lost ? 'The graphics context was lost; effects come back when it is restored.' : String(err && err.message || err));
+      if (isData(canvas)) throw err;   /* a float picture cannot be drawn without the renderer: the caller falls back to the 8-bit one */
       var fb = o.cutApply ? (o.cutApply(canvas) || canvas) : canvas;
       if (o.outline) fb = o.outline(fb) || fb;
       if (fb === canvas) { fb = makeCanvas(W, H); fb.getContext('2d').drawImage(canvas, 0, 0); }
@@ -1326,7 +1453,8 @@
     }
     var out = makeCanvas(W, H), octx = out.getContext('2d');
     var needScene = !!o.scene && res.entries.some(function (e) { return e.def.needs.indexOf('scene') >= 0; });
-    var f8 = S.caps.float ? 'f16' : '8', wholes = [], whole2 = wholeFn(o.source, listA, { box: { w: o.box[0], h: o.box[1] }, assets: o.assets, layer: o.layer }, wholes, listB, false);
+    var needBelow = !!o.below && res.entries.some(function (e) { return e.def.needs.indexOf('below') >= 0; });
+    var f8 = S.caps.float ? 'f16' : '8', wholes = [], whole2 = wholeFn(o.source, listA, { box: { w: o.box[0], h: o.box[1] }, assets: o.assets, layer: o.layer, matrix: m, scale: sc }, wholes, listB, false);
     if (S.prof) S.profAt = performance.now();
     S.stats.renders++;
     S.runTick = ++S.tick;
@@ -1335,8 +1463,15 @@
         rw: t.rw, rh: t.rh, sx: sc, sy: sc, dm: [m[0], m[2], m[1], m[3]], dt: [m[0] * t.x0 + m[2] * t.y0 + m[4], m[1] * t.x0 + m[3] * t.y0 + m[5]], box: o.box, abs: [t.x0 + o.abs[0], t.y0 + o.abs[1]], grid: t.grid,
         img: t.img, draft: !!o.draft, crop: [0, 0, 1, 1], hinv: null, assets: o.assets, layer: o.layer, subjectCanvas: null, scene: null, stats: null, whole: o.wholeOff ? null : whole2
       };
-      var run = ingest(env, o.source, t, false, !o.adjust && listA.length ? listA[0].def.space : 'display'), scTex = null, base = null;
+      var run = ingest(env, o.source, t, false, !o.adjust && listA.length ? listA[0].def.space : 'display'), scTex = null, base = null, blTex = null;
       try {
+        if (needBelow) {
+          blTex = upload(o.below, t.whole ? { fresh: true } : { rect: t.up, fresh: true });
+          var bh = run.handle(1, 'display');
+          run.pass(INGEST, { u_src: { t: blTex }, u_map: t.whole && blTex.w === t.rw && blTex.h === t.rh ? [0, 0, 1, 1] : t.map, u_lin: 0 }, bh, 'below');
+          bh.hold = true;
+          env.below = bh;
+        }
         if (needScene) {
           scTex = upload(o.scene, t.whole ? { fresh: true } : { rect: t.up, fresh: true });
           var sh = run.handle(1, 'display');
@@ -1371,6 +1506,7 @@
         run.done();
         if (run.tex) kill(run.tex);
         if (scTex) kill(scTex);
+        if (blTex) kill(blTex);
       }
     });
     wholes.forEach(kill);
@@ -1518,7 +1654,7 @@
     /* A group with expert data draws its members together, once, where its first member sits. */
     var top = null, g = layer.groupId ? scene._find(layer.groupId) : null, guard = 0;
     while (g && guard++ < 16) { if (expert(g)) top = g; g = g.groupId ? scene._find(g.groupId) : null; }
-    var members, owner, stack, lmask, clipped = [];
+    var members, owner, stack, lmask, followers = [], idx = layers.indexOf(layer);
     if (top) {
       if (st.done[top.id]) return true;
       st.done[top.id] = 1;
@@ -1527,33 +1663,39 @@
       members.sort(function (a, b) { return layers.indexOf(a) - layers.indexOf(b); });
       owner = top; stack = top.fx || []; lmask = top.layerMask || null;
     } else {
+      if (clipKind(layer)) {
+        /* A clipped layer is drawn with its base. Without a base, or when the base did not take it (it is being edited, or sits
+           in a group with effects), it is drawn as an ordinary layer; with a hidden base it is hidden too. */
+        if (st.done[layer.id]) return true;
+        var base = baseOf(layers, idx);
+        if (base && (base.visible === false || scene._hidden(base))) return true;
+      }
       if (layer.visible === false || scene._hidden(layer) || (opts.preview && scene._editing === layer.id)) return false;
-      for (i = layers.indexOf(layer) + 1; i < layers.length && layers[i].type === 'adjust' && layers[i].clip; i++) if (layers[i].visible !== false && Array.isArray(layers[i].fx) && layers[i].fx.length) clipped.push(layers[i]);
+      if (!clipKind(layer)) {
+        for (i = idx + 1; i < layers.length; i++) {
+          var f = layers[i], on = f.visible !== false && !scene._hidden(f);
+          if (f.type === 'adjust' && f.clip) { if (on && Array.isArray(f.fx) && f.fx.length) followers.push({ l: f, kind: 'adjust' }); }
+          else if (clipKind(f)) { if (!(opts.preview && scene._editing === f.id)) followers.push({ l: f, kind: on && scene._opacity(f) > 0 ? clipKind(f) : 'off' }); }
+          else break;
+        }
+      }
       var res = FX.resolve(layer.fx);
-      if (layer.type === 'image') { stack = plainEntries(res.entries.filter(function (e) { return e.def.needs.indexOf('scene') >= 0; })); lmask = null; }
+      if (layer.type === 'image') { stack = plainEntries(res.entries.filter(function (e) { return e.def.drawTime; })); lmask = null; }
       else { stack = layer.fx || []; lmask = layer.layerMask || null; }
-      if (!stack.length && !lmask && !clipped.length) return false;
+      if (!stack.length && !lmask && !followers.length) return false;
       members = [layer]; owner = layer;
     }
     try {
       var blend = !top && BLEND2D[layer.blend] ? layer.blend : 'source-over';
-      var last = Math.max.apply(null, members.map(function (l) { return layers.indexOf(l); })) + clipped.length;
+      var last = Math.max.apply(null, members.map(function (l) { return layers.indexOf(l); }));
+      followers.forEach(function (q) { last = Math.max(last, layers.indexOf(q.l)); if (q.kind !== 'adjust') st.done[q.l.id] = 1; });
       var dkey = sceneKey(scene, last, ctx, opts, 'draw:' + owner.id), dhit = cacheGet(dkey);
       if (dhit) { put(ctx, dhit.canvas, dhit.x, dhit.y, blend, false); return true; }
-      var iso = isolate(scene, ctx, members, opts, stack.length ? growDoc({ fx: stack, w: owner.w, h: owner.h }) : 0);
+      var under = { canvas: ctx.canvas, x: 0, y: 0 };
+      var iso = solo(scene, ctx, members, owner, stack, lmask, opts, under);
       if (!iso) return true;
-      var canvas = iso.canvas;
-      if (stack.length || lmask) {
-        var needScene = FX.resolve(stack).entries.some(function (e) { return e.def.needs.indexOf('scene') >= 0; }), behind = null;
-        if (needScene) { behind = makeCanvas(canvas.width, canvas.height); behind.getContext('2d').drawImage(ctx.canvas, iso.x, iso.y, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height); }
-        var outC = renderRegion({ source: canvas, scene: behind, fx: stack, layerMask: lmask, scale: iso.scale, matrix: toBox(iso.m, owner, iso.x, iso.y), box: [owner.w, owner.h], abs: [iso.x, iso.y], assets: sceneAsset(scene), layer: owner, draft: !!(opts.preview && S.interactive) });
-        if (outC) canvas = outC;
-      }
-      if (clipped.length) {
-        var cx = canvas.getContext('2d');
-        cx.setTransform(iso.m.a, iso.m.b, iso.m.c, iso.m.d, iso.m.e - iso.x, iso.m.f - iso.y);
-        clipped.forEach(function (adj) { adjustOnto(scene, cx, adj, opts); });
-      }
+      var canvas = iso.out;
+      if (followers.length) clipOnto(scene, ctx, iso, layer, stack, lmask, followers, opts, under);
       put(ctx, canvas, iso.x, iso.y, blend, false);
       cachePut(dkey, canvas, iso.x, iso.y);
     } catch (e2) {
@@ -1562,6 +1704,78 @@
     }
     return true;
   };
+  /* clip on an ordinary layer: true (drawn only inside the layer below) or 'knockout' (its shape is cut out of that layer). */
+  function clipKind(l) { return l && l.type !== 'adjust' && l.type !== 'group' ? (l.clip === true ? 'clip' : l.clip === 'knockout' ? 'knockout' : null) : null; }
+  /* The layer a clipped layer belongs to: the first layer below it that is not itself clipped. */
+  function baseOf(layers, i) {
+    for (var j = i - 1; j >= 0; j--) { var l = layers[j]; if (l.type === 'adjust' && l.clip) continue; if (clipKind(l)) continue; return l.type === 'group' || l.type === 'adjust' ? null : l; }
+    return null;
+  }
+  /* The nearest drawable layer below one, for g.below(). */
+  function belowOf(scene, layers, i) {
+    for (var j = i - 1; j >= 0; j--) { var l = layers[j]; if (l.type === 'adjust' || l.type === 'group' || l.visible === false || scene._hidden(l)) continue; return l; }
+    return null;
+  }
+  /* Layers alone on a device canvas, through their draw-time stack. under: { canvas, x, y }, what scene-reading effects see.
+     Returns the isolate record with .out, the finished canvas. */
+  function solo(scene, ctx, members, owner, stack, lmask, opts, under) {
+    var iso = isolate(scene, ctx, members, opts, stack.length ? growDoc({ fx: stack, w: owner.w, h: owner.h }) : 0);
+    if (!iso) return null;
+    var canvas = iso.canvas, w = canvas.width, h = canvas.height;
+    if (stack.length || lmask) {
+      var ents = FX.resolve(stack).entries, behind = null, below = null;
+      if (under && ents.some(function (e) { return e.def.needs.indexOf('scene') >= 0; })) { behind = makeCanvas(w, h); behind.getContext('2d').drawImage(under.canvas, iso.x - under.x, iso.y - under.y, w, h, 0, 0, w, h); }
+      if (ents.some(function (e) { return e.def.needs.indexOf('below') >= 0; })) {
+        var layers = scene._doc.layers, at = Math.min.apply(null, members.map(function (l) { var k = layers.indexOf(scene._find ? scene._find(l.id) || l : l); return k < 0 ? Infinity : k; }));
+        var bl = isFinite(at) ? belowOf(scene, layers, at) : null, bi = bl ? isolate(scene, ctx, [bl], opts, 0) : null;
+        below = makeCanvas(w, h);
+        if (bi) below.getContext('2d').drawImage(bi.canvas, bi.x - iso.x, bi.y - iso.y);
+      }
+      var outC = renderRegion({ source: canvas, scene: behind, below: below, fx: stack, layerMask: lmask, scale: iso.scale, matrix: toBox(iso.m, owner, iso.x, iso.y), box: [owner.w, owner.h], abs: [iso.x, iso.y], assets: sceneAsset(scene), layer: owner, draft: !!(opts.preview && S.interactive) });
+      if (outC) canvas = outC;
+    }
+    iso.out = canvas;
+    return iso;
+  }
+  /* The layers clipped to a base, composed onto the base's canvas: clipped adjustment layers change it in place; a clipped
+     layer is drawn only where the base is (its own alpha, without its drop shadow), blended as the layer asks, and reads the
+     base as its scene; a knockout layer removes its shape from the base. */
+  function clipOnto(scene, ctx, iso, layer, stack, lmask, followers, opts, under) {
+    var canvas = iso.out, cx = canvas.getContext('2d'), mask = null;
+    if (followers.some(function (q) { return q.kind === 'clip'; })) {
+      if (layer.shadow) {
+        var bare = {};
+        Object.keys(layer).forEach(function (k) { bare[k] = layer[k]; });
+        bare.shadow = null;
+        var ms = solo(scene, ctx, [bare], bare, stack, lmask, opts, under);
+        if (ms) mask = { canvas: ms.out, x: ms.x, y: ms.y };
+      }
+      if (!mask) mask = { canvas: canvas, x: iso.x, y: iso.y, same: true };
+    }
+    function flat(c) { c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.shadowColor = 'transparent'; c.filter = 'none'; }
+    followers.forEach(function (q) {
+      var fl = q.l;
+      if (q.kind === 'off') return;
+      if (q.kind === 'adjust') { cx.globalCompositeOperation = 'source-over'; cx.setTransform(iso.m.a, iso.m.b, iso.m.c, iso.m.d, iso.m.e - iso.x, iso.m.f - iso.y); adjustOnto(scene, cx, fl, opts); return; }
+      var fres = FX.resolve(fl.fx), fstack = fl.type === 'image' ? plainEntries(fres.entries.filter(function (e) { return e.def.drawTime; })) : (fl.fx || []);
+      var fs = solo(scene, ctx, [fl], fl, fstack, fl.type === 'image' ? null : fl.layerMask || null, opts, { canvas: canvas, x: iso.x, y: iso.y });
+      if (!fs) return;
+      flat(cx);
+      if (q.kind === 'knockout') {
+        cx.globalCompositeOperation = 'destination-out';
+        cx.drawImage(fs.out, fs.x - iso.x, fs.y - iso.y);
+        if (mask && !mask.same) { var mx = mask.canvas.getContext('2d'); flat(mx); mx.globalCompositeOperation = 'destination-out'; mx.drawImage(fs.out, fs.x - mask.x, fs.y - mask.y); }
+      } else {
+        var fc = fs.out.getContext('2d');
+        flat(fc);
+        fc.globalCompositeOperation = 'destination-in';
+        fc.drawImage(mask.canvas, mask.x - fs.x, mask.y - fs.y);
+        cx.globalCompositeOperation = BLEND2D[fl.blend] ? fl.blend : 'source-over';
+        cx.drawImage(fs.out, fs.x - iso.x, fs.y - iso.y);
+      }
+      cx.globalCompositeOperation = 'source-over';
+    });
+  }
 
   /* LE.Scene.exportLayer draws one layer alone, unrotated, into a canvas the size of its box. A photo layer's effects are already in
      its bitmap. For any other layer the stack and the layer mask run here, on the layer by itself: there is no scene behind it, so
@@ -1571,7 +1785,7 @@
     var alone = {};
     Object.keys(layer).forEach(function (k) { alone[k] = layer[k]; });
     alone.x = 0; alone.y = 0; alone.rotation = 0; alone.groupId = null; alone.opacity = scene._opacity(layer);
-    var stack = plainEntries(FX.resolve(layer.fx).entries.filter(function (e) { return e.def.needs.indexOf('scene') < 0; }));
+    var stack = plainEntries(FX.resolve(layer.fx).entries.filter(function (e) { return !e.def.drawTime; }));
     try {
       var inner = {};
       Object.keys(opts).forEach(function (k) { inner[k] = opts[k]; });
@@ -1608,6 +1822,7 @@
   FX.prepare = function (scene) {
     var jobs = [];
     (scene._doc.layers || []).forEach(function (l) {
+      if (!FX._stats && FX.needsStats(l.fx)) jobs.push(FX.needs(l.fx).catch(function () { return null; }));
       FX.assetsOf(l).forEach(function (id) { var rec = scene._assets[id]; if (rec && rec.ready) jobs.push(Promise.resolve(rec.ready).catch(function () { return null; })); });
       /* Data assets (LUT text): from the scene when it holds the blob, else from the project store. */
       (Array.isArray(l.fx) ? l.fx : []).forEach(function (e) {
@@ -1622,7 +1837,84 @@
     });
     return Promise.all(jobs);
   };
+  /* ---- Layers drawn from float data (RAW, HDR): the source stage, then the rest of the pipeline, float all the way ----
+     1. The provider's picture (scene-linear, upright, uncropped) runs through the source-stage entries (LE.fx.sources.split)
+        and the cut-out, and comes back as float pixels, already cropped. Masks on those entries are in layer-box fractions like
+        any other mask (the frame), their blur in the layer's document pixels.
+     2. That float picture is the layer's photo for the rest: the stack, frame clip, layer mask, quad, silhouette entries.
+     A layer with legacy adjustments, filters or a baked retouch overlay (8-bit CPU steps between the two) takes the 8-bit
+     hand-off instead: stage 1 to a canvas, then the unchanged pipeline. No provider, no float targets or any error: the layer's
+     own 8-bit picture, which is its default development. */
+  var srcStage = { map: {}, order: [] };
+  FX.sources.forget = function (layerId) { if (layerId) { delete srcStage.map[layerId]; } else srcStage = { map: {}, order: [] }; };
+  function cropOf(layer) {
+    var c = layer.crop;
+    if (!c) return null;
+    var r = [c.x || 0, c.y || 0, c.w == null ? 1 : c.w, c.h == null ? 1 : c.h];
+    return r[0] > 0.0001 || r[1] > 0.0001 || r[2] < 0.9999 || r[3] < 0.9999 ? r : null;
+  }
+  function fromSource(scene, layer, targetMax, preview) {
+    var H = (LE.Scene && LE.Scene._fx) || {};
+    var st = FX.sources.split(layer.fx), draft = !!(preview && S.interactive);
+    return FX.sources.provider(layer.raw.kind || 'raw').then(function (fn) {
+      return Promise.all([fn(layer, { targetMax: targetMax, preview: preview, draft: draft, scene: scene, entries: st.dev }), FX.prepare({ _doc: { layers: [layer] }, _assets: scene._assets })]);
+    }).then(function (got) {
+      var src = got[0];
+      if (!src || !src.source) return null;
+      var sw = src.source.width, sh = src.source.height, crop = cropOf(layer);
+      var k = src.box.w * (crop ? crop[2] : 1) / Math.max(1, layer.w);   /* source-stage document pixels per layer document pixel */
+      var dev = FX.sources.inject(st.dev, src.ctx);
+      dev.forEach(function (e) { ((e.mask && e.mask.parts) || []).forEach(function (q) { if (q && q.blur > 0) q.blur = q.blur * k; }); });
+      var cut = layer.cutout && layer.cutout.enabled !== false ? layer.cutout : null;
+      var mrec = layer.cutout ? scene._assets[layer.cutout.asset] : null;
+      var alpha = mrec && H.cutoutAlpha ? H.cutoutAlpha(mrec) : null;
+      var steps = H.steps ? H.steps(layer, false).filter(function (q) { return q.operation !== 'crop'; }).length > 0 : !!(layer.adjust || layer.filter || layer.removeBg);
+      var eight = steps || !!(layer.retouch && layer.retouch.asset) || !!(cut && !alpha);
+      var key = M.hash(FX.keyOf([src.key, dev, crop, eight ? 0 : cut, preview ? 1 : 0, eight ? 8 : 16, FX.stamp()]));
+      var hit = preview ? srcStage.map[layer.id] : null, pic = hit && hit.key === key ? hit.pic : null;
+      if (!pic) {
+        var job = { source: src.source, box: src.box, fx: dev, crop: crop, frame: crop, assets: sceneAsset(scene), layer: layer, subject: alpha, preview: !!preview, key: preview ? 'src|' + layer.id + '|' + src.key : null };
+        if (!eight) {
+          job.cut = cut ? { alpha: alpha, feather: (cut.feather || 0) * k } : null;
+          job.out = { float: true, rect: crop ? [Math.min(sw - 1, Math.round(crop[0] * sw)), Math.min(sh - 1, Math.round(crop[1] * sh)), 0, 0] : null };
+          if (crop) { job.out.rect[2] = Math.max(1, Math.min(sw - job.out.rect[0], Math.round(crop[2] * sw))); job.out.rect[3] = Math.max(1, Math.min(sh - job.out.rect[1], Math.round(crop[3] * sh))); }
+        }
+        pic = renderImage(job);
+        if (preview) {
+          srcStage.map[layer.id] = { key: key, pic: pic };
+          var at = srcStage.order.indexOf(layer.id);
+          if (at >= 0) srcStage.order.splice(at, 1);
+          srcStage.order.push(layer.id);
+          while (srcStage.order.length > 4) delete srcStage.map[srcStage.order.shift()];
+        }
+      }
+      var l2 = {};
+      Object.keys(layer).forEach(function (q) { l2[q] = layer[q]; });
+      l2.fx = st.rest; delete l2.raw;
+      if (eight) {
+        /* The developed picture stands in for the layer's photo (keyed by what made it, so the unchanged path's caches follow). */
+        var pre = 'le-dev:' + layer.id + ':', tmpKey = pre + key, rec = { key: tmpKey, canvas: pic };
+        rec.ready = Promise.resolve(rec);
+        Object.keys(scene._assets).forEach(function (q) { if (q.indexOf(pre) === 0 && q !== tmpKey) delete scene._assets[q]; });
+        scene._assets[tmpKey] = rec;
+        l2.src = tmpKey;
+        if (!l2.fx.length) delete l2.fx;
+        return (LE.fxBoot && LE.fxBoot.needs(l2)) ? plainLayer(scene, l2, targetMax, preview) : scene._processImage(Object.assign(l2, { _fxRaw: true }), targetMax, preview);
+      }
+      return FX.layerBitmap(scene, l2, pic, {
+        preview: preview, key: 'src2|' + key, assets: sceneAsset(scene), clip: scene._imageClip(layer), subject: alpha,
+        outline: cut && cut.outline && H.cutoutOutline ? function (c) { return H.cutoutOutline(c, cut.outline.width * c.width / Math.max(1, layer.w), cut.outline.color); } : null
+      });
+    });
+  }
   FX.layer = function (scene, layer, targetMax, preview) {
+    if (!FX.sources.is(layer) || !init() || !S.caps.float) return plainLayer(scene, layer, targetMax, preview);
+    return fromSource(scene, layer, targetMax, preview).then(function (c) { return c || plainLayer(scene, layer, targetMax, preview); }, function (err) {
+      try { console.warn('LE.fx source: ' + (err && err.message || err)); } catch (e) { /* no console */ }
+      return plainLayer(scene, layer, targetMax, preview);
+    });
+  };
+  function plainLayer(scene, layer, targetMax, preview) {
     var H = (LE.Scene && LE.Scene._fx) || {};
     var raw = {};
     Object.keys(layer).forEach(function (k) { raw[k] = layer[k]; });

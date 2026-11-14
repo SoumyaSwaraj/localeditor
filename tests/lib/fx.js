@@ -27,6 +27,8 @@ async function page(browser, base, opts) {
   const pg = await h.open(browser, base, '/404.html', opts.viewport || 'desktop');
   await pg.addScriptTag({ url: base + '/assets/js/fx/le-fx.js' });
   await pg.evaluate(() => window.LE.fx.ready);
+  /* Effect tests render synchronously (LE.fx.apply), also stacks that read statistics: the analysis code, which a document loads per need, is in from the start here. */
+  await pg.evaluate(() => window.LE.fx._load('analyze'));
   await pg.addScriptTag({ content: '(' + inPage.toString() + ')()' });
   if (opts.configure) await pg.evaluate((c) => window.LE.fx.configure(c), opts.configure);
   const st = await pg.evaluate(() => window.LE.fx.status());

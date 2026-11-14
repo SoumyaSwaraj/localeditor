@@ -284,6 +284,9 @@ cases['helpers, maps, RAW and template fields through the agent: fx.call is allo
   h.assert(r.tone.ok && typeof r.tone.results[0].values.exposure === 'number', 'raw.autoTone: ' + JSON.stringify(r.tone).slice(0, 300));
   h.assert(r.hdrBad.ok === false && /2 to 9/.test(r.hdrBad.errors[0].message), 'hdr.merge checks its files');
   h.assert(r.vars.ok && r.vals.ok, 'variables.set and values.set: ' + JSON.stringify([r.vars, r.vals]).slice(0, 300));
+  /* docs/VARIABLES.md: a batch of template-field operations is named for what it does, not for the layers it touched */
+  h.assert.equal(r.vars.summary, 'Define fields', 'variables.set is summarised in the person\'s words');
+  h.assert.equal(r.vals.summary, 'Fill in fields', 'values.set is summarised in the person\'s words');
   h.assert(r.appearance && r.stateOk, 'state() carries appearance');
   h.assert(r.help.length === 0 && r.helpSize < 48000, 'help lists the new operations: missing ' + r.help + ', size ' + r.helpSize);
   h.assert.noErrors(page);
@@ -336,11 +339,90 @@ cases['command line: fx operations are applied to the file, the render shows the
     h.assert(JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).pages[0].layers.find((l) => l.id === 'block').fx.length > 2, 'the helper\'s entries are in the file');
     r = await run(['apply', f, '-', '--json'], JSON.stringify([{ op: 'map.generate', layer: 'block', kind: 'depth' }]));
     h.assert(r.code === 1 && /agent mode/.test(r.stdout + r.stderr), 'operations that need the open app say so: ' + (r.stdout + r.stderr).slice(0, 300));
+    /* page.resize: lengths in document pixels (a blur radius, a mask blur) follow the content, as in the studio */
+    const before = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).pages[0];
+    r = await run(['apply', f, '-', '--json'], JSON.stringify([
+      { op: 'fx.add', layer: 'block', entry: { id: 'soft', type: 'gaussian-blur', p: { radius: 6 }, mask: { parts: [{ kind: 'radial', cx: 0.5, cy: 0.5, rx: 0.3, ry: 0.3, blur: 10 }] } } },
+      { op: 'page.resize', width: before.width * 2, height: before.height * 2 }
+    ]));
+    h.assert(r.code === 0 && r.json.written, 'resize with effects: ' + (r.stdout + r.stderr).slice(0, 400));
+    const grown = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).pages[0], soft = grown.layers.find((l) => l.id === 'block').fx.find((e) => e.id === 'soft');
+    const b0 = before.layers.find((l) => l.id === 'block'), b1 = grown.layers.find((l) => l.id === 'block');
+    h.assert(grown.width === before.width * 2 && Math.abs(b1.w - b0.w * 2) < 0.01, 'the page and the layer doubled');
+    h.assert(soft.p.radius === 12 && soft.mask.parts[0].blur === 20 && soft.mask.parts[0].rx === 0.3, 'px parameters and mask blurs doubled, fractions stayed: ' + JSON.stringify(soft));
+    r = await run(['apply', f, '-', '--json'], JSON.stringify([{ op: 'fx.update', layer: 'block', id: 'soft', p: {} }, { op: 'page.resize', width: before.width, height: before.height, scaleContent: false }]));
+    h.assert(r.code === 0 && JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).pages[0].layers.find((l) => l.id === 'block').fx.find((e) => e.id === 'soft').p.radius === 12, 'without scaleContent the effect keeps its lengths');
     r = await run(['catalog', 'fx', '--json']);
     h.assert(r.code === 0 && r.json.items.length >= 20 && r.json.items.every((e) => e.id && e.summary), 'catalog fx lists the index: ' + r.stdout.slice(0, 200));
     r = await run(['catalog', 'fx', 'exposure', '--json']);
     h.assert(r.code === 0 && r.json.effect && r.json.effect.params.ev.max === 5, 'catalog fx exposure describes one effect: ' + r.stdout.slice(0, 200));
   } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* best effort */ } }
+};
+
+cases['helpers end to end: hdr.merge on two synthetic brackets, composite.match, relight.portrait and relight.retime through fx.call'] = async ({ browser, base, h }) => {
+  const page = await session(browser, base, h);
+  const png = await photo(page);
+  await page.evaluate((op) => LEAgent.apply([op]), HERO(png));
+  const r = await page.evaluate(async () => {
+    const one = (op) => Promise.race([LEAgent.apply([op]), new Promise((res) => setTimeout(() => res({ ok: false, timedOut: op.op + ' ' + (op.name || '') }), 60000))]);
+    const out = {}, s = LEStudio.scene, types = (id) => ((s.layer(id) || {}).fx || []).map((e) => e.type);
+    /* Two brackets of one scene: radiance from 0.01 (left) to 4 (right) under a checker of ±0.3 stops, exposed 4 stops apart as 8-bit pictures. */
+    const W = 240, H = 160, srgb = (v) => { v = Math.max(0, Math.min(1, v)); return Math.round(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055)); };
+    const frame = async (ev) => {
+      const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'), id = x.createImageData(W, H);
+      for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+        const rad = 0.01 * Math.pow(400, i / (W - 1)) * (0.8 + 0.4 * ((Math.floor(i / 12) + Math.floor(j / 12)) % 2)), k = (j * W + i) * 4, g = rad * Math.pow(2, ev);
+        id.data[k] = srgb(g * 1.05); id.data[k + 1] = srgb(g); id.data[k + 2] = srgb(g * 0.9); id.data[k + 3] = 255;
+      }
+      x.putImageData(id, 0, 0);
+      const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
+      return LEAgent.file(new File([blob], 'bracket' + (ev < 0 ? 'm' : 'p') + Math.abs(ev) + '.png', { type: 'image/png' }));
+    };
+    const dark = await frame(-2), bright = await frame(2);
+    out.refs = [dark, bright];
+    const u0 = s._hist.undo.length;
+    out.hdr = await one({ op: 'hdr.merge', files: [dark.ref || dark, bright.ref || bright], id: 'hdr', deghost: 'off', w: 480, x: 20, y: 20 });
+    out.hdrUndo = s._hist.undo.length - u0;
+    const L = s.layer('hdr');
+    out.hdrLayer = L ? { kind: L.raw && L.raw.kind, frames: L.raw && L.raw.merge && L.raw.merge.frames, fx: types('hdr'), w: L.w, h: L.h, src: !!L.src } : null;
+    if (L) {
+      const c = await s.render(1), x = c.getContext('2d'), at = (fx, fy) => x.getImageData(Math.round(20 + fx * L.w), Math.round(20 + fy * L.h), 1, 1).data[1];
+      /* both ends of the range hold detail: the checker is visible in the darkest and the brightest tenth (neighbouring 12-pixel cells) */
+      out.hdrPx = { darkA: at(0.075, 0.5), darkB: at(0.125, 0.5), brightA: at(0.875, 0.5), brightB: at(0.925, 0.5), mid: at(0.5, 0.5) };
+      out.eightBit = Object.keys(s._assets).filter((k) => k.indexOf('le-dev:') === 0).length;
+      out.float = LE.fx.status().float;
+    }
+    /* composite.match: the hero takes on the page's colour statistics */
+    out.match = await one({ op: 'fx.call', layer: 'hero', name: 'composite.match', args: { strength: 80 } });
+    out.matchFx = (s.layer('hero').fx || []).filter((e) => e.type === 'match-color').map((e) => ({ strength: e.p.strength, src: e.p.srcL, dst: e.p.dstL }));
+    /* relight.portrait and relight.retime: no face or depth map here, so they say so and still place the lights */
+    const preset = LE.fx.relight.presets[0].id;
+    out.portrait = await one({ op: 'fx.call', layer: 'hero', name: 'relight.portrait', args: { preset } });
+    out.afterPortrait = types('hero');
+    out.badPreset = await one({ op: 'fx.call', layer: 'hero', name: 'relight.portrait', args: { preset: 'nope' } });
+    out.retime = await one({ op: 'fx.call', layer: 'hero', name: 'relight.retime', args: { when: 'golden' } });
+    out.afterRetime = types('hero');
+    out.badWhen = await one({ op: 'fx.call', layer: 'hero', name: 'relight.retime', args: { when: 'teatime' } });
+    out.afterBad = types('hero').length;
+    const c2 = await s.render(0.5);
+    out.rendered = c2.width > 0;
+    out.problems = LE.fx.problems(s.toJSON()).length;
+    return out;
+  });
+  h.assert(r.hdr.ok && r.hdrUndo === 1, 'hdr.merge adds the merged layer in one undo step: ' + JSON.stringify(r.hdr).slice(0, 400));
+  h.assert(r.hdrLayer && r.hdrLayer.kind === 'hdr' && r.hdrLayer.frames === 2 && r.hdrLayer.w === 480 && r.hdrLayer.src, 'an HDR layer from two frames, placed as asked: ' + JSON.stringify(r.hdrLayer));
+  h.assert(r.hdrLayer.fx.indexOf('develop.tonemap') >= 0 && r.hdrLayer.fx.indexOf('develop.basic') >= 0, 'it opens with tone mapping and develop: ' + r.hdrLayer.fx);
+  h.assert(Math.abs(r.hdrPx.darkA - r.hdrPx.darkB) >= 3 && Math.abs(r.hdrPx.brightA - r.hdrPx.brightB) >= 3, 'detail at both ends of the range (the checker shows): ' + JSON.stringify(r.hdrPx));
+  h.assert(r.hdrPx.darkA < r.hdrPx.mid && r.hdrPx.mid < r.hdrPx.brightB && r.hdrPx.brightB < 255, 'tones stay in order and unclipped: ' + JSON.stringify(r.hdrPx));
+  if (r.float) h.assert.equal(r.eightBit, 0, 'the layer is drawn from its float source (no 8-bit stand-in)');
+  h.assert(r.match.ok && r.matchFx.length === 1 && r.matchFx[0].strength === 80 && r.matchFx[0].src !== r.matchFx[0].dst, 'composite.match adds one measured match-color entry: ' + JSON.stringify([r.match, r.matchFx]).slice(0, 400));
+  h.assert(r.portrait.ok && r.afterPortrait.indexOf('relight') >= 0, 'relight.portrait places lights: ' + JSON.stringify(r.portrait).slice(0, 300) + ' ' + r.afterPortrait);
+  h.assert(/No face map/.test(r.portrait.results[0].message || '') && /depth map/.test(r.portrait.results[0].message || ''), 'and says in words that the face and depth maps are missing: ' + JSON.stringify(r.portrait.results[0]).slice(0, 500));
+  h.assert(r.badPreset.ok === false && /preset/i.test(r.badPreset.errors[0].message), 'an unknown preset is refused in words: ' + JSON.stringify(r.badPreset.errors));
+  h.assert(r.retime.ok && ['white-balance', 'exposure', 'saturation'].every((t) => r.afterRetime.indexOf(t) >= 0) && r.afterRetime.length > r.afterPortrait.length, 'relight.retime adds its grade and light: ' + r.afterRetime);
+  h.assert(r.badWhen.ok === false && /golden/.test(r.badWhen.errors[0].message) && r.afterBad === r.afterRetime.length, 'an unknown time of day is refused and changes nothing: ' + JSON.stringify(r.badWhen.errors));
+  h.assert(r.rendered && r.problems === 0, 'the page still renders and the registry has no complaints (' + r.problems + ')');
+  h.assert.noErrors(page);
 };
 
 module.exports = cases;

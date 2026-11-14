@@ -220,6 +220,8 @@
   function glowReach(p, scale) { return p.amount > 0 && p.radius > 0 ? glowRadius(p, scale) : 0; }
   function glowN(g, p) { return glowNFor(p.radius * g.scale); }
   var PREFILTER = KNEE + 'uniform vec2 u_th;\nvec4 fx(){ vec4 s = src(v_uv); vec3 c = unpremul(s); float b = max(max(c.r, c.g), c.b); return vec4(c * knee(b, u_th.x, u_th.y) * s.a, s.a); }';
+  /* The same for a glow built over the whole layer box (g.far): read by box position, so every tile sees one glow. */
+  var ADDFAR = 'uniform sampler2D u_glow; uniform vec3 u_t;\nvec4 fx(){ vec4 s = src(v_uv); vec3 gl = texture(u_glow, clamp(boxUV(), 0.0, 1.0)).rgb; return vec4(s.rgb + gl * u_t * s.a, s.a); }';
   var ADDGLOW = TENT + 'uniform sampler2D u_glow; uniform vec3 u_t;\nvec4 fx(){ vec4 s = src(v_uv); vec3 gl = tent(u_glow, v_uv).rgb; return vec4(s.rgb + gl * u_t * s.a, s.a); }';
   reg({
     id: 'halation', name: 'Halation', group: 'effects', version: 1, space: 'linear',
@@ -594,9 +596,10 @@
 
   /* Anamorphic streaks: horizontal (or angled) flares from highlights, as a cylindrical anamorphic lens draws them. Knee
      threshold at half resolution, a decaying comb blur along the angle (2–3 passes), tinted and added in linear light.
-     Passes: 1 + 2–3 + 1. */
+     The streaks are built over the whole layer (g.far, 768 pixels on the longer side) and added by box position, so a streak
+     crosses the frame whatever the tile size and the effect needs no reach. Passes: 1 + 1 + 2–3 + 1 small, 1 full. */
   reg({
-    id: 'anamorphic-streaks', name: 'Anamorphic streaks', group: 'optics', version: 1, space: 'linear',
+    id: 'anamorphic-streaks', name: 'Anamorphic streaks', group: 'optics', version: 2, space: 'linear',
     params: {
       amount: N(0, 100, 0, 1, 'Amount'),
       threshold: N(0, 1, 0.85, 0.01, 'Threshold'),
@@ -604,15 +607,18 @@
       color: COL('#4f86ff', 'Tint'),
       angle: ANG(0, 'Angle')
     },
-    radius: function (p, scale) { return p.amount > 0 ? Math.ceil(p.length * 0.55 * scale) + 8 : 0; },
     passes: function (g, p) {
       if (!(p.amount > 0)) return;
       var th = lin(p.threshold), a = p.angle * Math.PI / 180;
-      var pre = g.pass(PREFILTER, { u_th: [th, Math.max(th * 0.3, 0.01)] }, { scale: 0.5 });
-      var st = comb(g, pre, [Math.cos(a), -Math.sin(a)], p.length, 4, 0.5);
-      if (st !== pre) g.release(pre);
+      var st = g.far({ maxSide: 768 }, function (w) {
+        var pre = w.pass(PREFILTER, { u_th: [th, Math.max(th * 0.3, 0.01)] }, { scale: 0.5 });
+        var out = comb(w, pre, [Math.cos(a), -Math.sin(a)], p.length, 4, 0.5);
+        if (out !== pre) w.release(pre);
+        return out;
+      });
+      if (!st) return;
       var t = g.rgb(p.color), k = p.amount / 100 * 2.5;
-      return g.pass(ADDGLOW, { u_glow: st, u_t: [t[0] * k, t[1] * k, t[2] * k] });
+      return g.pass(ADDFAR, { u_glow: st, u_t: [t[0] * k, t[1] * k, t[2] * k] });
     },
     support: GPU_MID,
     ui: { section: 'Optics', order: 60, controls: ['amount', 'threshold', 'length', 'color', 'angle'] },
@@ -1620,24 +1626,29 @@
 
   /* Sun beams (god rays): bright areas (knee threshold, half resolution) are smeared towards the light point with decaying
      weights (1–3 one-sided comb passes in the radial coordinate, the screen-space light-scattering approximation of crepuscular
-     rays), tinted and added in linear light, so rays appear where light passes between darker shapes. Passes: 1 + 1–3 + 1. */
+     rays), tinted and added in linear light, so rays appear where light passes between darker shapes. Built over the whole
+     layer (g.far, 768 pixels on the longer side) and added by box position: a ray runs as far as its length says, on any tile
+     size, and the effect needs no reach. Passes: 1 + 1 + 1–3 small, 1 full. */
   var RAYS = 'uniform vec2 u_L; uniform float u_s, u_d; uniform int u_n;\nvec4 fx(){ vec2 P = docPos(); vec4 a = vec4(0.0); float ws = 0.0; for (int i = 0; i < 16; i++) { if (i >= u_n) break; float w = exp(-u_d * float(i) / float(u_n)); a += texture(u_src, v_uv + docToUV((u_L - P) * float(i) * u_s)) * w; ws += w; } return a / ws; }';
   reg({
-    id: 'sun-rays', name: 'Sun rays', group: 'effects', version: 1, space: 'linear',
+    id: 'sun-rays', name: 'Sun rays', group: 'effects', version: 2, space: 'linear',
     params: { amount: N(0, 100, 0, 1, 'Amount'), position: PT(0.5, 0.15, 'Light position'), threshold: N(0, 1, 0.7, 0.01, 'Threshold'), length: N(5, 100, 50, 1, 'Length'), color: COL('#fff0d2', 'Tint') },
-    radius: function (p, scale, box) { return p.amount > 0 ? Math.ceil(p.length / 100 * farCorner(box && box.w ? box : REACH_BOX, p.position) * scale) + 4 : 0; },
     passes: function (g, p) {
       if (!(p.amount > 0)) return;
-      var th = lin(p.threshold), pre = g.pass(PREFILTER, { u_th: [th, Math.max(th * 0.4, 0.01)] }, { scale: 0.5 });
-      var len = p.length / 100, Lt = len * farCorner(g.box, p.position) * g.scale, k = combPasses(Lt), n = 10, cur = pre, Lp = [p.position.x * g.box.w, p.position.y * g.box.h];
-      if (g.draft && k > 1) k--;
-      for (var j = 0; j < k; j++) {
-        var out = g.pass(RAYS, { u_src: cur, u_L: Lp, u_s: len / Math.pow(n, j + 1), u_d: 2.2, u_n: n }, { scale: 0.5 });
-        g.release(cur); cur = out;
-      }
-      var t = g.rgb(p.color), kk = p.amount / 100 * 4.5, res = g.pass(ADDGLOW, { u_glow: cur, u_t: [t[0] * kk, t[1] * kk, t[2] * kk] });
-      g.release(cur);
-      return res;
+      var th = lin(p.threshold), len = p.length / 100, Lp = [p.position.x * g.box.w, p.position.y * g.box.h];
+      var rays = g.far({ maxSide: 768 }, function (w) {
+        var cur = w.pass(PREFILTER, { u_th: [th, Math.max(th * 0.4, 0.01)] }, { scale: 0.5 });
+        var Lt = len * farCorner(g.box, p.position) * w.scale, k = combPasses(Lt), n = 10;
+        if (g.draft && k > 1) k--;
+        for (var j = 0; j < k; j++) {
+          var out = w.pass(RAYS, { u_src: cur, u_L: Lp, u_s: len / Math.pow(n, j + 1), u_d: 2.2, u_n: n }, { scale: 0.5 });
+          w.release(cur); cur = out;
+        }
+        return cur;
+      });
+      if (!rays) return;
+      var t = g.rgb(p.color), kk = p.amount / 100 * 4.5;
+      return g.pass(ADDFAR, { u_glow: rays, u_t: [t[0] * kk, t[1] * kk, t[2] * kk] });
     },
     support: GPU_MID,
     ui: { section: 'Effects', order: 220, handles: { kind: 'point', param: 'position' }, controls: ['amount', 'position', 'threshold', 'length', 'color'] },

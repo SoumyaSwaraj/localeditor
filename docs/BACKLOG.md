@@ -136,12 +136,17 @@ Still open:
 ## Deferred on 13 Nov to keep cost down
 
 Renderer and packs:
-- P6 float through the stack after RAW develop and the RAW seam in the core; P3 output for `develop.basic`.
-- P7 `ui.order` and a grouped add-effect list; P8 on-canvas handle descriptors (`ui.handles`); P9 analysis loaded per document and `kinds: ['light']`.
-- `g.below()`, `clip` on ordinary layers, fill versus opacity.
-- Pack adoptions: X4 `data` parameters and `HINTS`; X3 cast shadow on `g.whole` and box defaults; X6 depth fallback and shadow cap; X2 `g.whole` and Oklab copies; X1 `selective-color` fold, `ui.channels`, `g.asset`.
-- Deep links `&tab`, `&tool`, `&add`, `?open=raw|hdr`; `page.resize` px rescale in `le-link.js`; template-field operations in the command-line tool; `summarize()` labels for template-field operations.
-- `hdr.merge`, `composite.match`, `relight.portrait` and `relight.retime` are wired for agents but not exercised by a test beyond input checks.
+- P7 `ui.order` and a grouped add-effect list; P8 on-canvas handle descriptors (`ui.handles`); `ui: { channels: false }` on the single-curve parameters of the grade pack.
+- Deep links `&tab`, `&tool`, `&add`, `?open=raw|hdr`; template-field operations in the command-line tool.
+
+Done on 14 Nov (renderer core and packs; see `docs/FX-AUTHORING.md`): the RAW/HDR source stage in the core with float after develop and Display P3 for `develop.basic`; pack adoptions (retouch `data` parameters, cast shadow, sun rays, streaks and long relight shadows on the whole-layer copies, `selective-color` fold, LUTs through `g.asset`, central Oklab); `clip` on ordinary layers, `g.below()`, fill for the layer's own pixels; analysis loaded per document and `kinds: ['light']`; `hdr.merge`, `composite.match`, `relight.portrait` and `relight.retime` tested through the agent; `summarize()` labels for template fields; `page.resize` rescaling `px` effect lengths in `le-link.js`.
+
+Left from that pass:
+- `page.resize` alone on the command line: `tools/le-cli/lib/page-adapter.js` loads the effect registry only for expert operations, so a resize of a file with effects that is not in a batch with one reports `unscaled` and leaves the effect lengths. Add `page\.resize$` to the adapter's expert-operation test.
+- Fill against styles on photo layers: their shadows and glows are part of the cached bitmap, so `blend-options.fill` still fades them (text, shapes and groups are right). Needs the layer stage to keep the picture before its silhouette entries.
+- Clipped layers inside a group that has effects, and `g.below()` for a group's members, are drawn unclipped / read the layer under the group's first member.
+- A RAW/HDR layer with legacy adjustments, a legacy filter or a baked retouch overlay still goes through 8 bits after develop (those steps are 8-bit CPU code).
+- `floor-reflection` and `water-reflection` still read their tile (reach about twice the fade distance); only the cast shadow moved to the whole-layer copy.
 
 First load:
 - Split `le-studio-panels.js` (20 to 25 KB) to get the studio back under 250 KB; split `le-pwa.js` (32 KB) with its owner; defer `le-assets` and `le-fonts` in the PDF studio; a studio-only stylesheet; a static summary for the start-screen makers row.

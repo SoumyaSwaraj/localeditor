@@ -87,22 +87,19 @@ optional tint, strongest in the mid-tones. Off until `convert` is true.
 { "type": "bw-mix", "p": { "convert": true, "reds": 90, "yellows": 80, "greens": 35, "cyans": 40, "blues": -10, "magentas": 60, "tintHue": 35, "tint": 12 } }
 ```
 
-### selective-color and selective-color-tones — Selective colour (Colour mixer, display)
+### selective-color — Selective colour (Colour mixer, display)
 
 The CMYK-style selective colour. Family weights: primary (largest channel) max − mid, secondary mid − min, whites 2(min − ½),
 blacks 2(½ − max), neutrals 1 − (|max − ½| + |min − ½|). Inks C = 1 − R, M = 1 − G, Y = 1 − B; relative changes an ink by a fraction of
 itself, absolute adds it; black moves all inks towards 1 (+) or 0 (−).
 
-Two registrations because the document keeps at most 24 parameters per entry (9 families × 4 inks + method = 37):
-
-| Effect | Params (−100…100 %, default 0) | Method |
-|---|---|---|
-| `selective-color` | `redsC redsM redsY redsK`, `yellows…`, `greens…`, `cyans…`, `blues…`, `magentas…` | relative |
-| `selective-color-tones` | `whitesC…K`, `neutralsC…K`, `blacksC…K` | `method`: `relative` (default) or `absolute` |
+One registration with 37 parameters (9 families × 4 inks + `method`), −100…100 %, default 0: `redsC redsM redsY redsK`, `yellows…`,
+`greens…`, `cyans…`, `blues…`, `magentas…` (always relative), then `whitesC…K`, `neutralsC…K`, `blacksC…K` with `method`: `relative`
+(default) or `absolute`. Until the registry allowed 48 parameters the last three families were a second effect,
+`selective-color-tones`; that id is an alias now, so older documents read and draw the same.
 
 ```json
-{ "type": "selective-color", "p": { "redsC": -15, "redsY": 8, "yellowsC": -10, "cyansC": 20, "bluesK": 15 } }
-{ "type": "selective-color-tones", "p": { "method": "absolute", "whitesY": -6, "neutralsY": -5, "blacksC": 6, "blacksK": 8 } }
+{ "type": "selective-color", "p": { "redsC": -15, "redsY": 8, "yellowsC": -10, "cyansC": 20, "bluesK": 15, "method": "absolute", "whitesY": -6, "neutralsY": -5 } }
 ```
 
 ### channel-mixer — Channel mixer (Colour mixer, linear)

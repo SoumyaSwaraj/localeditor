@@ -1,10 +1,10 @@
-/* LocalEditor: loads the effect renderer (assets/js/fx/) when a document needs it. See docs/FX-AUTHORING.md. Keep this file tiny. */
+/* Loads the effect renderer (assets/js/fx/) when a document needs it: docs/FX-AUTHORING.md. Keep this file tiny. */
 (function () {
   'use strict';
   var LE = window.LE = window.LE || {}, job = null, scenes = [];
   var src = (document.currentScript ? document.currentScript.src.replace(/le-fx-boot\.js.*$/, '') : '../assets/js/') + 'fx/le-fx.js';
   function has(l) { return !!l && (l.type === 'adjust' || (l.fx && l.fx.length > 0) || !!l.layerMask || !!l.transform || !!l.retouch || !!(l.raw && l.raw.source)); }
-  function needs(x) { return !!x && (Array.isArray(x.layers) ? x.layers.some(has) : has(x)); }
+  function needs(x) { return !!x && (Array.isArray(x.layers) ? x.layers.some(function (l) { return has(l) || !!(l && l.clip); }) : has(x)); }
   function redraw() { scenes = scenes.filter(function (s) { return !s._dead; }); scenes.forEach(function (s) { s._mark(); }); }
   function load(scene) {
     if (scene && scenes.indexOf(scene) < 0) scenes.push(scene);
