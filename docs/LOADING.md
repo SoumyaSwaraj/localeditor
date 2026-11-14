@@ -115,6 +115,7 @@ Sizes are gzip, script + CSS.
 | `makers`, `makerslib` | `le-studio-makers.js` + css, `le-makers.js` | 12+2, 25 | the start screen's makers row (a skeleton until the studio is interactive and idle, or scrolled to); Apps → Make; `?make=`; a document with a maker page | 8 |
 | `stock` | `le-stock.js` | 10 | Uploads → Stock | 9 |
 | `design` | `le-design.js` + css | 37+1 | `#d=` template links (also on hashchange); Open/Save design file; Share as template link; dropping a `.ledesign.json` | 10 |
+| `chartslib`, `charts` | `le-charts.js`, `le-studio-charts.js` + css | 52, 10+2 | the Chart panel (Elements → Chart from your numbers, Apps → Chart, `?tool=chart`, the Edit chart chip); `chart.*` operations in agent mode; a design file with a chart group that has no drawn layers; the chart poster maker's first build; the command-line engine (`LE_AGENT_HEADLESS`). A design that contains a chart draws without them | never warmed |
 | `agent`, `agentui`, `link` | `le-agent.js`, `le-studio-agent.js` + css, `le-link.js` | 37, 14+3, 18 | `?agent`, `#ops=`, `?link=`, a session to resume, `LE_AGENT_HEADLESS` (the command-line engine; it also loads `link`), File → Agent mode…, any call on `window.LEAgent` | never warmed |
 
 Stubs kept in the core (each is replaced when its module arrives): `LE.design` (`isDesignFile` is synchronous; the rest forward),

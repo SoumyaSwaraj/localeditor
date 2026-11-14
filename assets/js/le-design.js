@@ -341,7 +341,7 @@
     svg: ['assetId', 'svg', 'color', 'strokeWidth', 'iconStyle', 'qr', 'icon'],
     icon: ['icon', 'assetId', 'color', 'strokeWidth', 'iconStyle'],
     path: ['points', 'smoothing', 'width', 'color', 'mode'],
-    group: []
+    group: ['chart']
   };
 
   /* One file layer → an internal layer draft plus the work still to do (images, icons, measuring, placing). */
@@ -398,6 +398,10 @@
     else if (type === 'shape') readShape(src, path, l, rep);
     else if (type === 'svg' || type === 'icon') readSvg(src, path, l, d, rep, type);
     else if (type === 'path') readPath(src, path, l, rep);
+    else if (type === 'group' && src.chart != null) {   /* a chart: plain data; its layers are drawn below when the file has none (docs/CHARTS.md) */
+      var chart = LE.Scene && LE.Scene.chartOf ? LE.Scene.chartOf(src.chart) : null;
+      if (chart) l.chart = chart; else rep.err(path + '/chart', 'chart is an object such as { "type": "bar", "data": { "columns": [...], "rows": [[...]] } }.');
+    }
     readExpert(src, l, d, page, type);
     return d;
   }
@@ -1224,6 +1228,14 @@
     }).then(function () {
       return Promise.all(pages.map(function (p) { return makerStage(p, rep, st); }));
     }).then(function () {
+      /* Charts: the engine and the fonts its themes use, only when a page has a chart group. */
+      var charts = [];
+      pages.forEach(function (p) { p.drafts.forEach(function (d) { if (d.l.chart) charts.push(d.l.chart); }); });
+      if (!charts.length) return null;
+      return Promise.resolve(LE.charts || LE.lazy(rootPath() + 'assets/js/le-charts.js')).then(function () {
+        return withTimeout(Promise.all(charts.map(function (c) { return LE.charts.ready(c, { brand: brand && brand.data }); })), 8000);
+      }).catch(function () { rep.warn('', 'chart', 'The chart maker could not be loaded; chart groups keep the layers the file gives them.'); });
+    }).then(function () {
       var all = [];
       pages.forEach(function (p) { all = all.concat(p.drafts); });
       return loadIcons(all, rep).then(function () { return all; });
@@ -1313,6 +1325,7 @@
           }
         }
         var doc = { v: 1, width: W, height: H, background: bg, layers: layers };
+        if (LE.charts && layers.some(function (l) { return l.chart; })) LE.charts.expand(doc, { brand: brand && brand.data }).notes.forEach(function (n) { rep.warn(page.path, 'chart', n); });
         if (page.id) doc.id = page.id;
         if (page.collage) doc.collage = page.collage;
         if (page.carouselIn) {
@@ -1715,6 +1728,7 @@
       if (l.color && l.color !== '#17131F') o.color = l.color;
       if (l.mode && l.mode !== 'pen') o.mode = l.mode;
     }
+    if (l.type === 'group' && l.chart) o.chart = clone(l.chart);
     if (l.bind) { o.bind = {}; ['content', 'color', 'show', 'fit'].forEach(function (k) { if (l.bind[k]) o.bind[k] = l.bind[k]; }); }
     if (l.type === 'text' && l.overflow) o.overflow = l.overflow;
     if (l.type === 'text' && l.minSize) o.minSize = r2(l.minSize);

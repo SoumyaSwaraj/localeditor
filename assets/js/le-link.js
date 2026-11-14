@@ -496,6 +496,21 @@
       return { id: r.id, page: p };
     };
   });
+  /* Charts (docs/CHARTS.md): LE.charts.ops on the open-format page. In a design file a chart is one group layer with its
+     data ({ "type": "group", "chart": { … } }); these operations change that data and drop the drawn layers, and whoever
+     reads the file next (build, render, check, the studio) draws them again with the real fonts. */
+  ['chart.add', 'chart.update', 'chart.data'].forEach(function (name) {
+    OPS[name] = function (doc, op, path, ctx) {
+      var W = typeof window !== 'undefined' ? window : null, ch = W && W.LE && W.LE.charts;
+      if (!ch) throw new OpError('unsupported', 'Charts need the app page (the chart maker is not loaded here).', path + '/op');
+      var o = clone(op), p = name !== 'chart.add' && op.layer != null ? layerIn(doc, String(op.layer), op, path + '/layer', ctx).page : pageOf(doc, op, path, ctx);
+      delete o.page;
+      var r = ch.ops.apply(doc.pages[p], o, { defer: true });
+      if (!r.ok) throw new OpError('invalid', r.errors[0].message, path + (r.errors[0].path || ''));
+      doc.pages[p] = r.doc;
+      return { id: r.id, page: p, summary: r.summary };
+    };
+  });
   /* Operations that need the open app (a model, a decoder, the picture's pixels): named here so a file-only caller gets a reason. */
   ['fx.call', 'map.generate', 'raw.open', 'hdr.merge', 'raw.settings', 'raw.autoTone'].forEach(function (name) {
     OPS[name] = function (doc, op, path) { throw new OpError('unsupported', '"' + name + '" works on a design that is open in the app: use agent mode (window.LEAgent) in the studio.', path + '/op'); };

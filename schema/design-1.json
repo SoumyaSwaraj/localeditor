@@ -304,8 +304,34 @@
         { "if": { "properties": { "type": { "const": "icon" } } }, "then": { "$ref": "#/$defs/iconLayer" } },
         { "if": { "properties": { "type": { "const": "path" } } }, "then": { "$ref": "#/$defs/pathLayer" } },
         { "if": { "properties": { "type": { "const": "adjust" } } }, "then": { "$ref": "#/$defs/adjustLayer" } },
+        { "if": { "properties": { "type": { "const": "group" } } }, "then": { "$ref": "#/$defs/groupLayer" } },
         { "if": { "not": { "properties": { "type": { "const": "image" } } } }, "then": { "properties": { "fx": { "$ref": "#/$defs/fxStack" } } } }
       ]
+    },
+    "groupLayer": {
+      "properties": { "chart": { "$ref": "#/$defs/chart" } }
+    },
+    "chart": {
+      "description": "A chart as plain data on a group layer (docs/CHARTS.md). The group's members are ordinary layers drawn from it; a chart group without members is drawn when the file is read. Cells are text or numbers and are never evaluated.",
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "v": { "const": 1 },
+        "type": { "enum": ["bar", "column", "line", "area", "pie", "donut", "scatter", "bubble", "histogram", "combo", "waterfall", "funnel", "radar", "gauge", "lollipop", "slope", "bullet", "heatmap", "treemap", "pictogram", "stat", "sparkline", "table"] },
+        "data": {
+          "type": "object",
+          "required": ["columns", "rows"],
+          "properties": {
+            "columns": { "type": "array", "maxItems": 60, "items": { "type": "string", "maxLength": 80 } },
+            "rows": { "description": "At most 5,000 cells in all.", "type": "array", "maxItems": 5000, "items": { "type": "array", "maxItems": 60, "items": { "type": ["string", "number"], "maxLength": 200 } } }
+          },
+          "additionalProperties": false
+        },
+        "map": { "description": "Which column plays which part: category, series[], group, x, y, size, target. A column index or its name.", "type": "object", "maxProperties": 40 },
+        "theme": { "enum": ["clean", "paper", "dark", "contrast", "mono", "pastel", "grey", "vivid", "brand"] },
+        "options": { "description": "title, subtitle, source, note, highlight, sort, top, mode, labels, annotations and the options of each type (docs/CHARTS.md).", "type": "object", "maxProperties": 40 }
+      },
+      "additionalProperties": false
     },
     "textLayer": {
       "required": ["text"],

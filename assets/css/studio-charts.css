@@ -1,0 +1,78 @@
+/* LocalEditor studio: the Chart panel (le-studio-charts.js). Tokens only; every target is at least 44 px. */
+.cx-lead { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: var(--muted); }
+.cx-hint { margin: 0; font-size: 12px; line-height: 1.4; color: var(--faint); }
+.cx-status { margin: 0; min-height: 0; font-size: 13px; color: var(--muted); }
+.cx-status:empty { display: none; }
+.cx-label { font-size: 12.5px; font-weight: 650; color: var(--muted); }
+.cx-drop { display: grid; gap: 8px; padding: 12px; margin: 0 0 4px; border-radius: var(--card-radius, 14px); border: 1.5px dashed var(--border-strong, var(--border)); background: var(--surface); }
+.cx-drop.is-over { border-color: var(--primary); background: var(--selected-bg); }
+.cx-paste { width: 100%; min-height: 96px; padding: 10px 12px; font: 500 14px/1.45 var(--font-mono, ui-monospace, monospace); box-sizing: border-box; resize: vertical; }
+.cx-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+.cx-row .cx-btn { flex: 1 1 140px; }
+.cx-btn { min-height: 44px; justify-content: center; }
+.cx-btn .sx-ic { width: 18px; height: 18px; }
+.cx-actions { position: sticky; bottom: 0; padding: 10px 0; background: var(--surface); z-index: 1; }
+.cx-foot { margin-top: 18px; }
+
+.cx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.cx-list { display: grid; gap: 8px; }
+.cx-card { display: grid; gap: 6px; padding: 6px; min-height: 44px; text-align: left; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; font: inherit; min-width: 0; }
+.cx-card:hover { border-color: var(--border-hover); }
+.cx-card:focus-visible, .cx-chip:focus-visible, .cx-theme:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.cx-card.is-on, .cx-card.is-best { border-color: var(--selected-edge); background: var(--selected-bg); }
+.cx-thumb { display: block; aspect-ratio: 3 / 2; border-radius: 8px; overflow: hidden; background: var(--surface-2); }
+.cx-thumb-cv { display: block; width: 100%; height: 100%; }
+.cx-card-t { display: grid; gap: 2px; padding: 0 4px 4px; min-width: 0; }
+.cx-card-t b { font-size: 13px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-card-t small { font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+.cx-wide { grid-template-columns: 132px minmax(0, 1fr); align-items: center; gap: 10px; }
+.cx-wide .cx-card-t { padding: 4px 4px 4px 0; }
+.cx-wide .cx-card-t b { white-space: normal; }
+
+.cx-sum { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); color: var(--ink); font-size: 13px; }
+.cx-sum p { margin: 4px 0 0; line-height: 1.5; color: var(--muted); overflow-wrap: anywhere; }
+.cx-sum i { font-style: normal; color: var(--faint); }
+.cx-sum .cx-fix { margin-top: 8px; }
+.cx-tabs { margin: 0 0 4px; }
+.cx-tabs button { min-height: 44px; flex: 1; }
+.cx-note { padding: 8px 10px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); }
+.cx-bad { margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: 13px; }
+.cx-bad ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+.cx-bad li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cx-bad li span { min-width: 0; overflow-wrap: anywhere; }
+.cx-fix { min-height: 44px; flex: none; }
+
+.cx-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cx-chip { min-height: 44px; max-width: 100%; padding: 0 14px; border-radius: 22px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); font: 550 13.5px var(--font); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-chip:hover { border-color: var(--border-hover); }
+.cx-chip[aria-pressed="true"] { border-color: var(--selected-edge); background: var(--selected-bg); color: var(--accent); }
+.cx-themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.cx-theme { display: grid; gap: 6px; padding: 6px; min-height: 44px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); font: 550 12.5px var(--font); cursor: pointer; text-align: center; min-width: 0; }
+.cx-theme[aria-pressed="true"] { border-color: var(--selected-edge); background: var(--selected-bg); color: var(--accent); }
+.cx-theme i { display: flex; align-items: flex-end; justify-content: center; gap: 4px; height: 40px; padding: 0 8px 7px; border-radius: 8px; border: 1px solid var(--line); }
+.cx-theme u { flex: 1; max-width: 14px; border-radius: 2px 2px 0 0; text-decoration: none; }
+.cx-theme u:nth-child(1) { height: 26px; } .cx-theme u:nth-child(2) { height: 18px; } .cx-theme u:nth-child(3) { height: 22px; } .cx-theme u:nth-child(4) { height: 12px; }
+.cx-theme span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.cx-field { display: grid; gap: 5px; margin: 10px 0 0; font-size: 12.5px; font-weight: 650; color: var(--muted); }
+.cx-field .sx-input { min-height: 44px; }
+.cx .sx-sec-body > .sx-seg, .cx .sx-sec-body > .sx-toggle { margin-top: 8px; }
+.cx .sx-sec-body > .sx-seg button { min-height: 44px; }
+.cx .sx-toggle { min-height: 44px; }
+
+/* The typing grid: a table when there is room, one card per row on a phone. */
+.cx-gridwrap { overflow-x: auto; margin: 0 -2px; padding: 2px; }
+.cx-table { width: 100%; border-collapse: separate; border-spacing: 4px; }
+.cx-table th, .cx-table td { padding: 0; min-width: 96px; }
+.cx-cell { min-height: 44px; }
+.cx-head { font-weight: 700; background: var(--surface-2); }
+.cx-cell.is-bad { border-color: var(--err); }
+@media (max-width: 720px) {
+  .cx-gridwrap { overflow-x: visible; }
+  .cx-table, .cx-table thead, .cx-table tbody, .cx-table tr, .cx-table th, .cx-table td { display: block; min-width: 0; }
+  .cx-table thead tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0 0 10px; }
+  .cx-table tbody tr { margin: 0 0 8px; padding: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); display: grid; gap: 6px; }
+  .cx-table td { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); align-items: center; gap: 8px; }
+  .cx-table td::before { content: attr(data-label); font-size: 12.5px; font-weight: 650; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cx-wide { grid-template-columns: 104px minmax(0, 1fr); }
+}

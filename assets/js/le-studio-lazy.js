@@ -66,6 +66,18 @@
     doc: function (pages) { return anyPage(pages, function (p) { return p.maker; }); }, idle: 8, features: ['studio.make', 'studio.makers'] });
   M.defer({ id: 'fonts', src: JS + 'le-studio-fonts.js', css: CSS + 'studio-fonts.css', label: 'fonts', deps: ['fontorig'], panels: { fonts: 'Fonts' }, idle: 1, features: ['studio.text'] });
   M.defer({ id: 'design', src: JS + 'le-design.js', css: CSS + 'studio-design.css', label: 'design files', deps: ['fontorig', 'assets', 'collagelib', 'makerslib'], hash: /(?:^#|[#&])d=[A-Za-z0-9_-]/, idle: 10 });
+  /* Charts (docs/CHARTS.md): only when asked. A design with a chart draws without them: its parts are ordinary layers. */
+  M.defer({ id: 'chartslib', src: JS + 'le-charts.js', label: 'charts', deps: ['fontorig', 'assets'], when: function () { return window.LE_AGENT_HEADLESS === true; } });
+  M.defer({ id: 'charts', src: JS + 'le-studio-charts.js', css: CSS + 'studio-charts.css', label: 'charts', deps: ['chartslib'], panels: { chart: 'Chart' }, cmds: ['chart'], wrap: { apps: function (o) { return o.app === 'chart'; } } });
+  P._apps.push(['chart', 'Chart', 'chart', 'Bars, lines and pies from your numbers']);
+  (P._hooks['toolbar-add'] = P._hooks['toolbar-add'] || []).push(function (c, kind, l) { return l && l.chart ? '<button type="button" class="sx-tb sx-tb-chip" data-cmd="chart:edit" data-pri="1">Edit chart</button>' : ''; });
+  var elRender = P.elements.render;
+  P.elements.render = function (c, body) {
+    elRender.apply(this, arguments);
+    var b = c.h('<button type="button" class="btn sx-el-chart" style="width:100%;min-height:44px">' + c.ic('chart') + '<span>Chart from your numbers</span></button>');
+    b.onclick = function () { c.openPanel('chart', { back: 'elements' }); };
+    body.insertBefore(b, body.querySelector('.sx-el-host'));
+  };
   /* Agent mode and live links: never warmed; ?agent, #ops=, ?link=, a session to resume, headless mode, the File menu entry
      or a call on window.LEAgent loads them. */
   var agentNow = function () { if (window.LE_AGENT_HEADLESS === true) return true; try { var s = JSON.parse(ss('le-agent') || 'null'); return !!(s && s.session); } catch (e) { return false; } };

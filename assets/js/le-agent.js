@@ -2204,6 +2204,48 @@
     return r;
   };
 
+  /* ---------- Charts (LE.charts; docs/CHARTS.md) ----------
+     One contained block, like Expert effects above. The operations are LE.charts.ops, run on the batch's working copy, so
+     they share its atomic commit, change feed and undo (one step per batch). A chart is a group layer that carries its data
+     (layer.chart) and ordinary child layers drawn from it; "layer" is the group's id or name. The engine loads on first use. */
+  function chartsLoad(path) {
+    var p = LE.charts ? null : LE.modules && LE.modules.need ? LE.modules.need('chartslib') : LE.lazy('../assets/js/le-charts.js');
+    return Promise.resolve(p).then(function () { if (!LE.charts) throw new Error('missing'); return LE.charts; }).catch(function () { throw err('unsupported', 'The chart maker could not be loaded.', path); });
+  }
+  ['chart.add', 'chart.update', 'chart.data'].forEach(function (name) {
+    OPS[name] = function (W, op, path) {
+      var pi = pageIndex(W, op.page, path + '/page'), o = clone(op), cx = { brand: W.studio && W.studio.brand && W.studio.brand.data || null };
+      delete o.page;
+      return chartsLoad(path).then(function (ch) {
+        var old = layerList(W.pages[pi]).filter(function (l) { return l.chart && (o.layer == null || l.id === o.layer || l.name === o.layer); })[0];
+        return Promise.all([typeof o.csv === 'string' && !LE.variables && LE.varBoot ? LE.varBoot.ready() : null, ch.ready({ theme: o.theme || (old && old.chart.theme) || 'clean' }, cx)]).then(function () {
+          var r = ch.ops.apply(W.pages[pi], o, cx);
+          if (!r.ok) throw err('invalid', r.errors[0].message + (/^unknown-/.test(r.errors[0].code) ? ' See catalog("charts").' : ''), path + (r.errors[0].path || ''));
+          W.pages[pi] = r.doc;
+          if (name === 'chart.add') W.added = (W.added || []).concat([{ page: pi, id: r.id }]);
+          touch(W, pi, r.id);
+          return name === 'chart.add' ? { added: [r.id], layers: r.layers, summary: r.summary, warnings: r.warnings } : { layer: r.id, layers: r.layers, summary: r.summary, warnings: r.warnings };
+        });
+      });
+    };
+  });
+  var catalogCharts = catalog;
+  catalog = function (kind, q, o) {
+    if (!/^charts?$/i.test(String(kind || ''))) return catalogCharts(kind, q, o);
+    return chartsLoad('').then(function (ch) { return Object.assign({ ok: true, kind: 'charts' }, ch.catalog()); }, function (e) { return fail(e.code || 'unsupported', e.message); });
+  };
+  var helpCharts = help;
+  help = function () {
+    var r = helpCharts();
+    try {
+      r.methods['catalog("charts")'] = 'Chart types with their options, themes, the mapping keys and example operations.';
+      r.operations['chart.add'] = { example: { op: 'chart.add', type: 'bar', data: { columns: ['Room', 'Seats'], rows: [['Hall', 620], ['Lounge', 450]] }, theme: 'paper', options: { title: 'Seats by room', highlight: 'Hall' } }, fields: 'data { columns, rows } or rows or csv. type left out: the best fit for the data. map, theme, options, box { x, y, w, h }, id optional. Answers with a one-sentence summary.' };
+      r.operations['chart.update'] = { example: { op: 'chart.update', layer: 'chart', type: 'column', theme: 'dark', options: { sort: 'desc', highlight: null } }, fields: 'layer: the chart group. type, theme, map, box; options are merged (null removes one). The chart is redrawn; hand edits to its parts are replaced.' };
+      r.operations['chart.data'] = { example: { op: 'chart.data', layer: 'chart', csv: 'Room,Seats\nHall,640\nLounge,455' }, fields: 'New data for a chart (data, rows or csv); the mapping is kept when the column names still match.' };
+    } catch (e) { /* help keeps its own shape */ }
+    return r;
+  };
+
   window.LEAgent = {
     version: VERSION, protocol: PROTOCOL, headless: HEADLESS, codes: Object.keys(CODES),
     help: help, begin: begin, end: end, state: state, apply: apply, applyExternal: applyExternal,
