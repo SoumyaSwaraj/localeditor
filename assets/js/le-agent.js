@@ -922,7 +922,14 @@
     try { if (LE.makers && LE.makers.colorName) name = LE.makers.colorName(c); } catch (e) {}
     return (bg.type === 'gradient' ? 'a gradient from ' : '') + (name ? name.toLowerCase() + ' (' + c + ')' : c);
   }
-  function summarize(diff, afterPages) {
+  /* Template fields (docs/VARIABLES.md): a batch that only defines, fills or multiplies them is named for that. */
+  function fieldLabel(ops) {
+    var tf = (ops || []).map(function (o) { return o && (OP_ALIASES[o.op] || o.op); }), tn = tf[tf.length - 1];
+    if (!tf.length || !tf.every(function (n) { return n === 'variables.set' || n === 'values.set' || n === 'bulk.create'; })) return '';
+    return tn === 'variables.set' ? 'Define fields' : tn === 'values.set' ? 'Fill in fields' : 'Add ' + (ops[ops.length - 1].rows || []).length + ' pages from a list';
+  }
+  function summarize(diff, afterPages, ops) {
+    if (fieldLabel(ops)) return fieldLabel(ops);
     var parts = [];
     var groups = {};
     diff.items.forEach(function (it) { if (!it.id) return; (groups[it.kind] = groups[it.kind] || []).push(it); });
@@ -1208,9 +1215,9 @@
           var r = swapIn(final, b.label);
           if (W.select && C()) { try { C().scene.select(W.select.filter(function (id) { return layerAt(r.after, r.afterActive, id); })); } catch (e) {} }
           if (r.diff.empty) {
-            return { ok: true, batch: b.id, applied: applied, errors: errors, results: results, message: 'Applied, but nothing visible changed.', problems: problems() };
+            return { ok: true, batch: b.id, applied: applied, errors: errors, results: results, message: 'Applied, but nothing visible changed.', summary: fieldLabel(b.ops) || undefined, problems: problems() };
           }
-          var summary = summarize(r.diff, r.after);
+          var summary = summarize(r.diff, r.after, b.ops);
           var ch = recordChange(b.by || 'agent', r.diff, { label: b.label || summary, batch: b.id, session: b.session ? b.session.id : null });
           var e = addFeed({ by: b.by || 'agent', source: b.source, session: b.session ? b.session.id : null, agent: b.session ? b.session.name : (b.sourceName || null), label: b.label || '', summary: summary, ops: clone(b.ops).slice(0, 60), batch: b.id, rev: ch.rev, diff: r.diff, swap: r });
           if (b.session) { b.session.batches++; b.session.seenRev = A.rev; }

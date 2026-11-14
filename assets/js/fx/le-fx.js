@@ -310,7 +310,11 @@
         var dl = isObj(r.download) && typeof r.download.text === 'string' ? { name: String(r.download.name || 'download.txt').replace(/[^\w .()-]/g, '').slice(0, 80) || 'download.txt', text: r.download.text, type: /^[\w.+-]+\/[\w.+-]+$/.test(r.download.type || '') ? r.download.type : 'text/plain' } : null;
         var data = null;
         if (isObj(r.data)) { try { var js = JSON.stringify(r.data); if (js.length <= 20000) data = JSON.parse(js); } catch (e2) { data = null; } }
-        var out = { ok: true, ops: ops, download: dl, message: typeof r.message === 'string' ? r.message.slice(0, 300) : '' };
+        /* What a helper could not do fully (no depth map, no face found) travels with its result: as warnings, and in words
+           when it gave no message of its own, so an agent that only reads the message still hears it. */
+        var warns = (Array.isArray(r.warnings) ? r.warnings : []).filter(function (w) { return isObj(w) && typeof w.message === 'string'; }).slice(0, 8).map(function (w) { return { code: String(w.code || 'note').slice(0, 40), message: w.message.slice(0, 300) }; });
+        var out = { ok: true, ops: ops, download: dl, message: (typeof r.message === 'string' && r.message ? r.message : warns.map(function (w) { return w.message; }).join(' ')).slice(0, 300) };
+        if (warns.length) out.warnings = warns;
         if (data) out.data = data;
         return out;
       }, function (e) { return { ok: false, ops: [], message: String(e && e.message || e).slice(0, 300) }; });
