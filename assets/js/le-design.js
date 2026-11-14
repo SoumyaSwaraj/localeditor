@@ -635,14 +635,15 @@
       else if (LE.project && LE.project.sanitizeSvg && !LE.project.sanitizeSvg(src.svg)) rep.err(path + '/svg', 'This SVG could not be read.');
       else l.svg = src.svg;
     }
-    if (type === 'svg' && !aid && src.svg == null) rep.err(path, 'An svg layer needs "svg" markup or an "assetId".');
+    var qrOnly = type === 'svg' && src.svg == null && isObj(src.qr) && typeof src.qr.text === 'string' && !!src.qr.text;   /* a QR code given as settings alone: drawn by the engine (qrStage) */
+    if (type === 'svg' && !aid && src.svg == null && !qrOnly) rep.err(path, 'An svg layer needs "svg" markup, an "assetId", or "qr": { "text": … } for a QR code.');
     if (src.color != null) l.color = colorAt(src.color, path + '/color', rep);
     var sw = numberAt(src.strokeWidth, path + '/strokeWidth', rep, 'strokeWidth');
     if (sw != null) l.strokeWidth = sw;
     if (aid && /^lucide:/.test(aid) && l.strokeWidth == null && type === 'icon') l.strokeWidth = 2;
     if (aid && /^(lucide|phosphor|ph):/.test(aid) && !l.color && type === 'icon') l.color = '#17131F';
     if (src.iconStyle != null) { var is = objAt(src.iconStyle, path + '/iconStyle', rep, 'iconStyle'); if (is) d.iconStyle = clone(is); }
-    if (src.qr != null) { var q = objAt(src.qr, path + '/qr', rep, 'qr'); if (q) d.qr = clone(q); }
+    if (src.qr != null) { var q = objAt(src.qr, path + '/qr', rep, 'qr'); if (q) { d.qr = clone(q); d.qrMake = qrOnly; } }
     d.icon = !!aid;
     if (type === 'icon') { d.square = true; }
   }
@@ -1062,6 +1063,27 @@
     page.makerIn = { id: m.id, style: m.style || '', size: m.size || '', values: isObj(m.values) ? clone(m.values) : {}, sig: m.sig || '' };
     page.makerGenerate = !!generate;
   }
+  /* QR layers given as settings alone ("qr": { text, shape, eye, image, frame, … } and no "svg") are drawn by the QR engine
+     (docs/QR.md), which loads only now. The stored settings are the cleaned spec, so "Edit QR" opens them as they are. */
+  function qrStage(all, rep) {
+    var make = all.filter(function (d) { return d.qrMake; });
+    if (!make.length) return Promise.resolve(all);
+    var ready = LE.qr && LE.qr.svg ? Promise.resolve() : LE.lazy ? Promise.resolve(LE.lazy(rootPath() + 'assets/js/le-qr.js')) : Promise.reject(new Error('no loader'));
+    return ready.then(function () { return LE.qr.ready(); }).then(function (Q) {
+      make.forEach(function (d) {
+        var spec = Q.isPlain(d.qr) ? { text: String(d.qr.text).slice(0, LIMITS.qrChars), fg: Q.color.hex(d.qr.fg) || '#17131f', bg: d.qr.bg === undefined ? '#ffffff' : Q.color.hex(d.qr.bg), ec: Q.clean(d.qr).ec } : Q.clean(d.qr);
+        try { d.l.svg = Q.svg(spec); } catch (e) { rep.err(d.path + '/qr/text', e.message); return; }
+        if (!d.l.assetId) d.l.assetId = 'qr:code';
+        if (!d.l.name) d.l.name = 'QR · ' + spec.text.slice(0, 30);
+        d.qr = spec;
+        var a = Q.aspect(spec);
+        if (d.w == null && d.h == null) { d.w = 400; d.h = r2(400 / a); } else if (d.h == null) d.h = r2(d.w / a); else if (d.w == null) d.w = r2(d.h * a);
+        var bad = Q.inspect(spec).notes.filter(function (n) { return n.level !== 'info'; })[0];
+        if (bad) rep.warn(d.path + '/qr', 'qr-' + bad.code, bad.text + (bad.fix ? ' Fix: ' + bad.fix.label.toLowerCase() + '.' : ''), d.l.id);
+      });
+      return all;
+    }, function () { make.forEach(function (d) { rep.err(d.path + '/qr', 'The QR maker could not be loaded here. Give the layer its "svg" as well.'); }); return all; });
+  }
   function makerStage(page, rep, st) {
     var mi = page.makerIn;
     if (!mi) return Promise.resolve();
@@ -1205,7 +1227,7 @@
       var all = [];
       pages.forEach(function (p) { all = all.concat(p.drafts); });
       return loadIcons(all, rep).then(function () { return all; });
-    }).then(function (all) {
+    }).then(function (all) { return qrStage(all, rep); }).then(function (all) {
       var fonts = {};
       all.forEach(function (d) {
         if (d.text) fonts[[d.l.font || 'Plus Jakarta Sans', d.l.weight || 700, d.l.italic ? 1 : 0].join('|')] = 1;

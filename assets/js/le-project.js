@@ -727,6 +727,27 @@
     };
     return { data: walk(b.data, 0) };
   }
+  /* A styled QR code's look (docs/QR.md): shape names, colours, numbers and data: pictures, copied key by key. Plain
+     entries ({ text, fg, bg, ec }) come back exactly as they were; LE.qr.clean checks the rest again before drawing. */
+  function qrStyle(v, o) {
+    var word = function (x) { return typeof x === 'string' && /^[a-z]{1,12}$/.test(x) ? x : null; };
+    var pic = function (p) { return p && typeof p === 'object' && typeof p.src === 'string' && p.src.length <= 120000 && SAFE_DATA_IMAGE.test(p.src) ? p.src : null; };
+    var tint = function (to, from, keys) { keys.forEach(function (k) { var c = safeColor(from[k]); if (c) to[k] = c; }); };
+    if (v.fg && typeof v.fg === 'object' && Array.isArray(v.fg.stops)) {
+      var stops = v.fg.stops.slice(0, 3).map(function (s) { var c = safeColor(s && s.color); return c ? { at: clamp(num(s.at, 0), 0, 1), color: c } : null; }).filter(Boolean);
+      if (stops.length > 1) o.fg = { type: v.fg.type === 'radial' ? 'radial' : 'linear', angle: clamp(Math.round(num(v.fg.angle, 45)), 0, 360), stops: stops };
+    }
+    if (word(v.shape)) o.shape = v.shape;
+    if (v.eye && typeof v.eye === 'object') { o.eye = { outer: word(v.eye.outer) || 'square', inner: word(v.eye.inner) || 'square' }; tint(o.eye, v.eye, ['outerColor', 'innerColor']); }
+    if (v.quiet != null) o.quiet = clamp(Math.round(num(v.quiet, 4)), 0, 8);
+    if (v.radius != null) o.radius = clamp(num(v.radius, 0), 0, 0.25);
+    var src = pic(v.image);
+    if (src) { o.image = { src: src, size: clamp(num(v.image.size, 0.22), 0.1, 0.42), fit: v.image.fit === 'cover' ? 'cover' : 'contain', round: clamp(num(v.image.round, 0.2), 0, 0.5) }; if (v.image.plate === null) o.image.plate = null; else tint(o.image, v.image, ['plate']); }
+    src = pic(v.picture);
+    if (src) o.picture = { src: src, dim: clamp(num(v.picture.dim, 0.6), 0.35, 0.9) };
+    if (v.frame && typeof v.frame === 'object' && word(v.frame.style)) { o.frame = { style: v.frame.style, text: str(v.frame.text, 32) }; tint(o.frame, v.frame, ['color', 'ink']); }
+    return o;
+  }
   function studioMeta(m, errors) {
     m = m && typeof m === 'object' ? m : {};
     var out = {
@@ -744,7 +765,7 @@
     });
     if (icons) out.icons = icons;
     var qr = sideMap(m.qr, function (v) {
-      return { text: str(v.text, 1200), fg: safeColor(v.fg) || '#17131f', bg: safeColor(v.bg) || null, ec: oneOf(v.ec, ['L', 'M', 'Q', 'H'], 'M') };
+      return qrStyle(v, { text: str(v.text, 1200), fg: safeColor(v.fg) || '#17131f', bg: safeColor(v.bg) || null, ec: oneOf(v.ec, ['L', 'M', 'Q', 'H'], 'M') });
     });
     if (qr) out.qr = qr;
     var fx = sideMap(m.fx, function (v) {

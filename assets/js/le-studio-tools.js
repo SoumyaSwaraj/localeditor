@@ -524,78 +524,53 @@
   };
 
   /* ---------- QR code ---------- */
-  var qrReady = null;
-  function loadQr() {
-    if (window.qrcode) return Promise.resolve(window.qrcode);
-    if (!qrReady) qrReady = LE.lazy(root() + 'assets/vendor/qrcode.js').then(function () { if (!window.qrcode) throw new Error('QR maker unavailable'); return window.qrcode; });
-    return qrReady;
-  }
-  function qrSvg(text, fg, bg, ec) {
-    var q = window.qrcode;
-    if (q.stringToBytesFuncs && q.stringToBytesFuncs['UTF-8']) q.stringToBytes = q.stringToBytesFuncs['UTF-8'];
-    var qr = q(0, ec || 'M');
-    qr.addData(text || ' ', 'Byte');
-    qr.make();
-    var n = qr.getModuleCount(), m = 4, size = n + m * 2;
-    var d = '';
-    for (var r = 0; r < n; r++) {
-      var run = -1;
-      for (var col = 0; col <= n; col++) {
-        var dark = col < n && qr.isDark(r, col);
-        if (dark && run < 0) run = col;
-        if (!dark && run >= 0) { d += 'M' + (run + m) + ' ' + (r + m) + 'h' + (col - run) + 'v1h-' + (col - run) + 'z'; run = -1; }
-      }
-    }
-    var C = COL();
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" shape-rendering="crispEdges">' + (bg ? '<rect width="' + size + '" height="' + size + '" fill="' + C.hex6(bg) + '"/>' : '') + '<path d="' + d + '" fill="' + C.hex6(fg) + '"/></svg>';
-  }
+  /* The engine (LE.qr, docs/QR.md) and its editor load on first use. An entry in meta.studio.qr is the code's spec:
+     { text, fg, bg, ec } for a plain code (drawn exactly as before), plus shape, eye, picture, frame… for a styled one. */
+  function loadQr() { return LE.modules.need('qrui').then(function () { return LE.qr.ready(); }); }
   function qrMap(c) { var st = c.studio(); st.qr = st.qr || {}; return st.qr; }
+  function placeQr(c, lid, spec) {
+    var markup = LE.qr.svg(spec);
+    if (markup.length > 196000) { c.toast('The pictures inside this code are too large for a design. Choose smaller ones.'); return null; }
+    var clean = LE.project.sanitizeSvg ? LE.project.sanitizeSvg(markup) || markup : markup, name = 'QR · ' + String(spec.text).slice(0, 30), l = lid && c.L(lid);
+    if (l) {
+      var set = { svg: clean, name: name };
+      if (!LE.qr.isPlain(spec) || !LE.qr.isPlain(qrMap(c)[lid] || {})) set.h = l.w / LE.qr.aspect(spec);
+      c.patch(lid, set);
+      qrMap(c)[lid] = spec;
+      return lid;
+    }
+    var id = c.addSvg('qr:code', null, { markup: clean, name: name, noRecent: true });
+    if (id) qrMap(c)[id] = spec;
+    return id;
+  }
   function qrModal(c, lid) {
     var map = lid ? qrMap(c) : {};
     var cur = (lid && map[lid]) || { text: 'https://', fg: '#17131f', bg: '#ffffff', ec: 'M' };
-    var body = c.openModal(lid ? 'Edit <em>QR code</em>' : 'Add a <em>QR code</em>', '<div class="sx-qr"><div class="sx-qr-prev" aria-live="polite"></div><div class="sx-qr-form"></div></div>');
-    var prev = body.querySelector('.sx-qr-prev'), form = body.querySelector('.sx-qr-form');
-    var ta = c.h('<label class="sx-field"><span>Link or text</span><textarea class="sx-input" rows="3" maxlength="1200" spellcheck="false"></textarea></label>');
-    ta.querySelector('textarea').value = cur.text;
-    form.appendChild(ta);
-    var cols = c.h('<div class="sx-row"></div>');
-    var fgB = c.ui.swatchBtn(cur.fg, 'Code colour', function (b) { c.colorPop(b, { value: cur.fg, alpha: false, title: 'Code colour', onChange: function (v) { cur.fg = v; b.querySelector('i').style.background = v; draw(); } }); });
-    var bgB = c.ui.swatchBtn(cur.bg || 'transparent', 'Background', function (b) { c.colorPop(b, { value: cur.bg || '#ffffff', alpha: false, none: 'null', title: 'QR background', onChange: function (v) { cur.bg = v && typeof v === 'string' ? v : null; b.querySelector('i').style.background = cur.bg || 'transparent'; draw(); } }); });
-    cols.appendChild(fgB); cols.appendChild(bgB);
-    form.appendChild(cols);
-    form.appendChild(c.ui.seg([['L', 'Low'], ['M', 'Medium'], ['Q', 'High'], ['H', 'Max']], cur.ec, function (v) { cur.ec = v; draw(); }, 'sx-seg-sm sx-seg-fill'));
-    form.appendChild(U.note(c, 'Higher error correction survives logos and print wear but makes a denser code. Made on this device — nothing is sent anywhere.', 'is-muted'));
-    var warn = c.h('<p class="sx-note is-warn" hidden></p>');
-    form.appendChild(warn);
-    var go = c.h('<button type="button" class="btn btn-gold sx-block">' + c.ic('check') + '<span>' + (lid ? 'Update QR code' : 'Add to design') + '</span></button>');
-    form.appendChild(go);
-    var markup = '';
-    function draw() {
-      cur.text = ta.querySelector('textarea').value;
-      try {
-        markup = qrSvg(cur.text, cur.fg, cur.bg, cur.ec);
-        prev.innerHTML = markup;
-        var C = COL();
-        var lc = cur.bg ? Math.abs(C.lum(cur.fg) - C.lum(cur.bg)) : 1;
-        warn.hidden = lc > 0.35;
-        warn.textContent = 'Low contrast between code and background — scanners may struggle.';
-        go.disabled = false;
-      } catch (e) { prev.innerHTML = ''; markup = ''; warn.hidden = false; warn.textContent = 'That is too long for a QR code — shorten it.'; go.disabled = true; }
-    }
-    ta.querySelector('textarea').addEventListener('input', c.debounce(draw, 120));
-    loadQr().then(draw).catch(function () { prev.textContent = 'QR maker is not available offline yet.'; go.disabled = true; });
-    go.onclick = function () {
-      if (!markup) return;
-      var clean = LE.project.sanitizeSvg ? LE.project.sanitizeSvg(markup) || markup : markup;
-      if (lid && c.L(lid)) { c.patch(lid, { svg: clean, name: 'QR · ' + cur.text.slice(0, 30) }); qrMap(c)[lid] = Object.assign({}, cur); }
-      else {
-        var id = c.addSvg('qr:code', null, { markup: clean, name: 'QR · ' + cur.text.slice(0, 30), noRecent: true });
-        if (id) qrMap(c)[id] = Object.assign({}, cur);
-      }
-      c.closeModal();
-      c.markDirty();
-    };
+    var body = c.openModal(lid ? 'Edit <em>QR code</em>' : 'Add a <em>QR code</em>', '<div class="sx-qr"><p class="sx-note is-muted">Getting the QR maker…</p></div>');
+    var host = body.querySelector('.sx-qr');
+    loadQr().then(function () {
+      if (!host.isConnected) return;
+      var UI = LE.qr.ui;
+      UI.toast = c.toast;
+      host.innerHTML = '';
+      var ed = UI.editor(host, { mode: 'studio', spec: cur, anyway: lid ? 'Update anyway' : 'Add anyway' }), bulk = null;
+      if (LE.project.brandKit) LE.project.brandKit().then(function (k) { if (k && k.colors && k.colors.length) ed.setBrand({ colors: k.colors }); }).catch(function () {});
+      var go = c.h('<button type="button" class="btn btn-gold" data-qr-go>' + c.ic('check') + '<span>' + (lid ? 'Update QR code' : 'Add to design') + '</span></button>');
+      var many = c.h('<button type="button" class="btn" data-qr-many><span>Make many</span></button>');
+      ed.actions.appendChild(go); ed.actions.appendChild(many);
+      ed.actions.appendChild(U.note(c, 'Made on this device. Nothing is sent anywhere.', 'is-muted'));
+      go.onclick = function () { ed.guard(function (spec) { if (!placeQr(c, lid, spec)) return; c.closeModal(); c.markDirty(); }); };
+      many.onclick = function () { if (!bulk) { var box = c.h('<div class="sx-qr-many"><h3>Make many from a list</h3></div>'); host.appendChild(box); bulk = UI.bulk(box, { style: ed.style, type: ed.type }); } bulk.el.scrollIntoView({ block: 'nearest' }); };
+    }).catch(function () { host.textContent = 'The QR maker is not available offline yet.'; });
   }
+  /* A QR code copied from the tool page carries its design layer in the clipboard's HTML: paste makes the editable element. */
+  CMDS.pasteQr = function (c, arg, html) {
+    loadQr().then(function () {
+      var spec = LE.qr.ui.fromPaste(html);
+      if (!spec) return;
+      if (placeQr(c, null, spec)) { c.markDirty(); c.toast('QR code pasted. Use Edit QR to change it.'); }
+    }).catch(function () {});
+  };
   CMDS.addQr = function (c) { qrModal(c, null); };
   CMDS.editQr = function (c) { var l = c.one(); if (l) qrModal(c, l.id); };
   var elementsRender = P.elements && P.elements.render;

@@ -941,7 +941,13 @@
       var q = global.qrcode;
       var fg = spec.color || '#16131C', bg = spec.background || null;
       var markup = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"></svg>';
+      /* A look for the code (docs/QR.md): spec.style, or opts.qrStyle for every code a maker draws. A preset id or a style spec. */
+      var look = spec.style || opts.qrStyle || null;
+      spec = Object.assign({}, spec);
+      delete spec.style;
       if (!q) needs.qr = 1;
+      else if (look && !(LE.qr && LE.qr.svg)) needs.qrStyle = 1;
+      else if (look) markup = LE.qr.svg(LE.qr.withStyle(String(textValue || ' '), typeof look === 'string' ? look : Object.assign({ quiet: spec.quiet == null ? 2 : spec.quiet }, look)), { plain: false });
       else {
         if (q.stringToBytesFuncs && q.stringToBytesFuncs['UTF-8']) q.stringToBytes = q.stringToBytesFuncs['UTF-8'];
         var code = q(0, spec.level || 'M');
@@ -1133,9 +1139,10 @@
       if (LE.assets && LE.assets.load) jobs.push(LE.assets.load(set).catch(function () {}));
     });
     if (needs.qr && LE.lazy) jobs.push(LE.lazy(rootPath() + 'assets/vendor/qrcode.js').catch(function () {}));
+    if (needs.qrStyle && LE.lazy) jobs.push(LE.lazy(rootPath() + 'assets/js/le-qr.js').catch(function () {}));
     return Promise.all(jobs);
   }
-  function hasNeeds(n) { return Object.keys(n.fonts).length || Object.keys(n.sets).length || n.qr; }
+  function hasNeeds(n) { return Object.keys(n.fonts).length || Object.keys(n.sets).length || n.qr || n.qrStyle; }
 
   /* A short fingerprint of what the person sees (geometry, text, sources, colours), to notice hand edits. */
   function signature(layers) {
