@@ -65,7 +65,7 @@
   M.defer({ id: 'design', src: JS + 'le-design.js', css: CSS + 'studio-design.css', label: 'design files', deps: ['fontorig', 'assets', 'collagelib', 'makerslib'], hash: /(?:^#|[#&])d=[A-Za-z0-9_-]/, idle: 10 });
   /* Charts (docs/CHARTS.md): the engine and the Chart panel, only when asked (the panel, Apps → Chart, Elements, ?tool=chart,
      the "Edit chart" chip). A design with a chart draws without them: a chart's parts are ordinary layers. */
-  M.defer({ id: 'chartslib', src: JS + 'le-charts.js', label: 'charts', deps: ['fontorig', 'assets'] });
+  M.defer({ id: 'chartslib', src: JS + 'le-charts.js', label: 'charts', deps: ['fontorig', 'assets'], when: function () { return window.LE_AGENT_HEADLESS === true; } });   /* the command-line engine has it from the start */
   M.defer({ id: 'charts', src: JS + 'le-studio-charts.js', css: CSS + 'studio-charts.css', label: 'charts', deps: ['chartslib'], panels: { chart: 'Chart' }, cmds: ['chart'], wrap: { apps: function (o) { return o.app === 'chart'; } } });
   if (P._apps) P._apps.push(['chart', 'Chart', 'chart', 'Bars, lines and pies from your numbers']);
   (P._hooks['toolbar-add'] = P._hooks['toolbar-add'] || []).push(function (c, kind, l) { return l && l.type === 'group' && l.chart ? '<button type="button" class="sx-tb sx-tb-chip" data-cmd="chart:edit" data-pri="1" title="Change the data, type and look of this chart">Edit chart</button>' : ''; });

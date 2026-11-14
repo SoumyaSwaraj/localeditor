@@ -342,8 +342,8 @@
     var excl = {};
     (Array.isArray(o.exclude) ? o.exclude : []).forEach(function (x) { excl[String(x)] = 1; });
     var rows = data.rows.filter(function (r) { return !(map.category >= 0 && excl[cell(r[map.category])]) && r.some(function (v) { return cell(v) !== ''; }); });
-    var bad = 0, names = map.series.map(function (i) { return data.columns[i]; }), cols = map.series.slice();
-    function val(r, c) { var s = cell(r[c]); if (s === '') return null; var d = numberOf(r[c]); if (!d) { bad++; return null; } return d.v; }
+    var bad = 0, big = 0, names = map.series.map(function (i) { return data.columns[i]; }), cols = map.series.slice();
+    function val(r, c) { var s = cell(r[c]); if (s === '') return null; var d = numberOf(r[c]); if (!d) { bad++; return null; } if (Math.abs(d.v) > 1e300) { big++; return null; } return d.v; }
     var recs = rows.map(function (r, i) { return { cat: map.category >= 0 ? (cell(r[map.category]) || '(blank)') : String(i + 1), v: cols.map(function (c) { return val(r, c); }), r: r }; });
     /* long → wide */
     if (map.group >= 0 && cols.length) {
@@ -353,7 +353,7 @@
       names = gs;
     }
     var counting = !names.length;
-    if (counting) { names = ['Count']; recs.forEach(function (rec) { rec.v = [1]; }); }
+    if (counting) { names = ['Count']; recs.forEach(function (rec) { rec.v = [1]; }); if (recs.length && o.aggregate !== 'count' && !/^(table|scatter|bubble|histogram)$/.test(chart.type)) notes.push('No column of numbers was found, so the rows are counted.'); }
     /* aggregate */
     var order = [], by = {}, dupes = false;
     recs.forEach(function (rec) { if (!by[rec.cat]) { by[rec.cat] = []; order.push(rec.cat); } else dupes = true; by[rec.cat].push(rec); });
@@ -390,6 +390,7 @@
     values = values.map(function (v, s) { var out = idx.map(function (i) { return v[i]; }); if (other) out.push(other[s]); return out; });
     if (other) { cats.push('Other'); if (times) times = null; }
     if (bad) notes.push(plural(bad, 'cell') + (bad === 1 ? ' is' : ' are') + ' not a number and ' + (bad === 1 ? 'was' : 'were') + ' left out.');
+    if (big) notes.push(plural(big, 'number') + (big === 1 ? ' is' : ' are') + ' too large to draw and ' + (big === 1 ? 'was' : 'were') + ' left out.');
     var series = names.map(function (nm, s) {
       var a = map.group >= 0 || counting || (o.swap && cats.length) ? (counting ? null : A[cols[0]]) : A[cols[s]];
       return { name: String(nm), values: values[s], f: fmtOf(a, o, how === 'mean'), col: cols[s] };
@@ -441,7 +442,7 @@
         if (w < 0) { x += w; w = -w; }
         if (h < 0) { y += h; h = -h; }
         var r = Math.min(o.r || 0, w / 2, h / 2);
-        var l = { type: 'shape', name: o.name || 'Bar', shape: r > 0.5 ? 'rounded-rect' : 'rect', x: r2(x), y: r2(y), w: Math.max(0.01, r2(w)), h: Math.max(0.01, r2(h)), fill: fill ? { type: 'solid', color: fill } : { type: 'none' } };
+        var l = { type: 'shape', name: o.name || 'Bar', shape: r > 0.5 ? 'rounded-rectangle' : 'rect', x: r2(x), y: r2(y), w: Math.max(0.01, r2(w)), h: Math.max(0.01, r2(h)), fill: fill ? { type: 'solid', color: fill } : { type: 'none' } };
         if (r > 0.5) { l.params = { radius: r2(r) }; l.radius = r2(r); }
         if (o.stroke) l.stroke = { width: r2(o.sw || 1), color: o.stroke, dash: o.dash || null, cap: 'butt', join: 'miter' };
         else if (fill && T.outline && !o.flat && contrast(fill, G.bg) < 1.35) l.stroke = { width: 1, color: T.axis, dash: null, cap: 'butt', join: 'miter' };
@@ -1221,8 +1222,10 @@
       if (share > 0.004) G.wedge(cx, cy, Rr - th, Rr, a0, a0 + span * share, c, { name: x.name });
       G.info.angles = (G.info.angles || []).concat([span * share * 180 / Math.PI]);
       var big = format(x.v, f, Math.abs(x.v) >= 100000), bs = Math.min(Rr * 0.44, (Rr - th) * 1.5 / Math.max(0.5, G.width(big, { role: 'title', size: 100 }) / 100));
-      G.text(big, cx, ring ? cy - bs * 0.1 : cy - bs * 0.42, { role: 'title', size: bs, align: 'center', base: 'middle', name: 'Value' });
-      if (f.suf !== '%' || x.max !== 100) G.text('of ' + format(x.max, f, x.max >= 100000), cx, ring ? cy + bs * 0.62 : cy - bs * 0.42 + bs * 0.72, { size: Math.max(7, Math.min(lab * 0.85, bs * 0.4)), color: T.muted, align: 'center', base: 'middle', opt: true, name: 'Out of' });
+      var ofS = f.suf !== '%' || x.max !== 100 ? Math.max(7, Math.min(lab * 0.85, bs * 0.36)) : 0;
+      if (ofS && !ring) bs = Math.min(bs, (Rr - th) * 0.62);
+      G.text(big, cx, ring ? cy - bs * 0.1 : cy - bs * 0.42 - ofS * 1.25, { role: 'title', size: bs, align: 'center', base: 'middle', name: 'Value' });
+      if (ofS) G.text('of ' + format(x.max, f, x.max >= 100000), cx, ring ? cy + bs * 0.62 : cy - ofS * 0.75, { size: ofS, color: T.muted, align: 'center', base: 'middle', opt: true, name: 'Out of' });
       G.text(x.name, cx, (ring ? cy + Rr : cy) + pad, { role: 'label', size: lab, align: 'center', max: cw - pad * 2, lines: 2, lh: 1.1, name: 'Label' });
     });
   };
@@ -1259,7 +1262,7 @@
   R.slope = function (env) {
     var P = env.P, G = env.G, T = env.T, S = env.S, o = env.o, r = env.plot, n = P.cats.length;
     if (P.series.length < 2 || !n) return emptyNote(env, 'A slope chart needs two columns of numbers: before and after.');
-    var A = P.series[0], B = P.series[P.series.length - 1], f = P.f, size = S * 0.78, hl = highlightOf(o), hit = hl.any && P.cats.some(function (c) { return hl.has(c); });
+    var A = P.series[0], B = P.series[P.series.length - 1], f = P.f, size = Math.max(6, Math.min(S * 0.78, (r.h - S * 2.6) / (Math.min(14, P.cats.length) * 1.24))), hl = highlightOf(o), hit = hl.any && P.cats.some(function (c) { return hl.has(c); });
     var rows = [];
     P.cats.forEach(function (c, i) { if (A.values[i] != null && B.values[i] != null) rows.push({ name: c, a: A.values[i], b: B.values[i] }); });
     if (!rows.length) return emptyNote(env, 'There are no rows with both numbers yet.');
@@ -1275,7 +1278,7 @@
     G.line(x2, top - size * 0.6, x2, bot + size * 0.6, T.grid, Math.max(1, env.k * 1.5), { name: 'Axis' });
     var lw = Math.max(2, S * 0.09), place = function (key) {
       var list = rows.slice().sort(function (p, q) { return ys(p[key]) - ys(q[key]); }), gap = size * 1.22, i;
-      list.forEach(function (x, j) { x['y' + key] = Math.max(ys(x[key]), j ? list[j - 1]['y' + key] + gap : top - size); });
+      list.forEach(function (x, j) { x['y' + key] = Math.max(ys(x[key]), j ? list[j - 1]['y' + key] + gap : top - size * 0.2); });
       for (i = list.length - 1; i >= 0; i--) list[i]['y' + key] = Math.min(list[i]['y' + key], i === list.length - 1 ? bot + size * 0.5 : list[i + 1]['y' + key] - gap);
     };
     place('a'); place('b');
@@ -1296,7 +1299,7 @@
     P.cats.forEach(function (c, i) { var v = P.series[0].values[i]; if (v != null) rows.push({ name: labels[i], key: c, v: v, t: tOf[c] == null ? null : tOf[c] }); });
     if (!rows.length) return emptyNote(env, 'There are no numbers to draw yet.');
     n = rows.length;
-    var band = r.h / n, u = clamp(band * 0.42, S * 0.6, S * 1.1), ls = Math.min(u * 0.9, band * 0.6), hi = Math.max.apply(null, rows.map(function (x) { return Math.max(x.v, x.t || 0); })), max = ticks(0, hi * 1.02 || 1, 4).max;
+    var band = r.h / n, u = clamp(band * 0.42, S * 0.6, S * 1.1), ls = Math.min(u * 0.9, band * 0.6), hi = Math.max.apply(null, rows.map(function (x) { return Math.max(x.v, x.t || 0); })), max = ticks(0, hi > 0 ? hi * 1.02 : 1, 4).max;
     var col = Math.min(Math.max.apply(null, rows.map(function (x) { return G.width(x.name, { role: 'label', size: ls }); })), r.w * 0.32) + u * 0.6;
     var txt = function (x) { return format(x.v, f, x.v >= 100000) + (x.t != null ? ' / ' + format(x.t, f, x.t >= 100000) : ''); }, out = Math.max.apply(null, rows.map(function (x) { return G.width(txt(x), { role: 'value', size: ls }); })) + u * 0.6;
     var x0 = r.x + col, avail = Math.max(10, r.w - col - out), k = avail / max, th = clamp(band * 0.5, 4, u * 1.6);
@@ -1306,7 +1309,7 @@
       G.rect(x0, cy - th / 2, avail, th, mix(T.card, T.ink, 0.09), { r: Math.min(T.radius * env.k * 0.5, th / 2), name: 'Track' });
       G.rect(x0, cy - th * 0.24, Math.max(0, x.v) * k, th * 0.48, c, { name: x.name });
       G.info.bars.push({ i: G.layers.length - 1, v: Math.max(0, x.v), cat: x.key });
-      if (x.t != null) G.rect(x0 + x.t * k - Math.max(1.5, u * 0.07), cy - th * 0.42, Math.max(3, u * 0.14), th * 0.84, T.ink, { name: 'Target' });
+      if (x.t != null && x.t >= 0) G.rect(x0 + x.t * k - Math.max(1.5, u * 0.07), cy - th * 0.42, Math.max(3, u * 0.14), th * 0.84, T.ink, { name: 'Target' });
       var vb = G.text(format(x.v, f, x.v >= 100000), x0 + avail + u * 0.5, cy, { role: 'value', size: ls, base: 'middle', name: 'Value' });
       if (x.t != null && vb) G.text(' / ' + format(x.t, f, x.t >= 100000), vb.x1 + ls * 0.12, cy, { size: ls, color: T.muted, base: 'middle', name: 'Target value' });
     });
@@ -1660,7 +1663,7 @@
         else {
           if (share && rows <= 7) { add('donut', 0.96, plural(rows, 'part') + ' that add up to 100%: a donut shows the split.', one()); add('pie', 0.9, 'A pie shows the same split.', one()); }
           if (dec && rows <= 7 && data.rows.some(function (r) { return STAGES.test(cell(r[cats[0]])); })) add('funnel', 0.94, plural(rows, 'stage') + ', each smaller than the last: a funnel shows where people drop out.', one());
-          if (hasNeg && hasPos && rows <= 12) add('waterfall', 0.88, 'Gains and losses: a waterfall shows how they add up to the total.', one());
+          if (hasNeg && hasPos && rows <= 12) add('waterfall', 0.93, 'Gains and losses: a waterfall shows how they add up to the total.', one());
           add('bar', 0.9, plural(Math.min(rows, c0.distinct), name(cats[0]).toLowerCase() === 'category' ? 'category' : 'row') + ' of one number: bars, longest first, are the easiest to compare.', one(), { sort: 'desc' });
           if (rows <= 8) add('column', 0.7, 'Columns keep the rows in your order.', one());
           if (rows > 8) add('lollipop', 0.72, 'With many rows, dots on thin stems are lighter than bars.', one(), { sort: 'desc' });
@@ -1804,6 +1807,11 @@
         }
         g.chart = sanitize(chart);
       } else return fail('Unknown chart operation "' + text(op.op, 30) + '". Operations: chart.add, chart.update, chart.data.', '/op');
+      if (ctx && ctx.defer) {
+        /* a design file: keep only the group and its data; whoever reads the file next draws the layers (LE.charts.expand) */
+        doc.layers = layers.filter(function (l) { return l.groupId !== g.id; }).map(function (l) { return l === g ? { id: g.id, type: 'group', name: g.name, x: g.x, y: g.y, w: g.w, h: g.h, chart: g.chart } : l; });
+        return { ok: true, doc: doc, id: g.id, warnings: warnings.concat(prepare(g.chart).notes), summary: summary(g.chart), layers: 0 };
+      }
       var res = regenerate(doc, g.id, ctx);
       doc.layers = res.layers;
       return { ok: true, doc: doc, id: g.id, warnings: warnings.concat(res.notes), summary: summary(g.chart), layers: res.layers.filter(function (l) { return l.groupId === g.id; }).length };

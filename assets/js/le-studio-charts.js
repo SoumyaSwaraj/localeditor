@@ -60,7 +60,7 @@
       c.replaceDoc(res.doc, true);
       c.scene.select([res.id]);
       ST.notes = res.warnings; ST.view = 'edit'; ST.tab = 'chart'; ST.table = null;
-      c.renderPanel(true);
+      if (c.S.panel === 'chart') c.renderPanel(true); else c.openPanel('chart');
       c.toast('Chart added. Every bar and label is an ordinary layer you can still edit.');
     });
   }
