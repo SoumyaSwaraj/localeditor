@@ -1,0 +1,73 @@
+/* The QR maker (LE.qr.ui): the tool page and the studio's QR dialog share these. Tokens only (docs/DESIGN.md). */
+.qr-app { display: grid; gap: var(--s-4); grid-template-columns: minmax(0, 1fr); text-align: left; }
+.qr-stage { display: grid; gap: var(--s-2); min-width: 0; align-content: start; }
+.qr-prev {
+  display: grid; place-items: center; padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-lg);
+  background: repeating-conic-gradient(var(--surface-2) 0 25%, var(--surface) 0 50%) 50% / 20px 20px;
+}
+.qr-prev canvas { display: block; width: 100%; max-width: 320px; height: auto; max-height: 52vh; object-fit: contain; }
+.qr-status { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0; min-height: 44px; font-size: var(--text-sm); font-weight: 620; }
+.qr-status small { flex: 1 0 100%; font-weight: 500; color: var(--muted); }
+.qr-status[data-state="ok"] > span { color: var(--ok); }
+.qr-status[data-state="warn"] > span { color: var(--warn); }
+.qr-status[data-state="fail"], .qr-status[data-state="fail"] > span { color: var(--err); }
+.qr-status[data-state="wait"] { color: var(--muted); }
+.qr-anyway { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: var(--s-3); border: 1px solid var(--err); border-radius: var(--r-md); font-size: var(--text-sm); }
+.qr-anyway span { flex: 1 1 200px; }
+.qr-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
+.qr-controls { display: grid; gap: var(--s-3); min-width: 0; }
+.qr-sec { border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); padding: var(--s-3) var(--s-4); min-width: 0; }
+.qr-sec h3, .qr-sec > summary { margin: 0 0 var(--s-2); font-size: var(--text-md); font-weight: 680; }
+.qr-sec > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; margin: calc(var(--s-3) * -1) 0; list-style-position: inside; }
+.qr-sec[open] > summary { margin-bottom: var(--s-2); }
+.qr-sec > summary::before { content: "+"; width: 1.2em; font-weight: 500; color: var(--muted); }
+.qr-sec[open] > summary::before { content: "–"; }
+.qr-sec > summary::-webkit-details-marker { display: none; }
+.qr-tabs, .qr-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--s-3); }
+.qr-app .chip, .qr-bulk .chip { min-height: 44px; }
+.qr-app .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.qr-fields { display: grid; gap: var(--s-2); }
+.qr-grid { display: grid; gap: var(--s-2) var(--s-3); grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); align-items: end; min-width: 0; }
+.qr-grid[hidden], .qr-f[hidden] { display: none; }
+.qr-f { display: grid; gap: 6px; min-width: 0; font-size: var(--text-sm); }
+.qr-f > span:first-child { font-weight: 620; }
+.qr-f output { font-weight: 500; color: var(--muted); }
+.qr-f-wide { grid-column: 1 / -1; }
+.qr-f .input, .qr-f .select, .qr-f .textarea { width: 100%; min-height: 44px; }
+.qr-f .textarea { min-height: 88px; }
+.qr-f input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--accent); }
+.qr-color { width: 100%; min-width: 64px; height: 44px; padding: 3px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); cursor: pointer; }
+.qr-seg button { min-height: 44px; }
+.qr-app .btn, .qr-bulk .btn, .qr-out .btn, .qr-out .select { min-height: 44px; }
+.qr-file { cursor: pointer; justify-self: start; }
+.qr-hint { margin: 0; font-size: var(--text-sm); color: var(--muted); }
+.qr-presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.qr-preset { display: grid; gap: 4px; justify-items: center; padding: 6px 4px; min-height: 44px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); color: var(--ink); font-size: var(--text-xs); cursor: pointer; }
+.qr-preset:hover { border-color: var(--border-hover); }
+.qr-preset img { width: 100%; max-width: 72px; height: auto; aspect-ratio: 1; border-radius: var(--r-xs); display: block; }
+.qr-preset span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.qr-out { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: end; }
+.qr-out .qr-f { flex: 0 1 150px; }
+.qr-row { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: end; }
+.qr-bulk { display: grid; gap: var(--s-3); min-width: 0; text-align: left; }
+.qr-bulk-sum { font-size: var(--text-sm); font-weight: 620; }
+.qr-bulk-sum[data-state="fail"] { color: var(--err); }
+.qr-bulk-sum[data-state="warn"] { color: var(--warn); }
+.qr-bulk-bad { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 320px; overflow: auto; font-size: var(--text-sm); }
+.qr-bulk-bad:empty { display: none; }
+.qr-bulk-bad li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-md); overflow-wrap: anywhere; }
+.qr-bulk-bad li > span { flex: 1 1 200px; }
+.qr-bulk-bad li > .qr-grid { flex: 1 0 100%; }
+.qr-bulk-run { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; font-size: var(--text-sm); }
+.qr-bulk-run progress { flex: 1 1 160px; height: 10px; accent-color: var(--accent); }
+.qr-bulk-run[hidden], .qr-bulk-out[hidden], .qr-anyway[hidden] { display: none; }
+@media (min-width: 880px) {
+  .qr-app[data-mode="page"] { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); align-items: start; }
+  .qr-app[data-mode="page"] .qr-stage { position: sticky; top: 84px; }
+}
+@media (min-width: 768px) {
+  .qr-app[data-mode="studio"] { grid-template-columns: 250px minmax(0, 1fr); align-items: start; }
+  .qr-app[data-mode="studio"] .qr-stage { position: sticky; top: 0; }
+}
+.qr-app[data-mode="studio"] .qr-prev canvas { max-width: 220px; }
+.qr-app[data-mode="studio"] .qr-sec { padding: var(--s-2) var(--s-3); }

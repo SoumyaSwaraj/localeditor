@@ -396,7 +396,8 @@
     res.geometry = { w: g.W, h: g.H, n: g.n };
     return res;
   }
-  /* check(spec, { decode: false }) → Promise of the report. The decode draws the code at two sizes and reads it back. */
+  /* check(spec, { decode: false, quick: true }) → Promise of the report. The decode draws the code at two sizes (quick:
+     the small one only) and reads it back with the vendored decoder. */
   function check(spec, opts) {
     opts = opts || {};
     var res = inspect(spec), g = res.geometry;
@@ -413,7 +414,7 @@
           return sameText(jsQR(d.data, d.width, d.height, { inversionAttempts: 'attemptBoth' }), cs.text === '' ? ' ' : cs.text);
         });
       };
-      return read(small).then(function (a) { return read(large).then(function (b) { return [a, b]; }); });
+      return read(small).then(function (a) { return opts.quick ? [a, a] : read(large).then(function (b) { return [a, b]; }); });
     }).then(function (r) {
       res.decoded = r[0] && r[1];
       res.sizes = [small, large];
