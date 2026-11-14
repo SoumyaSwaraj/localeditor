@@ -59,7 +59,8 @@
   }
   UI.vars = vars;
   var PAPER = { a4: [210, 297, 'A4'], letter: [215.9, 279.4, 'Letter'] };
-  /* pdf(items, { paper, cols, marks, title, ctl, onProgress }) → Blob. items: [{ spec, caption }]. One sheet page at a
+  /* pdf(items, { paper, cols, marks, fill, title, ctl, onProgress }) → Blob. items: [{ spec, caption }]; fill repeats the
+     first one until a page is full. One sheet page at a
      time (JPEG at 200 dpi through LE.variables.PdfWriter), so memory stays flat however long the list is. */
   OUT.pdf = function (items, o) {
     o = o || {};
@@ -69,6 +70,7 @@
     var cw = cols === 1 ? Math.min(P[0] - 2 * m, 120) : (P[0] - 2 * m - (cols - 1) * gap) / cols, ch = cw / a;
     if (ch > P[1] - 2 * m) { ch = P[1] - 2 * m; cw = ch * a; }
     var rows = cols === 1 ? 1 : Math.max(1, Math.floor((P[1] - 2 * m + gap) / (ch + gap))), per = cols * rows;
+    if (o.fill) { items = []; while (items.length < per) items.push(arguments[0][0]); }
     var x0 = (P[0] - (cols * cw + (cols - 1) * gap)) / 2, y0 = cols === 1 ? (P[1] - ch) / 2 : (P[1] - (rows * ch + (rows - 1) * gap)) / 2;
     return vars().then(function (V) {
       var W = new V.PdfWriter(), i = 0, ctl = o.ctl || {};
@@ -195,9 +197,9 @@
     function secBody(n) { return root.querySelector('[data-sec="' + n + '"] .qr-grid'); }
 
     /* ---- small control builders; each registers a sync so presets and fixes refresh the form ---- */
-    function wrap(label, inner, cls) { var w = el('<label class="qr-f ' + (cls || '') + '"><span>' + esc(label) + '</span></label>'); w.appendChild(inner); return w; }
+    function wrap(label, inner, cls) { var w = el('<label class="qr-f ' + (cls || '') + '"><span>' + esc(label) + '</span></label>'); inner.setAttribute('data-k', Q.slug(label)); w.appendChild(inner); return w; }
     function segCtl(label, list, get, set) {
-      var w = el('<div class="qr-f qr-f-wide"><span>' + esc(label) + '</span><span class="seg qr-seg" role="group" aria-label="' + esc(label) + '"></span></div>'), box = w.lastChild;
+      var w = el('<div class="qr-f qr-f-wide"><span>' + esc(label) + '</span><span class="seg qr-seg" role="group" data-k="' + Q.slug(label) + '" aria-label="' + esc(label) + '"></span></div>'), box = w.lastChild;
       list.forEach(function (it) { var b = el('<button type="button" data-v="' + esc(it[0]) + '">' + esc(it[1]) + '</button>'); b.onclick = function () { set(it[0]); changed(); }; box.appendChild(b); });
       syncs.push(function () { var v = String(get()); [].forEach.call(box.children, function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === v ? 'true' : 'false'); }); });
       return w;
@@ -463,7 +465,7 @@
       });
     });
   };
-  function automap(columns, type) {
+  function automap(columns, type, prev) {
     var t = Q.TYPES.filter(function (x) { return x.id === type; })[0], low = columns.map(function (c) { return c.toLowerCase(); }), m = {};
     var SYN = { url: ['url', 'link', 'web', 'site'], text: ['text', 'content', 'code', 'value'], ssid: ['ssid', 'network', 'wifi', 'wi-fi'], password: ['pass', 'key'], first: ['first', 'given', 'name'], last: ['last', 'surname', 'family'], org: ['company', 'org'], title: ['title', 'job', 'role'], phone: ['phone', 'mobile', 'tel', 'number'], email: ['email', 'mail'], to: ['email', 'mail', 'to'], upiId: ['upi', 'vpa', 'id'], payee: ['payee', 'name', 'shop'], amount: ['amount', 'price', 'total'], note: ['note', 'memo'], lat: ['lat'], lng: ['lng', 'lon'], link: ['link', 'url', 'chat'], start: ['start', 'date', 'when'], end: ['end'], location: ['where', 'venue', 'location', 'place'], message: ['message', 'text', 'body'], subject: ['subject'], security: ['security', 'type'], label: ['label', 'place'], address: ['address'] };
     t.fields.forEach(function (fd) {
@@ -471,7 +473,7 @@
       words.some(function (w) { hit = low.findIndex(function (c, i) { return c.indexOf(w) >= 0 && Object.keys(m).every(function (k) { return m[k] !== i; }); }); return hit >= 0; });
       m[fd.k] = hit;
     });
-    if (t.fields.length === 1 && m[t.fields[0].k] < 0) m[t.fields[0].k] = 0;
+    if (t.fields.length === 1 && m[t.fields[0].k] < 0) m[t.fields[0].k] = prev >= 0 && prev < columns.length ? prev : 0;
     return m;
   }
   /* bulk(host, { style(), type() }) builds the "Make many" form. */
@@ -509,7 +511,7 @@
       mapBox.hidden = false; mapBox.innerHTML = '';
       var ts = el('<select class="select" id="' + id + 'type">' + Q.TYPES.map(function (t) { return '<option value="' + t.id + '">' + esc(t.name) + '</option>'; }).join('') + '</select>');
       ts.value = map.type;
-      ts.onchange = function () { map.type = ts.value; map.fields = automap(table.columns, map.type); fixes = {}; drawMap(); replan(); };
+      ts.onchange = function () { var keys = Object.keys(map.fields), prev = keys.length === 1 ? map.fields[keys[0]] : -1; map.type = ts.value; map.fields = automap(table.columns, map.type, prev); fixes = {}; drawMap(); replan(); };
       var w = el('<label class="qr-f"><span>Each row is a</span></label>'); w.appendChild(ts); mapBox.appendChild(w);
       Q.TYPES.filter(function (t) { return t.id === map.type; })[0].fields.forEach(function (fd) {
         mapBox.appendChild(colSelect(fd.label + ' column', function () { return map.fields[fd.k]; }, function (v) { map.fields[fd.k] = v; }, fd.req ? null : 'Not used'));

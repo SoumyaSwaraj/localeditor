@@ -319,7 +319,7 @@
         Object.keys(r.assets || {}).forEach(function (id) { W.blobs[id] = r.assets[id]; });
         var st = r.project.meta.studio || {};
         ['icons', 'qr', 'fx'].forEach(function (k) { if (st[k]) { W.studio[k] = W.studio[k] || {}; Object.keys(st[k]).forEach(function (id) { W.studio[k][id] = st[k][id]; }); } });
-        W.warnings = W.warnings.concat((r.warnings || []).filter(function (w) { return /missing-image|unknown-icon|unknown-shape|shrink-needs-height|remote-failed/.test(w.kind); }).map(function (w) { return { path: basePath + mapPath(w.path, single), kind: w.kind, message: w.message }; }));
+        W.warnings = W.warnings.concat((r.warnings || []).filter(function (w) { return /missing-image|unknown-icon|unknown-shape|shrink-needs-height|remote-failed|^qr-/.test(w.kind); }).map(function (w) { return { path: basePath + mapPath(w.path, single), kind: w.kind, message: w.message }; }));
         if (r.regenerate && r.regenerate.length) W.regen = true;
         return r;
       });

@@ -123,9 +123,8 @@
   $('svg').onclick = function () { ed.guard(function (spec) { IT.download(UI.out.svg(out(spec)), Q.fileName(spec.text, 'svg')); }); };
   $('pdf').onclick = function () {
     ed.guard(function (spec) {
-      var m = $('pdfmode').value.split('-'), items = [];
-      for (var i = 0; i < (m[0] === 'sheet' ? 12 : 1); i++) items.push({ spec: spec });
-      UI.out.pdf(items, { paper: m[1], cols: m[0] === 'sheet' ? 3 : 1, title: Q.fileName(spec.text) }).then(function (b) { IT.download(b, Q.fileName(spec.text, 'pdf')); }, fail);
+      var m = $('pdfmode').value.split('-');
+      UI.out.pdf([{ spec: spec }], { paper: m[1], cols: m[0] === 'sheet' ? 3 : 1, fill: m[0] === 'sheet', title: Q.fileName(spec.text) }).then(function (b) { IT.download(b, Q.fileName(spec.text, 'pdf')); }, fail);
     });
   };
   $('copy').onclick = function () {

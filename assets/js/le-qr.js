@@ -39,7 +39,7 @@
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function hash(s) { var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); }
   function lazy(src) {
-    if (LE.lazy) return LE.lazy(src);
+    if (LE.lazy && LE.lazy !== lazy) return LE.lazy(src);
     if (!doc) return Promise.reject(new Error('no document'));
     lazy.jobs = lazy.jobs || {};
     if (!lazy.jobs[src]) lazy.jobs[src] = new Promise(function (ok, no) { var s = doc.createElement('script'); s.src = src; s.async = true; s.onload = function () { ok(); }; s.onerror = function () { delete lazy.jobs[src]; no(new Error('Could not load ' + src)); }; doc.head.appendChild(s); });
