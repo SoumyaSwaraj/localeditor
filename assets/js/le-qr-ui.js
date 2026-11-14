@@ -21,13 +21,13 @@
   function toBlob(cv, type, q) { return new Promise(function (ok, no) { cv.toBlob(function (b) { if (b) ok(b); else no(new Error('This picture could not be made.')); }, type || 'image/png', q); }); }
 
   /* ---------- pictures: read on the device, made small enough to live inside the code's SVG ---------- */
-  function loadPicture(file, edge) {
+  function loadPicture(file, edge, budget) {
     if (!file || !/^image\//.test(file.type || '')) return Promise.reject(new Error('Choose a picture file (PNG, JPG or WebP).'));
     if (file.size > 40 * 1024 * 1024) return Promise.reject(new Error('That picture is larger than 40 MB.'));
     var url = URL.createObjectURL(file);
     return new Promise(function (ok, no) { var im = new Image(); im.onload = function () { ok(im); }; im.onerror = function () { no(new Error('That picture could not be read.')); }; im.src = url; }).then(function (im) {
       URL.revokeObjectURL(url);
-      return shrink(im, edge);
+      return shrink(im, edge, budget);
     }, function (e) { URL.revokeObjectURL(url); throw e; });
   }
   function shrink(im, edge, budget) {
@@ -180,7 +180,7 @@
     var root = el('<div class="qr-app" data-mode="' + (page ? 'page' : 'studio') + '">' +
       '<div class="qr-stage"><div class="qr-prev"><canvas' + (page ? ' id="cv"' : '') + ' width="640" height="640" role="img" aria-label="QR code preview"></canvas></div>' +
       '<p class="qr-status" role="status" aria-live="polite" data-state="wait">Checking…</p>' +
-      '<div class="qr-anyway" hidden><span>This code did not pass the test scan, so people may not be able to use it.</span><button type="button" class="btn btn-sm" data-anyway>Download anyway</button><button type="button" class="btn btn-sm" data-cancel>Cancel</button></div>' +
+      '<div class="qr-anyway" hidden><span>This code did not pass the test scan, so people may not be able to use it.</span><button type="button" class="btn btn-sm" data-anyway>' + esc(opts.anyway || 'Download anyway') + '</button><button type="button" class="btn btn-sm" data-cancel>Cancel</button></div>' +
       '<div class="qr-actions"></div></div>' +
       '<div class="qr-controls">' +
       '<section class="qr-sec"><h3>What it holds</h3><div class="qr-tabs" role="group" aria-label="Content type"></div><div class="qr-fields"></div><p class="qr-hint" data-len></p></section>' +
@@ -270,16 +270,16 @@
 
     /* ---- picture ---- */
     var Pc = secBody('picture');
-    function addPicture(key, edge) {
+    function addPicture(key, edge, budget) {
       return function (file) {
-        loadPicture(file, edge).then(function (src) {
+        loadPicture(file, edge, budget).then(function (src) {
           if (key === 'image') st.image = { src: src, size: 0.22, fit: 'contain', round: 0.2 }; else st.picture = { src: src, dim: 0.6 };
           changed();
         }).catch(function (e) { say(e.message); });
       };
     }
     Pc.appendChild(el('<p class="qr-hint qr-f-wide">A logo or photo in the middle. It stays on this device, and the code switches to its strongest repair setting so it still scans.</p>'));
-    Pc.appendChild(fileCtl('Choose a centre picture', addPicture('image', 240)));
+    Pc.appendChild(fileCtl('Choose a centre picture', addPicture('image', 240, 60000)));
     Pc.appendChild(group(function () { return !!st.image; }, [
       rngCtl('Size', 10, 30, 1, function () { return Math.round(st.image.size * 100); }, function (v) { st.image.size = v / 100; }, function (v) { return v + '% of the code'; }),
       segCtl('Fit', [['contain', 'Whole picture'], ['cover', 'Fill the space']], function () { return st.image.fit; }, function (v) { st.image.fit = v; }),
@@ -287,7 +287,7 @@
       (function () { var b = el('<button type="button" class="btn btn-sm" data-remove="image">Remove centre picture</button>'); b.onclick = function () { delete st.image; changed(); }; return b; })()
     ]));
     Pc.appendChild(el('<p class="qr-hint qr-f-wide">Or a picture behind the code. It is dimmed and the code is drawn as dots on top, so cameras can still read it.</p>'));
-    Pc.appendChild(fileCtl('Choose a background picture', addPicture('picture', 420)));
+    Pc.appendChild(fileCtl('Choose a background picture', addPicture('picture', 420, 105000)));
     Pc.appendChild(group(function () { return !!st.picture; }, [
       rngCtl('Dimming', 35, 90, 5, function () { return Math.round(st.picture.dim * 100); }, function (v) { st.picture.dim = v / 100; }, function (v) { return v + '%'; }),
       (function () { var b = el('<button type="button" class="btn btn-sm" data-remove="picture">Remove background picture</button>'); b.onclick = function () { delete st.picture; changed(); }; return b; })()

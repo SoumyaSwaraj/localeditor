@@ -2869,6 +2869,8 @@
   document.addEventListener('paste', function (e) {
     var t = e.target;
     if (t && (/INPUT|TEXTAREA/.test(t.tagName) || t.isContentEditable)) return;
+    var html = e.clipboardData && e.clipboardData.getData('text/html');
+    if (html && html.indexOf('data-le-design=') > 0) { e.preventDefault(); cmd('pasteQr', html); return; }   /* a QR code copied from the QR tool: the editable element, not its picture */
     var files = e.clipboardData && e.clipboardData.files;
     if (files && files.length) { e.preventDefault(); addFiles([].slice.call(files)); }
   });

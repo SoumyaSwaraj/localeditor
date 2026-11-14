@@ -805,7 +805,7 @@
       if (!LE.makers.get(id)) throw err('invalid', 'No maker ' + quote(id) + '. See catalog("makers").', path + '/maker');
       var v = LE.makers.validate(id, op.values || {});
       if (!v.ok) { var e0 = v.errors[0]; throw err('invalid', e0.message, path + '/values/' + (e0.key || ''), { errors: v.errors }); }
-      return LE.makers.build(id, op.values || {}, { size: op.size, style: op.style });
+      return LE.makers.build(id, op.values || {}, { size: op.size, style: op.style, qrStyle: op.qrStyle });
     }).then(function (res) {
       var pg = res.pages && res.pages[0];
       if (!pg) throw err('invalid', 'The maker made no page.', path);

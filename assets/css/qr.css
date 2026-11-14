@@ -65,9 +65,10 @@
   .qr-app[data-mode="page"] { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); align-items: start; }
   .qr-app[data-mode="page"] .qr-stage { position: sticky; top: 84px; }
 }
-@media (min-width: 768px) {
-  .qr-app[data-mode="studio"] { grid-template-columns: 250px minmax(0, 1fr); align-items: start; }
-  .qr-app[data-mode="studio"] .qr-stage { position: sticky; top: 0; }
-}
-.qr-app[data-mode="studio"] .qr-prev canvas { max-width: 220px; }
-.qr-app[data-mode="studio"] .qr-sec { padding: var(--s-2) var(--s-3); }
+/* The studio dialog is narrow: the code sits beside its status line and actions, the controls run underneath. */
+.qr-app[data-mode="studio"] .qr-stage { grid-template-columns: minmax(96px, 150px) minmax(0, 1fr); column-gap: var(--s-3); }
+.qr-app[data-mode="studio"] .qr-prev { grid-row: 1 / span 3; padding: 8px; }
+.qr-app[data-mode="studio"] .qr-stage > :not(.qr-prev) { grid-column: 2; }
+.qr-app[data-mode="studio"] .qr-sec { padding: var(--s-3); }
+.qr-app[data-mode="studio"] .qr-sec > summary { margin: calc(var(--s-2) * -1) 0; }
+.qr-app[data-mode="studio"] .qr-sec[open] > summary { margin-bottom: var(--s-2); }

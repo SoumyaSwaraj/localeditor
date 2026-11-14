@@ -32,9 +32,12 @@
   M.defer({ id: 'panels2', src: JS + 'le-studio-panels-more.js', css: CSS + 'studio-panels-more.css', label: 'this panel', panels: { layers: '', projects: '', history: '', settings: '' }, wrap: { apps: function (o) { return MORE_APPS[o.app] === 1; } }, idle: 1, features: ['studio.design', 'studio.apps'] });
   M.defer({ id: 'stock', src: JS + 'le-stock.js', label: 'stock photos', rerender: ['apps', 'uploads', 'elements'], wrap: { uploads: function (o) { return o.tab === 'stock'; } }, idle: 9, features: ['studio.uploads'] });
   M.defer({ id: 'color', src: JS + 'le-studio-color.js', css: CSS + 'studio-color.css', label: 'colour tools', deps: ['assets'], panels: { replace: 'Replace', brand: 'Brand kit' }, doc: function (pages) { return anyPage(pages, function (p) { return p.background && p.background.spec; }); }, idle: 2 });
-  M.defer({ id: 'tools', src: JS + 'le-studio-tools.js', css: CSS + 'studio-tools.css', label: 'studio tools', deps: ['color'], panels: { pages: 'Pages' }, cmds: ['addQr', 'copyStyle', 'editQr', 'guidesMenu', 'pasteStyle'], on: ['select'], replay: ['key'], retool: true,
+  M.defer({ id: 'tools', src: JS + 'le-studio-tools.js', css: CSS + 'studio-tools.css', label: 'studio tools', deps: ['color'], panels: { pages: 'Pages' }, cmds: ['addQr', 'copyStyle', 'editQr', 'guidesMenu', 'pasteQr', 'pasteStyle'], on: ['select'], replay: ['key'], retool: true,
     when: function () { try { var o = JSON.parse(localStorage.getItem('le-studio-ov') || 'null'); return !!(o && (o.rulers || o.grid)); } catch (e) { return false; } },
     doc: function (pages) { return anyLayer(pages, function (l) { return (l.mask && l.mask !== 'none') || /cell/i.test(l.name || ''); }); }, idle: 1 });
+  /* Styled QR codes (docs/QR.md): the engine, then its editor (the QR dialog, a pasted code, a design with a "qr" layer). */
+  M.defer({ id: 'qr', src: JS + 'le-qr.js', label: 'QR codes' });
+  M.defer({ id: 'qrui', src: JS + 'le-qr-ui.js', css: CSS + 'qr.css', label: 'QR codes', deps: ['qr'] });
   M.defer({ id: 'icons', src: JS + 'le-studio-icons.js', css: CSS + 'studio-icons.css', label: 'icon styles', deps: ['color', 'assets'], cmds: ['iconColors', 'swapStyle', 'tintSticker'], idle: 6, features: ['studio.elements'] });
   M.defer({ id: 'collagelib', src: JS + 'le-collage.js', label: 'collages', deps: ['fontorig', 'assets'] });
   M.defer({ id: 'collage', src: JS + 'le-studio-collage.js', css: CSS + 'studio-collage.css', label: 'collages', deps: ['collagelib'], cmds: ['cellZoom', 'collageCredits'], on: ['select'], retool: true,
