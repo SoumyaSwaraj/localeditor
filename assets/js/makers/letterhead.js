@@ -49,7 +49,7 @@
       styles: [{ id: 'classic', name: 'Classic' }, { id: 'modern', name: 'Modern' }, { id: 'bold', name: 'Bold band' }, { id: 'minimal', name: 'Minimal' }, { id: 'side', name: 'Side bar' }],
       sample: { values: { company: 'Northwind Studio', tagline: 'Brand and web design', address: '14 Canal Street, Manchester M1 3HE', phone: '+44 20 7946 0101', email: 'hello@northwind.example', site: 'northwind.example',
         reg: 'Registered in England and Wales, company number 01234567', toName: 'Ms Amara Okafor', toAddress: '12 Mill Lane, Leeds LS1 4AB', date: '2026-11-12', watermark: false, slip: false, envelope: false } },
-      ui: K.many('letterhead', LIST),
+      ui: K.many('letterhead', LIST, { toName: 0, toAddress: 1 }),
       build: function (v, env) {
         var C = env.color, mm = env.print.mm, style = env.style, us = env.size.id === 'letter';
         var T = Object.assign({}, S[style] || S.classic);

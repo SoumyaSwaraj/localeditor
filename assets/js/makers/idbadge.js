@@ -48,7 +48,7 @@
       ],
       styles: [{ id: 'clean', name: 'Clean' }, { id: 'band', name: 'Colour band' }, { id: 'dark', name: 'Dark' }, { id: 'soft', name: 'Soft' }, { id: 'bold', name: 'Bold' }],
       sample: { values: { kind: 'staff', org: 'Northwind Clinic', name: 'Amara Okafor', role: 'Nurse', idno: 'NW-00412', valid: '31 December 2027', photo: 'sample:people-03', code: true, slot: true, back: false, paper: 'none' } },
-      ui: K.many('idbadge', LIST),
+      ui: K.many('idbadge', LIST, { idno: 2 }),
       build: function (v, env) {
         var W = env.W, H = env.H, C = env.color, mm = env.print.mm, style = env.style;
         var T = Object.assign({}, S[style] || S.clean), kind = KIND[v.kind] || KIND.staff;

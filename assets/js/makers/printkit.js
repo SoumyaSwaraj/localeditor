@@ -139,12 +139,15 @@
   /* Pieces n-up on a sheet (pure): trim boxes centred on the paper, a gutter between them, a margin for the printer and
      the crop marks. Tries the sheet upright and turned, and keeps the one that holds more. Sizes in px. */
   function fitGrid(pw, ph, cw, ch, gap, margin) {
-    var cols = Math.max(1, Math.floor((pw - 2 * margin + gap) / (cw + gap))), rows = Math.max(1, Math.floor((ph - 2 * margin + gap) / (ch + gap)));
+    var cols = Math.floor((pw - 2 * margin + gap) / (cw + gap)), rows = Math.floor((ph - 2 * margin + gap) / (ch + gap));
+    if (cols < 1 || rows < 1) return { cols: 0, rows: 0, w: pw, h: ph, cells: [] };
     return { cols: cols, rows: rows, w: pw, h: ph, cells: M.print.sheet({ x: 0, y: 0, w: pw, h: ph }, { cols: cols, rows: rows, w: cw, h: ch, gx: gap, gy: gap }) };
   }
   function grid(paperId, cw, ch, gap, margin) {
     var p = M.paperSize(paperId), a = fitGrid(p.w, p.h, cw, ch, gap, margin), b = fitGrid(p.h, p.w, cw, ch, gap, margin);
     var g = b.cells.length > a.cells.length ? b : a;
+    /* A piece too large for the margins still gets a sheet: one, centred, on the paper turned to suit it. */
+    if (!g.cells.length) { g = cw > ch ? b : a; g.cols = g.rows = 1; g.cells = M.print.sheet({ x: 0, y: 0, w: g.w, h: g.h }, { cols: 1, rows: 1, w: cw, h: ch }); }
     g.landscape = g === b;
     g.paper = g.landscape ? paperId + '-landscape' : paperId;
     /* Turn the sheet over like a page and a piece at x lands at width − x: where each back goes. */
@@ -197,6 +200,18 @@
   /* A typed web address as a link a phone opens: adds https:// when there is no scheme. */
   function link(s) { s = String(s || '').trim(); return !s ? '' : /^[a-z][a-z0-9+.-]*:/i.test(s) ? s : 'https://' + s; }
 
+  /* The print-sheet pages of a maker: one sheet per side (front, and back when there is one). o: { paper, W, H, trim,
+     bleed, gap, title, sides: [{ layers, bg, values }] }. Returns [] unless paper is a4 or letter. */
+  function sheets(env, o) {
+    if (o.paper !== 'a4' && o.paper !== 'letter') return [];
+    return o.sides.map(function (sd, i) {
+      var src = [env.rect({ id: 'piece-bg', name: 'Piece', x: 0, y: 0, w: o.W, h: o.H, fill: sd.bg, stroke: o.outline ? { width: 2, color: o.outline } : null })].concat(sd.layers);
+      var pg = sheet(env, { paper: o.paper, trim: o.trim, bleed: o.bleed || 0, gap: o.gap, back: i === 1, duplex: o.sides.length > 1, title: o.title, draw: function (x, y, n) { return copy(src, x, y, n + 1); } });
+      if (sd.values) pg.values = sd.values;
+      return pg;
+    });
+  }
+
   /* ---------- A contact card for a QR code (vCard 3.0), pure ---------- */
   function vesc(s) { return String(s || '').replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/([;,])/g, '\\$1').trim(); }
   function vcard(v) {
@@ -235,8 +250,10 @@
       c.toast('An example list is loaded. Go back to Your list to paste or choose your own.', { ms: 6000 });
     })();
   }
-  /* A maker's ui hook: adds the button next to Make it. rows: the example list, first row the column names. */
-  function manyUi(rows) {
+  /* A maker's ui hook: adds the button next to Make it. rows: the example list, first row the column names.
+     fill: { formKey: column } for parts that are only fields when filled in; left empty, they take the first example
+     row, so the design made for a list always has its fields. */
+  function manyUi(rows, fill) {
     return function (form, api) {
       var foot = form.node && form.node.querySelector('.mk-foot');
       if (!foot || !form.c) return null;
@@ -249,20 +266,21 @@
       b.onclick = function () {
         var c = form.c;
         b.disabled = true;
+        Object.keys(fill || {}).forEach(function (k) { if (form.values[k] == null || form.values[k] === '') form.values[k] = rows[1][fill[k]]; });
         Promise.resolve(api.make()).then(function (pg) { if (pg) openMany(c, rows); else b.disabled = false; });
       };
       return function () { b.remove(); };
     };
   }
   /* Registers a maker's example list (for the form button, the tests and the sample CSV on its page). */
-  function many(id, rows) {
+  function many(id, rows, fill) {
     M.lists = M.lists || {};
     M.lists[id] = rows;
-    return function (form, api) { return manyUi(rows)(form, api); };
+    return manyUi(rows, fill);
   }
 
   M.kit = { px: px, size: size, paper: paper, field: field, bind: bind, stack: stack, logo: logo, initials: initials, starPath: starPath, seal: seal,
-    trimMarks: trimMarks, grid: grid, sheet: sheet, copy: copy, column: column, qrTile: qrTile, link: link, vcard: vcard, csv: csv, openMany: openMany, manyUi: manyUi, many: many };
+    trimMarks: trimMarks, grid: grid, sheet: sheet, sheets: sheets, copy: copy, column: column, qrTile: qrTile, link: link, vcard: vcard, csv: csv, openMany: openMany, manyUi: manyUi, many: many };
   M.vcardPayload = vcard;
   /* Makers that arrived first wait in M.kitWait (see the two lines at the foot of each file). */
   (M.kitWait || []).splice(0).forEach(function (fn) { fn(M.kit); });
