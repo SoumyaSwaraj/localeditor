@@ -2,6 +2,8 @@
 
 Static, offline-first PWA: photo studio, PDF studio, 30 tools. Vanilla ES2018 IIFEs, no bundler. Hosted on S3 behind CloudFront.
 
+New to this repo or a fresh clone: start with `docs/HANDOVER.md`.
+
 Read before changing anything:
 
 1. `docs/ROADMAP.md` — goals, architecture decisions, phases, working rules.
